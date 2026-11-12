@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'src/app_state.dart';
 import 'src/shell.dart';
+import 'src/ui.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +45,8 @@ class _LabGoLabAppState extends State<LabGoLabApp> {
               debugShowCheckedModeBanner: false,
               theme: ThemeData(
                 useMaterial3: true,
+                fontFamily: kAppFontFamily,
+                fontFamilyFallback: kAppFontFallback,
                 brightness: app.darkMode ? Brightness.dark : Brightness.light,
                 scaffoldBackgroundColor: pal.appBg,
                 colorScheme: ColorScheme.fromSeed(

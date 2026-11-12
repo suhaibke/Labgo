@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -12,7 +13,7 @@ extension Ctx on BuildContext {
   Palette get pal => AppScope.of(this).palette;
 }
 
-/// Text style matching the design: system font, -0.02em tracking in LTR,
+/// Text style matching the design: SF on iPhone, Inter elsewhere, -0.02em tracking in LTR,
 /// no tracking in RTL, Tailwind default line-height 1.5.
 TextStyle ts(
   BuildContext context,
@@ -31,14 +32,21 @@ TextStyle ts(
     // CSS puts half the extra line-height above and half below the glyphs.
     leadingDistribution: TextLeadingDistribution.even,
     letterSpacing: tracking ?? (app.rtl ? 0 : -0.02 * size),
-    fontFamilyFallback: const [
-      'SF Pro Text',
-      'Segoe UI',
-      'Roboto',
-      'Noto Sans Arabic',
-    ],
+    fontFamily: kAppFontFamily,
+    fontFamilyFallback: kAppFontFallback,
   );
 }
+
+/// iPhone / Mac: the system font (SF Pro + SF Arabic) — `null` means "system".
+/// Android and others: bundled Inter, with IBM Plex Sans Arabic for Arabic/Kurdish.
+bool get _isApple =>
+    defaultTargetPlatform == TargetPlatform.iOS ||
+    defaultTargetPlatform == TargetPlatform.macOS;
+
+String? get kAppFontFamily => _isApple ? null : 'Inter';
+
+List<String>? get kAppFontFallback =>
+    _isApple ? null : const ['IBMPlexSansArabic'];
 
 const w400 = FontWeight.w400;
 const w500 = FontWeight.w500;

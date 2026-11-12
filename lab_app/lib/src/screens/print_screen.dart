@@ -840,6 +840,7 @@ class _ResultsPaper extends StatelessWidget {
           'monospace',
           'Courier New',
           'Courier',
+          'IBMPlexSansArabic',
         ],
       );
 
