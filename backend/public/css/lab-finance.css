@@ -1,0 +1,61 @@
+/* Finance — app look */
+html.la .fn-page { max-width: 1240px; margin: 0 auto; padding-bottom: 48px; }
+html.la .fn-page [hidden] { display: none !important; }
+html.la .fn-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 4px 0 14px; }
+html.la .fn-period { min-width: 360px; }
+html.la .fn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+html.la .fn-kpis b { font-size: 24px !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html.la .fn-green { background: var(--soft-green) !important; color: var(--green) !important; }
+html.la .fn-red { background: color-mix(in srgb, var(--red) 12%, transparent) !important; color: var(--red) !important; }
+html.la .fn-blue { background: color-mix(in srgb, var(--blue) 12%, transparent) !important; color: var(--blue) !important; }
+html.la #kProfit.neg { color: var(--red); }
+html.la .fn-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 12px; margin-bottom: 12px; }
+html.la .fn-chart { position: relative; height: 260px; margin-top: 10px; }
+html.la .fn-sec-head { margin-bottom: 10px; }
+html.la .fn-sec-head .la-btn { height: 40px; }
+
+html.la .fn-breakdown { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+html.la .fn-bar-row { display: grid; grid-template-columns: 90px 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+html.la .fn-bar { height: 10px; border-radius: 999px; background: var(--bar-track); overflow: hidden; }
+html.la .fn-bar i { display: block; height: 100%; border-radius: 999px; background: var(--accent); transition: width .5s var(--ease-out-soft); }
+html.la .fn-bar-row b { font-variant-numeric: tabular-nums; }
+
+html.la .fn-list { display: flex; flex-direction: column; gap: 8px; }
+html.la .fn-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; background: var(--chip-bg); animation: popIn .28s ease both; }
+html.la .fn-item-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--segmented); flex-shrink: 0; }
+html.la .fn-item-ic .ic { width: 18px; height: 18px; }
+html.la .fn-item-text { flex: 1; min-width: 0; }
+html.la .fn-item-text b { display: block; font-size: 14px; }
+html.la .fn-item-text small { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.la .fn-amt { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html.la .fn-amt.neg { color: var(--red); }
+html.la .fn-del { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+html.la .fn-del:hover { background: var(--segmented); color: var(--red); }
+html.la .fn-del .ic { width: 15px; height: 15px; }
+html.la .fn-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 22px 8px; }
+
+html.la .fn-mt { margin-top: 12px; }
+html.la .fn-cats { flex-wrap: wrap; overflow: visible; }
+html.la .fn-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+html.la .fn-amount { font-size: 20px; font-weight: 800; text-align: center; }
+html.la .fn-error { color: var(--red); font-size: 13px; font-weight: 700; margin: 10px 0 0; }
+html.la .fn-save { margin-top: 14px; height: 50px; }
+
+@media (max-width: 1100px) {
+  html.la .fn-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html.la .fn-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  html.la .fn-period { min-width: 0; width: 100%; }
+  html.la .fn-period button { padding: 9px 4px; font-size: 12px; }
+  html.la .fn-kpis b { font-size: 18px !important; }
+  html.la .fn-kpis .la-kpi { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
+html.la .fn-period button { white-space: nowrap; padding-inline: 14px; }
+/* keep "-950,000" readable in Arabic */
+html.la .fn-kpis b { display: inline-block !important; direction: ltr; }
+html.la .fn-kpis .la-kpi span { display: block; }
+@media (max-width: 600px) {
+  html.la .fn-period button { flex: 1; min-width: 0; padding-inline: 4px; }
+  html.la .fn-head > div:first-child { width: 100%; }
+}
