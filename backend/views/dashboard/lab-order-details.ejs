@@ -43,8 +43,14 @@
                                     </span>
                                 </button>
                                 <% } %>
+                                    <% if (order.status==='at_lab' || order.status==='completed') { %>
+                                        <a class="modern-btn complete-btn" href="/lab/orders/<%= order._id %>/results">
+                                            <svg class="ic"><use href="#i-file-text"/></svg>
+                                            <span><%= order.status==='completed' ? __('results.title') : __('results.enterResults') %></span>
+                                        </a>
+                                    <% } %>
                                     <% if (order.status==='at_lab' ) { %>
-                                        <button class="modern-btn complete-btn" onclick="openUploadModal()">
+                                        <button class="modern-btn complete-btn" data-variant="soft" onclick="openUploadModal()">
                                             <svg class="ic"><use href="#i-upload"/></svg>
                                             <span>
                                                 <%= __('labOrders.completeOrder') || 'Complete Order' %>

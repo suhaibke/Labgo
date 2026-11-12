@@ -299,8 +299,11 @@
             ? `<button class="la-btn md press-95" onclick="event.stopPropagation(); window.labOrders.receiveSample('${qrCode}', '${order._id}')">
                     <svg class="ic"><use href="#i-check"/></svg>${window.labOrdersData?.texts?.receiveSample || 'Receive'}
                </button>`
-            : `<button class="la-btn md press-95" onclick="event.stopPropagation(); window.labOrders.openUploadModal('${order._id}')">
-                    <svg class="ic"><use href="#i-upload"/></svg>${window.labOrdersData?.texts?.uploadResult || 'Upload Result'}
+            : `<a class="la-btn md press-95" href="/lab/orders/${order._id}/results" onclick="event.stopPropagation()">
+                    <svg class="ic"><use href="#i-file-text"/></svg>${window.labOrdersData?.texts?.enterResults || 'Enter results'}
+               </a>
+               <button class="la-btn md soft press-95" title="${window.labOrdersData?.texts?.uploadResult || 'Upload Result'}" onclick="event.stopPropagation(); window.labOrders.openUploadModal('${order._id}')">
+                    <svg class="ic"><use href="#i-upload"/></svg>PDF
                </button>`;
 
         return `
@@ -319,7 +322,7 @@
                         <span><svg class="ic"><use href="#i-clock"/></svg>${formatOrderDate(createdAt)}</span>
                         <span><svg class="ic"><use href="#i-clipboard-list"/></svg>${tests.length} ${window.labOrdersData?.texts?.tests || 'tests'}</span>
                     </div>
-                    ${footerHTML}
+                    <div style="display:flex;gap:6px">${footerHTML}</div>
                 </div>
             </div>
         `;

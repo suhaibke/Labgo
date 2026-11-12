@@ -161,6 +161,19 @@ const LabSchema = new mongoose.Schema({
             trim: true,
             default: null,
         },
+        // Result entry: unit and normal ranges used to flag values High/Low.
+        // normalText is shown instead of min-max for text results (e.g. "Negative").
+        unit: { type: String, trim: true, default: '' },
+        normalText: { type: String, trim: true, default: '' },
+        ranges: [{
+            _id: false,
+            gender: { type: String, enum: ['Both', 'Male', 'Female'], default: 'Both' },
+            ageFrom: { type: Number, min: 0, default: 0 },
+            ageTo: { type: Number, min: 0, default: 120 },
+            ageUnit: { type: String, enum: ['Y', 'M', 'D'], default: 'Y' },
+            min: { type: Number, default: null },
+            max: { type: Number, default: null },
+        }],
         // Links this test to an admin-managed quick Service, so the lab
         // shows up when a patient taps that service on the home page.
         serviceId: {

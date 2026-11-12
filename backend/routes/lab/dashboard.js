@@ -28,6 +28,7 @@ const uploadLabCoverImage = r2SingleUpload('labs', 'coverImage', 'lab-cover-');
 // Apply lab authentication middleware to all routes
 router.use(auth);
 router.use(require('./external-transfers'));
+router.use(require('./results'));
 
 // Get lab dashboard data
 router.get('/dashboard', async (req, res) => {

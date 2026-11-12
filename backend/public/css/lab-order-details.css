@@ -21,7 +21,7 @@ html.la .modern-btn:active { transform: scale(.97); }
 html.la .modern-btn .ic { width: 17px; height: 17px; }
 html.la .modern-btn.receive-btn, html.la .modern-btn.complete-btn { background: var(--accent); }
 html.la .modern-btn.send-to-lab-btn { background: linear-gradient(135deg, #FF6B00, #FF8A00); }
-html.la .modern-btn.send-to-lab-btn[data-variant="soft"] { background: var(--soft-accent); color: var(--accent); }
+html.la .modern-btn[data-variant="soft"] { background: var(--soft-accent); color: var(--accent); }
 html.la .modern-btn.print-btn { background: var(--chip-bg); color: var(--ink); border: 1px solid var(--line); min-width: 44px; padding: 0 14px; }
 html.la .modern-btn:disabled { opacity: .5; cursor: default; }
 
