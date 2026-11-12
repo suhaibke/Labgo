@@ -249,7 +249,8 @@
     "lastUpdated": "Last Updated",
     "totalRevenue": "Total Revenue",
     "pendingSettlements": "Pending Settlements",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "monthlyPerformance": "Monthly performance"
   },
   "labManagement": {
     "title": "Lab Management",

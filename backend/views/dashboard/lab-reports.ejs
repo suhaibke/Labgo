@@ -4,513 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= title %>
-    </title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <title><%= title %></title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <style>
-        body {
-            font-family: <%=font %>;
-        }
-
-        .reports-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        .page-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 32px;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .page-header-left h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1d1d1f;
-            margin: 0 0 8px 0;
-        }
-
-        .page-header-left p {
-            color: #6b7280;
-            margin: 0;
-        }
-
-        /* Date Filter */
-        .date-filter {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            padding: 12px 20px;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            font-weight: 500;
-            color: #374151;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            font-size: 14px;
-        }
-
-        .filter-btn:hover {
-            background: rgba(255, 255, 255, 0.95);
-            border-color: rgba(0, 0, 0, 0.12);
-            transform: translateY(-1px);
-        }
-
-        .filter-btn.active {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
-            border-color: transparent;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .date-inputs {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .date-inputs input {
-            padding: 12px 16px;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            font-size: 14px;
-            transition: all 0.2s ease;
-        }
-
-        .date-inputs input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .apply-btn {
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
-        }
-
-        .apply-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .stat-card .icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            margin-bottom: 16px;
-        }
-
-        .stat-card .icon.blue {
-            background: rgba(59, 130, 246, 0.1);
-            color: #3b82f6;
-        }
-
-        .stat-card .icon.green {
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-        }
-
-        .stat-card .icon.purple {
-            background: rgba(139, 92, 246, 0.1);
-            color: #8b5cf6;
-        }
-
-        .stat-card .icon.orange {
-            background: rgba(245, 158, 11, 0.1);
-            color: #f59e0b;
-        }
-
-        .stat-card .value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #1d1d1f;
-            margin-bottom: 4px;
-        }
-
-        .stat-card .label {
-            color: #6b7280;
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-
-        .stat-card .trend {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .stat-card .trend.up {
-            color: #10b981;
-        }
-
-        .stat-card .trend.down {
-            color: #ef4444;
-        }
-
-        /* Charts Grid */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-
-        .chart-card {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-            padding: 28px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .chart-card:hover {
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08), 0 2px 10px rgba(0, 0, 0, 0.06);
-        }
-
-        .chart-card h3 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #111827;
-            margin: 0 0 24px 0;
-            letter-spacing: -0.01em;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 300px;
-        }
-
-        /* Tables Grid */
-        .tables-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-
-        .table-card {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .table-card:hover {
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08), 0 2px 10px rgba(0, 0, 0, 0.06);
-        }
-
-        .table-card-header {
-            padding: 24px 28px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .table-card-header h3 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #111827;
-            margin: 0;
-            letter-spacing: -0.01em;
-        }
-
-        .table-card-body {
-            padding: 0;
-        }
-
-        .popular-tests-list {
-            padding: 0;
-            margin: 0;
-            list-style: none;
-        }
-
-        .popular-tests-list li {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 24px;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .popular-tests-list li:last-child {
-            border-bottom: none;
-        }
-
-        .test-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .test-rank {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            background: #f3f4f6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 13px;
-            color: #6b7280;
-        }
-
-        .test-rank.top {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .test-name {
-            font-weight: 500;
-            color: #1d1d1f;
-        }
-
-        .test-stats {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .test-count {
-            font-weight: 600;
-            color: #3b82f6;
-        }
-
-        .test-revenue {
-            font-weight: 500;
-            color: #10b981;
-        }
-
-        /* Rating Section */
-        .rating-overview {
-            display: flex;
-            align-items: center;
-            gap: 32px;
-            padding: 24px;
-        }
-
-        .rating-big {
-            text-align: center;
-        }
-
-        .rating-big .value {
-            font-size: 48px;
-            font-weight: 700;
-            color: #1d1d1f;
-        }
-
-        .rating-big .stars {
-            display: flex;
-            gap: 4px;
-            justify-content: center;
-            margin: 8px 0;
-        }
-
-        .rating-big .stars i {
-            color: #fbbf24;
-            font-size: 20px;
-        }
-
-        .rating-big .count {
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .rating-bars {
-            flex: 1;
-        }
-
-        .rating-bar-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 8px;
-        }
-
-        .rating-bar-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .rating-bar-row .label {
-            width: 40px;
-            font-size: 14px;
-            color: #6b7280;
-        }
-
-        .rating-bar-container {
-            flex: 1;
-            height: 8px;
-            background: #f3f4f6;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .rating-bar-fill {
-            height: 100%;
-            background: #fbbf24;
-            border-radius: 4px;
-        }
-
-        .rating-bar-row .count {
-            width: 30px;
-            text-align: right;
-            font-size: 13px;
-            color: #6b7280;
-        }
-
-        /* Status Pills */
-        .status-list {
-            padding: 24px;
-        }
-
-        .status-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .status-row:last-child {
-            border-bottom: none;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .status-badge.pending {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .status-badge.confirmed {
-            background: #dbeafe;
-            color: #2563eb;
-        }
-
-        .status-badge.nurse_assigned {
-            background: #e0e7ff;
-            color: #4f46e5;
-        }
-
-        .status-badge.sample_collected {
-            background: #fce7f3;
-            color: #db2777;
-        }
-
-        .status-badge.at_lab {
-            background: #d1fae5;
-            color: #059669;
-        }
-
-        .status-badge.completed {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .status-badge.cancelled {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        .status-count {
-            font-weight: 600;
-            color: #1d1d1f;
-        }
-
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .tables-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .rating-overview {
-                flex-direction: column;
-            }
-
-            .page-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .date-filter {
-                width: 100%;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/css/lab-reports.css">
 </head>
 
 <body>
@@ -547,7 +43,7 @@
                                 <span>-</span>
                                 <input type="date" id="endDate" placeholder="To">
                                 <button class="apply-btn" onclick="filterByCustomDate()">
-                                    <i class="fas fa-search"></i>
+                                    <svg class="ic"><use href="#i-search"/></svg>
                                 </button>
                             </div>
                         </div>
@@ -559,10 +55,10 @@
                             <div class="stat-card-inner">
                                 <div class="stat-header">
                                     <div class="stat-icon-wrapper">
-                                        <i class="fas fa-file-medical stat-icon"></i>
+                                        <svg class="ic stat-icon"><use href="#i-file-plus"/></svg>
                                     </div>
                                     <div class="stat-trend-indicator <%= orderGrowth >= 0 ? 'positive' : 'negative' %>">
-                                        <i class="fas fa-arrow-<%= orderGrowth >= 0 ? 'up' : 'down' %>"></i>
+                                        <svg class="ic"><use href="#i-arrow-<%= orderGrowth >= 0 ? 'up' : 'down' %>"/></svg>
                                         <span><%= Math.abs(orderGrowth) %>%</span>
                                     </div>
                                 </div>
@@ -577,10 +73,10 @@
                             <div class="stat-card-inner">
                                 <div class="stat-header">
                                     <div class="stat-icon-wrapper">
-                                        <i class="fas fa-money-bill-wave stat-icon"></i>
+                                        <svg class="ic stat-icon"><use href="#i-banknote"/></svg>
                                     </div>
                                     <div class="stat-trend-indicator <%= revenueGrowth >= 0 ? 'positive' : 'negative' %>">
-                                        <i class="fas fa-arrow-<%= revenueGrowth >= 0 ? 'up' : 'down' %>"></i>
+                                        <svg class="ic"><use href="#i-arrow-<%= revenueGrowth >= 0 ? 'up' : 'down' %>"/></svg>
                                         <span><%= Math.abs(revenueGrowth) %>%</span>
                                     </div>
                                 </div>
@@ -595,7 +91,7 @@
                             <div class="stat-card-inner">
                                 <div class="stat-header">
                                     <div class="stat-icon-wrapper">
-                                        <i class="fas fa-users stat-icon"></i>
+                                        <svg class="ic stat-icon"><use href="#i-users"/></svg>
                                     </div>
                                 </div>
                                 <div class="stat-value" id="uniquePatients">
@@ -608,7 +104,7 @@
                             <div class="stat-card-inner">
                                 <div class="stat-header">
                                     <div class="stat-icon-wrapper">
-                                        <i class="fas fa-vial stat-icon"></i>
+                                        <svg class="ic stat-icon"><use href="#i-test-tube"/></svg>
                                     </div>
                                 </div>
                                 <div class="stat-value" id="totalTests">
@@ -620,12 +116,12 @@
                     </div>
 
                     <!-- Secondary Stats -->
-                    <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="stats-grid three">
                         <div class="stat-card">
                             <div class="stat-card-inner">
                                 <div class="stat-header">
                                     <div class="stat-icon-wrapper">
-                                        <i class="fas fa-check-circle stat-icon"></i>
+                                        <svg class="ic stat-icon"><use href="#i-circle-check"/></svg>
                                     </div>
                                 </div>
                                 <div class="stat-value" id="completionRate">
@@ -638,7 +134,7 @@
                             <div class="stat-card-inner">
                                 <div class="stat-header">
                                     <div class="stat-icon-wrapper">
-                                        <i class="fas fa-receipt stat-icon"></i>
+                                        <svg class="ic stat-icon"><use href="#i-receipt"/></svg>
                                     </div>
                                 </div>
                                 <div class="stat-value" id="avgOrderValue">
@@ -651,7 +147,7 @@
                             <div class="stat-card-inner">
                                 <div class="stat-header">
                                     <div class="stat-icon-wrapper">
-                                        <i class="fas fa-star stat-icon"></i>
+                                        <svg class="ic stat-icon"><use href="#i-star"/></svg>
                                     </div>
                                 </div>
                                 <div class="stat-value" id="avgRating">
@@ -663,6 +159,16 @@
                     </div>
 
                     <!-- Tables -->
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3><%= __('dashboard.monthlyPerformance') %></h3>
+                            <div class="chart-container" id="monthlyChart-container"><canvas id="monthlyChart"></canvas></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3><%= __('labReports.statusBreakdown') || 'Status Breakdown' %></h3>
+                            <div class="chart-container" id="statusChart-container"><canvas id="statusChart"></canvas></div>
+                        </div>
+                    </div>
                     <div class="tables-grid">
                         <!-- Popular Tests -->
                         <div class="table-card">
@@ -696,9 +202,8 @@
                                             </li>
                                             <% }); %>
                                                 <% } else { %>
-                                                    <li style="text-align: center; color: #6b7280; padding: 40px;">
-                                                        <i class="fas fa-flask"
-                                                            style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                                                    <li class="la-empty-box">
+                                                        <svg class="ic"><use href="#i-flask-conical"/></svg>
                                                         No test data yet
                                                     </li>
                                                     <% } %>
@@ -729,9 +234,8 @@
                                             </div>
                                             <% }); %>
                                                 <% if (statusBreakdown.length===0) { %>
-                                                    <div style="text-align: center; color: #6b7280; padding: 40px;">
-                                                        <i class="fas fa-clipboard-list"
-                                                            style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                                                    <div class="la-empty-box">
+                                                        <svg class="ic"><use href="#i-clipboard-list"/></svg>
                                                         No orders yet
                                                     </div>
                                                     <% } %>
@@ -741,7 +245,7 @@
                     </div>
 
                     <!-- Rating Section -->
-                    <div class="table-card" style="margin-bottom: 32px;">
+                    <div class="table-card">
                         <div class="table-card-header">
                             <h3>
                                 <%= __('labReports.ratingAnalysis') || 'Rating Analysis' %>
@@ -755,8 +259,7 @@
                                     </div>
                                     <div class="stars">
                                         <% for (let i=1; i <=5; i++) { %>
-                                            <i class="fas fa-star"
-                                                style="color: <%= i <= Math.round(ratingData.avgRating || 0) ? '#fbbf24' : '#d1d5db' %>"></i>
+                                            <svg class="ic star <%= i <= Math.round(ratingData.avgRating || 0) ? 'on' : '' %>"><use href="#i-star"/></svg>
                                             <% } %>
                                     </div>
                                     <div class="count">
@@ -825,14 +328,24 @@
             const statusData = <%- JSON.stringify(statusBreakdown) %>;
 
             // Status colors for charts
+            // App palette (accent follows the colour chosen in the app / theme)
+            const css = getComputedStyle(document.documentElement);
+            const appAccent = css.getPropertyValue('--accent').trim() || '#FF5A00';
+            const appTrack = css.getPropertyValue('--track').trim() || '#E7E7E9';
+            const appLine = css.getPropertyValue('--line').trim() || '#E7E7E9';
+            const appMuted = css.getPropertyValue('--muted').trim() || '#8A8A8E';
+            if (window.Chart) {
+                Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+                Chart.defaults.color = appMuted;
+            }
             const statusColors = {
-                pending: '#f59e0b',
-                confirmed: '#3b82f6',
-                nurse_assigned: '#6366f1',
-                sample_collected: '#ec4899',
-                at_lab: '#10b981',
-                completed: '#22c55e',
-                cancelled: '#ef4444'
+                pending: '#FF9F0A',
+                confirmed: '#007AFF',
+                nurse_assigned: '#AF52DE',
+                sample_collected: appAccent,
+                at_lab: '#00C7BE',
+                completed: '#34C759',
+                cancelled: '#FF3B30'
             };
 
             // Helper function to show empty state for charts
@@ -846,8 +359,8 @@
                 }
 
                 container.innerHTML = `
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; color: #9ca3af;">
-                        <i class="fas fa-chart-bar" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted)">
+                        <svg class="ic" style="width:40px;height:40px;margin-bottom:12px;opacity:.5"><use href="#i-chart-column"/></svg>
                         <p style="margin: 0; font-size: 14px; font-weight: 500;">${message}</p>
                     </div>
                 `;
@@ -892,14 +405,12 @@
                                     {
                                         label: 'Orders',
                                         data: chartData.map(d => d.orders),
-                                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                                        borderRadius: 6
+                                        backgroundColor: appAccent, borderRadius: 6
                                     },
                                     {
                                         label: 'Patients',
                                         data: chartData.map(d => d.patients),
-                                        backgroundColor: 'rgba(139, 92, 246, 0.8)',
-                                        borderRadius: 6
+                                        backgroundColor: appTrack, borderRadius: 6
                                     }
                                 ]
                             },
@@ -910,7 +421,7 @@
                                     legend: { position: 'bottom' }
                                 },
                                 scales: {
-                                    y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                                    y: { beginAtZero: true, grid: { color: appLine } },
                                     x: { grid: { display: false } }
                                 }
                             }
@@ -936,7 +447,7 @@
                                 labels: statusData.map(s => s._id),
                                 datasets: [{
                                     data: statusData.map(s => s.count),
-                                    backgroundColor: statusData.map(s => statusColors[s._id] || '#6b7280'),
+                                    backgroundColor: statusData.map(s => statusColors[s._id] || appMuted),
                                     borderWidth: 0
                                 }]
                             },

@@ -104,7 +104,7 @@ html.la, html.la body, html.la * {
   transition-timing-function: ease;
 }
 
-html.la .ic { width: 20px; height: 20px; stroke-width: 2; flex-shrink: 0; display: inline-block; vertical-align: middle; }
+html.la .ic { fill: none; width: 20px; height: 20px; stroke-width: 2; flex-shrink: 0; display: inline-block; vertical-align: middle; }
 html.la .flip-rtl { transform: none; }
 html.la[dir="rtl"] .flip-rtl { transform: scaleX(-1); }
 
