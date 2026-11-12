@@ -4,1083 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/css/lab-dashboard.css">
-    <style>
-        :root {
-            --primary-rgb: 102, 126, 234;
-            --secondary-rgb: 59, 130, 246;
-            --accent-rgb: 251, 146, 60;
-            --success-rgb: 102, 126, 234;
-            --warning-rgb: 251, 146, 60;
-            --danger-rgb: 239, 68, 68;
-            --info-rgb: 59, 130, 246;
-        }
-
-        body {
-            font-family: <%= font %>;
-        }
-
-        /* Ensure all elements use the imported font */
-        *, *::before, *::after {
-            font-family: inherit;
-        }
-
-        .btn,
-        .form-input,
-        .form-select,
-        .form-textarea,
-        .filter-dropdown select,
-        .search-box input,
-        .test-category,
-        .stat-number,
-        .stat-label,
-        .stat-trend,
-        .modal-title,
-        .form-label,
-        .empty-state-title,
-        .empty-state-description {
-            font-family: <%= font %>;
-        }
-
-        /* Header Section */
-        .tests-page-header {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
-            border: 1px solid rgba(102, 126, 234, 0.1);
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 1.5rem;
-        }
-
-        .header-title {
-            flex: 1;
-        }
-
-        .header-title h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin: 0 0 0.5rem 0;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .header-title p {
-            color: #6b7280;
-            font-size: 1rem;
-            margin: 0;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            white-space: nowrap;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(79, 70, 229) 100%);
-            color: white;
-            box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px 0 rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #374151;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-secondary:hover {
-            background: #f9fafb;
-            border-color: #d1d5db;
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: rgb(102, 126, 234);
-            border: 1px solid rgb(102, 126, 234);
-        }
-
-        .btn-outline:hover {
-            background: rgba(102, 126, 234, 0.1);
-        }
-
-        /* Statistics Cards - Matching Lab Dashboard Design */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: var(--white);
-            border-radius: var(--radius-xl);
-            padding: var(--spacing-lg);
-            box-shadow: var(--shadow-md);
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-lg);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--card-color, var(--primary-500)), var(--card-color, var(--primary-600)));
-        }
-
-        .stat-card.primary::before {
-            background: linear-gradient(90deg, var(--primary-500), var(--primary-600));
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-xl);
-        }
-
-        .stat-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: var(--radius-lg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: var(--font-size-xl);
-            color: var(--white);
-        }
-
-        .stat-card.primary .stat-icon {
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-        }
-
-        .stat-card.secondary .stat-icon {
-            background: linear-gradient(135deg, var(--secondary-500), var(--secondary-600));
-        }
-
-        .stat-card.accent .stat-icon {
-            background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
-        }
-
-        .stat-card.success .stat-icon {
-            background: linear-gradient(135deg, var(--success), #059669);
-        }
-
-        .stat-content {
-            flex: 1;
-        }
-
-        .stat-number {
-            font-size: var(--font-size-3xl);
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: var(--spacing-xs);
-            line-height: 1;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        .stat-label {
-            color: var(--gray-600);
-            font-size: var(--font-size-sm);
-            font-weight: 500;
-            margin-bottom: var(--spacing-sm);
-            line-height: 1.4;
-        }
-
-        .stat-trend {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--spacing-xs);
-            padding: var(--spacing-xs) var(--spacing-sm);
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: var(--radius-full);
-            font-size: var(--font-size-xs);
-            font-weight: 500;
-        }
-
-        .stat-trend.positive {
-            color: var(--primary-600);
-            background: rgba(102, 126, 234, 0.1);
-        }
-
-        .stat-trend.negative {
-            color: #ef4444;
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        /* Filter and Search Section */
-        .filters-section {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-            border: 1px solid #e5e7eb;
-        }
-
-        .filters-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .filters-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .filters-content {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            gap: 1rem;
-            align-items: end;
-        }
-
-        .search-box {
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 0.75rem 1rem 0.75rem 2.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: rgb(102, 126, 234);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .search-box i {
-            position: absolute;
-            left: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9ca3af;
-        }
-
-        .filter-dropdown {
-            min-width: 150px;
-        }
-
-        .filter-dropdown select {
-            width: 100%;
-            padding: 0.75rem 2rem 0.75rem 1rem;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            background: white;
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 0.5rem center;
-            background-size: 1em;
-        }
-
-        /* Test Grid */
-        .tests-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .test-card {
-            background: white;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-            border: 1px solid #e5e7eb;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .test-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 25px 0 rgba(0, 0, 0, 0.15);
-        }
-
-        .test-card-header {
-            padding: 1.5rem;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
-            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
-        }
-
-        .test-title-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 0.75rem;
-        }
-
-        .test-name {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin: 0;
-            line-height: 1.4;
-        }
-
-        .test-name-en {
-            margin: 0.2rem 0 0;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: #9ca3af;
-        }
-
-        .test-category {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.025em;
-            background: rgba(102, 126, 234, 0.1);
-            color: rgb(102, 126, 234);
-            border: 1px solid rgba(102, 126, 234, 0.2);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 150px;
-        }
-
-        /* Different colors for different specializations */
-        .test-category[data-specialization="Blood Tests"] {
-            background: rgba(239, 68, 68, 0.1);
-            color: rgb(239, 68, 68);
-            border-color: rgba(239, 68, 68, 0.2);
-        }
-
-        .test-category[data-specialization="X-Ray"] {
-            background: rgba(59, 130, 246, 0.1);
-            color: rgb(59, 130, 246);
-            border-color: rgba(59, 130, 246, 0.2);
-        }
-
-        .test-category[data-specialization="MRI"] {
-            background: rgba(147, 51, 234, 0.1);
-            color: rgb(147, 51, 234);
-            border-color: rgba(147, 51, 234, 0.2);
-        }
-
-        .test-category[data-specialization="CT Scan"] {
-            background: rgba(236, 72, 153, 0.1);
-            color: rgb(236, 72, 153);
-            border-color: rgba(236, 72, 153, 0.2);
-        }
-
-        .test-category[data-specialization="Ultrasound"] {
-            background: rgba(34, 197, 94, 0.1);
-            color: rgb(34, 197, 94);
-            border-color: rgba(34, 197, 94, 0.2);
-        }
-
-        .test-category[data-specialization="Pathology"] {
-            background: rgba(168, 85, 247, 0.1);
-            color: rgb(168, 85, 247);
-            border-color: rgba(168, 85, 247, 0.2);
-        }
-
-        .test-category[data-specialization="Microbiology"] {
-            background: rgba(6, 182, 212, 0.1);
-            color: rgb(6, 182, 212);
-            border-color: rgba(6, 182, 212, 0.2);
-        }
-
-        .test-category[data-specialization="Biochemistry"] {
-            background: rgba(251, 146, 60, 0.1);
-            color: rgb(251, 146, 60);
-            border-color: rgba(251, 146, 60, 0.2);
-        }
-
-        .test-category[data-specialization="Genetics"] {
-            background: rgba(99, 102, 241, 0.1);
-            color: rgb(99, 102, 241);
-            border-color: rgba(99, 102, 241, 0.2);
-        }
-
-        .test-category[data-specialization="Allergy"] {
-            background: rgba(244, 63, 94, 0.1);
-            color: rgb(244, 63, 94);
-            border-color: rgba(244, 63, 94, 0.2);
-        }
-
-        .test-category[data-specialization="Cardiology"] {
-            background: rgba(220, 38, 38, 0.1);
-            color: rgb(220, 38, 38);
-            border-color: rgba(220, 38, 38, 0.2);
-        }
-
-        .test-category[data-specialization="Neurology"] {
-            background: rgba(14, 165, 233, 0.1);
-            color: rgb(14, 165, 233);
-            border-color: rgba(14, 165, 233, 0.2);
-        }
-
-        .test-category[data-specialization="General"] {
-            background: rgba(102, 126, 234, 0.1);
-            color: rgb(102, 126, 234);
-            border-color: rgba(102, 126, 234, 0.2);
-        }
-
-        .test-meta {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-
-        .test-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .test-card-body {
-            padding: 1.5rem;
-        }
-
-        .test-description {
-            color: #4b5563;
-            font-size: 0.875rem;
-            line-height: 1.6;
-            margin-bottom: 1rem;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .test-price {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: rgb(102, 126, 234);
-            text-align: center;
-            padding: 1rem;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(102, 126, 234, 0.1) 100%);
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-
-        .test-price::before {
-            content: 'IQD';
-            font-size: 1rem;
-            font-weight: 500;
-            margin-right: 0.25rem;
-            opacity: 0.8;
-        }
-
-        .test-card-footer {
-            padding: 1.5rem;
-            background: #f9fafb;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            gap: 0.75rem;
-        }
-
-        .test-actions {
-            display: flex;
-            gap: 0.5rem;
-            width: 100%;
-        }
-
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.813rem;
-            flex: 1;
-        }
-
-        .btn-edit {
-            background: white;
-            color: #374151;
-            border: 1px solid #d1d5db;
-        }
-
-        .btn-edit:hover {
-            background: #f9fafb;
-            border-color: #9ca3af;
-        }
-
-        .btn-delete {
-            background: white;
-            color: #ef4444;
-            border: 1px solid #fecaca;
-        }
-
-        .btn-delete:hover {
-            background: #fef2f2;
-            border-color: #ef4444;
-        }
-
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-
-        .modal.active {
-            display: flex;
-            animation: fadeIn 0.2s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow: hidden;
-            box-shadow: 0 25px 50px 0 rgba(0, 0, 0, 0.25);
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .modal-header {
-            padding: 2rem 2rem 1rem 2rem;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
-            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 1.25rem;
-            color: #6b7280;
-        }
-
-        .modal-close:hover {
-            background: #f9fafb;
-            border-color: #d1d5db;
-            color: #374151;
-        }
-
-        .modal-body {
-            padding: 2rem;
-            max-height: calc(90vh - 200px);
-            overflow-y: auto;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group.full-width {
-            grid-column: 1 / -1;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
-        }
-
-        .form-input,
-        .form-select,
-        .form-textarea {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
-            background: white;
-        }
-
-        .form-input:focus,
-        .form-select:focus,
-        .form-textarea:focus {
-            outline: none;
-            border-color: rgb(102, 126, 234);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .price-input-group {
-            position: relative;
-        }
-
-        .price-input-group::before {
-            content: 'IQD';
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6b7280;
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-
-        .price-input-group input {
-            padding-left: 3rem;
-        }
-
-        .modal-footer {
-            padding: 1.5rem 2rem 2rem 2rem;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            gap: 0.75rem;
-            justify-content: flex-end;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: white;
-            border-radius: 16px;
-            border: 2px dashed #e5e7eb;
-        }
-
-        .empty-state-icon {
-            font-size: 4rem;
-            color: #d1d5db;
-            margin-bottom: 1.5rem;
-        }
-
-        .empty-state-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #374151;
-            margin-bottom: 0.5rem;
-        }
-
-        .empty-state-description {
-            color: #6b7280;
-            margin-bottom: 2rem;
-            font-size: 1rem;
-        }
-
-        /* View Toggle */
-        .view-toggle {
-            display: flex;
-            gap: 0.5rem;
-            background: #f3f4f6;
-            padding: 4px;
-            border-radius: 8px;
-        }
-
-        .view-btn {
-            padding: 0.5rem 0.75rem;
-            border: none;
-            background: transparent;
-            color: #6b7280;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .view-btn:hover {
-            color: #374151;
-        }
-
-        .view-btn.active {
-            background: white;
-            color: rgb(102, 126, 234);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Table View Styles */
-        .tests-table-container {
-            display: none;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-            border: 1px solid #e5e7eb;
-            margin-bottom: 2rem;
-        }
-
-        .tests-table-container.active {
-            display: block;
-        }
-
-        .tests-table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-
-        .tests-table thead {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
-        }
-
-        .tests-table th {
-            padding: 1rem 1.25rem;
-            text-align: center;
-            font-weight: 600;
-            font-size: 0.875rem;
-            color: #374151;
-            border-bottom: 2px solid rgba(102, 126, 234, 0.1);
-            white-space: nowrap;
-        }
-
-        /* Column widths for proper alignment */
-        .tests-table th:nth-child(1),
-        .tests-table td:nth-child(1) { width: 25%; }  /* Test Name */
-        .tests-table th:nth-child(2),
-        .tests-table td:nth-child(2) { width: 15%; }  /* Category */
-        .tests-table th:nth-child(3),
-        .tests-table td:nth-child(3) { width: 30%; }  /* Description */
-        .tests-table th:nth-child(4),
-        .tests-table td:nth-child(4) { width: 12%; }  /* Price */
-        .tests-table th:nth-child(5),
-        .tests-table td:nth-child(5) { width: 18%; }  /* Actions */
-
-        .tests-table td {
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 0.875rem;
-            color: #4b5563;
-            vertical-align: middle;
-            text-align: center;
-        }
-
-        .tests-table tbody tr {
-            transition: background 0.2s ease;
-        }
-
-        .tests-table tbody tr:hover {
-            background: #f9fafb;
-        }
-
-        .tests-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .table-test-name {
-            font-weight: 600;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-        }
-
-        .table-test-name-en {
-            display: block;
-            font-size: 0.78rem;
-            font-weight: 500;
-            color: #9ca3af;
-            margin-top: 0.15rem;
-        }
-
-        .table-test-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: rgb(102, 126, 234);
-        }
-
-        .table-category {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.025em;
-            background: rgba(102, 126, 234, 0.1);
-            color: rgb(102, 126, 234);
-            display: inline-block;
-        }
-
-        /* Table category colors */
-        .table-category[data-specialization="Blood Tests"] {
-            background: rgba(239, 68, 68, 0.1);
-            color: rgb(239, 68, 68);
-        }
-
-        .table-category[data-specialization="X-Ray"] {
-            background: rgba(59, 130, 246, 0.1);
-            color: rgb(59, 130, 246);
-        }
-
-        .table-category[data-specialization="MRI"] {
-            background: rgba(147, 51, 234, 0.1);
-            color: rgb(147, 51, 234);
-        }
-
-        .table-category[data-specialization="CT Scan"] {
-            background: rgba(236, 72, 153, 0.1);
-            color: rgb(236, 72, 153);
-        }
-
-        .table-category[data-specialization="Ultrasound"] {
-            background: rgba(34, 197, 94, 0.1);
-            color: rgb(34, 197, 94);
-        }
-
-        .table-category[data-specialization="Pathology"] {
-            background: rgba(168, 85, 247, 0.1);
-            color: rgb(168, 85, 247);
-        }
-
-        .table-category[data-specialization="Microbiology"] {
-            background: rgba(6, 182, 212, 0.1);
-            color: rgb(6, 182, 212);
-        }
-
-        .table-category[data-specialization="Biochemistry"] {
-            background: rgba(251, 146, 60, 0.1);
-            color: rgb(251, 146, 60);
-        }
-
-        .table-category[data-specialization="Genetics"] {
-            background: rgba(99, 102, 241, 0.1);
-            color: rgb(99, 102, 241);
-        }
-
-        .table-category[data-specialization="Allergy"] {
-            background: rgba(244, 63, 94, 0.1);
-            color: rgb(244, 63, 94);
-        }
-
-        .table-category[data-specialization="Cardiology"] {
-            background: rgba(220, 38, 38, 0.1);
-            color: rgb(220, 38, 38);
-        }
-
-        .table-category[data-specialization="Neurology"] {
-            background: rgba(14, 165, 233, 0.1);
-            color: rgb(14, 165, 233);
-        }
-
-        .table-category[data-specialization="General"] {
-            background: rgba(102, 126, 234, 0.1);
-            color: rgb(102, 126, 234);
-        }
-
-        .table-price {
-            font-weight: 700;
-            color: rgb(102, 126, 234);
-            white-space: nowrap;
-        }
-
-        .table-price::before {
-            content: 'IQD ';
-            font-weight: 500;
-            opacity: 0.8;
-        }
-
-        .table-actions {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .table-actions .btn {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.75rem;
-        }
-
-        .table-description {
-            max-width: 300px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            color: #6b7280;
-        }
-
-        /* Hide grid when table is active */
-        .tests-grid.hidden {
-            display: none;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .header-actions {
-                justify-content: stretch;
-            }
-
-            .header-actions .btn {
-                flex: 1;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .filters-content {
-                grid-template-columns: 1fr;
-            }
-
-            .filters-header {
-                flex-direction: column;
-                gap: 1rem;
-                align-items: flex-start;
-            }
-
-            .tests-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            /* Table responsive */
-            .tests-table-container {
-                overflow-x: auto;
-            }
-
-            .tests-table {
-                min-width: 700px;
-            }
-
-            .table-description {
-                max-width: 150px;
-            }
-        }
-
-        /* RTL Support */
-        [dir="rtl"] .search-box i {
-            left: auto;
-            right: 0.75rem;
-        }
-
-        [dir="rtl"] .search-box input {
-            padding-left: 1rem;
-            padding-right: 2.5rem;
-        }
-
-        [dir="rtl"] .price-input-group::before {
-            left: auto;
-            right: 1rem;
-        }
-
-        [dir="rtl"] .price-input-group input {
-            padding-left: 1rem;
-            padding-right: 3rem;
-        }
-
-        [dir="rtl"] .modal-close {
-            left: 1.5rem;
-            right: auto;
-        }
-
-        [dir="rtl"] .search-box input:focus {
-            border-color: rgb(102, 126, 234);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        [dir="rtl"] .form-input:focus,
-        [dir="rtl"] .form-select:focus,
-        [dir="rtl"] .form-textarea:focus {
-            border-color: rgb(102, 126, 234);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-    </style>
+    <link rel="stylesheet" href="/css/lab-tests.css">
 </head>
 <body>
     <!-- Lab Navbar -->
@@ -1095,18 +19,18 @@
                 <div class="header-content">
                     <div class="header-title">
                         <h1>
-                            <i class="fas fa-flask" style="color: rgb(102, 126, 234);"></i>
+                            <svg class="ic"><use href="#i-flask-conical"/></svg>
                             <%= __('tests.catalogManagement') %>
                         </h1>
                         <p><%= __('tests.manageTests') %></p>
                     </div>
                     <div class="header-actions">
                         <button class="btn btn-outline" onclick="importTests()">
-                            <i class="fas fa-upload"></i>
+                            <svg class="ic"><use href="#i-upload"/></svg>
                             <%= __('tests.import') %>
                         </button>
                         <button class="btn btn-primary" onclick="showAddTestModal()">
-                            <i class="fas fa-plus"></i>
+                            <svg class="ic"><use href="#i-plus"/></svg>
                             <%= __('tests.addNewTest') %>
                         </button>
                     </div>
@@ -1117,53 +41,41 @@
             <div class="stats-grid">
                 <div class="stat-card primary">
                     <div class="stat-icon">
-                        <i class="fas fa-vial"></i>
+                        <svg class="ic"><use href="#i-test-tube"/></svg>
                     </div>
                     <div class="stat-content">
                         <h3 class="stat-number"><%= tests ? tests.length : 0 %></h3>
                         <p class="stat-label"><%= __('tests.totalTests') %></p>
-                        <span class="stat-trend positive">
-                            <i class="fas fa-arrow-up"></i> 12% <%= __('tests.fromLastMonth') %>
-                        </span>
                     </div>
                 </div>
 
-                <div class="stat-card" style="--card-color: #34c759;">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #34c759, #30a14e);">
-                        <i class="fas fa-coins"></i>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <svg class="ic"><use href="#i-coins"/></svg>
                     </div>
                     <div class="stat-content">
                         <h3 class="stat-number"><%= tests && tests.length > 0 ? Math.round(tests.reduce((sum, test) => sum + test.price, 0) / tests.length) : 0 %></h3>
                         <p class="stat-label"><%= __('tests.averagePrice') %></p>
-                        <span class="stat-trend positive">
-                            <i class="fas fa-arrow-up"></i> 5% <%= __('tests.fromLastMonth') %>
-                        </span>
                     </div>
                 </div>
 
-                <div class="stat-card" style="--card-color: #ff9500;">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #ff9500, #ff6b00);">
-                        <i class="fas fa-users"></i>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <svg class="ic"><use href="#i-users"/></svg>
                     </div>
                     <div class="stat-content">
                         <h3 class="stat-number"><%= lab ? lab.totalPatientsServed || 0 : 0 %></h3>
                         <p class="stat-label"><%= __('tests.totalPatients') %></p>
-                        <span class="stat-trend positive">
-                            <i class="fas fa-arrow-up"></i> 8% <%= __('tests.fromLastMonth') %>
-                        </span>
                     </div>
                 </div>
 
-                <div class="stat-card" style="--card-color: #007aff;">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #007aff, #0051d5);">
-                        <i class="fas fa-microscope"></i>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <svg class="ic"><use href="#i-microscope"/></svg>
                     </div>
                     <div class="stat-content">
                         <h3 class="stat-number"><%= lab ? lab.totalTestsPerformed || 0 : 0 %></h3>
                         <p class="stat-label"><%= __('tests.testsPerformed') %></p>
-                        <span class="stat-trend positive">
-                            <i class="fas fa-arrow-up"></i> 15% <%= __('tests.fromLastMonth') %>
-                        </span>
                     </div>
                 </div>
             </div>
@@ -1172,21 +84,21 @@
             <div class="filters-section">
                 <div class="filters-header">
                     <div class="filters-title">
-                        <i class="fas fa-filter"></i>
+                        <svg class="ic"><use href="#i-filter"/></svg>
                         <%= __('tests.filtersSearch') %>
                     </div>
                     <div class="view-toggle">
                         <button class="view-btn active" data-view="grid" onclick="setView('grid')" title="Grid View">
-                            <i class="fas fa-th-large"></i>
+                            <svg class="ic"><use href="#i-layout-grid"/></svg>
                         </button>
                         <button class="view-btn" data-view="table" onclick="setView('table')" title="Table View">
-                            <i class="fas fa-list"></i>
+                            <svg class="ic"><use href="#i-list"/></svg>
                         </button>
                     </div>
                 </div>
                 <div class="filters-content">
                     <div class="search-box">
-                        <i class="fas fa-search"></i>
+                        <svg class="ic"><use href="#i-search"/></svg>
                         <input type="text" id="searchInput" placeholder="<%= __('tests.searchPlaceholder') %>" onkeyup="filterTests()">
                     </div>
                     <div class="filter-dropdown">
@@ -1229,7 +141,7 @@
                                 <% if (test.description) { %>
                                     <div class="test-meta">
                                         <div class="test-meta-item">
-                                            <i class="fas fa-info-circle"></i>
+                                            <svg class="ic"><use href="#i-info"/></svg>
                                             <%= __('tests.detailed') %>
                                         </div>
                                     </div>
@@ -1240,21 +152,21 @@
                                     <p class="test-description"><%= test.description %></p>
                                 <% } %>
                                 <div class="test-price">
-                                    <%= Math.round(test.price) %>
+                                    <%= Math.round(test.price).toLocaleString('en-US') %> <span style="font-size:13px;font-weight:700;color:var(--muted)">IQD</span>
                                 </div>
                             </div>
                             <div class="test-card-footer">
                                 <div class="test-actions">
                                     <button class="btn btn-secondary btn-sm btn-edit" onclick="editTest('<%= test._id %>')">
-                                        <i class="fas fa-edit"></i>
+                                        <svg class="ic"><use href="#i-pencil"/></svg>
                                         <%= __('common.edit') %>
                                     </button>
                                     <button class="btn btn-secondary btn-sm btn-edit" onclick="viewTestDetails('<%= test._id %>')">
-                                        <i class="fas fa-eye"></i>
+                                        <svg class="ic"><use href="#i-eye"/></svg>
                                         <%= __('tests.view') %>
                                     </button>
                                     <button class="btn btn-secondary btn-sm btn-delete" onclick="deleteTest('<%= test._id %>')">
-                                        <i class="fas fa-trash"></i>
+                                        <svg class="ic"><use href="#i-trash-2"/></svg>
                                         <%= __('common.delete') %>
                                     </button>
                                 </div>
@@ -1264,12 +176,12 @@
                 <% } else { %>
                     <div class="empty-state" style="grid-column: 1 / -1;">
                         <div class="empty-state-icon">
-                            <i class="fas fa-vial"></i>
+                            <svg class="ic"><use href="#i-test-tube"/></svg>
                         </div>
                         <h3 class="empty-state-title"><%= __('tests.noTestsAvailable') %></h3>
                         <p class="empty-state-description"><%= __('tests.noTestsDescription') %></p>
                         <button class="btn btn-primary" onclick="showAddTestModal()">
-                            <i class="fas fa-plus"></i>
+                            <svg class="ic"><use href="#i-plus"/></svg>
                             <%= __('tests.addFirstTest') %>
                         </button>
                     </div>
@@ -1295,7 +207,7 @@
                             <td>
                                 <div class="table-test-name">
                                     <div class="table-test-icon">
-                                        <i class="fas fa-flask"></i>
+                                        <svg class="ic"><use href="#i-flask-conical"/></svg>
                                     </div>
                                     <div>
                                         <span><%= test.nameAr || test.name %></span>
@@ -1321,13 +233,13 @@
                             <td>
                                 <div class="table-actions">
                                     <button class="btn btn-secondary btn-sm btn-edit" onclick="editTest('<%= test._id %>')">
-                                        <i class="fas fa-edit"></i>
+                                        <svg class="ic"><use href="#i-pencil"/></svg>
                                     </button>
                                     <button class="btn btn-secondary btn-sm btn-edit" onclick="viewTestDetails('<%= test._id %>')">
-                                        <i class="fas fa-eye"></i>
+                                        <svg class="ic"><use href="#i-eye"/></svg>
                                     </button>
                                     <button class="btn btn-secondary btn-sm btn-delete" onclick="deleteTest('<%= test._id %>')">
-                                        <i class="fas fa-trash"></i>
+                                        <svg class="ic"><use href="#i-trash-2"/></svg>
                                     </button>
                                 </div>
                             </td>
@@ -1338,7 +250,7 @@
                 <% } else { %>
                 <div class="empty-state" style="margin: 2rem;">
                     <div class="empty-state-icon">
-                        <i class="fas fa-vial"></i>
+                        <svg class="ic"><use href="#i-test-tube"/></svg>
                     </div>
                     <h3 class="empty-state-title"><%= __('tests.noTestsAvailable') %></h3>
                     <p class="empty-state-description"><%= __('tests.noTestsDescription') %></p>
@@ -1352,11 +264,11 @@
     <div id="testModal" class="modal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal()">
-                <i class="fas fa-times"></i>
+                <svg class="ic"><use href="#i-x"/></svg>
             </button>
             <div class="modal-header">
                 <h2 class="modal-title">
-                    <i class="fas fa-flask"></i>
+                    <svg class="ic"><use href="#i-flask-conical"/></svg>
                     <span id="modalTitle"><%= __('tests.addNewTest') %></span>
                 </h2>
             </div>
@@ -1402,7 +314,7 @@
                     <div class="form-group full-width">
                         <label class="form-label" for="testImage">صورة الفحص (اختياري)</label>
                         <input type="file" id="testImage" name="image" class="form-input" accept="image/*">
-                        <div class="icon-hint" style="margin-top:6px;font-size:12px;color:#6b7280;">
+                        <div class="icon-hint">
                             إذا أضفت صورة ستظهر في التطبيق بدل أيقونة الأنبوب
                         </div>
                         <div id="testImagePreviewWrap" style="display:none;margin-top:10px;align-items:center;gap:10px;">
@@ -1415,7 +327,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()"><%= __('common.cancel') %></button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i>
+                        <svg class="ic"><use href="#i-save"/></svg>
                         <%= __('common.save') %>
                     </button>
                 </div>
@@ -1627,37 +539,8 @@
         }
 
         function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-                ${message}
-            `;
-            notification.style.cssText = `
-                position: fixed;
-                top: 2rem;
-                right: 2rem;
-                background: ${type === 'success' ? 'rgb(102, 126, 234)' : 'rgb(239, 68, 68)'};
-                color: white;
-                padding: 1rem 1.5rem;
-                border-radius: 8px;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-                z-index: 9999;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                font-weight: 600;
-                animation: slideInRight 0.3s ease;
-            `;
-
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.style.animation = 'slideOutRight 0.3s ease';
-                setTimeout(() => {
-                    notification.remove();
-                }, 300);
-            }, 3000);
+            // App-style dark pill toast (shared helper from the navbar partial)
+            if (window.laToast) window.laToast(message);
         }
 
         function filterTests() {
@@ -1741,12 +624,12 @@
                 emptyState.style.cssText = 'grid-column: 1 / -1;';
                 emptyState.innerHTML = `
                     <div class="empty-state-icon">
-                        <i class="fas fa-search"></i>
+                        <svg class="ic"><use href="#i-search"/></svg>
                     </div>
                     <h3 class="empty-state-title"><%= __("tests.noTestsFound") %></h3>
                     <p class="empty-state-description"><%= __("tests.noTestsFoundDescription") %></p>
                     <button class="btn btn-primary" onclick="resetFilters()">
-                        <i class="fas fa-redo"></i>
+                        <svg class="ic"><use href="#i-rotate-cw"/></svg>
                         <%= __("tests.reset") %> <%= __("common.filter") %>
                     </button>
                 `;
@@ -1783,7 +666,7 @@
             // Show loading state
             const uploadBtn = document.querySelector('.upload-btn');
             uploadBtn.disabled = true;
-            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+            uploadBtn.innerHTML = '<svg class="ic la-spin"><use href="#i-loader-circle"/></svg> Uploading...';
 
             fetch('/lab/api/tests/import', {
                 method: 'POST',
@@ -1814,19 +697,19 @@
 
             let html = `
                 <div class="import-results">
-                    <h2><i class="fas fa-check-circle" style="color: #10b981;"></i> Import Complete!</h2>
+                    <h2><svg class="ic" style="color: #10b981;"><use href="#i-circle-check"/></svg> Import Complete!</h2>
                     <div class="results-summary">
                         <div class="result-item success">
-                            <i class="fas fa-plus-circle"></i>
+                            <svg class="ic"><use href="#i-circle-plus"/></svg>
                             <span>${results.success.length} tests added</span>
                         </div>
                         <div class="result-item warning">
-                            <i class="fas fa-exclamation-triangle"></i>
+                            <svg class="ic"><use href="#i-triangle-alert"/></svg>
                             <span>${results.skipped.length} skipped (already exist)</span>
                         </div>
                         ${results.errors.length > 0 ? `
                         <div class="result-item error">
-                            <i class="fas fa-times-circle"></i>
+                            <svg class="ic"><use href="#i-circle-x"/></svg>
                             <span>${results.errors.length} errors</span>
                         </div>
                         ` : ''}
@@ -1959,12 +842,12 @@
     <div id="importModal" class="modal" style="display: none;">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h2><i class="fas fa-file-excel"></i> Import Tests</h2>
-                <button class="close-btn" onclick="closeImportModal()">&times;</button>
+                <h2><svg class="ic"><use href="#i-file-spreadsheet"/></svg> Import Tests</h2>
+                <button class="close-btn" onclick="closeImportModal()" aria-label="close"><svg class="ic"><use href="#i-x"/></svg></button>
             </div>
             <div class="modal-body">
                 <div class="upload-area" id="uploadArea">
-                    <i class="fas fa-cloud-upload-alt"></i>
+                    <svg class="ic"><use href="#i-upload"/></svg>
                     <h3>Drop your Excel file here</h3>
                     <p>or click to browse</p>
                     <input type="file" id="importFileInput" accept=".xls,.xlsx,.csv" style="display: none;">
@@ -2003,188 +886,7 @@
         </div>
     </div>
 
-    <style>
-        /* Import Modal Styles - more specific to avoid conflicts */
-        #importModal.modal {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            background: rgba(0,0,0,0.5) !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 1000 !important;
-        }
 
-        #importModal.modal[style*="display: flex"] {
-            display: flex !important;
-        }
-
-        #importModal .modal-content {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        #importModal .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        #importModal .modal-header h2 {
-            margin: 0;
-            font-size: 20px;
-            color: #1f2937;
-        }
-
-        #importModal .close-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #6b7280;
-        }
-
-        #importModal .close-btn:hover {
-            color: #1f2937;
-        }
-
-        #importModal .upload-area {
-            border: 2px dashed #667eea;
-            border-radius: 12px;
-            padding: 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 20px;
-        }
-
-        #importModal .upload-area:hover {
-            background: #f8f9ff;
-            border-color: #5568d3;
-        }
-
-        #importModal .upload-area i {
-            font-size: 48px;
-            color: #667eea;
-            margin-bottom: 16px;
-        }
-
-        #importModal .upload-area h3 {
-            margin: 8px 0;
-            color: #1f2937;
-        }
-
-        #importModal .upload-area p {
-            margin: 4px 0 0;
-            color: #6b7280;
-        }
-
-        #importModal .file-info {
-            margin-top: 12px;
-            color: #667eea;
-            font-weight: 500;
-        }
-
-        #importModal .format-info {
-            background: #f9fafb;
-            padding: 16px;
-            border-radius: 12px;
-        }
-
-        #importModal .format-info h4 {
-            margin: 0 0 12px;
-            color: #374151;
-        }
-
-        #importModal .format-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 12px 0;
-        }
-
-        #importModal .format-table th, #importModal .format-table td {
-            border: 1px solid #e5e7eb;
-            padding: 8px;
-            text-align: left;
-        }
-
-        #importModal .format-table th {
-            background: #f3f4f6;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        #importModal .format-table td {
-            color: #4b5563;
-        }
-
-        #importModal .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            margin-top: 24px;
-        }
-
-        #importModal .import-results {
-            text-align: center;
-        }
-
-        #importModal .results-summary {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-
-        #importModal .result-item {
-            padding: 12px 20px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        #importModal .result-item.success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        #importModal .result-item.warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        #importModal .result-item.error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        #importModal .errors-list {
-            background: #fee2e2;
-            padding: 16px;
-            border-radius: 8px;
-            margin-top: 16px;
-            text-align: left;
-        }
-
-        #importModal .errors-list h4 {
-            margin: 0 0 8px;
-            color: #991b1b;
-        }
-
-        #importModal .errors-list div {
-            margin: 4px 0;
-            color: #7f1d1d;
-        }
-    </style>
 
         </main>
     </div>
