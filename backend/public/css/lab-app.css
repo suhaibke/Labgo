@@ -285,8 +285,8 @@ html.la .la-grid { display: grid; gap: 12px; }
 html.la .la-grid.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 html.la .la-grid.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 html.la .la-grid.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-@media (max-width: 1200px) { .la-grid.c4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 700px) { .la-grid.c2, .la-grid.c3, .la-grid.c4 { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1200px) { html.la .la-grid.c4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { html.la .la-grid.c2, html.la .la-grid.c3, html.la .la-grid.c4 { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- controls ---------- */
 html.la .la-search {
@@ -392,3 +392,84 @@ html.la .la-sheet {
 html.la .la-sheet .grip { width: 40px; height: 6px; border-radius: 999px; background: var(--line); margin: 0 auto 12px; }
 
 html.la .la-empty { text-align: center; font-size: 13px; color: var(--muted); padding: 24px 0; }
+
+/* ---------- comfortable sizes on large screens ----------
+   The app's sizes are tuned for a phone held close. On a desk monitor the
+   same cards read better slightly calmer: smaller display numbers and
+   headings, a little more breathing room, same proportions and colours. */
+@media (min-width: 901px) {
+  html.la .la-h1 { font-size: 26px; }
+  html.la .la-h1-xl { font-size: 28px; line-height: 34px; }
+  html.la .la-h2 { font-size: 16px; }
+  html.la .la-stat-big { font-size: 42px !important; }
+  html.la .la-card { padding: 18px; }
+  html.la .la-row { padding: 14px 16px; }
+  html.la .la-row .name { font-size: 15px; }
+  html.la .la-nav-item { height: 46px; font-size: 14px; }
+  html.la .la-main { padding-top: 8px; }
+}
+
+/* ---------- shared building blocks for list pages ---------- */
+html.la .la-page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-top: 12px; flex-wrap: wrap; }
+html.la .la-kpi { display: flex; align-items: center; gap: 14px; }
+html.la .la-kpi .la-kpi-ic { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; flex-shrink: 0; background: var(--soft-accent); color: var(--accent); }
+html.la .la-kpi .la-kpi-ic .ic { width: 22px; height: 22px; }
+html.la .la-kpi b { display: block; font-size: 30px; line-height: 1.1; font-weight: 900; }
+html.la .la-kpi span { font-size: 13px; color: var(--muted); }
+html.la .la-col-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+html.la .la-count { min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; background: var(--chip-bg); display: inline-grid; place-items: center; font-size: 12px; font-weight: 800; }
+
+html.la .la-order { cursor: pointer; }
+html.la .la-order + .la-order { margin-top: 10px; }
+html.la .la-order-top { display: flex; align-items: center; gap: 12px; }
+html.la .la-order-top .main { flex: 1; min-width: 0; }
+html.la .la-order-top .name { display: block; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.la .la-order-top .meta { display: block; font-size: 12px; color: var(--muted); }
+html.la .la-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+html.la .la-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--chip-bg); color: var(--ink); }
+html.la .la-tag .ic { width: 13px; height: 13px; color: var(--accent); }
+html.la .la-order-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
+html.la .la-meta-row { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); }
+html.la .la-meta-row span { display: inline-flex; align-items: center; gap: 4px; }
+html.la .la-meta-row .ic { width: 14px; height: 14px; }
+
+html.la .la-spinner { display: grid; place-items: center; padding: 28px 0; }
+html.la .la-spinner::after {
+  content: ""; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--track); border-top-color: var(--accent);
+  animation: laSpin 1s linear infinite;
+}
+@keyframes laSpin { to { transform: rotate(360deg); } }
+html.la .la-empty-box { text-align: center; color: var(--muted); font-size: 13px; padding: 28px 12px; }
+html.la .la-empty-box .ic { width: 28px; height: 28px; display: block; margin: 0 auto 8px; opacity: .6; }
+
+/* modal: bottom sheet on phones, centred card on desktop */
+html.la .la-modal { display: none; position: fixed; inset: 0; z-index: 70; }
+html.la .la-modal.active { display: block; }
+html.la .la-modal .la-modal-bg { position: absolute; inset: 0; background: rgba(0, 0, 0, .4); animation: backdropIn .2s ease both; }
+html.la .la-modal .la-modal-card {
+  position: absolute; left: 50%; top: 50%; width: min(520px, calc(100vw - 32px)); max-height: 86vh; overflow-y: auto;
+  transform: translate(-50%, -50%); background: var(--card); border-radius: 28px; padding: 20px; box-shadow: var(--shadow-2xl);
+}
+html.la .la-modal.active .la-modal-card { animation: laModalIn .28s ease both; }
+@keyframes laModalIn { from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)) scale(.98); } to { opacity: 1; transform: translate(-50%, -50%); } }
+@media (max-width: 700px) {
+  html.la .la-modal .la-modal-card { top: auto; bottom: 0; left: 0; width: 100%; transform: none; border-radius: 28px 28px 0 0; }
+  html.la .la-modal.active .la-modal-card { animation: sheetUp .32s var(--ease-out-soft) both; }
+}
+html.la .la-drop {
+  display: block; border: 2px dashed var(--line); border-radius: 16px; padding: 24px; text-align: center; background: var(--chip-bg); cursor: pointer;
+}
+html.la .la-drop.dragover { border-color: var(--accent); background: var(--soft-accent); }
+html.la .la-progress { height: 6px; border-radius: 999px; background: var(--bar-track); overflow: hidden; }
+html.la .la-progress > div { height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .2s ease; }
+
+/* stacked toasts (pages that show several messages) */
+html.la .la-toasts { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 90; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+html.la .la-toasts .la-toast { position: static; transform: none; display: flex; align-items: center; gap: 8px; animation: popIn .28s ease both; }
+html.la .la-toasts .la-toast.removing { opacity: 0; transition: opacity .3s ease; }
+html.la .la-toasts .la-toast .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+html.la .la-toasts .la-toast.error .dot { background: var(--red); }
+html.la .la-toasts .la-toast.warning .dot { background: var(--accent); }
+@media (max-width: 900px) { html.la .la-toasts { bottom: 102px; } }
+/* icon that should point "forward" in the reading direction */
+html.la[dir="ltr"] .flip-ltr { transform: scaleX(-1); }

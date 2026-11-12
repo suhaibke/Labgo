@@ -794,7 +794,15 @@
       "invalidQR": "QR Code نادروستە",
       "orderNotFound": "داواکارییەکە نەدۆزرایەوە",
       "alreadyReceived": "نموونەکە پێشتر وەرگیراوە"
-    }
+    },
+    "receiveSample": "وەرگرتنی نموونە",
+    "sendToAnotherLab": "ناردن بۆ تاقیگەیەکی تر",
+    "sentToAnotherLab": "نێردرا بۆ تاقیگەیەکی تر",
+    "labName": "ناوی تاقیگە",
+    "enterLabName": "ناوی تاقیگە بنووسە",
+    "noteOnlyInfo": "ئەم تێبینییە تەنها بۆ پیشاندانە و لە بنکەدراوە پاشەکەوت ناکرێت.",
+    "noteSaved": "تێبینی پاشەکەوت کرا",
+    "noteRemoved": "تێبینی لابرا"
   },
   "labOrderDetails": {
     "title": "وردەکارییەکانی داواکاریی تاقیگە",

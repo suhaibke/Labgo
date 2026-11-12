@@ -764,7 +764,15 @@
       "invalidQR": "Geçersiz QR kod",
       "orderNotFound": "Sipariş bulunamadı",
       "alreadyReceived": "Numune zaten alındı"
-    }
+    },
+    "receiveSample": "Numuneyi Teslim Al",
+    "sendToAnotherLab": "Başka laboratuvara gönder",
+    "sentToAnotherLab": "Başka laboratuvara gönderildi",
+    "labName": "Laboratuvar adı",
+    "enterLabName": "Laboratuvar adını girin",
+    "noteOnlyInfo": "Bu not yalnızca görüntüleme içindir ve veritabanına kaydedilmez.",
+    "noteSaved": "Not kaydedildi",
+    "noteRemoved": "Not kaldırıldı"
   },
   "labOrderDetails": {
     "title": "Laboratuvar Sipariş Detayları",
