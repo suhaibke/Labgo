@@ -1579,5 +1579,35 @@
       "filterByDate": "پاڵاوتن بە بەروار",
       "exportOrders": "هەناردەکردنی داواکارییەکان"
     }
+  },
+  "labApp": {
+    "greetingMorning": "بەیانیت باش",
+    "greetingEvening": "ئێوارەت باش",
+    "reportsWord": "ڕاپۆرتەکان",
+    "patients": "نەخۆشەکان",
+    "tests": "پشکنین",
+    "completed": "تەواوبوو",
+    "pending": "چاوەڕوان",
+    "inProgress": "لە تاقیگە",
+    "all": "هەموو",
+    "monthTests": "پشکنینەکانی ئەم مانگە",
+    "perDay": "بەپێی ڕۆژ",
+    "growth": "گەشە",
+    "vsLastMonth": "بەراورد بە مانگی ڕابردوو",
+    "rating": "هەڵسەنگاندن",
+    "reviews": "هەڵسەنگاندن",
+    "search": "بەدوای نەخۆش، ژمارەی ڕاپۆرت بگەڕێ...",
+    "recentReports": "دوایین ڕاپۆرتەکان",
+    "quickActions": "کردارە خێراکان",
+    "pendingResults": "ئەنجامی چاوەڕوان",
+    "totalTests": "کۆی پشکنینەکان",
+    "totalPatients": "کۆی نەخۆشەکان",
+    "noResults": "هیچ ئەنجامێک نییە",
+    "viewAll": "هەمووی ببینە",
+    "exportReport": "هەناردەکردنی ڕاپۆرت",
+    "addTest": "زیادکردنی پشکنین",
+    "viewTests": "پشکنینی نەخۆشەکان",
+    "reports": "ڕاپۆرتەکان",
+    "settings": "ڕێکخستنەکان"
   }
 }

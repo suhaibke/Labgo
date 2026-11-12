@@ -4,333 +4,322 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= title %>
-    </title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/lab-dashboard.css">
-    <style>
-        body {
-            font-family: <%=font %>;
-        }
-    </style>
+    <title><%= title %></title>
 </head>
 
 <body>
-    <!-- Lab Navbar -->
     <%- include('../partials/lab-navbar') %>
+    <%
+      const L = (k) => __('labApp.' + k);
+      const now = new Date();
+      const locale = { ar: 'ar-IQ', ku: 'ckb-IQ', en: 'en-GB', tr: 'tr-TR' }[currentLang] || 'en-GB';
+      let dateText;
+      try { dateText = now.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); }
+      catch (e) { dateText = now.toDateString(); }
+      const greeting = now.getHours() < 12 ? L('greetingMorning') : L('greetingEvening');
+      const days = Array.isArray(monthlyStats) ? monthlyStats : [];
+      const monthTests = days.reduce((a, d) => a + (d.tests || 0), 0);
+      const maxDay = Math.max(1, ...days.map((d) => d.tests || 0));
+      const today = now.getDate();
+      const total = stats.totalTestsPerformed || 0;
+      const pending = stats.pendingPatientTests || 0;
+      const donePct = total > 0 ? Math.max(0, Math.min(1, (total - pending) / total)) : 0;
+      const circ = 2 * Math.PI * 40;
+      // cumulative tests for the growth line (viewBox 320 x 118)
+      let run = 0;
+      const cum = days.map((d) => (run += d.tests || 0));
+      const cmax = Math.max(1, run);
+      const pts = cum.map((v, i) => `${days.length > 1 ? (i * 320 / (days.length - 1)).toFixed(1) : 0},${(108 - (v / cmax) * 90).toFixed(1)}`);
+      const statusKey = (s) => (s === 'Completed' ? 'completed' : s === 'In Progress' ? 'inProgress' : 'pending');
+      const pillClass = (s) => (s === 'Pending' ? 'accent' : 'neutral');
+      const initials = (n) => String(n || '?').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+    %>
 
-        <!-- Main Content Wrapper -->
-        <div class="lab-wrapper">
-            <main class="lab-dashboard">
-                <div class="dashboard-container">
-                    <!-- Lab Header Section -->
-                    <section class="lab-header">
-                        <div class="lab-info">
-                            <div class="lab-logo">
-                                <% if (lab.logo) { %>
-                                    <img src="<%= lab.logo %>" alt="<%= lab.name %> Logo" class="logo-img">
-                                    <% } else { %>
-                                        <div class="logo-placeholder">
-                                            <i class="fas fa-flask"></i>
-                                        </div>
-                                        <% } %>
-                            </div>
-                            <div class="lab-details">
-                                <h1>
-                                    <%= lab.name %>
-                                </h1>
-                                <p class="lab-subtitle">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <%= lab.city %>, <%= lab.country %>
-                                            <% if (lab.isVerified) { %>
-                                                <span class="verified-badge">
-                                                    <i class="fas fa-check-circle"></i>
-                                                    <%= __('dashboard.verified') %>
-                                                </span>
-                                                <% } %>
-                                </p>
-                                <div class="lab-rating">
-                                    <div class="stars" dir="<%= direction %>">
-                                        <% for (var i=1; i <=5; i++) { %>
-                                            <% if (i <=Math.floor(lab.averageRating)) { %>
-                                                <i class="fas fa-star active"></i>
-                                                <% } else if (i===Math.ceil(lab.averageRating) && (lab.averageRating %
-                                                    1)>= 0.5) { %>
-                                                    <i class="fas fa-star-half-alt active"></i>
-                                                    <% } else { %>
-                                                        <i class="far fa-star"></i>
-                                                        <% } %>
-                                                            <% } %>
-                                    </div>
-                                    <span class="rating-text">
-                                        <%= lab.averageRating.toFixed(1) %> (<%= lab.totalReviews %>
-                                                <%= __('dashboard.reviews') %>)
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="lab-status">
-                            <span class="status-badge <%= lab.status.toLowerCase() %>">
-                                <%= lab.status %>
-                            </span>
-                            <div class="specializations">
-                                <% lab.specialization.slice(0, 3).forEach(function(spec) { %>
-                                    <span class="spec-tag">
-                                        <%= spec %>
-                                    </span>
-                                    <% }); %>
-                                        <% if (lab.specialization.length> 3) { %>
-                                            <span class="spec-tag">+<%= lab.specialization.length - 3 %></span>
-                                            <% } %>
-                            </div>
-                        </div>
-                    </section>
+    <main class="la-main screen-enter">
+        <!-- Header (same as the app's Reports screen) -->
+        <header style="padding-top:12px">
+            <p style="margin:0;font-size:14px;font-weight:500;color:var(--muted)"><%= dateText %></p>
+            <h1 class="la-h1-xl"><%= lab.name %> — <%= L('reportsWord') %></h1>
+            <p style="margin:4px 0 0;font-size:15px;color:var(--muted-2)"><%= greeting %> • <%= user.name %></p>
+        </header>
 
-                    <!-- Overview Section -->
-                    <section class="dashboard-section active" id="overview">
-                        <div class="section-header">
-                            <h2>
-                                <%= __('dashboard.welcome') %>, <%= user.name %>
-                            </h2>
-                            <p class="section-subtitle">
-                                <%= __('dashboard.subtitle') %>
-                            </p>
-                        </div>
-
-                        <!-- Stats Cards -->
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-card-inner">
-                                    <div class="stat-header">
-                                        <div class="stat-icon-wrapper">
-                                            <i class="fas fa-users stat-icon"></i>
-                                        </div>
-                                        <div class="stat-trend-indicator <%= stats.patientGrowth >= 0 ? 'positive' : 'negative' %>">
-                                            <i class="fas fa-arrow-<%= stats.patientGrowth >= 0 ? 'up' : 'down' %>"></i>
-                                            <span><%= Math.abs(stats.patientGrowth) %>%</span>
-                                        </div>
-                                    </div>
-                                    <div class="stat-value" data-counter="<%= stats.totalPatientsServed %>">
-                                        <%= stats.totalPatientsServed.toLocaleString() %>
-                                    </div>
-                                    <div class="stat-label"><%= __('dashboard.totalPatients') %></div>
-                                    <div class="stat-sublabel"><%= __('dashboard.fromLastMonth') %></div>
-                                </div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-card-inner">
-                                    <div class="stat-header">
-                                        <div class="stat-icon-wrapper">
-                                            <i class="fas fa-vial stat-icon"></i>
-                                        </div>
-                                        <div class="stat-trend-indicator <%= stats.testsGrowth >= 0 ? 'positive' : 'negative' %>">
-                                            <i class="fas fa-arrow-<%= stats.testsGrowth >= 0 ? 'up' : 'down' %>"></i>
-                                            <span><%= Math.abs(stats.testsGrowth) %>%</span>
-                                        </div>
-                                    </div>
-                                    <div class="stat-value" data-counter="<%= stats.totalTestsPerformed %>">
-                                        <%= stats.totalTestsPerformed.toLocaleString() %>
-                                    </div>
-                                    <div class="stat-label"><%= __('dashboard.totalTests') %></div>
-                                    <div class="stat-sublabel"><%= __('dashboard.fromLastMonth') %></div>
-                                </div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-card-inner">
-                                    <div class="stat-header">
-                                        <div class="stat-icon-wrapper">
-                                            <i class="fas fa-clock stat-icon"></i>
-                                        </div>
-                                        <div class="stat-trend-indicator <%= stats.pendingChange <= 0 ? 'positive' : 'negative' %>">
-                                            <i class="fas fa-arrow-<%= stats.pendingChange <= 0 ? 'down' : 'up' %>"></i>
-                                            <span><%= Math.abs(stats.pendingChange) %>%</span>
-                                        </div>
-                                    </div>
-                                    <div class="stat-value" data-counter="<%= stats.pendingPatientTests %>">
-                                        <%= stats.pendingPatientTests %>
-                                    </div>
-                                    <div class="stat-label"><%= __('dashboard.pendingResults') %></div>
-                                    <div class="stat-sublabel"><%= __('dashboard.fromLastMonth') %></div>
-                                </div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-card-inner">
-                                    <div class="stat-header">
-                                        <div class="stat-icon-wrapper">
-                                            <i class="fas fa-star stat-icon"></i>
-                                        </div>
-                                        <div class="stat-trend-indicator <%= stats.ratingChange >= 0 ? 'positive' : 'negative' %>">
-                                            <i class="fas fa-arrow-<%= stats.ratingChange >= 0 ? 'up' : 'down' %>"></i>
-                                            <span><%= Math.abs(stats.ratingChange) %></span>
-                                        </div>
-                                    </div>
-                                    <div class="stat-value">
-                                        <%= stats.averageRating.toFixed(1) %>
-                                    </div>
-                                    <div class="stat-label"><%= __('dashboard.averageRating') %></div>
-                                    <div class="stat-sublabel"><%= __('dashboard.points') %></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Charts Row -->
-                        <div class="charts-row">
-                            <div class="chart-container">
-                                <div class="chart-header">
-                                    <h3>
-                                        <%= __('dashboard.monthlyPerformance') %>
-                                    </h3>
-                                    <div class="chart-controls">
-                                        <button class="chart-control active" data-period="6months">
-                                            <%= __('dashboard.sixMonths') %>
-                                        </button>
-                                        <button class="chart-control" data-period="year">
-                                            <%= __('dashboard.year') %>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="chart-content">
-                                    <canvas id="performanceChart"></canvas>
-                                </div>
-                            </div>
-
-                            <div class="quick-actions-card">
-                                <h3>
-                                    <%= __('dashboard.quickActions') %>
-                                </h3>
-                                <div class="actions-grid">
-                                    <a href="/lab/tests" class="action-btn">
-                                        <i class="fas fa-plus-circle"></i>
-                                        <span>
-                                            <%= __('dashboard.addTest') %>
-                                        </span>
-                                    </a>
-                                    <a href="/lab/patient-tests" class="action-btn">
-                                        <i class="fas fa-clipboard-list"></i>
-                                        <span>
-                                            <%= __('dashboard.viewTests') %>
-                                        </span>
-                                    </a>
-                                    <a href="/lab/settings" class="action-btn">
-                                        <i class="fas fa-cog"></i>
-                                        <span>
-                                            <%= __('dashboard.settings') %>
-                                        </span>
-                                    </a>
-                                    <button class="action-btn" onclick="generateReport()">
-                                        <i class="fas fa-chart-line"></i>
-                                        <span>
-                                            <%= __('dashboard.reports') %>
-                                        </span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recent Activity & Urgent Tests -->
-                        <div class="activity-row">
-                            <div class="recent-activity-table">
-                                <div class="table-header">
-                                    <h3>
-                                        <%= __('dashboard.recentActivity') %>
-                                    </h3>
-                                    <a href="/lab/patient-tests" class="view-all-btn">
-                                        <%= __('dashboard.viewAll') %>
-                                    </a>
-                                </div>
-                                <div class="table-content">
-                                    <% if (recentTests.length> 0) { %>
-                                        <table class="modern-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>
-                                                        <%= __('dashboard.patient') %>
-                                                    </th>
-                                                    <th>
-                                                        <%= __('dashboard.test') %>
-                                                    </th>
-                                                    <th>
-                                                        <%= __('dashboard.date') %>
-                                                    </th>
-                                                    <th>
-                                                        <%= __('dashboard.status') %>
-                                                    </th>
-                                                    <th>
-                                                        <%= __('dashboard.actions') %>
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <% recentTests.slice(0, 5).forEach(function(test) { %>
-                                                    <tr data-test-id="<%= test._id %>">
-                                                        <td>
-                                                            <div class="patient-cell">
-                                                                <i class="fas fa-user-circle patient-avatar"></i>
-                                                                <span class="patient-summary">
-                                                                    <strong><%= test.patientInfo?.name || __('common.notAvailable') %></strong>
-                                                                    <small>
-                                                                        <%= test.patientInfo?.gender === 'male' ? __('common.male') :
-                                                                            test.patientInfo?.gender === 'female' ? __('common.female') : __('common.notAvailable') %>
-                                                                        ·
-                                                                        <%= Number.isInteger(test.patientInfo?.age) ? `${test.patientInfo.age} ${__('common.years')}` : __('common.notAvailable') %>
-                                                                    </small>
-                                                                </span>
-                                                            </div>
-                                                        </td>
-                                                        <td>
-                                                            <%= test.testName %>
-                                                        </td>
-                                                        <td>
-                                                            <%= new Date(test.requestDate).toLocaleDateString() %>
-                                                        </td>
-                                                        <td>
-                                                            <span
-                                                                class="status-badge <%= test.status.toLowerCase().replace(' ', '-') %>">
-                                                                <%= test.status %>
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <button class="table-action-btn"
-                                                                onclick="viewTestDetails('<%= test._id %>')">
-                                                                <i class="fas fa-eye"></i>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                    <% }); %>
-                                            </tbody>
-                                        </table>
-                                        <% } else { %>
-                                            <div class="empty-state">
-                                                <i class="fas fa-clipboard-list"></i>
-                                                <p>
-                                                    <%= __('dashboard.noRecentTests') %>
-                                                </p>
-                                            </div>
-                                            <% } %>
-                                </div>
-                            </div>
-
-                        </div>
-                    </section>
+        <!-- Stat cards: the app's four swipeable cards, side by side on wide screens -->
+        <div class="la-stat-scroller" id="statCards">
+            <!-- 1. Patients / tests -->
+            <section class="la-card la-stat stagger">
+                <div class="la-stat-head">
+                    <span class="la-chip-sm"><svg class="ic" style="color:var(--accent)"><use href="#i-flask-conical"/></svg><%= L('totalPatients') %></span>
                 </div>
-            </main>
+                <div class="la-stat-body">
+                    <div class="la-stat-text">
+                        <p class="la-stat-label"><%= L('patients') %></p>
+                        <p class="la-stat-big" data-count="<%= stats.totalPatientsServed %>"><%= stats.totalPatientsServed.toLocaleString('en-US') %></p>
+                        <p class="la-stat-label"><span data-count="<%= total %>"><%= total.toLocaleString('en-US') %></span> <%= L('tests') %></p>
+                    </div>
+                    <div class="la-donut-wrap">
+                        <div class="la-donut">
+                            <svg viewBox="0 0 100 100" class="la-donut-svg">
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--track)" stroke-width="11"/>
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--accent)" stroke-width="11" stroke-linecap="round"
+                                        stroke-dasharray="<%= circ %>" stroke-dashoffset="<%= circ * (1 - donePct) %>"/>
+                            </svg>
+                            <div class="la-donut-center">
+                                <b><%= Math.round(donePct * 100) %>%</b>
+                                <span><%= L('completed') %></span>
+                            </div>
+                        </div>
+                        <div class="la-legend">
+                            <p><i style="background:var(--muted)"></i><%= L('completed') %> <%= (total - pending).toLocaleString('en-US') %></p>
+                            <p><i style="background:#FF5A00"></i><%= L('pending') %> <%= pending %></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="la-stat-pills">
+                    <span><%= L('completed') %> <%= (total - pending).toLocaleString('en-US') %></span>
+                    <span class="on"><%= L('pending') %> <%= pending %></span>
+                    <span>★ <%= stats.averageRating.toFixed(1) %></span>
+                </div>
+            </section>
 
-            <!-- Monthly stats data for JavaScript -->
-            <script type="application/json" id="monthly-stats">
-        <%= JSON.stringify(monthlyStats) %>
-    </script>
+            <!-- 2. Tests per day this month -->
+            <section class="la-card la-stat stagger" style="animation-delay:.05s">
+                <div class="la-stat-head">
+                    <h2 class="la-stat-title"><%= L('monthTests') %></h2>
+                    <span class="la-faint"><%= L('perDay') %></span>
+                </div>
+                <div class="la-stat-body">
+                    <div class="la-stat-text">
+                        <p class="la-stat-label"><%= L('monthTests') %></p>
+                        <p class="la-stat-big" data-count="<%= monthTests %>"><%= monthTests.toLocaleString('en-US') %></p>
+                        <p class="la-stat-label"><%= L('perDay') %></p>
+                    </div>
+                    <div class="la-bars">
+                        <% days.forEach(function (d, i) { %>
+                            <span class="bar-grow <%= (i + 1) === today ? 'on' : '' %>" title="<%= d.month %>: <%= d.tests %>"
+                                  style="height:<%= Math.max(4, (d.tests || 0) / maxDay * 84) %>px;animation-delay:<%= (i * 0.015).toFixed(3) %>s"></span>
+                        <% }); %>
+                    </div>
+                </div>
+                <div class="la-stat-pills">
+                    <span><%= L('totalTests') %></span>
+                    <span class="on"><%= monthTests.toLocaleString('en-US') %></span>
+                    <span><%= stats.testsGrowth >= 0 ? '+' : '' %><%= stats.testsGrowth %>%</span>
+                </div>
+            </section>
 
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-            <script src="/js/lab-dashboard.js"></script>
+            <!-- 3. Growth -->
+            <section class="la-card la-stat stagger" style="animation-delay:.1s">
+                <div class="la-stat-head">
+                    <h2 class="la-stat-title"><%= L('growth') %></h2>
+                    <span class="la-pill neutral"><%= L('vsLastMonth') %></span>
+                </div>
+                <div class="la-stat-body">
+                    <div class="la-stat-text">
+                        <p class="la-stat-label"><%= L('growth') %></p>
+                        <p class="la-stat-big"><%= stats.patientGrowth >= 0 ? '+' : '' %><%= stats.patientGrowth %>%</p>
+                        <p class="la-stat-label"><%= L('patients') %></p>
+                    </div>
+                    <div class="la-line">
+                        <svg viewBox="0 0 320 118" preserveAspectRatio="none">
+                            <polyline points="<%= pts.join(' ') %>" fill="none" stroke="var(--accent)" stroke-width="3"
+                                      stroke-linecap="round" stroke-linejoin="round" class="chart-line"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="la-stat-pills">
+                    <span><%= L('patients') %> <%= stats.patientGrowth >= 0 ? '+' : '' %><%= stats.patientGrowth %>%</span>
+                    <span class="on"><%= L('tests') %> <%= stats.testsGrowth >= 0 ? '+' : '' %><%= stats.testsGrowth %>%</span>
+                    <span><%= L('pending') %> <%= stats.pendingChange > 0 ? '+' : '' %><%= stats.pendingChange %>%</span>
+                </div>
+            </section>
 
+            <!-- 4. Rating -->
+            <section class="la-card la-stat stagger" style="animation-delay:.15s">
+                <div class="la-stat-head">
+                    <h2 class="la-stat-title"><%= L('rating') %></h2>
+                    <span class="la-faint"><%= lab.totalReviews || 0 %> <%= L('reviews') %></span>
+                </div>
+                <div class="la-stat-body">
+                    <div class="la-stat-text">
+                        <p class="la-stat-label"><%= L('rating') %></p>
+                        <p class="la-stat-big"><%= stats.averageRating.toFixed(1) %></p>
+                        <p class="la-stat-label"><%= stats.ratingChange >= 0 ? '+' : '' %><%= stats.ratingChange %> <%= L('vsLastMonth') %></p>
+                    </div>
+                    <div class="la-stars-bars">
+                        <% [1, 2, 3, 4, 5].forEach(function (n) { const full = stats.averageRating >= n - 0.25; %>
+                            <span class="bar-grow" style="height:<%= 20 + n * 13 %>%;opacity:<%= full ? 1 : .35 %>;animation-delay:<%= (n * .05).toFixed(2) %>s"></span>
+                        <% }); %>
+                    </div>
+                </div>
+                <div class="la-stat-pills">
+                    <% [1, 2, 3, 4, 5].forEach(function (n) { %>
+                        <span class="<%= Math.round(stats.averageRating) === n ? 'on ink' : '' %>"><%= n %>★</span>
+                    <% }); %>
+                </div>
+            </section>
         </div>
+        <div class="la-dots" id="statDots" aria-hidden="true" dir="ltr">
+            <span class="on"></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="la-dash-grid">
+            <!-- Recent reports (same rows as the app) -->
+            <section>
+                <div class="la-search" style="margin-top:12px">
+                    <svg class="ic"><use href="#i-search"/></svg>
+                    <input id="recentSearch" placeholder="<%= L('search') %>" aria-label="<%= L('search') %>">
+                </div>
+                <div class="la-chips" style="margin-top:12px" id="recentFilters">
+                    <button class="la-chip on press-95" data-f="all"><%= L('all') %></button>
+                    <button class="la-chip press-95" data-f="Pending"><%= L('pending') %></button>
+                    <button class="la-chip press-95" data-f="In Progress"><%= L('inProgress') %></button>
+                    <button class="la-chip press-95" data-f="Completed"><%= L('completed') %></button>
+                </div>
+                <div class="la-between" style="margin-top:16px">
+                    <h2 class="la-h2"><%= L('recentReports') %></h2>
+                    <a href="/lab/orders" style="font-size:13px;font-weight:700;color:var(--accent)"><%= L('viewAll') %></a>
+                </div>
+                <div class="la-grid c2" style="margin-top:12px" id="recentList">
+                    <% recentTests.forEach(function (t, i) { %>
+                        <a href="/lab/orders/<%= t._id %>" class="la-row press stagger" style="animation-delay:<%= (i * .03).toFixed(2) %>s"
+                           data-status="<%= t.status %>" data-search="<%= ((t.patientInfo && t.patientInfo.name) || '') + ' ' + (t.testName || '') %>">
+                            <span class="la-avatar"><%= initials(t.patientInfo && t.patientInfo.name) %></span>
+                            <span class="main">
+                                <span class="name"><%= (t.patientInfo && t.patientInfo.name) || __('common.notAvailable') %></span>
+                                <span class="meta"><%= t.testName %></span>
+                            </span>
+                            <span class="end">
+                                <span class="time"><%= new Date(t.requestDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) %></span>
+                                <span class="la-pill <%= pillClass(t.status) %>"><%= L(statusKey(t.status)) %></span>
+                            </span>
+                        </a>
+                    <% }); %>
+                </div>
+                <p class="la-empty" id="recentEmpty" style="<%= recentTests.length ? 'display:none' : '' %>"><%= L('noResults') %></p>
+            </section>
+
+            <!-- Quick actions (web extra) -->
+            <aside>
+                <h2 class="la-h2" style="margin-top:16px"><%= L('quickActions') %></h2>
+                <div class="la-stack" style="margin-top:12px">
+                    <% [
+                        ['/lab/tests', 'flask-conical', L('addTest')],
+                        ['/lab/patient-tests', 'test-tube', L('viewTests')],
+                        ['/lab/reports', 'chart-line', L('reports')],
+                        ['/lab/settings', 'settings', L('settings')],
+                       ].forEach(function (a) { %>
+                        <a href="<%= a[0] %>" class="la-card la-between press" style="display:flex">
+                            <span class="la-row-flex" style="font-weight:700">
+                                <span class="la-icon-circle"><svg class="ic"><use href="#i-<%= a[1] %>"/></svg></span><%= a[2] %>
+                            </span>
+                            <svg class="ic flip-rtl" style="width:18px;height:18px;color:var(--muted)"><use href="#i-chevron-right"/></svg>
+                        </a>
+                    <% }); %>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <style>
+        html.la .la-stat-scroller { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+        @media (min-width: 1880px) { html.la .la-stat-scroller { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        html.la .la-stat { height: 230px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+        html.la .la-stat-head { height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; }
+        html.la .la-stat-title { margin: 0; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        html.la .la-faint { font-size: 11px; color: var(--muted); opacity: .7; white-space: nowrap; }
+        html.la .la-chip-sm { display: inline-flex; align-items: center; gap: 6px; background: var(--chip-bg); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+        html.la .la-chip-sm .ic { width: 13px; height: 13px; }
+        html.la .la-stat-body { height: 110px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+        html.la .la-stat-text { flex: 1; min-width: 0; }
+        html.la .la-stat-label { margin: 0; font-size: 13px; line-height: 1.1; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        html.la .la-stat-label + .la-stat-big { margin-top: 0; }
+        html.la .la-stat-big { margin: 0 0 4px; font-size: 48px; line-height: 1.1; font-weight: 900; white-space: nowrap; }
+        html.la .la-donut-wrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+        html.la .la-donut { width: 84px; height: 84px; display: grid; flex-shrink: 0; }
+        html.la .la-donut > * { grid-area: 1 / 1; }
+        html.la .la-donut-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        html.la[dir="rtl"] .la-donut-svg { transform: scaleX(-1) rotate(-90deg); }
+        html.la .la-donut-center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        html.la .la-donut-center b { font-size: 18px; line-height: 1; font-weight: 900; }
+        html.la .la-donut-center span { font-size: 10px; color: var(--muted); margin-top: 4px; }
+        html.la .la-legend p { margin: 0 0 6px; font-size: 12px; line-height: 1.25; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+        html.la .la-legend i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        html.la .la-bars { flex: 1; min-width: 0; height: 84px; display: flex; align-items: flex-end; gap: 2px; }
+        html.la .la-bars span { flex: 1; background: var(--track); border-radius: 6px 6px 0 0; }
+        html.la .la-bars span.on { background: var(--accent); }
+        html.la .la-line { flex: 1; min-width: 0; height: 84px; }
+        html.la .la-line svg { width: 100%; height: 100%; overflow: hidden; }
+        html.la .la-stars-bars { flex: 1; min-width: 0; height: 84px; display: flex; align-items: flex-end; justify-content: center; gap: 8px; }
+        html.la .la-stars-bars span { width: 26px; background: var(--accent); border-radius: 6px 6px 0 0; }
+        html.la .la-stat-pills { height: 28px; display: flex; gap: 6px; flex-shrink: 0; }
+        html.la .la-stat-pills span { flex: 1; min-width: 0; display: grid; place-items: center; font-size: 11px; font-weight: 700; border-radius: 999px; background: var(--chip-bg); color: var(--muted-2); border: 1px solid var(--line); white-space: nowrap; overflow: hidden; }
+        html.la .la-stat-pills span.on { background: #FF5A00; color: #fff; border: 0; }
+        html.la .la-stat-pills span.on.ink { background: var(--ink); color: var(--app-bg); }
+        html.la .la-dots { display: none; justify-content: center; gap: 6px; margin-top: 8px; }
+        html.la .la-dots span { width: 8px; height: 8px; border-radius: 999px; background: var(--track); transition: width .15s var(--ease-ui), background-color .15s; }
+        html.la .la-dots span.on { width: 24px; background: var(--accent); }
+        html.la .la-dash-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+        @media (max-width: 1100px) {
+            html.la .la-dash-grid { grid-template-columns: minmax(0, 1fr); }
+        }
+        /* phone: the four cards become one swipeable card, like the app */
+        @media (max-width: 700px) {
+            html.la .la-stat-scroller { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; gap: 12px; }
+            html.la .la-stat-scroller::-webkit-scrollbar { display: none; }
+            html.la .la-stat { min-width: 100%; scroll-snap-align: center; }
+            html.la .la-dots { display: flex; }
+            html.la .la-grid.c2 { grid-template-columns: minmax(0, 1fr); }
+        }
+    </style>
+
+    <script>
+        (function () {
+            // Count-up like the app (600ms, ease-out cubic)
+            document.querySelectorAll('[data-count]').forEach(function (el) {
+                var end = parseInt(el.getAttribute('data-count'), 10) || 0, t0 = performance.now();
+                function step(t) {
+                    var p = Math.min(1, (t - t0) / 600), e = 1 - Math.pow(1 - p, 3);
+                    el.textContent = Math.round(end * e).toLocaleString('en-US');
+                    if (p < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            });
+
+            // Search + status filter on the recent list
+            var filter = 'all', q = '';
+            var rows = Array.prototype.slice.call(document.querySelectorAll('#recentList .la-row'));
+            function apply() {
+                var shown = 0;
+                rows.forEach(function (r) {
+                    var ok = (filter === 'all' || r.dataset.status === filter) &&
+                             (!q || r.dataset.search.toLowerCase().indexOf(q) !== -1);
+                    r.style.display = ok ? '' : 'none';
+                    if (ok) shown++;
+                });
+                document.getElementById('recentEmpty').style.display = shown ? 'none' : '';
+            }
+            document.getElementById('recentSearch').addEventListener('input', function (e) { q = e.target.value.trim().toLowerCase(); apply(); });
+            document.querySelectorAll('#recentFilters .la-chip').forEach(function (b) {
+                b.addEventListener('click', function () {
+                    document.querySelectorAll('#recentFilters .la-chip').forEach(function (x) { x.classList.remove('on'); });
+                    b.classList.add('on'); filter = b.dataset.f; apply();
+                });
+            });
+
+            // Dots follow the swipeable cards on phones
+            var sc = document.getElementById('statCards'), dots = document.querySelectorAll('#statDots span');
+            sc.addEventListener('scroll', function () {
+                // index of the card closest to the centre (works in LTR and RTL)
+                var mid = sc.getBoundingClientRect().left + sc.clientWidth / 2, best = 0, bestD = 1e9;
+                Array.prototype.forEach.call(sc.children, function (c, k) {
+                    var r = c.getBoundingClientRect(), dd = Math.abs(r.left + r.width / 2 - mid);
+                    if (dd < bestD) { bestD = dd; best = k; }
+                });
+                dots.forEach(function (d, k) { d.classList.toggle('on', k === best); });
+            }, { passive: true });
+
+        })();
+    </script>
 </body>
 
 </html>

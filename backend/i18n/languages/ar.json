@@ -2099,5 +2099,35 @@
       "filterByDate": "تصفية حسب التاريخ",
       "exportOrders": "تصدير الطلبات"
     }
+  },
+  "labApp": {
+    "greetingMorning": "صباح الخير",
+    "greetingEvening": "مساء الخير",
+    "reportsWord": "التقارير",
+    "patients": "المرضى",
+    "tests": "التحاليل",
+    "completed": "مكتمل",
+    "pending": "قيد الانتظار",
+    "inProgress": "في المختبر",
+    "all": "الكل",
+    "monthTests": "تحاليل هذا الشهر",
+    "perDay": "حسب اليوم",
+    "growth": "النمو",
+    "vsLastMonth": "مقارنة بالشهر الماضي",
+    "rating": "التقييم",
+    "reviews": "تقييم",
+    "search": "ابحث عن مريض، رقم تقرير...",
+    "recentReports": "التقارير الأخيرة",
+    "quickActions": "إجراءات سريعة",
+    "pendingResults": "نتائج معلقة",
+    "totalTests": "إجمالي التحاليل",
+    "totalPatients": "إجمالي المرضى",
+    "noResults": "لا توجد نتائج",
+    "viewAll": "عرض الكل",
+    "exportReport": "تصدير التقرير",
+    "addTest": "إضافة تحليل",
+    "viewTests": "عرض تحاليل المرضى",
+    "reports": "التقارير",
+    "settings": "الإعدادات"
   }
 }
