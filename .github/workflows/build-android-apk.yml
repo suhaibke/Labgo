@@ -1,0 +1,74 @@
+name: Build Android APK
+
+# Builds an arm64-v8a-only release APK on GitHub's own runners, since this
+# project's Android SDK/build-tools can't be downloaded from inside the dev
+# sandbox that normally makes these commits (its network policy blocks
+# dl.google.com). arm64-v8a covers effectively all phones sold since ~2018;
+# leaving out armeabi-v7a/x86_64 keeps the APK a fraction of the size a
+# universal (all-ABI) build would be. Publishes to a rolling GitHub Release
+# so it can be installed straight from the GitHub app.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/iphone-notifications-phone-auth-2ynrfj
+    paths:
+      - 'lib/**'
+      - 'android/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/build-android-apk.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.1'
+          cache: true
+
+      - run: flutter pub get
+
+      # No release keystore is committed to the repo (it's a secret), so this
+      # falls back to the debug signing config automatically - fine for
+      # sideloading/testing, not for a Play Store upload.
+      #
+      # --android-skip-build-dependency-validation: this Flutter release's own
+      # AGP/Gradle minimum-version gate is stricter than what this project's
+      # Android config (AGP 8.9.1 / Gradle 8.12, both otherwise fine together)
+      # satisfies. The actual build works; only Flutter's advisory check
+      # objects, so skip it rather than churn AGP/Gradle/Kotlin versions.
+      - run: flutter build apk --release --target-platform android-arm64 --android-skip-build-dependency-validation --dart-define=CARTO_API_KEY=${{ secrets.CARTO_API_KEY }}
+
+      - name: Rename APK with version and commit SHA
+        run: |
+          version=$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}')
+          short_sha=$(echo "${{ github.sha }}" | cut -c1-7)
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/LabGo-${version}-${short_sha}-arm64.apk"
+          echo "APK_VERSION=${version}" >> "$GITHUB_ENV"
+
+      - name: Publish rolling release with the APK attached
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-apk-latest
+          name: "LabGo Android APK (latest build)"
+          body: |
+            Auto-built release APK (arm64-v8a only, not a universal/all-ABI
+            build) from commit ${{ github.sha }} on branch
+            ${{ github.ref_name }}. Covers effectively all phones sold since
+            ~2018; won't install on a 32-bit-only (armeabi-v7a) or x86 device.
+
+            Debug-signed (no release keystore is stored in the repo) - fine
+            for installing/testing on a device, not for a Play Store upload.
+          files: dist/*.apk

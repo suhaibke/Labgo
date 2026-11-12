@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= nurse.name %> - <%= __('nurseManagement.nurseDetails') %> - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-nurse-details.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Navbar -->
+    <%- include('../partials/admin-navbar') %>
+
+    <!-- Main Content -->
+    <main class="admin-dashboard">
+        <div class="nurse-details-container">
+
+            <!-- Back Button & Header -->
+            <div class="page-header">
+                <div class="header-left">
+                    <button class="back-btn" onclick="window.location.href='/admin/nurses'">
+                        <i class="fas fa-arrow-left"></i>
+                        <span><%= __('common.back') %></span>
+                    </button>
+                    <h1><%= __('nurseManagement.nurseDetails') %></h1>
+                </div>
+                <div class="header-actions">
+                    <button class="modern-btn refresh-btn" onclick="loadAnalytics()">
+                        <i class="fas fa-sync-alt"></i>
+                        <span><%= __('common.refresh') %></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Nurse Profile Section -->
+            <section class="profile-section">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user-nurse"></i>
+                    </div>
+                    <div class="profile-info">
+                        <h2 class="profile-name"><%= nurse.name %></h2>
+                        <p class="profile-email"><%= nurse.email %></p>
+                        <span class="status-badge active"><%= __('nurseManagement.approved') %></span>
+                    </div>
+                    <div class="profile-actions">
+                        <button class="modern-btn confirm-btn" onclick="showEditCommissionModal()">
+                            <i class="fas fa-percentage"></i>
+                            <span><%= __('nurseManagement.editCommissionRate') %></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Personal Information Grid -->
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-icon"><i class="fas fa-phone"></i></div>
+                        <div class="info-content">
+                            <span class="info-label"><%= __('nurseManagement.phone') %></span>
+                            <span class="info-value"><%= nurse.phone %></span>
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon"><i class="fas fa-venus-mars"></i></div>
+                        <div class="info-content">
+                            <span class="info-label"><%= __('nurseManagement.gender') %></span>
+                            <span class="info-value"><%= nurse.gender || '-' %></span>
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon"><i class="fas fa-calendar-alt"></i></div>
+                        <div class="info-content">
+                            <span class="info-label"><%= __('nurseManagement.joinedOn') %></span>
+                            <span class="info-value" id="joinedDate"><%= nurse.createdAt %></span>
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon"><i class="fas fa-percentage"></i></div>
+                        <div class="info-content">
+                            <span class="info-label"><%= __('nurseManagement.commissionRate') %></span>
+                            <span class="info-value"><%= nurse.nurseCommissionRate || 0 %>%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Description Section -->
+            <section class="description-section">
+                <div class="section-header-row">
+                    <h3 class="section-title"><i class="fas fa-info-circle"></i> <%= __('nurseManagement.description') || 'Description' %></h3>
+                    <button class="modern-btn edit-description-btn" onclick="showEditDescriptionModal()">
+                        <i class="fas fa-edit"></i>
+                        <span><%= __('common.edit') %></span>
+                    </button>
+                </div>
+                <div class="description-card">
+                    <p id="nurseDescription" class="description-text"><%= nurse.nurseDescription || __('nurseManagement.noDescription') || 'No description added yet.' %></p>
+                </div>
+            </section>
+
+            <!-- Documents Section -->
+            <% if (application) { %>
+            <section class="documents-section">
+                <h3 class="section-title"><i class="fas fa-file-alt"></i> <%= __('nurseManagement.documents') %></h3>
+                <div class="documents-grid">
+                    <% if (application.nationalCardImageFront) { %>
+                    <div class="document-card" onclick="window.open('<%= application.nationalCardImageFront %>', '_blank')">
+                        <img src="<%= application.nationalCardImageFront %>" alt="National ID Front" class="document-image">
+                        <span class="document-label"><%= __('nurseManagement.nationalIdCard') %> (<%= __('common.front') %>)</span>
+                    </div>
+                    <% } %>
+                    <% if (application.nationalCardImageBack) { %>
+                    <div class="document-card" onclick="window.open('<%= application.nationalCardImageBack %>', '_blank')">
+                        <img src="<%= application.nationalCardImageBack %>" alt="National ID Back" class="document-image">
+                        <span class="document-label"><%= __('nurseManagement.nationalIdCard') %> (<%= __('common.back') %>)</span>
+                    </div>
+                    <% } %>
+                    <% if (application.certificateImage) { %>
+                    <div class="document-card" onclick="window.open('<%= application.certificateImage %>', '_blank')">
+                        <img src="<%= application.certificateImage %>" alt="Nursing Certificate" class="document-image">
+                        <span class="document-label"><%= __('nurseManagement.nursingCertificate') %></span>
+                    </div>
+                    <% } %>
+                </div>
+            </section>
+            <% } %>
+
+            <!-- Analytics Section -->
+            <section class="analytics-section">
+                <div class="analytics-header">
+                    <h3 class="section-title"><i class="fas fa-chart-line"></i> <%= __('nurseManagement.analytics') %></h3>
+                    <div class="date-filters">
+                        <select id="datePreset" class="filter-select" onchange="handleDatePreset()">
+                            <option value="thisMonth"><%= __('nurseManagement.thisMonth') %></option>
+                            <option value="lastMonth"><%= __('nurseManagement.lastMonth') %></option>
+                            <option value="last3Months"><%= __('nurseManagement.last3Months') %></option>
+                            <option value="allTime"><%= __('nurseManagement.allTime') %></option>
+                            <option value="custom"><%= __('nurseManagement.customRange') %></option>
+                        </select>
+                        <div id="customDateRange" class="custom-date-inputs" style="display: none;">
+                            <input type="date" id="startDate" class="date-input" onchange="loadAnalytics()">
+                            <span class="date-separator">-</span>
+                            <input type="date" id="endDate" class="date-input" onchange="loadAnalytics()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card primary">
+                        <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="totalOrders">-</span>
+                            <span class="stat-label"><%= __('nurseManagement.totalOrders') %></span>
+                        </div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="completedOrders">-</span>
+                            <span class="stat-label"><%= __('nurseManagement.completedOrders') %></span>
+                        </div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="totalEarnings">-</span>
+                            <span class="stat-label"><%= __('nurseManagement.totalEarnings') %></span>
+                        </div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="stat-icon"><i class="fas fa-star"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="avgRating">-</span>
+                            <span class="stat-label"><%= __('nurseManagement.avgRating') %></span>
+                        </div>
+                    </div>
+                    <div class="stat-card secondary">
+                        <div class="stat-icon"><i class="fas fa-chart-pie"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="completionRate">-</span>
+                            <span class="stat-label"><%= __('nurseManagement.completionRate') %></span>
+                        </div>
+                    </div>
+                    <div class="stat-card neutral">
+                        <div class="stat-icon"><i class="fas fa-calculator"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="avgOrderValue">-</span>
+                            <span class="stat-label"><%= __('nurseManagement.avgOrderValue') %></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h4 class="chart-title"><%= __('nurseManagement.ordersByStatus') %></h4>
+                        <div class="chart-container">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h4 class="chart-title"><%= __('nurseManagement.ordersTrend') %></h4>
+                        <div class="chart-container">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Orders Table Section -->
+            <section class="orders-section">
+                <div class="section-header">
+                    <h3 class="section-title"><i class="fas fa-list"></i> <%= __('nurseManagement.recentOrders') %></h3>
+                    <span class="count-badge" id="ordersCount">-</span>
+                </div>
+                <div class="orders-table-container">
+                    <table class="orders-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th><%= __('nurseManagement.orderId') %></th>
+                                <th><%= __('nurseManagement.patient') %></th>
+                                <th><%= __('nurseManagement.lab') %></th>
+                                <th><%= __('nurseManagement.status') %></th>
+                                <th><%= __('nurseManagement.amount') %></th>
+                                <th><%= __('nurseManagement.date') %></th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr><td colspan="6" class="loading-cell"><i class="fas fa-spinner fa-spin"></i> <%= __('common.loading') %></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="ordersPagination"></div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Edit Commission Modal -->
+    <div class="modal-overlay" id="editCommissionModal">
+        <div class="modal-container commission-modal">
+            <div class="modal-header">
+                <h3><%= __('nurseManagement.editCommissionRate') %></h3>
+                <button class="modal-close-btn" onclick="closeEditCommissionModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description"><%= __('nurseManagement.currentCommissionRate') %>: <strong><%= nurse.nurseCommissionRate || 0 %>%</strong></p>
+                <div class="commission-input-group">
+                    <label for="editCommissionRate"><%= __('nurseManagement.commissionRate') %></label>
+                    <div class="input-wrapper">
+                        <input type="number" id="editCommissionRate" class="commission-input" min="0" max="100" step="0.01" value="<%= nurse.nurseCommissionRate || 0 %>">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modern-btn" onclick="closeEditCommissionModal()">
+                    <span><%= __('common.cancel') %></span>
+                </button>
+                <button class="modern-btn confirm-btn" onclick="submitCommissionUpdate()">
+                    <i class="fas fa-save"></i>
+                    <span><%= __('common.save') %></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Description Modal -->
+    <div class="modal-overlay" id="editDescriptionModal">
+        <div class="modal-container description-modal">
+            <div class="modal-header">
+                <h3><%= __('nurseManagement.editDescription') || 'Edit Description' %></h3>
+                <button class="modal-close-btn" onclick="closeEditDescriptionModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description"><%= __('nurseManagement.descriptionHint') || 'Add a short description about this nurse that will be shown to patients.' %></p>
+                <div class="description-input-group">
+                    <label for="editDescription"><%= __('nurseManagement.description') || 'Description' %></label>
+                    <textarea id="editDescription" class="description-textarea" maxlength="500" rows="4" placeholder="<%= __('nurseManagement.descriptionPlaceholder') || 'Enter nurse description...' %>"><%= nurse.nurseDescription || '' %></textarea>
+                    <span class="char-count"><span id="charCount">0</span>/500</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modern-btn" onclick="closeEditDescriptionModal()">
+                    <span><%= __('common.cancel') %></span>
+                </button>
+                <button class="modern-btn confirm-btn" onclick="submitDescriptionUpdate()">
+                    <i class="fas fa-save"></i>
+                    <span><%= __('common.save') %></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-notification" id="toast">
+        <div class="toast-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="toast-content">
+            <h4 class="toast-title" id="toastTitle"><%= __('common.success') %></h4>
+            <p class="toast-message" id="toastMessage"><%= __('common.success') %></p>
+        </div>
+        <button class="toast-close" onclick="hideToast()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <script>
+        const API_BASE = '/api/admin/nurses';
+        const NURSE_ID = '<%= nurse._id %>';
+        let statusChart = null;
+        let trendChart = null;
+        let currentPage = 1;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            formatJoinedDate();
+            handleDatePreset();
+        });
+
+        function formatJoinedDate() {
+            const el = document.getElementById('joinedDate');
+            if (el && el.textContent) {
+                const date = new Date(el.textContent);
+                el.textContent = date.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                });
+            }
+        }
+
+        function handleDatePreset() {
+            const preset = document.getElementById('datePreset').value;
+            const customRange = document.getElementById('customDateRange');
+            const startInput = document.getElementById('startDate');
+            const endInput = document.getElementById('endDate');
+
+            const today = new Date();
+            let startDate, endDate;
+
+            switch (preset) {
+                case 'thisMonth':
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    endDate = today;
+                    customRange.style.display = 'none';
+                    break;
+                case 'lastMonth':
+                    startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+                    customRange.style.display = 'none';
+                    break;
+                case 'last3Months':
+                    startDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+                    endDate = today;
+                    customRange.style.display = 'none';
+                    break;
+                case 'allTime':
+                    startDate = null;
+                    endDate = null;
+                    customRange.style.display = 'none';
+                    break;
+                case 'custom':
+                    customRange.style.display = 'flex';
+                    return;
+            }
+
+            if (startDate) {
+                startInput.value = startDate.toISOString().split('T')[0];
+            } else {
+                startInput.value = '';
+            }
+            if (endDate) {
+                endInput.value = endDate.toISOString().split('T')[0];
+            } else {
+                endInput.value = '';
+            }
+
+            loadAnalytics();
+        }
+
+        async function loadAnalytics() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            const params = new URLSearchParams({ page: currentPage, limit: 10 });
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
+
+            try {
+                const response = await fetch(`${API_BASE}/active/${NURSE_ID}/analytics?${params}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    renderStats(data.data.summary);
+                    renderCharts(data.data.ordersByStatus, data.data.ordersTrend);
+                    renderOrders(data.data.orders, data.data.pagination);
+                } else {
+                    showToast('error', data.message);
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                showToast('error', '<%= __('common.error') %>');
+            }
+        }
+
+        function renderStats(summary) {
+            // Animate total orders
+            const totalOrdersEl = document.getElementById('totalOrders');
+            animateValue(totalOrdersEl, 0, summary.totalOrders || 0, 1000, false);
+
+            // Animate completed orders
+            const completedOrdersEl = document.getElementById('completedOrders');
+            animateValue(completedOrdersEl, 0, summary.completedOrders || 0, 1000, false);
+
+            // Animate total earnings (with currency format)
+            const totalEarningsEl = document.getElementById('totalEarnings');
+            animateValue(totalEarningsEl, 0, summary.totalEarnings || 0, 1000, true);
+
+            // Rating (no animation needed)
+            const avgRatingEl = document.getElementById('avgRating');
+            avgRatingEl.textContent = summary.avgRating ? summary.avgRating.toFixed(1) + ' ★' : '-';
+
+            // Completion rate (no animation needed)
+            const completionRateEl = document.getElementById('completionRate');
+            completionRateEl.textContent = (summary.completionRate || 0) + '%';
+
+            // Animate average order value (with currency format)
+            const avgOrderValueEl = document.getElementById('avgOrderValue');
+            animateValue(avgOrderValueEl, 0, summary.avgOrderValue || 0, 1000, true);
+        }
+
+        // Animated number counter function
+        function animateValue(element, start, end, duration, isCurrency) {
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const current = start + (end - start) * easeOut;
+
+                if (isCurrency) {
+                    element.textContent = formatCurrency(Math.floor(current));
+                } else {
+                    element.textContent = formatNumber(Math.floor(current));
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    // Ensure final value is exact
+                    if (isCurrency) {
+                        element.textContent = formatCurrency(end);
+                    } else {
+                        element.textContent = formatNumber(end);
+                    }
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // Format number with commas
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-IQ').format(num);
+        }
+
+        function renderCharts(ordersByStatus, ordersTrend) {
+            // Status Doughnut Chart
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            
+            if (statusChart) statusChart.destroy();
+
+            const statusColors = {
+                'completed': '#10b981',
+                'cancelled': '#ef4444',
+                'pending': '#f59e0b',
+                'confirmed': '#3b82f6',
+                'nurse_assigned': '#8b5cf6',
+                'sample_collected': '#06b6d4',
+                'at_lab': '#6366f1'
+            };
+
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ordersByStatus.map(s => formatStatus(s.status)),
+                    datasets: [{
+                        data: ordersByStatus.map(s => s.count),
+                        backgroundColor: ordersByStatus.map(s => statusColors[s.status] || '#9ca3af'),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Trend Line Chart
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            
+            if (trendChart) trendChart.destroy();
+
+            trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ordersTrend.map(t => t.date),
+                    datasets: [{
+                        label: '<%= __('nurseManagement.orders') %>',
+                        data: ordersTrend.map(t => t.count),
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderOrders(orders, pagination) {
+            const tbody = document.getElementById('ordersTableBody');
+            document.getElementById('ordersCount').textContent = pagination.total;
+
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-cell"><%= __('nurseManagement.noOrdersFound') %></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = orders.map(order => `
+                <tr onclick="window.location.href='/admin/orders/${order._id}/details'" style="cursor: pointer;">
+                    <td class="order-id">${order.qrCode || order._id.slice(-8)}</td>
+                    <td>${order.patientId?.name || '-'}</td>
+                    <td>${order.labId?.name || '-'}</td>
+                    <td><span class="status-badge ${order.status}">${formatStatus(order.status)}</span></td>
+                    <td>${formatCurrency(order.pricing?.total || 0)}</td>
+                    <td>${formatDate(order.createdAt)}</td>
+                </tr>
+            `).join('');
+
+            renderPagination(pagination);
+        }
+
+        function renderPagination(pagination) {
+            const container = document.getElementById('ordersPagination');
+            if (pagination.pages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            if (pagination.page > 1) {
+                html += `<button class="pagination-btn" onclick="changePage(${pagination.page - 1})"><i class="fas fa-chevron-left"></i></button>`;
+            }
+            for (let i = 1; i <= pagination.pages; i++) {
+                if (i === pagination.page) {
+                    html += `<button class="pagination-btn active">${i}</button>`;
+                } else if (i === 1 || i === pagination.pages || (i >= pagination.page - 1 && i <= pagination.page + 1)) {
+                    html += `<button class="pagination-btn" onclick="changePage(${i})">${i}</button>`;
+                } else if (i === pagination.page - 2 || i === pagination.page + 2) {
+                    html += '<span class="pagination-ellipsis">...</span>';
+                }
+            }
+            if (pagination.page < pagination.pages) {
+                html += `<button class="pagination-btn" onclick="changePage(${pagination.page + 1})"><i class="fas fa-chevron-right"></i></button>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            loadAnalytics();
+        }
+
+        // Commission Modal
+        function showEditCommissionModal() {
+            document.getElementById('editCommissionModal').classList.add('show');
+        }
+
+        function closeEditCommissionModal() {
+            document.getElementById('editCommissionModal').classList.remove('show');
+        }
+
+        async function submitCommissionUpdate() {
+            const rate = document.getElementById('editCommissionRate').value.trim();
+            const parsedRate = parseFloat(rate);
+
+            if (isNaN(parsedRate) || parsedRate < 0 || parsedRate > 100) {
+                showToast('error', '<%= __('nurseManagement.commissionRateInvalid') %>');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/active/${NURSE_ID}/commission`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ commissionRate: parsedRate })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('success', '<%= __('nurseManagement.commissionRateUpdated') %>');
+                    closeEditCommissionModal();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('error', data.message);
+                }
+            } catch (error) {
+                showToast('error', '<%= __('common.error') %>');
+            }
+        }
+
+        // Description Modal
+        function showEditDescriptionModal() {
+            document.getElementById('editDescriptionModal').classList.add('show');
+            updateCharCount();
+        }
+
+        function closeEditDescriptionModal() {
+            document.getElementById('editDescriptionModal').classList.remove('show');
+        }
+
+        function updateCharCount() {
+            const textarea = document.getElementById('editDescription');
+            if (textarea) {
+                document.getElementById('charCount').textContent = textarea.value.length;
+            }
+        }
+
+        // Set up char count listener
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('editDescription');
+            if (textarea) {
+                textarea.addEventListener('input', updateCharCount);
+                updateCharCount();
+            }
+        });
+
+        async function submitDescriptionUpdate() {
+            const description = document.getElementById('editDescription').value.trim();
+
+            try {
+                const response = await fetch(`${API_BASE}/active/${NURSE_ID}/description`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ description })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('success', '<%= __('nurseManagement.descriptionUpdated') || 'Description updated successfully' %>');
+                    closeEditDescriptionModal();
+                    document.getElementById('nurseDescription').textContent = description || '<%= __('nurseManagement.noDescription') || 'No description added yet.' %>';
+                } else {
+                    showToast('error', data.message);
+                }
+            } catch (error) {
+                showToast('error', '<%= __('common.error') %>');
+            }
+        }
+
+        // Utility functions
+        function formatStatus(status) {
+            const statusMap = {
+                'pending': '<%= __('nurseManagement.pending') %>',
+                'confirmed': '<%= __('nurseManagement.confirmed') %>',
+                'nurse_assigned': '<%= __('nurseManagement.nurseAssigned') %>',
+                'sample_collected': '<%= __('nurseManagement.sampleCollected') %>',
+                'at_lab': '<%= __('nurseManagement.atLab') %>',
+                'completed': '<%= __('nurseManagement.completed') %>',
+                'cancelled': '<%= __('nurseManagement.cancelled') %>'
+            };
+            return statusMap[status] || status;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IQ', {
+                style: 'decimal',
+                minimumFractionDigits: 0
+            }).format(Math.round(amount)) + ' IQD';
+        }
+
+        function getToken() {
+            return localStorage.getItem('token') || '';
+        }
+
+        function showToast(type, message) {
+            const toast = document.getElementById('toast');
+            const icon = toast.querySelector('.toast-icon i');
+            const title = toast.querySelector('.toast-title');
+            const msg = toast.querySelector('.toast-message');
+
+            icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+            toast.classList.remove('success', 'error');
+            toast.classList.add(type);
+            title.textContent = type === 'success' ? '<%= __('common.success') %>' : '<%= __('common.error') %>';
+            msg.textContent = message;
+
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function hideToast() {
+            document.getElementById('toast').classList.remove('show');
+        }
+
+        // Close modal on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('show');
+                }
+            });
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay').forEach(modal => {
+                    modal.classList.remove('show');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

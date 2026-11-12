@@ -1,0 +1,608 @@
+/* ==========================================
+   LabGo Authentication Pages Styles
+   ========================================== */
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #1a1a1a;
+    transition: all 0.3s ease;
+}
+
+/* Language-specific font and direction defaults */
+html[dir="rtl"] body {
+    font-family: 'Cairo', 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    direction: rtl;
+    text-align: right;
+    letter-spacing: 0;
+}
+
+html[dir="ltr"] body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    direction: ltr;
+    text-align: left;
+    letter-spacing: -0.01em;
+}
+
+/* Arabic-specific improvements */
+html[lang="ar"] body {
+    font-family: 'Cairo', 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.7;
+}
+
+/* English-specific improvements */
+html[lang="en"] body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+}
+
+/* Kurdish-specific improvements */
+html[lang="ku"] body {
+    font-family: 'Rabeh', 'Cairo', 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.8;
+}
+
+/* Background Pattern */
+.background-pattern {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.1;
+    background-image:
+        radial-gradient(circle at 20% 80%, rgba(131, 120, 244, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(244, 169, 0, 0.3) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+/* ==========================================
+   Container Styles
+   ========================================== */
+
+.login-container,
+.register-container {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow:
+        0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    padding: 48px;
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    overflow: hidden;
+}
+
+.register-container {
+    max-width: 480px;
+}
+
+/* ==========================================
+   Header Styles
+   ========================================== */
+
+.login-header,
+.register-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.register-header {
+    margin-bottom: 32px;
+}
+
+.logo-container {
+    margin-bottom: 24px;
+}
+
+.logo {
+    width: 200px;
+    border-radius: 16px;
+    margin: 0 auto;
+    display: block;
+}
+
+h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.subtitle {
+    font-size: 16px;
+    color: #666;
+    font-weight: 400;
+}
+
+/* ==========================================
+   Form Styles
+   ========================================== */
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.register-container .form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+/* ==========================================
+   Input Styles
+   ========================================== */
+
+.input-container {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 18px;
+    z-index: 1;
+}
+
+html[dir="rtl"] .input-icon {
+    right: 16px;
+    left: auto;
+}
+
+html[dir="ltr"] .input-icon {
+    left: 16px;
+    right: auto;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 12px 44px 12px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 16px;
+    background: #ffffff;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+/* Language-specific input styling */
+html[dir="rtl"] input,
+html[dir="rtl"] select {
+    padding: 12px 44px 12px 16px;
+    text-align: right;
+    font-family: 'Cairo', 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+html[dir="ltr"] input,
+html[dir="ltr"] select {
+    padding: 12px 16px 12px 44px;
+    text-align: left;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+select {
+    padding: 12px 16px;
+    cursor: pointer;
+}
+
+input:focus,
+select:focus {
+    border-color: #8378f4;
+    box-shadow: 0 0 0 3px rgba(131, 120, 244, 0.1);
+    outline: none;
+}
+
+input::placeholder {
+    color: #9ca3af;
+}
+
+/* ==========================================
+   Password Toggle
+   ========================================== */
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+html[dir="rtl"] .password-toggle {
+    left: 16px;
+    right: auto;
+}
+
+html[dir="ltr"] .password-toggle {
+    right: 16px;
+    left: auto;
+}
+
+.password-toggle:hover {
+    color: #6b7280;
+}
+
+/* ==========================================
+   Password Strength
+   ========================================== */
+
+.password-strength {
+    margin-top: 8px;
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.password-strength-bar {
+    height: 100%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.password-requirements {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.requirement {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+html[dir="rtl"] .requirement {
+    justify-content: flex-end;
+}
+
+html[dir="ltr"] .requirement {
+    justify-content: flex-start;
+}
+
+.requirement.met {
+    color: #059669;
+}
+
+.requirement i {
+    font-size: 12px;
+}
+
+/* ==========================================
+   Checkbox & Terms
+   ========================================== */
+
+.remember-forgot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.remember-me input[type="checkbox"],
+.terms-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #8378f4;
+    cursor: pointer;
+}
+
+.remember-me label,
+.terms-checkbox label {
+    margin: 0;
+    cursor: pointer;
+    font-size: 14px;
+    color: #4b5563;
+}
+
+.terms-checkbox label {
+    line-height: 1.5;
+}
+
+.forgot-password {
+    color: #8378f4;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.forgot-password:hover {
+    color: #6b67d0;
+}
+
+.terms-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: rgba(131, 120, 244, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(131, 120, 244, 0.1);
+}
+
+html[dir="rtl"] .terms-checkbox {
+    justify-content: flex-end;
+}
+
+html[dir="ltr"] .terms-checkbox {
+    justify-content: flex-start;
+}
+
+.terms-checkbox input[type="checkbox"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.terms-checkbox a {
+    color: #8378f4;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.terms-checkbox a:hover {
+    color: #6b67d0;
+}
+
+/* ==========================================
+   Button Styles
+   ========================================== */
+
+.login-btn,
+.register-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #8378f4 0%, #7b6cf6 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 14px 0 rgba(131, 120, 244, 0.3);
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-btn:hover,
+.register-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px 0 rgba(131, 120, 244, 0.4);
+}
+
+.login-btn:active,
+.register-btn:active {
+    transform: translateY(0);
+}
+
+.login-btn:disabled,
+.register-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ==========================================
+   Divider Styles
+   ========================================== */
+
+.divider {
+    text-align: center;
+    position: relative;
+    margin: 32px 0;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #e5e7eb;
+}
+
+.divider span {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 0 16px;
+    position: relative;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* ==========================================
+   Link Styles
+   ========================================== */
+
+.register-link,
+.login-link {
+    text-align: center;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.register-link a,
+.login-link a {
+    color: #8378f4;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.register-link a:hover,
+.login-link a:hover {
+    color: #6b67d0;
+}
+
+/* ==========================================
+   Message Styles
+   ========================================== */
+
+.error-message,
+.success-message {
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 24px;
+    display: none;
+}
+
+.error-message {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #dc2626;
+}
+
+.success-message {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: #059669;
+}
+
+/* ==========================================
+   Loading Animation
+   ========================================== */
+
+.loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==========================================
+   Responsive Design
+   ========================================== */
+
+@media (max-width: 480px) {
+    .login-container,
+    .register-container {
+        padding: 32px 24px;
+        margin: 16px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    .subtitle {
+        font-size: 14px;
+    }
+}
+
+/* ==========================================
+   Enhanced RTL Support for Arabic
+   ========================================== */
+
+[dir="rtl"] .input-icon {
+    left: auto;
+    right: 16px;
+}
+
+[dir="rtl"] input,
+[dir="rtl"] select {
+    padding: 12px 44px 12px 16px;
+    text-align: right;
+}
+
+[dir="rtl"] .password-toggle {
+    left: 16px;
+    right: auto;
+}
+
+[dir="rtl"] .requirement {
+    justify-content: flex-end;
+}
+
+[dir="rtl"] .terms-checkbox {
+    justify-content: flex-end;
+}
+
+[dir="rtl"] .remember-forgot {
+    justify-content: space-between;
+}
+
+[dir="rtl"] .remember-me {
+    flex-direction: row-reverse;
+}
+
+/* Arabic-specific typography improvements */
+body[dir="rtl"] {
+    font-family: 'Cairo', 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    letter-spacing: 0;
+}
+
+body[dir="rtl"] h1,
+body[dir="rtl"] h2,
+body[dir="rtl"] h3 {
+    letter-spacing: 0;
+    font-weight: 700;
+}
+
+body[dir="rtl"] .subtitle {
+    font-weight: 400;
+    line-height: 1.6;
+}

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الخدمات السريعة - LabGo Admin</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-nurses.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+        }
+
+        .services-table-wrapper {
+            overflow-x: auto;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #eee;
+        }
+
+        .services-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        .services-table th,
+        .services-table td {
+            padding: 14px 16px;
+            text-align: start;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        .services-table th {
+            background: #fafafa;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .services-table img {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .icon-hint {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pill.active {
+            background: #e6f7ee;
+            color: #1a8c4a;
+        }
+
+        .status-pill.inactive {
+            background: #eef0f3;
+            color: #888;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-inline-end: 4px;
+        }
+
+        .action-btn.edit {
+            background: #eef0ff;
+            color: #5856d6;
+        }
+
+        .action-btn.delete {
+            background: #fdeeee;
+            color: #c53030;
+        }
+    </style>
+</head>
+
+<body>
+    <%- include('../partials/admin-navbar') %>
+
+        <main class="admin-dashboard">
+            <div class="nurse-management-container">
+
+                <div class="page-header">
+                    <div class="header-left">
+                        <h1>الخدمات السريعة</h1>
+                        <p class="header-subtitle">تظهر هذه الخدمات كشريط قابل للتمرير في الصفحة الرئيسية للتطبيق،
+                            ويمكن للمختبرات تبنّي أي منها بسعرها الخاص.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="modern-btn" onclick="openCreateModal()">
+                            <i class="fas fa-plus"></i>
+                            <span>إضافة خدمة جديدة</span>
+                        </button>
+                        <button class="modern-btn refresh-btn" onclick="loadServices()">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>تحديث</span>
+                        </button>
+                    </div>
+                </div>
+
+                <section class="main-section">
+                    <div class="services-table-wrapper">
+                        <table class="services-table">
+                            <thead>
+                                <tr>
+                                    <th>الأيقونة</th>
+                                    <th>الاسم</th>
+                                    <th>الاسم الفرعي</th>
+                                    <th>الترتيب</th>
+                                    <th>الحالة</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="servicesTableBody">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding: 30px;">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Create/Edit Modal -->
+        <div class="modal-overlay" id="serviceModal">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h3 id="modalTitle">إضافة خدمة جديدة</h3>
+                    <button class="modal-close-btn" onclick="closeModal()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editingId" value="" />
+                    <div class="form-group">
+                        <label>الاسم (بالإنجليزية، اختياري)</label>
+                        <input type="text" id="fieldName" class="form-control" placeholder="Vitamin D" />
+                    </div>
+                    <div class="form-group">
+                        <label>الاسم بالعربية</label>
+                        <input type="text" id="fieldNameAr" class="form-control" placeholder="فيتامين D" />
+                    </div>
+                    <div class="form-group">
+                        <label>الاسم الفرعي (اختياري)</label>
+                        <input type="text" id="fieldSubtitle" class="form-control" placeholder="Vitamin D" />
+                    </div>
+                    <div class="form-group">
+                        <label>الترتيب</label>
+                        <input type="number" id="fieldOrder" class="form-control" value="0" />
+                    </div>
+                    <div class="form-group">
+                        <label>الأيقونة</label>
+                        <input type="file" id="fieldIcon" class="form-control" accept="image/*" />
+                        <div class="icon-hint">يجب ألا يتجاوز حجم الصورة 200 كيلوبايت</div>
+                        <div class="icon-hint" id="iconSizeWarning" style="color:#c53030; display:none;"></div>
+                    </div>
+                    <button class="modern-btn confirm-btn" style="width:100%;" onclick="submitService()">
+                        <i class="fas fa-check"></i> حفظ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const API_BASE = '/api/admin/services';
+            const MAX_ICON_BYTES = 200 * 1024;
+
+            function getToken() {
+                return localStorage.getItem('token') || document.cookie.split('; ').find(r => r.startsWith('token='))?.split('=')[1];
+            }
+
+            function showToast(message, type = 'success') {
+                const el = document.createElement('div');
+                el.textContent = message;
+                el.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${type === 'success' ? '#1a8c4a' : '#c53030'};color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.15);`;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 3000);
+            }
+
+            async function loadServices() {
+                const tbody = document.getElementById('servicesTableBody');
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+
+                try {
+                    const res = await fetch(API_BASE, { headers: { Authorization: `Bearer ${getToken()}` } });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+
+                    if (data.data.services.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px; color:#888;">لا توجد خدمات بعد</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = data.data.services.map(s => `
+                    <tr>
+                        <td><img src="${s.icon}" alt="${s.name}" /></td>
+                        <td>${s.nameAr || s.name}</td>
+                        <td>${s.subtitle || '-'}</td>
+                        <td>${s.order}</td>
+                        <td><span class="status-pill ${s.isActive ? 'active' : 'inactive'}">${s.isActive ? 'مفعّلة' : 'معطّلة'}</span></td>
+                        <td>
+                            <button class="action-btn edit" onclick='openEditModal(${JSON.stringify(s)})'>تعديل</button>
+                            <button class="action-btn delete" onclick="deleteService('${s._id}')">حذف</button>
+                        </td>
+                    </tr>
+                `).join('');
+                } catch (err) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px; color:#c53030;">حدث خطأ أثناء التحميل</td></tr>';
+                }
+            }
+
+            function openCreateModal() {
+                document.getElementById('modalTitle').textContent = 'إضافة خدمة جديدة';
+                document.getElementById('editingId').value = '';
+                document.getElementById('fieldName').value = '';
+                document.getElementById('fieldNameAr').value = '';
+                document.getElementById('fieldSubtitle').value = '';
+                document.getElementById('fieldOrder').value = '0';
+                document.getElementById('fieldIcon').value = '';
+                document.getElementById('iconSizeWarning').style.display = 'none';
+                document.getElementById('serviceModal').classList.add('show');
+            }
+
+            function openEditModal(service) {
+                document.getElementById('modalTitle').textContent = 'تعديل الخدمة';
+                document.getElementById('editingId').value = service._id;
+                document.getElementById('fieldName').value = service.name || '';
+                document.getElementById('fieldNameAr').value = service.nameAr || '';
+                document.getElementById('fieldSubtitle').value = service.subtitle || '';
+                document.getElementById('fieldOrder').value = service.order || 0;
+                document.getElementById('fieldIcon').value = '';
+                document.getElementById('iconSizeWarning').style.display = 'none';
+                document.getElementById('serviceModal').classList.add('show');
+            }
+
+            function closeModal() {
+                document.getElementById('serviceModal').classList.remove('show');
+            }
+
+            document.getElementById('fieldIcon').addEventListener('change', (e) => {
+                const warning = document.getElementById('iconSizeWarning');
+                const file = e.target.files[0];
+                if (file && file.size > MAX_ICON_BYTES) {
+                    warning.textContent = `حجم الصورة ${(file.size / 1024).toFixed(0)} كيلوبايت، يتجاوز الحد المسموح (200 كيلوبايت)`;
+                    warning.style.display = 'block';
+                } else {
+                    warning.style.display = 'none';
+                }
+            });
+
+            async function submitService() {
+                const editingId = document.getElementById('editingId').value;
+                const nameAr = document.getElementById('fieldNameAr').value.trim();
+                const name = document.getElementById('fieldName').value.trim() || nameAr;
+                const iconFile = document.getElementById('fieldIcon').files[0];
+
+                if (!name) { showToast('يرجى إدخال اسم الخدمة', 'error'); return; }
+                if (!editingId && !iconFile) { showToast('يرجى اختيار أيقونة', 'error'); return; }
+                if (iconFile && iconFile.size > MAX_ICON_BYTES) {
+                    showToast('حجم الأيقونة يتجاوز 200 كيلوبايت', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('nameAr', nameAr);
+                formData.append('subtitle', document.getElementById('fieldSubtitle').value.trim());
+                formData.append('order', document.getElementById('fieldOrder').value || 0);
+                if (iconFile) formData.append('icon', iconFile);
+
+                try {
+                    const url = editingId ? `${API_BASE}/${editingId}` : API_BASE;
+                    const res = await fetch(url, {
+                        method: editingId ? 'PUT' : 'POST',
+                        headers: { Authorization: `Bearer ${getToken()}` },
+                        body: formData,
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    showToast('تم الحفظ بنجاح');
+                    closeModal();
+                    loadServices();
+                } catch (err) {
+                    showToast(err.message || 'حدث خطأ', 'error');
+                }
+            }
+
+            async function deleteService(id) {
+                if (!confirm('هل أنت متأكد من حذف هذه الخدمة؟')) return;
+                try {
+                    const res = await fetch(`${API_BASE}/${id}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${getToken()}` },
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    showToast('تم حذف الخدمة');
+                    loadServices();
+                } catch (err) {
+                    showToast(err.message || 'حدث خطأ', 'error');
+                }
+            }
+
+            loadServices();
+        </script>
+</body>
+
+</html>

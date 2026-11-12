@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+        }
+    </style>
+</head>
+<body>
+    <!-- Lab Navbar -->
+    <%- include('../partials/lab-navbar') %>
+
+    <!-- Main Content Wrapper -->
+    <div class="lab-wrapper">
+        <main class="lab-dashboard">
+            <div class="test-details-wrapper">
+                <!-- Back Navigation -->
+                <div class="back-navigation">
+                    <a href="/lab/patient-tests" class="back-link">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back to Patient Tests</span>
+                    </a>
+                </div>
+
+                <!-- Page Header -->
+                <div class="test-details-header">
+                    <div class="header-content">
+                        <div class="test-icon <%= patientTest.urgency.toLowerCase() %>">
+                            <i class="fas fa-vial"></i>
+                        </div>
+                        <div class="header-text">
+                            <h1><%= patientTest.testName %></h1>
+                            <p class="test-subtitle">Test ID: <%= patientTest._id.toString().slice(-8).toUpperCase() %></p>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <div class="status-indicator <%= patientTest.status.toLowerCase().replace(' ', '-') %>">
+                            <span class="status-dot"></span>
+                            <span class="status-text"><%= patientTest.status %></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content Grid -->
+                <div class="details-grid">
+                    <!-- Left Column - Patient Info -->
+                    <div class="details-column left-col">
+                        <!-- Patient Information Card -->
+                        <div class="info-card patient-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-user"></i> Patient Information</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="patient-profile">
+                                    <div class="patient-avatar-large">
+                                        <% if (patient && patient.name) { %>
+                                            <%= patient.name.charAt(0).toUpperCase() %>
+                                        <% } else { %>
+                                            <i class="fas fa-user"></i>
+                                        <% } %>
+                                    </div>
+                                    <div class="patient-name-section">
+                                        <h4><%= patient ? patient.name : 'Unknown Patient' %></h4>
+                                        <p class="patient-id-small">ID: <%= (patientTest.patientId ? patientTest.patientId.toString().slice(-8).toUpperCase() : 'N/A') %></p>
+                                    </div>
+                                </div>
+                                <div class="info-list">
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-venus-mars"></i> Gender</span>
+                                        <span class="info-value"><%= patient ? patient.gender : 'N/A' %></span>
+                                    </div>
+                                    <% if (patient && patient.birthDate) { %>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-birthday-cake"></i> Date of Birth</span>
+                                        <span class="info-value"><%= new Date(patient.birthDate).toLocaleDateString() %></span>
+                                    </div>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Urgency Card -->
+                        <div class="info-card urgency-card <%= patientTest.urgency.toLowerCase() %>">
+                            <div class="card-header">
+                                <h3><i class="fas fa-exclamation-triangle"></i> Priority Level</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="urgency-level">
+                                    <span class="urgency-badge-large <%= patientTest.urgency.toLowerCase() %>">
+                                        <%= patientTest.urgency %>
+                                    </span>
+                                    <p class="urgency-description">
+                                        <% if (patientTest.urgency === 'Emergency') { %>
+                                            Immediate attention required
+                                        <% } else if (patientTest.urgency === 'Urgent') { %>
+                                            Process within 24 hours
+                                        <% } else { %>
+                                            Standard processing time
+                                        <% } %>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Center Column - Test Details -->
+                    <div class="details-column center-col">
+                        <!-- Test Information Card -->
+                        <div class="info-card test-info-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-flask"></i> Test Information</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-list">
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-tag"></i> Test Name</span>
+                                        <span class="info-value"><%= patientTest.testName %></span>
+                                    </div>
+                                    <% if (testDetails) { %>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-barcode"></i> Test Code</span>
+                                        <span class="info-value code-badge"><%= testDetails.code %></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-folder"></i> Category</span>
+                                        <span class="info-value category-tag"><%= testDetails.category %></span>
+                                    </div>
+                                    <% } %>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-dollar-sign"></i> Price</span>
+                                        <% if (patientTest.price) { %>
+                                        <span class="info-value price-value">$<%= patientTest.price %></span>
+                                        <% } else if (testDetails && testDetails.price) { %>
+                                        <span class="info-value price-value">$<%= testDetails.price %></span>
+                                        <% } else { %>
+                                        <span class="info-value">N/A</span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                                <% if (testDetails && testDetails.description) { %>
+                                <div class="test-description">
+                                    <h4><i class="fas fa-info-circle"></i> Description</h4>
+                                    <p><%= testDetails.description %></p>
+                                </div>
+                                <% } %>
+                                <% if (testDetails && testDetails.instructions) { %>
+                                <div class="test-instructions">
+                                    <h4><i class="fas fa-clipboard-list"></i> Special Instructions</h4>
+                                    <p><%= testDetails.instructions %></p>
+                                </div>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <!-- Timeline Card -->
+                        <div class="info-card timeline-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-clock"></i> Test Timeline</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="timeline">
+                                    <div class="timeline-item <%= patientTest.status !== 'Pending' ? 'completed' : 'active' %>">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-content">
+                                            <h4>Request Received</h4>
+                                            <p class="timeline-date"><%= new Date(patientTest.requestDate).toLocaleString() %></p>
+                                        </div>
+                                    </div>
+                                    <% if (patientTest.status === 'In Progress' || patientTest.status === 'Completed') { %>
+                                    <div class="timeline-item <%= patientTest.status === 'Completed' ? 'completed' : 'active' %>">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-content">
+                                            <h4>In Progress</h4>
+                                            <p class="timeline-date">Test is being processed</p>
+                                        </div>
+                                    </div>
+                                    <% } %>
+                                    <% if (patientTest.status === 'Completed') { %>
+                                    <div class="timeline-item completed">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-content">
+                                            <h4>Completed</h4>
+                                            <p class="timeline-date"><%= patientTest.resultDate ? new Date(patientTest.resultDate).toLocaleString() : 'Recently completed' %></p>
+                                        </div>
+                                    </div>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Actions & Notes -->
+                    <div class="details-column right-col">
+                        <!-- Quick Actions Card -->
+                        <div class="info-card actions-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="actions-list">
+                                    <button class="action-card-btn <%= patientTest.status === 'In Progress' ? 'active' : '' %>" onclick="updateStatus('In Progress')">
+                                        <i class="fas fa-spinner"></i>
+                                        <span>Start Processing</span>
+                                    </button>
+                                    <button class="action-card-btn <%= patientTest.status === 'Completed' ? 'active' : '' %>" onclick="updateStatus('Completed')">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>Mark Complete</span>
+                                    </button>
+                                    <button class="action-card-btn <%= patientTest.status === 'Pending' ? 'active' : '' %>" onclick="updateStatus('Pending')">
+                                        <i class="fas fa-clock"></i>
+                                        <span>Mark Pending</span>
+                                    </button>
+                                    <button class="action-card-btn cancel-btn" onclick="updateStatus('Cancelled')">
+                                        <i class="fas fa-times-circle"></i>
+                                        <span>Cancel Test</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes Card -->
+                        <div class="info-card notes-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-sticky-note"></i> Notes</h3>
+                            </div>
+                            <div class="card-body">
+                                <textarea
+                                    id="testNotes"
+                                    class="notes-textarea"
+                                    placeholder="Add notes about this test..."
+                                    onchange="saveNotes()"><%= patientTest.notes || '' %></textarea>
+                                <div class="notes-footer">
+                                    <span class="notes-status" id="notesStatus"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lab Info Card -->
+                        <div class="info-card lab-info-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-building"></i> Performed At</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="lab-mini-info">
+                                    <% if (lab.logo) { %>
+                                    <img src="<%= lab.logo %>" alt="<%= lab.name %>" class="lab-mini-logo">
+                                    <% } else { %>
+                                    <div class="lab-mini-logo-placeholder">
+                                        <i class="fas fa-flask"></i>
+                                    </div>
+                                    <% } %>
+                                    <div class="lab-mini-details">
+                                        <h4><%= lab.name %></h4>
+                                        <p><i class="fas fa-map-marker-alt"></i> <%= lab.city %>, <%= lab.country %></p>
+                                        <p><i class="fas fa-phone"></i> <%= lab.phone %></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        /* Test Details Page - Apple Professional Design */
+        .test-details-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Back Navigation */
+        .back-navigation {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--gray-600);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: var(--font-size-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-lg);
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover {
+            background: var(--gray-100);
+            color: var(--primary-600);
+        }
+
+        .back-link i {
+            transition: transform 0.2s ease;
+        }
+
+        .back-link:hover i {
+            transform: translateX(-4px);
+        }
+
+        [dir="rtl"] .back-link:hover i {
+            transform: translateX(4px);
+        }
+
+        /* Test Details Header */
+        .test-details-header {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xl);
+            border: 1px solid var(--gray-200);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+        }
+
+        .test-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-3xl);
+            color: var(--white);
+        }
+
+        .test-icon.emergency {
+            background: linear-gradient(135deg, var(--error), #b91c1c);
+            animation: pulse 2s infinite;
+        }
+
+        .test-icon.urgent {
+            background: linear-gradient(135deg, var(--warning), #d97706);
+        }
+
+        .test-icon.normal {
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+        }
+
+        .header-text h1 {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .test-subtitle {
+            color: var(--gray-500);
+            font-size: var(--font-size-sm);
+            font-family: monospace;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+        }
+
+        .status-indicator.pending {
+            background: var(--warning);
+            color: var(--white);
+        }
+
+        .status-indicator.in-progress {
+            background: var(--info);
+            color: var(--white);
+        }
+
+        .status-indicator.completed {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .status-indicator.cancelled {
+            background: var(--error);
+            color: var(--white);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--white);
+            animation: pulse 2s infinite;
+        }
+
+        /* Details Grid */
+        .details-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr 340px;
+            gap: var(--spacing-xl);
+        }
+
+        .details-column {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+        }
+
+        /* Info Cards */
+        .info-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--gray-100);
+            background: linear-gradient(to bottom, var(--gray-50), var(--white));
+        }
+
+        .card-header h3 {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .card-header h3 i {
+            color: var(--primary-500);
+        }
+
+        .card-body {
+            padding: var(--spacing-lg);
+        }
+
+        /* Patient Card */
+        .patient-profile {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .patient-avatar-large {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+        }
+
+        .patient-name-section h4 {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .patient-id-small {
+            color: var(--gray-500);
+            font-size: var(--font-size-xs);
+            font-family: monospace;
+        }
+
+        /* Info List */
+        .info-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-sm) 0;
+        }
+
+        .info-label {
+            color: var(--gray-600);
+            font-size: var(--font-size-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .info-label i {
+            color: var(--primary-400);
+            width: 16px;
+        }
+
+        .info-value {
+            color: var(--gray-900);
+            font-weight: 500;
+            font-size: var(--font-size-sm);
+            text-align: right;
+        }
+
+        .code-badge {
+            background: var(--gray-100);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-family: monospace;
+            font-size: var(--font-size-xs);
+        }
+
+        .category-tag {
+            background: var(--primary-100);
+            color: var(--primary-700);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-xs);
+        }
+
+        .price-value {
+            color: var(--success);
+            font-weight: 700;
+            font-size: var(--font-size-md);
+        }
+
+        /* Urgency Card */
+        .urgency-card {
+            border-left: 4px solid;
+        }
+
+        .urgency-card.emergency {
+            border-left-color: var(--error);
+        }
+
+        .urgency-card.urgent {
+            border-left-color: var(--warning);
+        }
+
+        .urgency-card.normal {
+            border-left-color: var(--primary-500);
+        }
+
+        .urgency-level {
+            text-align: center;
+            padding: var(--spacing-md);
+        }
+
+        .urgency-badge-large {
+            display: inline-block;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            font-size: var(--font-size-md);
+            font-weight: 700;
+            color: var(--white);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .urgency-badge-large.emergency {
+            background: var(--error);
+        }
+
+        .urgency-badge-large.urgent {
+            background: var(--warning);
+        }
+
+        .urgency-badge-large.normal {
+            background: var(--primary-500);
+        }
+
+        .urgency-description {
+            color: var(--gray-600);
+            font-size: var(--font-size-sm);
+            margin: 0;
+        }
+
+        /* Test Description */
+        .test-description,
+        .test-instructions {
+            margin-top: var(--spacing-lg);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--gray-100);
+        }
+
+        .test-description h4,
+        .test-instructions h4 {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .test-description p,
+        .test-instructions p {
+            color: var(--gray-600);
+            font-size: var(--font-size-sm);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: var(--spacing-xl);
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--gray-200);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: var(--spacing-xl);
+        }
+
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: calc(-1 * var(--spacing-xl) + 6px);
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--gray-300);
+            border: 2px solid var(--white);
+            box-shadow: 0 0 0 2px var(--gray-200);
+        }
+
+        .timeline-item.active .timeline-dot {
+            background: var(--primary-500);
+            box-shadow: 0 0 0 2px var(--primary-200);
+            animation: pulse 2s infinite;
+        }
+
+        .timeline-item.completed .timeline-dot {
+            background: var(--success);
+            box-shadow: 0 0 0 2px var(--success-light);
+        }
+
+        .timeline-content h4 {
+            font-size: var(--font-size-md);
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .timeline-date {
+            color: var(--gray-500);
+            font-size: var(--font-size-sm);
+            margin: 0;
+        }
+
+        /* Actions Card */
+        .actions-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .action-card-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            color: var(--gray-700);
+            text-align: left;
+        }
+
+        .action-card-btn:hover {
+            background: var(--primary-50);
+            border-color: var(--primary-200);
+            color: var(--primary-700);
+            transform: translateY(-2px);
+        }
+
+        .action-card-btn.active {
+            background: var(--primary-500);
+            border-color: var(--primary-500);
+            color: var(--white);
+        }
+
+        .action-card-btn.cancel-btn:hover {
+            background: #fef2f2;
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .action-card-btn i {
+            font-size: var(--font-size-lg);
+        }
+
+        /* Notes Card */
+        .notes-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: var(--spacing-md);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            font-size: var(--font-size-sm);
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.2s ease;
+        }
+
+        .notes-textarea:focus {
+            outline: none;
+            border-color: var(--primary-400);
+            box-shadow: 0 0 0 3px var(--primary-100);
+        }
+
+        .notes-footer {
+            margin-top: var(--spacing-sm);
+            text-align: right;
+        }
+
+        .notes-status {
+            color: var(--success);
+            font-size: var(--font-size-xs);
+        }
+
+        /* Lab Mini Info */
+        .lab-mini-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .lab-mini-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-md);
+            object-fit: cover;
+        }
+
+        .lab-mini-logo-placeholder {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: var(--font-size-lg);
+        }
+
+        .lab-mini-details h4 {
+            font-size: var(--font-size-md);
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .lab-mini-details p {
+            color: var(--gray-600);
+            font-size: var(--font-size-xs);
+            margin: var(--spacing-xs) 0;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .details-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .details-column.right-col {
+                grid-column: span 2;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .test-details-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--spacing-md);
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .details-column.right-col {
+                grid-template-columns: 1fr;
+            }
+
+            .patient-profile {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .info-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--spacing-xs);
+            }
+
+            .info-value {
+                text-align: left;
+            }
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Success light color for timeline */
+        :root {
+            --success-light: #d1fae5;
+        }
+    </style>
+
+    <script>
+        const testId = '<%= patientTest._id %>';
+
+        async function updateStatus(status) {
+            if (status === 'Cancelled') {
+                if (!confirm('Are you sure you want to cancel this test?')) {
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(`/lab/api/patient-tests/${testId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show success message
+                    showNotification('Test status updated successfully!', 'success');
+                    // Reload page to reflect changes
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showNotification(data.message || 'Error updating status', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showNotification('Error updating status', 'error');
+            }
+        }
+
+        async function saveNotes() {
+            const notes = document.getElementById('testNotes').value;
+            const statusEl = document.getElementById('notesStatus');
+
+            try {
+                const response = await fetch(`/lab/api/patient-tests/${testId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ notes })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    statusEl.textContent = '✓ Saved';
+                    setTimeout(() => {
+                        statusEl.textContent = '';
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('Error saving notes:', error);
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? 'var(--success)' : 'var(--error)'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: var(--radius-lg);
+                box-shadow: var(--shadow-xl);
+                display: flex;
+                align-items: center;
+                gap: var(--spacing-sm);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Add animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

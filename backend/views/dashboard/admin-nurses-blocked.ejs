@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('nurseManagement.blockedNurses') %> - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-nurses.css">
+    <style>
+        body {
+            font-family: <%=font %>;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Admin Navbar -->
+    <%- include('../partials/admin-navbar') %>
+
+    <!-- Main Content -->
+    <main class="admin-dashboard">
+        <div class="nurse-management-container">
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="header-left">
+                    <div class="header-breadcrumb">
+                        <a href="/admin/nurses" class="breadcrumb-link">
+                            <i class="fas fa-arrow-left"></i>
+                            <span><%= __('nurseManagement.activeNurses') %></span>
+                        </a>
+                    </div>
+                    <h1><%= __('nurseManagement.blockedNurses') %></h1>
+                    <p class="header-subtitle"><%= __('nurseManagement.blockedNursesSubtitle') %></p>
+                </div>
+                <div class="header-actions">
+                    <button class="modern-btn refresh-btn" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i>
+                        <span><%= __('common.refresh') %></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Blocked Nurses Section -->
+            <section class="main-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-ban"></i>
+                        <h2><%= __('nurseManagement.blocked') %></h2>
+                        <span class="count-badge" id="blockedNursesCount">-</span>
+                    </div>
+                    <div class="section-actions">
+                        <input type="text" id="blockedSearchInput" class="search-input"
+                            placeholder="<%= __('nurseManagement.searchNurses') %>">
+                    </div>
+                </div>
+
+                <!-- Blocked Nurses Grid -->
+                <div class="nurses-grid" id="blockedNursesGrid">
+                    <div class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span><%= __('nurseManagement.loadingNurses') %></span>
+                    </div>
+                </div>
+
+                <!-- Blocked Nurses Pagination -->
+                <div class="pagination" id="blockedPagination"></div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Unblock Nurse Modal -->
+    <div class="modal-overlay" id="unblockNurseModal">
+        <div class="modal-container unblock-modal">
+            <div class="modal-header">
+                <div class="modal-header-content">
+                    <div class="modal-icon-wrapper success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="modal-header-text">
+                        <h3><%= __('nurseManagement.unblockNurse') %></h3>
+                        <p class="modal-header-subtitle"><%= __('nurseManagement.unblockNurseDescription') %></p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeUnblockNurseModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-footer">
+                <button class="modern-btn secondary-btn" onclick="closeUnblockNurseModal()">
+                    <i class="fas fa-times"></i>
+                    <span><%= __('common.cancel') %></span>
+                </button>
+                <button class="modern-btn success-btn" onclick="submitUnblockNurse()">
+                    <i class="fas fa-check"></i>
+                    <span><%= __('nurseManagement.confirmUnblock') %></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-notification" id="toast">
+        <div class="toast-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="toast-content">
+            <h4 class="toast-title" id="toastTitle"><%= __('common.success') %></h4>
+            <p class="toast-message" id="toastMessage"><%= __('common.success') %></p>
+        </div>
+        <button class="toast-close" onclick="hideToast()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <script>
+        const API_BASE = '/api/admin/nurses';
+        let currentBlockedPage = 1;
+        let currentNurseId = null;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            loadBlockedNurses();
+
+            document.getElementById('blockedSearchInput').addEventListener('input', debounce(() => {
+                currentBlockedPage = 1;
+                loadBlockedNurses();
+            }, 500));
+        });
+
+        // Load blocked nurses
+        async function loadBlockedNurses() {
+            const searchQuery = document.getElementById('blockedSearchInput').value;
+
+            const params = new URLSearchParams({
+                page: currentBlockedPage,
+                limit: 12
+            });
+
+            if (searchQuery) params.append('search', searchQuery);
+
+            try {
+                const response = await fetch(`${API_BASE}/blocked?${params}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    renderBlockedNurses(data.data.nurses);
+                    renderPagination('blockedPagination', data.data.page, data.data.pages, (page) => {
+                        currentBlockedPage = page;
+                        loadBlockedNurses();
+                    });
+                    document.getElementById('blockedNursesCount').textContent = data.data.total;
+                } else {
+                    showError('<%= __('common.error') %>');
+                }
+            } catch (error) {
+                console.error('Error loading blocked nurses:', error);
+                showError('<%= __('common.error') %>');
+            }
+        }
+
+        // Render blocked nurses grid
+        function renderBlockedNurses(nurses) {
+            const container = document.getElementById('blockedNursesGrid');
+
+            if (nurses.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state blocked-empty">
+                        <i class="fas fa-user-slash"></i>
+                        <span><%= __('nurseManagement.noBlockedNurses') %></span>
+                        <p class="empty-description"><%= __('nurseManagement.noBlockedNursesDescription') %></p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '<div class="nurses-cards">' + nurses.map(nurse => `
+                <div class="nurse-card blocked">
+                    <div class="card-header">
+                        <div class="nurse-avatar blocked">
+                            <i class="fas fa-user-nurse"></i>
+                        </div>
+                        <div class="nurse-info">
+                            <h4 class="nurse-name">${nurse.name}</h4>
+                            <p class="nurse-email">${nurse.email}</p>
+                        </div>
+                        <span class="status-badge blocked"><%= __('nurseManagement.blocked') %></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-row">
+                            <i class="fas fa-phone"></i>
+                            <span>${nurse.phone}</span>
+                        </div>
+                        <div class="info-row">
+                            <i class="fas fa-calendar-times"></i>
+                            <span><%= __('nurseManagement.blockedAt') %>: ${formatDate(nurse.blockedAt)}</span>
+                        </div>
+                        <div class="info-row">
+                            <i class="fas fa-user-shield"></i>
+                            <span><%= __('nurseManagement.blockedBy') %>: ${nurse.blockedBy ? nurse.blockedBy.name : '-'}</span>
+                        </div>
+                        ${nurse.blockReason ? `
+                        <div class="info-row block-reason">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>${nurse.blockReason}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="card-footer">
+                        <button class="action-btn unblock" onclick="showUnblockNurseModal('${nurse._id}', '${nurse.name}')" title="<%= __('nurseManagement.unblockNurse') %>">
+                            <i class="fas fa-check"></i>
+                            <span><%= __('nurseManagement.unblockNurse') %></span>
+                        </button>
+                    </div>
+                </div>
+            `).join('') + '</div>';
+        }
+
+        // Unblock nurse functions
+        function showUnblockNurseModal(nurseId, nurseName) {
+            currentNurseId = nurseId;
+            const modalTitle = document.querySelector('#unblockNurseModal .modal-header-text h3');
+            modalTitle.textContent = `<%= __('nurseManagement.unblockNurse') %>: ${nurseName}`;
+            document.getElementById('unblockNurseModal').classList.add('show');
+        }
+
+        function closeUnblockNurseModal() {
+            document.getElementById('unblockNurseModal').classList.remove('show');
+            currentNurseId = null;
+        }
+
+        async function submitUnblockNurse() {
+            try {
+                const response = await fetch(`${API_BASE}/active/${currentNurseId}/unblock`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('success', '<%= __('nurseManagement.nurseUnblocked') %>');
+                    closeUnblockNurseModal();
+                    loadBlockedNurses();
+                } else {
+                    showToast('error', data.message);
+                }
+            } catch (error) {
+                showToast('error', '<%= __('common.error') %>');
+            }
+        }
+
+        // Pagination
+        function renderPagination(containerId, currentPage, totalPages, onPageChange) {
+            const container = document.getElementById(containerId);
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            if (currentPage > 1) {
+                html += `<button class="pagination-btn" onclick="pageChange(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+            }
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    html += `<button class="pagination-btn active">${i}</button>`;
+                } else if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    html += `<button class="pagination-btn" onclick="pageChange(${i})">${i}</button>`;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    html += `<span class="pagination-ellipsis">...</span>`;
+                }
+            }
+
+            if (currentPage < totalPages) {
+                html += `<button class="pagination-btn" onclick="pageChange(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+            }
+
+            container.innerHTML = html;
+            container._onPageChange = onPageChange;
+        }
+
+        function pageChange(page) {
+            const container = document.querySelector('.pagination:hover') || document.getElementById('blockedPagination');
+            if (container && container._onPageChange) {
+                container._onPageChange(page);
+            }
+        }
+
+        // Utility functions
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function refreshData() {
+            loadBlockedNurses();
+            showToast('success', '<%= __('common.success') %>');
+        }
+
+        function getToken() {
+            return localStorage.getItem('token') || '';
+        }
+
+        function showToast(type, message) {
+            const toast = document.getElementById('toast');
+            const icon = toast.querySelector('.toast-icon i');
+            const title = toast.querySelector('.toast-title');
+            const msg = toast.querySelector('.toast-message');
+
+            icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+            toast.classList.remove('success', 'error');
+            toast.classList.add(type);
+            title.textContent = type === 'success' ? '<%= __('common.success') %>' : '<%= __('common.error') %>';
+            msg.textContent = message;
+
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function showError(message) {
+            showToast('error', message);
+        }
+
+        function hideToast() {
+            document.getElementById('toast').classList.remove('show');
+        }
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function (e) {
+                if (e.target === this) {
+                    this.classList.remove('show');
+                }
+            });
+        });
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay').forEach(modal => {
+                    modal.classList.remove('show');
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

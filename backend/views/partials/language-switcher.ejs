@@ -1,0 +1,584 @@
+<% if (typeof supportedLanguages !== 'undefined' && typeof currentLang !== 'undefined') { %>
+<div class="language-switcher">
+  <div class="language-selector">
+    <button class="language-trigger" id="languageTrigger" aria-haspopup="true" aria-expanded="false" aria-label="Select language">
+      <div class="current-language">
+        <svg class="language-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <% if (currentLang === 'en') { %>
+            <rect x="3" y="3" width="18" height="18" rx="3" fill="url(#enGradient)"/>
+            <text x="12" y="16" font-family="Georgia, serif" font-size="10" font-weight="bold" text-anchor="middle" fill="white">Aa</text>
+            <defs>
+              <linearGradient id="enGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4285F4;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#1967D2;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+          <% } else if (currentLang === 'ar') { %>
+            <rect x="3" y="3" width="18" height="18" rx="3" fill="url(#arGradient)"/>
+            <text x="12" y="16" font-family="Cairo, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="white" style="direction: rtl">أب</text>
+            <defs>
+              <linearGradient id="arGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#F7931E;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+          <% } else if (currentLang === 'ku') { %>
+            <rect x="3" y="3" width="18" height="18" rx="3" fill="url(#kuGradient)"/>
+            <text x="12" y="16" font-family="Cairo, sans-serif" font-size="9" font-weight="bold" text-anchor="middle" fill="white" style="direction: rtl">ک</text>
+            <defs>
+              <linearGradient id="kuGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#00D2A0;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#00A878;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+          <% } else if (currentLang === 'tr') { %>
+            <rect x="3" y="3" width="18" height="18" rx="3" fill="url(#trGradient)"/>
+            <text x="12" y="16" font-family="Inter, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="white">TR</text>
+            <defs>
+              <linearGradient id="trGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#E30A17;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#C41230;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+          <% } %>
+        </svg>
+        <span class="language-code">
+          <% supportedLanguages.forEach(function(lang) { %>
+            <% if (lang.code === currentLang) { %>
+              <%= lang.code.toUpperCase() %>
+            <% } %>
+          <% }) %>
+        </span>
+      </div>
+      <svg class="dropdown-indicator" width="8" height="5" viewBox="0 0 8 5" fill="none">
+        <path d="M1 1L4 4L7 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <div class="language-menu" id="languageMenu" role="menu">
+      <% supportedLanguages.forEach(function(lang) { %>
+        <a href="?lang=<%= lang.code %>"
+           class="language-item <%= lang.code === currentLang ? 'active' : '' %>"
+           data-lang="<%= lang.code %>"
+           data-dir="<%= lang.dir %>"
+           role="menuitem">
+          <div class="language-icon-wrapper">
+            <svg class="language-icon-small" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <% if (lang.code === 'en') { %>
+                <rect x="4" y="4" width="16" height="16" rx="2" fill="#4285F4"/>
+                <text x="12" y="15" font-family="Georgia, serif" font-size="8" font-weight="bold" text-anchor="middle" fill="white">Aa</text>
+              <% } else if (lang.code === 'ar') { %>
+                <rect x="4" y="4" width="16" height="16" rx="2" fill="#FF6B35"/>
+                <text x="12" y="15" font-family="Cairo, sans-serif" font-size="8" font-weight="bold" text-anchor="middle" fill="white" style="direction: rtl">أب</text>
+              <% } else if (lang.code === 'ku') { %>
+                <rect x="4" y="4" width="16" height="16" rx="2" fill="#00D2A0"/>
+                <text x="12" y="15" font-family="Cairo, sans-serif" font-size="8" font-weight="bold" text-anchor="middle" fill="white" style="direction: rtl">ک</text>
+              <% } else if (lang.code === 'tr') { %>
+                <rect x="4" y="4" width="16" height="16" rx="2" fill="#E30A17"/>
+                <text x="12" y="15" font-family="Inter, sans-serif" font-size="8" font-weight="bold" text-anchor="middle" fill="white">TR</text>
+              <% } %>
+            </svg>
+          </div>
+          <div class="language-info">
+            <span class="language-name"><%= lang.name %></span>
+            <span class="language-native">
+              <% if (lang.code === 'en') { %>English<% } %>
+              <% if (lang.code === 'ar') { %>العربية<% } %>
+              <% if (lang.code === 'ku') { %>کوردی<% } %>
+              <% if (lang.code === 'tr') { %>Türkçe<% } %>
+            </span>
+          </div>
+          <% if (lang.code === currentLang) { %>
+            <svg class="checkmark" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="8" fill="currentColor"/>
+              <path d="M4 8l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          <% } %>
+        </a>
+      <% }) %>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Floating Language Switcher - Apple Style */
+.language-switcher {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 1000;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+}
+
+/* RTL Positioning */
+[dir="rtl"] .language-switcher {
+  right: auto;
+  left: 28px;
+}
+
+.language-selector {
+  position: relative;
+}
+
+/* Pulse animation for the floating button */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.language-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  min-width: 64px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 28px;
+  color: #1d1d1f;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 4px 8px -2px rgba(0, 0, 0, 0.1),
+    0 12px 24px -4px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  animation: float-gentle 4s ease-in-out infinite;
+  overflow: hidden;
+}
+
+/* Subtle glow effect */
+.language-trigger::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 30px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.language-trigger:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.2),
+    0 8px 16px -4px rgba(99, 102, 241, 0.15),
+    0 20px 40px -8px rgba(99, 102, 241, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.language-trigger:hover::before {
+  opacity: 1;
+}
+
+.language-trigger:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 2px 4px -1px rgba(0, 0, 0, 0.1),
+    inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.current-language {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.language-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.language-icon-small {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.language-code {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.dropdown-indicator {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  opacity: 0.6;
+}
+
+.language-trigger[aria-expanded="true"] .dropdown-indicator {
+  transform: rotate(180deg);
+}
+
+.language-menu {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  min-width: 220px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 24px 48px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px) scale(0.95) translateX(8px);
+  transform-origin: bottom right;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  overflow: hidden;
+}
+
+.language-menu.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1) translateX(0);
+}
+
+.language-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  color: #1d1d1f;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  border-radius: 12px;
+  margin: 4px;
+  position: relative;
+}
+
+.language-item:hover {
+  background: rgba(131, 120, 244, 0.08);
+  transform: scale(1.02);
+}
+
+.language-item.active {
+  background: linear-gradient(135deg, rgba(131, 120, 244, 0.1) 0%, rgba(123, 108, 246, 0.1) 100%);
+  color: #5856d6;
+  font-weight: 500;
+}
+
+.language-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.03);
+  flex-shrink: 0;
+}
+
+.language-item.active .language-icon-wrapper {
+  background: rgba(88, 86, 214, 0.1);
+}
+
+.language-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.language-name {
+  font-weight: 500;
+  font-size: 14px;
+  display: block;
+  line-height: 1.2;
+}
+
+.language-native {
+  font-size: 12px;
+  color: #86868b;
+  display: block;
+  line-height: 1.2;
+}
+
+.language-item.active .language-native {
+  color: #5856d6;
+  opacity: 0.8;
+}
+
+.checkmark {
+  width: 20px;
+  height: 20px;
+  color: #5856d6;
+  flex-shrink: 0;
+  animation: checkmark-pop 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+@keyframes checkmark-pop {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* RTL Support */
+[dir="rtl"] .language-menu {
+  right: auto;
+  left: 0;
+  transform-origin: bottom left;
+  transform: translateY(12px) scale(0.95) translateX(-8px);
+}
+
+[dir="rtl"] .language-menu.show {
+  transform: translateY(0) scale(1) translateX(0);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .language-switcher {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  [dir="rtl"] .language-switcher {
+    right: auto;
+    left: 20px;
+  }
+
+  .language-trigger {
+    padding: 10px 14px;
+    min-width: 56px;
+    height: 52px;
+    border-radius: 26px;
+  }
+
+  .language-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .language-code {
+    font-size: 11px;
+  }
+
+  .dropdown-indicator {
+    width: 7px;
+  }
+
+  .language-menu {
+    min-width: 200px;
+    bottom: calc(100% + 8px);
+  }
+
+  .language-item {
+    padding: 10px 12px;
+  }
+
+  .language-icon-wrapper {
+    width: 28px;
+    height: 28px;
+    border-radius: 14px;
+  }
+
+  .language-name {
+    font-size: 13px;
+  }
+
+  .language-native {
+    font-size: 11px;
+  }
+}
+
+/* Purple theme - replaces dark mode */
+.language-trigger {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.9) 50%, rgba(168, 85, 247, 0.9) 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  box-shadow:
+    0 0 0 1px rgba(168, 85, 247, 0.4),
+    0 4px 16px rgba(139, 92, 246, 0.3),
+    0 20px 40px rgba(99, 102, 241, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.language-trigger::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+}
+
+.language-trigger:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.95) 0%, rgba(139, 92, 246, 0.95) 50%, rgba(168, 85, 247, 0.95) 100%);
+  box-shadow:
+    0 0 0 1px rgba(168, 85, 247, 0.5),
+    0 8px 24px rgba(139, 92, 246, 0.4),
+    0 24px 48px rgba(99, 102, 241, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.language-trigger:hover::before {
+  opacity: 1;
+}
+
+.language-trigger:active {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(147, 51, 234, 0.95) 100%);
+}
+
+.language-menu {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(139, 92, 246, 0.2);
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.15),
+    0 8px 24px rgba(139, 92, 246, 0.15),
+    0 24px 48px rgba(99, 102, 241, 0.12);
+}
+
+.language-item {
+  color: #1d1d1f;
+}
+
+.language-item:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12));
+}
+
+.language-item.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
+  color: #7c3aed;
+}
+
+.language-icon-wrapper {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+}
+
+.language-item.active .language-icon-wrapper {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
+}
+
+.language-native {
+  color: #86868b;
+}
+
+.language-item.active .language-native {
+  color: #8b5cf6;
+  opacity: 0.9;
+}
+
+.checkmark {
+  color: #8b5cf6;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const trigger = document.getElementById('languageTrigger');
+  const menu = document.getElementById('languageMenu');
+
+  // Toggle dropdown with Apple-style animations
+  if (trigger && menu) {
+    trigger.addEventListener('click', function(e) {
+      e.preventDefault();
+      const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+
+      trigger.setAttribute('aria-expanded', !isExpanded);
+
+      if (!isExpanded) {
+        // Show menu
+        menu.classList.add('show');
+
+        // Add haptic feedback if available
+        if (navigator.vibrate) {
+          navigator.vibrate(10);
+        }
+
+        // Focus first non-active item
+        const firstNonActive = menu.querySelector('.language-item:not(.active)');
+        if (firstNonActive) {
+          setTimeout(() => firstNonActive.focus(), 100);
+        }
+      } else {
+        // Hide menu
+        menu.classList.remove('show');
+      }
+    });
+
+    // Close dropdown with Apple-style interactions
+    document.addEventListener('click', function(e) {
+      if (!trigger.contains(e.target) && !menu.contains(e.target)) {
+        trigger.setAttribute('aria-expanded', 'false');
+        menu.classList.remove('show');
+      }
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        trigger.setAttribute('aria-expanded', 'false');
+        menu.classList.remove('show');
+        trigger.focus();
+      }
+
+      if (trigger.getAttribute('aria-expanded') === 'true') {
+        const items = Array.from(menu.querySelectorAll('.language-item'));
+        const currentIndex = items.findIndex(item => item === document.activeElement);
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const nextIndex = (currentIndex + 1) % items.length;
+          items[nextIndex].focus();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const prevIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
+          items[prevIndex].focus();
+        }
+      }
+    });
+  }
+
+  // Handle language switching with smooth Apple-style transition
+  const languageOptions = document.querySelectorAll('.language-item');
+  languageOptions.forEach(option => {
+    option.addEventListener('click', function(e) {
+      const newLang = this.dataset.lang;
+      const newDir = this.dataset.dir;
+
+      // Add subtle page transition
+      document.body.style.transition = 'opacity 0.15s ease-out, transform 0.15s ease-out';
+      document.body.style.opacity = '0';
+      document.body.style.transform = 'scale(1.005)';
+
+      // Update document direction and language
+      document.documentElement.dir = newDir;
+      document.documentElement.lang = newLang;
+
+      // Navigate to new language
+      setTimeout(() => {
+        window.location.href = this.href;
+      }, 100);
+    });
+  });
+});
+</script>
+<% } %>

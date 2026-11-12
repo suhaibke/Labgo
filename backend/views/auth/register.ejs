@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('auth.register.title') %> - لابجو</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/auth.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+
+    <!-- Language Switcher -->
+    <%- include('../partials/language-switcher') %>
+
+    <div class="register-container">
+        <div class="register-header">
+            <div class="logo-container">
+                <img src="/images/logo.png" alt="LabGo Logo" class="logo">
+            </div>
+            <h1><%= __('auth.register.title') %></h1>
+            <p class="subtitle"><%= __('auth.register.subtitle') %></p>
+        </div>
+
+        <% if (typeof message !== 'undefined' && message.error) { %>
+        <div class="error-message">
+            <%= message.error %>
+        </div>
+        <% } %>
+
+        <% if (typeof message !== 'undefined' && message.success) { %>
+        <div class="success-message">
+            <%= message.success %>
+        </div>
+        <% } %>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <form id="registerForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName"><%= __('auth.register.firstName') %></label>
+                    <div class="input-container">
+                        <i class="fas fa-user input-icon"></i>
+                        <input
+                            type="text"
+                            id="firstName"
+                            name="firstName"
+                            placeholder="<%= __('auth.register.firstNamePlaceholder') %>"
+                            required
+                            autocomplete="given-name"
+                        >
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="lastName"><%= __('auth.register.lastName') %></label>
+                    <div class="input-container">
+                        <i class="fas fa-user input-icon"></i>
+                        <input
+                            type="text"
+                            id="lastName"
+                            name="lastName"
+                            placeholder="<%= __('auth.register.lastNamePlaceholder') %>"
+                            required
+                            autocomplete="family-name"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email"><%= __('auth.register.email') %></label>
+                <div class="input-container">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="<%= __('auth.register.emailPlaceholder') %>"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="phone"><%= __('auth.register.phone') %></label>
+                <div class="input-container">
+                    <i class="fas fa-phone input-icon"></i>
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        placeholder="<%= __('auth.register.phonePlaceholder') %>"
+                        required
+                        autocomplete="tel"
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="gender"><%= __('auth.register.gender') %></label>
+                <div class="input-container">
+                    <i class="fas fa-venus-mars input-icon"></i>
+                    <select
+                        id="gender"
+                        name="gender"
+                        required
+                    >
+                        <option value=""><%= __('auth.register.selectGender') %></option>
+                        <option value="male"><%= __('auth.register.male') %></option>
+                        <option value="female"><%= __('auth.register.female') %></option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="city"><%= __('auth.register.city') %></label>
+                <div class="input-container">
+                    <i class="fas fa-city input-icon"></i>
+                    <select
+                        id="city"
+                        name="city"
+                        required
+                    >
+                        <option value=""><%= __('auth.register.selectCity') %></option>
+                        <option value="بغداد">بغداد</option>
+                        <option value="البصرة">البصرة</option>
+                        <option value="نينوى">نينوى</option>
+                        <option value="الأنبار">الأنبار</option>
+                        <option value="كركوك">كركوك</option>
+                        <option value="صلاح الدين">صلاح الدين</option>
+                        <option value="ديالى">ديالى</option>
+                        <option value="بابل">بابل</option>
+                        <option value="كربلاء">كربلاء</option>
+                        <option value="النجف">النجف</option>
+                        <option value="القادسية">القادسية</option>
+                        <option value="المثنى">المثنى</option>
+                        <option value="واسط">واسط</option>
+                        <option value="ذي قار">ذي قار</option>
+                        <option value="ميسان">ميسان</option>
+                        <option value="أربيل">أربيل</option>
+                        <option value="السليمانية">السليمانية</option>
+                        <option value="دهوك">دهوك</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="birthDate"><%= __('auth.register.birthDate') %></label>
+                <div class="input-container">
+                    <i class="fas fa-calendar input-icon"></i>
+                    <input
+                        type="date"
+                        id="birthDate"
+                        name="birthDate"
+                        placeholder="<%= __('auth.register.birthDatePlaceholder') %>"
+                        required
+                        autocomplete="bday"
+                    >
+                </div>
+            </div>
+
+            <!-- Role is automatically set to 'patient' - only admin can change roles -->
+
+            <div class="form-group">
+                <label for="password"><%= __('auth.register.password') %></label>
+                <div class="input-container">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="<%= __('auth.register.passwordPlaceholder') %>"
+                        required
+                        autocomplete="new-password"
+                    >
+                    <button type="button" class="password-toggle" onclick="togglePassword('password')">
+                        <i class="fas fa-eye" id="passwordIcon"></i>
+                    </button>
+                </div>
+                <div class="password-strength">
+                    <div class="password-strength-bar" id="passwordStrengthBar"></div>
+                </div>
+                <div class="password-requirements" id="passwordRequirements">
+                    <h4><%= __('auth.register.passwordRequirements.title') %></h4>
+                    <div class="requirement" id="lengthReq">
+                        <i class="fas fa-circle"></i>
+                        <%= __('auth.register.passwordRequirements.length') %>
+                    </div>
+                    <div class="requirement" id="uppercaseReq">
+                        <i class="fas fa-circle"></i>
+                        <%= __('auth.register.passwordRequirements.uppercase') %>
+                    </div>
+                    <div class="requirement" id="lowercaseReq">
+                        <i class="fas fa-circle"></i>
+                        <%= __('auth.register.passwordRequirements.lowercase') %>
+                    </div>
+                    <div class="requirement" id="numberReq">
+                        <i class="fas fa-circle"></i>
+                        <%= __('auth.register.passwordRequirements.number') %>
+                    </div>
+                    <div class="requirement" id="specialReq">
+                        <i class="fas fa-circle"></i>
+                        <%= __('auth.register.passwordRequirements.special') %>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword"><%= __('auth.register.confirmPassword') %></label>
+                <div class="input-container">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        placeholder="<%= __('auth.register.confirmPasswordPlaceholder') %>"
+                        required
+                        autocomplete="new-password"
+                    >
+                    <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">
+                        <i class="fas fa-eye" id="confirmPasswordIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="terms-checkbox">
+                <input type="checkbox" id="terms" name="terms" required>
+                <label for="terms">
+                    <%= __('auth.register.agreeTerms') %>
+                </label>
+            </div>
+
+            <button type="submit" class="register-btn" id="registerBtn">
+                <span id="btnText"><%= __('auth.register.registerButton') %></span>
+            </button>
+        </form>
+
+        <div class="divider">
+            <span><%= __('auth.register.hasAccount') %></span>
+        </div>
+
+        <div class="login-link">
+            <%= __('auth.register.hasAccount') %> <a href="/auth/login"><%= __('auth.register.signIn') %></a>
+        </div>
+    </div>
+
+    <script>
+        // Translation keys for JavaScript
+        const translations = {
+            common: {
+                loading: '<%= __("common.loading") %>',
+                error: '<%= __("common.error") %>',
+                success: '<%= __("common.success") %>'
+            },
+            auth: {
+                register: {
+                    registerSuccess: '<%= __("auth.register.registerSuccess") %>',
+                    emailExists: '<%= __("auth.register.emailExists") %>',
+                    weakPassword: '<%= __("auth.register.weakPassword") %>',
+                    passwordMismatch: '<%= __("auth.register.passwordMismatch") %>',
+                    registerError: '<%= __("auth.register.registerError") %>'
+                },
+                validation: {
+                    required: '<%= __("auth.validation.required") %>',
+                    emailRequired: '<%= __("auth.validation.emailRequired") %>',
+                    passwordRequired: '<%= __("auth.validation.passwordRequired") %>',
+                    passwordMinLength: '<%= __("auth.validation.passwordMinLength") %>',
+                    nameRequired: '<%= __("auth.validation.nameRequired") %>',
+                    nameMinLength: '<%= __("auth.validation.nameMinLength") %>',
+                    phoneRequired: '<%= __("auth.validation.phoneRequired") %>',
+                    phoneInvalid: '<%= __("auth.validation.phoneInvalid") %>',
+                    genderRequired: '<%= __("auth.validation.genderRequired") %>',
+                    birthDateRequired: '<%= __("auth.validation.birthDateRequired") %>',
+                    termsRequired: '<%= __("auth.validation.termsRequired") %>'
+                }
+            },
+            errors: {
+                networkError: '<%= __("errors.networkError") %>',
+                somethingWentWrong: '<%= __("errors.somethingWentWrong") %>',
+                tryAgain: '<%= __("errors.tryAgain") %>'
+            }
+        };
+
+        function togglePassword(fieldId) {
+            const passwordInput = document.getElementById(fieldId);
+            const passwordIcon = document.getElementById(fieldId + 'Icon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordIcon.className = 'fas fa-eye-slash';
+            } else {
+                passwordInput.type = 'password';
+                passwordIcon.className = 'fas fa-eye';
+            }
+        }
+
+        function checkPasswordStrength(password) {
+            const lengthReq = document.getElementById('lengthReq');
+            const uppercaseReq = document.getElementById('uppercaseReq');
+            const lowercaseReq = document.getElementById('lowercaseReq');
+            const numberReq = document.getElementById('numberReq');
+            const specialReq = document.getElementById('specialReq');
+            const strengthBar = document.getElementById('passwordStrengthBar');
+
+            let strength = 0;
+
+            // Check length
+            if (password.length >= 8) {
+                strength++;
+                lengthReq.classList.add('met');
+                lengthReq.querySelector('i').className = 'fas fa-check-circle';
+            } else {
+                lengthReq.classList.remove('met');
+                lengthReq.querySelector('i').className = 'fas fa-circle';
+            }
+
+            // Check uppercase
+            if (/[A-Z]/.test(password)) {
+                strength++;
+                uppercaseReq.classList.add('met');
+                uppercaseReq.querySelector('i').className = 'fas fa-check-circle';
+            } else {
+                uppercaseReq.classList.remove('met');
+                uppercaseReq.querySelector('i').className = 'fas fa-circle';
+            }
+
+            // Check lowercase
+            if (/[a-z]/.test(password)) {
+                strength++;
+                lowercaseReq.classList.add('met');
+                lowercaseReq.querySelector('i').className = 'fas fa-check-circle';
+            } else {
+                lowercaseReq.classList.remove('met');
+                lowercaseReq.querySelector('i').className = 'fas fa-circle';
+            }
+
+            // Check number
+            if (/[0-9]/.test(password)) {
+                strength++;
+                numberReq.classList.add('met');
+                numberReq.querySelector('i').className = 'fas fa-check-circle';
+            } else {
+                numberReq.classList.remove('met');
+                numberReq.querySelector('i').className = 'fas fa-circle';
+            }
+
+            // Check special character
+            if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+                strength++;
+                specialReq.classList.add('met');
+                specialReq.querySelector('i').className = 'fas fa-check-circle';
+            } else {
+                specialReq.classList.remove('met');
+                specialReq.querySelector('i').className = 'fas fa-circle';
+            }
+
+            // Update strength bar
+            const percentage = (strength / 5) * 100;
+            strengthBar.style.width = percentage + '%';
+
+            if (strength <= 2) {
+                strengthBar.style.background = '#ef4444';
+            } else if (strength <= 3) {
+                strengthBar.style.background = '#f59e0b';
+            } else {
+                strengthBar.style.background = '#059669';
+            }
+
+            return strength >= 4; // Require at least 4 out of 5 requirements
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            const successElement = document.getElementById('successMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            successElement.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const errorElement = document.getElementById('errorMessage');
+            const successElement = document.getElementById('successMessage');
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            errorElement.style.display = 'none';
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function setLoading(loading) {
+            const btn = document.getElementById('registerBtn');
+            const btnText = document.getElementById('btnText');
+
+            if (loading) {
+                btn.disabled = true;
+                btnText.innerHTML = '<div class="loading"></div> ' + translations.common.loading + '...';
+            } else {
+                btn.disabled = false;
+                btnText.textContent = translations.auth.register.registerButton;
+            }
+        }
+
+        // Password strength checker
+        document.getElementById('password').addEventListener('input', (e) => {
+            checkPasswordStrength(e.target.value);
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const gender = document.getElementById('gender').value;
+            const city = document.getElementById('city').value;
+            const birthDate = document.getElementById('birthDate').value;
+            const role = 'patient'; // Role is automatically set to patient
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const termsAccepted = document.getElementById('terms').checked;
+
+            // Validation
+            if (!firstName || !lastName || !email || !phone || !gender || !city || !birthDate || !password || !confirmPassword) {
+                showError(translations.auth.validation.required);
+                return;
+            }
+
+            if (firstName.length < 2 || lastName.length < 2) {
+                showError(translations.auth.validation.nameMinLength);
+                return;
+            }
+
+            // Phone validation - exactly 11 digits
+            const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+            const phoneDigits = phone.replace(/\D/g, '');
+            if (!phoneRegex.test(phone) || phoneDigits.length !== 11) {
+                showError(translations.auth.validation.phoneInvalid);
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showError(translations.auth.register.passwordMismatch);
+                return;
+            }
+
+            if (!checkPasswordStrength(password)) {
+                showError(translations.auth.register.weakPassword);
+                return;
+            }
+
+            if (!termsAccepted) {
+                showError(translations.auth.validation.termsRequired);
+                return;
+            }
+
+            const name = `${firstName} ${lastName}`;
+
+            setLoading(true);
+
+            try {
+                // Step 1: Send OTP first
+                const otpResponse = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        phone,
+                        purpose: 'register'
+                    })
+                });
+
+                const otpData = await otpResponse.json();
+
+                if (otpResponse.ok && otpData.success) {
+                    // Store registration data and message ID for OTP verification
+                    sessionStorage.setItem('registerData', JSON.stringify({
+                        name,
+                        email,
+                        phone,
+                        gender,
+                        city,
+                        password,
+                        birthDate,
+                        role
+                    }));
+                    sessionStorage.setItem('otpMessageId', otpData.messageId);
+
+                    showSuccess('<%= __("auth.register.otpSent") %>! جاري التوجيه إلى صفحة التحقق...');
+
+                    // Redirect to OTP page
+                    setTimeout(() => {
+                        window.location.href = '/auth/otp';
+                    }, 1500);
+                } else {
+                    showError(otpData.message || translations.errors.networkError);
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showError(translations.errors.networkError + '. ' + translations.errors.tryAgain);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Hide messages when user starts typing
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('input', hideMessages);
+        });
+
+        // Set max date for birth date (today - 18 years)
+        const today = new Date();
+        const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+        document.getElementById('birthDate').max = maxDate.toISOString().split('T')[0];
+    </script>
+</body>
+</html>

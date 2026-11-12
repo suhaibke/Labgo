@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('auth.login.title') %> - لابجو</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/auth.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+        }
+
+        /* Password Reset Modal Styles - Matching OTP Page Design */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .reset-modal {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow:
+                0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                0 10px 10px -5px rgba(0, 0, 0, 0.04),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+            padding: 48px;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* Ensure all forms stay within modal bounds */
+        .reset-modal form {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 32px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .logo-container {
+            margin-bottom: 24px;
+        }
+
+        .logo {
+            width: 180px;
+            border-radius: 16px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .modal-header h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .modal-header p {
+            font-size: 16px;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .phone-display {
+            color: #8378f4;
+            font-weight: 600;
+            direction: ltr;
+            display: inline-block;
+        }
+
+        /* Error/Success Messages */
+        .modal-message {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .modal-message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #dc2626;
+        }
+
+        .modal-message.success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            color: #059669;
+        }
+
+        /* OTP Input Container - Matching OTP Page */
+        .otp-inputs-wrapper {
+            display: flex !important;
+            gap: 10px !important;
+            justify-content: center !important;
+            margin: 32px 0 !important;
+            direction: ltr !important;
+            flex-wrap: nowrap !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+        }
+
+        /* Maximum specificity using modal ID to override everything */
+        #resetModal .otp-inputs-wrapper input.otp-input,
+        .otp-inputs-wrapper input.otp-input,
+        input.otp-input {
+            width: 45px !important;
+            height: 55px !important;
+            min-width: 45px !important;
+            max-width: 45px !important;
+            text-align: center !important;
+            font-size: 22px !important;
+            font-weight: 700 !important;
+            border: 2px solid #e5e7eb !important;
+            border-radius: 12px !important;
+            background: #f9fafb !important;
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+            transition: all 0.2s ease;
+            outline: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            flex-shrink: 0 !important;
+            box-sizing: border-box !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: textfield !important;
+            letter-spacing: normal !important;
+            opacity: 1 !important;
+        }
+
+        /* Remove number spinner - maximum specificity */
+        #resetModal .otp-inputs-wrapper input.otp-input::-webkit-outer-spin-button,
+        #resetModal .otp-inputs-wrapper input.otp-input::-webkit-inner-spin-button,
+        .otp-inputs-wrapper input.otp-input::-webkit-outer-spin-button,
+        .otp-inputs-wrapper input.otp-input::-webkit-inner-spin-button,
+        input.otp-input::-webkit-outer-spin-button,
+        input.otp-input::-webkit-inner-spin-button {
+            -webkit-appearance: none !important;
+            margin: 0 !important;
+        }
+
+        #resetModal .otp-inputs-wrapper input.otp-input:focus,
+        .otp-inputs-wrapper input.otp-input:focus,
+        input.otp-input:focus {
+            border-color: #8378f4 !important;
+            background: #ffffff !important;
+            color: #8378f4 !important;
+            -webkit-text-fill-color: #8378f4 !important;
+            box-shadow: 0 0 0 3px rgba(131, 120, 244, 0.1) !important;
+            transform: translateY(-2px);
+            opacity: 1 !important;
+        }
+
+        #resetModal .otp-inputs-wrapper input.otp-input.filled,
+        .otp-inputs-wrapper input.otp-input.filled,
+        input.otp-input.filled {
+            border-color: #8378f4 !important;
+            background: #ffffff !important;
+            color: #8378f4 !important;
+            -webkit-text-fill-color: #8378f4 !important;
+            opacity: 1 !important;
+        }
+
+        /* Buttons Matching OTP Page */
+        .modal-btn {
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #8378f4 0%, #7b6cf6 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px 0 rgba(131, 120, 244, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            font-family: inherit;
+        }
+
+        .modal-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px 0 rgba(131, 120, 244, 0.4);
+        }
+
+        .modal-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .modal-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .modal-btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .modal-btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        /* Reset Step Visibility - Critical for modal functionality */
+        .reset-step {
+            display: none;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .reset-step.active {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* Resend Section */
+        .resend-section {
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .resend-section .resend-text {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .resend-btn {
+            background: none;
+            border: none;
+            color: #8378f4;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            font-size: 14px;
+            text-decoration: none;
+            transition: color 0.2s ease;
+            font-family: inherit;
+        }
+
+        .resend-btn:hover:not(:disabled) {
+            color: #6b67d0;
+            text-decoration: underline;
+        }
+
+        .resend-btn:disabled {
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* Back Link */
+        .back-link {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .back-link a {
+            color: #6b7280;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: color 0.2s ease;
+        }
+
+        .back-link a:hover {
+            color: #8378f4;
+        }
+
+        /* Form Input Styles Matching Auth */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            border-color: #8378f4;
+            box-shadow: 0 0 0 3px rgba(131, 120, 244, 0.1);
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* RTL adjustments */
+        [dir="rtl"] .input-icon {
+            left: auto;
+            right: 12px;
+        }
+
+        [dir="rtl"] .form-input {
+            padding: 12px 40px 12px 12px;
+        }
+
+        [dir="rtl"] .back-link a i {
+            transform: rotate(180deg);
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .reset-modal {
+                padding: 32px 24px;
+            }
+
+            #resetModal .otp-inputs-wrapper input.otp-input,
+            .otp-inputs-wrapper input.otp-input,
+            input.otp-input {
+                width: 40px !important;
+                height: 50px !important;
+                min-width: 40px !important;
+                max-width: 40px !important;
+                font-size: 18px !important;
+                color: #1a1a1a !important;
+                -webkit-text-fill-color: #1a1a1a !important;
+            }
+
+            .otp-inputs-wrapper {
+                gap: 8px !important;
+            }
+
+            .modal-header h2 {
+                font-size: 24px;
+            }
+
+            .modal-header p {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            #resetModal .otp-inputs-wrapper input.otp-input,
+            .otp-inputs-wrapper input.otp-input,
+            input.otp-input {
+                width: 36px !important;
+                height: 48px !important;
+                min-width: 36px !important;
+                max-width: 36px !important;
+                font-size: 16px !important;
+                color: #1a1a1a !important;
+                -webkit-text-fill-color: #1a1a1a !important;
+            }
+
+            .otp-inputs-wrapper {
+                gap: 6px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+
+    <!-- Language Switcher -->
+    <%- include('../partials/language-switcher') %>
+
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo-container">
+                <img src="/images/logo.png" alt="LabGo Logo" class="logo">
+            </div>
+            <h1><%= __('auth.login.title') %></h1>
+            <p class="subtitle"><%= __('auth.login.subtitle') %></p>
+        </div>
+
+        <% if (typeof message !== 'undefined' && message.error) { %>
+        <div class="error-message">
+            <%= message.error %>
+        </div>
+        <% } %>
+
+        <% if (typeof message !== 'undefined' && message.success) { %>
+        <div class="success-message">
+            <%= message.success %>
+        </div>
+        <% } %>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="loginInput"><%= __('auth.login.identifier') %></label>
+                <div class="input-container">
+                    <i class="fas fa-phone input-icon"></i>
+                    <input
+                        type="text"
+                        id="loginInput"
+                        name="loginInput"
+                        placeholder="<%= __('auth.login.identifierPlaceholder') %>"
+                        required
+                        autocomplete="username"
+                        autocapitalize="none"
+                        spellcheck="false"
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password"><%= __('auth.login.password') %></label>
+                <div class="input-container">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="<%= __('auth.login.passwordPlaceholder') %>"
+                        required
+                        autocomplete="current-password"
+                    >
+                    <button type="button" class="password-toggle" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="passwordIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="remember-forgot">
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember"><%= __('auth.login.rememberMe') %></label>
+                </div>
+                <a href="#" class="forgot-password" onclick="openResetModal(event); return false;"><%= __('auth.login.forgotPassword') %></a>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                <span id="btnText"><%= __('auth.login.loginButton') %></span>
+            </button>
+        </form>
+
+    </div>
+
+    <!-- Password Reset Modal -->
+    <div class="modal-overlay" id="resetModal">
+        <div class="reset-modal">
+            <div class="modal-message" id="modalMessage" style="display: none;"></div>
+
+            <!-- Step 1: Enter Phone Number -->
+            <div class="reset-step active" id="step1">
+                <div class="logo-container">
+                    <img src="/images/logo.png" alt="LabGo Logo" class="logo">
+                </div>
+                <div class="modal-header">
+                    <h2><%= __('auth.resetPassword.title') %></h2>
+                    <p><%= __('auth.resetPassword.enterPhone') %></p>
+                </div>
+                <form onsubmit="sendResetOtp(event)">
+                    <div class="form-group">
+                        <label for="resetPhone"><%= __('auth.resetPassword.phoneLabel') %></label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-phone input-icon"></i>
+                            <input type="tel" id="resetPhone" class="form-input" placeholder="<%= __('auth.resetPassword.phonePlaceholder') %>" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="modal-btn" id="sendOtpBtn">
+                        <span id="sendOtpBtnText"><%= __('auth.resetPassword.sendCode') %></span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Step 2: Enter OTP -->
+            <div class="reset-step" id="step2">
+                <div class="logo-container">
+                    <img src="/images/logo.png" alt="LabGo Logo" class="logo">
+                </div>
+                <div class="modal-header">
+                    <h2><%= __('auth.resetPassword.verifyTitle') %></h2>
+                    <p><%= __('auth.resetPassword.enterOtp') %> <span class="phone-display" id="otpPhoneDisplay"></span></p>
+                </div>
+
+                <form id="otpForm" onsubmit="verifyResetOtp(event)">
+                    <div class="otp-inputs-wrapper" id="otpInputs">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+                    </div>
+
+                    <button type="submit" class="modal-btn" id="verifyOtpBtn">
+                        <span id="verifyOtpBtnText"><%= __('auth.resetPassword.verifyButton') %></span>
+                    </button>
+                </form>
+
+                <div class="resend-section">
+                    <span class="resend-text"><%= __('auth.otp.resendText') %> </span>
+                    <button type="button" class="resend-btn" id="resendOtpBtn">
+                        <%= __('auth.otp.resendButton') %>
+                    </button>
+                </div>
+
+                <div class="back-link">
+                    <a href="#" onclick="goToStep(1); return false;">
+                        <i class="fas fa-arrow-left"></i>
+                        <%= __('auth.resetPassword.backToPhone') %>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Step 3: Enter New Password -->
+            <div class="reset-step" id="step3">
+                <div class="logo-container">
+                    <img src="/images/logo.png" alt="LabGo Logo" class="logo">
+                </div>
+                <div class="modal-header">
+                    <h2><%= __('auth.resetPassword.newPasswordTitle') %></h2>
+                    <p><%= __('auth.resetPassword.enterNewPassword') %></p>
+                </div>
+                <form onsubmit="confirmResetPassword(event)">
+                    <div class="form-group">
+                        <label for="newPassword"><%= __('auth.resetPassword.newPasswordLabel') %></label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="newPassword" class="form-input" placeholder="<%= __('auth.resetPassword.newPasswordPlaceholder') %>" required minlength="8">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword"><%= __('auth.resetPassword.confirmPasswordLabel') %></label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="confirmPassword" class="form-input" placeholder="<%= __('auth.resetPassword.confirmPasswordPlaceholder') %>" required minlength="8">
+                        </div>
+                    </div>
+                    <button type="submit" class="modal-btn" id="resetPasswordBtn">
+                        <span id="resetPasswordBtnText"><%= __('auth.resetPassword.resetButton') %></span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Step 4: Success -->
+            <div class="reset-step" id="step4">
+                <div class="logo-container">
+                    <img src="/images/logo.png" alt="LabGo Logo" class="logo">
+                </div>
+                <div class="modal-header">
+                    <i class="fas fa-check-circle" style="font-size: 64px; color: #22c55e; margin-bottom: 16px;"></i>
+                    <h2><%= __('auth.resetPassword.successTitle') %></h2>
+                    <p><%= __('auth.resetPassword.successMessage') %></p>
+                </div>
+                <button type="button" class="modal-btn" onclick="closeResetModal()">
+                    <%= __('auth.resetPassword.backToLogin') %>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Access Error Modal -->
+    <div class="modal-overlay" id="patientAccessModal">
+        <div class="reset-modal">
+            <div class="logo-container">
+                <img src="/images/logo.png" alt="LabGo Logo" class="logo">
+            </div>
+            <div class="modal-header">
+                <i class="fas fa-mobile-alt" style="font-size: 64px; color: #8378f4; margin-bottom: 16px;"></i>
+                <h2 id="patientModalTitle"></h2>
+                <p id="patientModalMessage"></p>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <a href="<%= storeLinks.android %>" target="_blank" rel="noopener noreferrer" class="modal-btn" style="text-decoration: none; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i class="fab fa-google-play"></i>
+                    <span>Google Play</span>
+                </a>
+                <a href="<%= storeLinks.ios %>" target="_blank" rel="noopener noreferrer" class="modal-btn" style="text-decoration: none; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i class="fab fa-apple"></i>
+                    <span>App Store</span>
+                </a>
+            </div>
+            <button type="button" class="modal-btn modal-btn-secondary" onclick="closePatientAccessModal()" style="margin-top: 12px;">
+                <%= __('common.close') %>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Translation keys for JavaScript
+        const translations = {
+            common: {
+                loading: '<%= __("common.loading") %>',
+                error: '<%= __("common.error") %>',
+                success: '<%= __("common.success") %>',
+                submit: '<%= __("common.submit") %>'
+            },
+            auth: {
+                login: {
+                    loginSuccess: '<%= __("auth.login.loginSuccess") %>',
+                    invalidCredentials: '<%= __("auth.login.invalidCredentials") %>',
+                    accountNotFound: '<%= __("auth.login.accountNotFound") %>',
+                    loginError: '<%= __("auth.login.loginError") %>',
+                    patientAccessTitle: '<%= __("auth.login.patientAccessTitle") %>',
+                    patientAccessMessage: '<%= __("auth.login.patientAccessMessage") %>'
+                },
+                validation: {
+                    required: '<%= __("auth.validation.required") %>',
+                    emailRequired: '<%= __("auth.validation.emailRequired") %>',
+                    passwordRequired: '<%= __("auth.validation.passwordRequired") %>'
+                },
+                resetPassword: {
+                    title: '<%= __("auth.resetPassword.title") %>',
+                    enterPhone: '<%= __("auth.resetPassword.enterPhone") %>',
+                    phoneLabel: '<%= __("auth.resetPassword.phoneLabel") %>',
+                    phonePlaceholder: '<%= __("auth.resetPassword.phonePlaceholder") %>',
+                    sendCode: '<%= __("auth.resetPassword.sendCode") %>',
+                    verifyTitle: '<%= __("auth.resetPassword.verifyTitle") %>',
+                    enterOtp: '<%= __("auth.resetPassword.enterOtp") %>',
+                    verifyButton: '<%= __("auth.resetPassword.verifyButton") %>',
+                    backToPhone: '<%= __("auth.resetPassword.backToPhone") %>',
+                    newPasswordTitle: '<%= __("auth.resetPassword.newPasswordTitle") %>',
+                    enterNewPassword: '<%= __("auth.resetPassword.enterNewPassword") %>',
+                    newPasswordLabel: '<%= __("auth.resetPassword.newPasswordLabel") %>',
+                    newPasswordPlaceholder: '<%= __("auth.resetPassword.newPasswordPlaceholder") %>',
+                    confirmPasswordLabel: '<%= __("auth.resetPassword.confirmPasswordLabel") %>',
+                    confirmPasswordPlaceholder: '<%= __("auth.resetPassword.confirmPasswordPlaceholder") %>',
+                    resetButton: '<%= __("auth.resetPassword.resetButton") %>',
+                    successTitle: '<%= __("auth.resetPassword.successTitle") %>',
+                    successMessage: '<%= __("auth.resetPassword.successMessage") %>',
+                    backToLogin: '<%= __("auth.resetPassword.backToLogin") %>',
+                    sendSuccess: '<%= __("auth.resetPassword.sendSuccess") %>',
+                    sendError: '<%= __("auth.resetPassword.sendError") %>',
+                    verifySuccess: '<%= __("auth.resetPassword.verifySuccess") %>',
+                    verifyError: '<%= __("auth.resetPassword.verifyError") %>',
+                    resetSuccess: '<%= __("auth.resetPassword.resetSuccess") %>',
+                    resetError: '<%= __("auth.resetPassword.resetError") %>',
+                    invalidPhone: '<%= __("auth.resetPassword.invalidPhone") %>',
+                    passwordMismatch: '<%= __("auth.resetPassword.passwordMismatch") %>',
+                    passwordTooShort: '<%= __("auth.resetPassword.passwordTooShort") %>',
+                    invalidOtp: '<%= __("auth.resetPassword.invalidOtp") %>',
+                    loading: '<%= __("auth.resetPassword.loading") %>',
+                    resendCode: '<%= __("auth.resetPassword.resendCode") %>',
+                    resendIn: '<%= __("auth.resetPassword.resendIn") %>'
+                }
+            },
+            errors: {
+                networkError: '<%= __("errors.networkError") %>',
+                somethingWentWrong: '<%= __("errors.somethingWentWrong") %>',
+                tryAgain: '<%= __("errors.tryAgain") %>'
+            }
+        };
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const passwordIcon = document.getElementById('passwordIcon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordIcon.className = 'fas fa-eye-slash';
+            } else {
+                passwordInput.type = 'password';
+                passwordIcon.className = 'fas fa-eye';
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            const successElement = document.getElementById('successMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            successElement.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const errorElement = document.getElementById('errorMessage');
+            const successElement = document.getElementById('successMessage');
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            errorElement.style.display = 'none';
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function setLoading(loading) {
+            const btn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+
+            if (loading) {
+                btn.disabled = true;
+                btnText.innerHTML = '<div class="loading"></div> ' + translations.common.loading + '...';
+            } else {
+                btn.disabled = false;
+                btnText.textContent = translations.auth.login.loginButton;
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const loginInput = document.getElementById('loginInput').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!loginInput || !password) {
+                showError(translations.auth.validation.required);
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ loginInput, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Block patient role from web access
+                    if (data.user.role === 'patient') {
+                        showPatientAccessError();
+                        return;
+                    }
+
+                    showSuccess(translations.auth.login.loginSuccess + '! جاري التوجيه...');
+
+                    // Store token (only for management roles)
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    // Redirect based on role
+                    setTimeout(() => {
+                        switch(data.user.role) {
+                            case 'admin':
+                                window.location.href = '/admin/dashboard';
+                                break;
+                            case 'lab':
+                                window.location.href = '/lab/dashboard';
+                                break;
+                            case 'nurse':
+                                window.location.href = '/nurse/dashboard';
+                                break;
+                            default:
+                                window.location.href = '/dashboard';
+                        }
+                    }, 1500);
+                } else {
+                    showError(data.message || translations.auth.login.loginError + '. ' + translations.errors.tryAgain);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError(translations.errors.networkError + '. ' + translations.errors.tryAgain);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Hide messages when user starts typing
+        document.getElementById('email').addEventListener('input', hideMessages);
+        document.getElementById('password').addEventListener('input', hideMessages);
+
+        // ============================================================================
+        // Password Reset Modal Functions
+        // ============================================================================
+
+        let resetData = {
+            phone: '',
+            messageId: '',
+            resetToken: ''
+        };
+
+        let resendCooldown = 0;
+        let resendTimer = null;
+
+        function openResetModal(event) {
+            if (event) event.preventDefault();
+            document.getElementById('resetModal').classList.add('active');
+            resetPasswordReset();
+        }
+
+        function closeResetModal() {
+            document.getElementById('resetModal').classList.remove('active');
+            resetPasswordReset();
+        }
+
+        // ============================================================================
+        // Patient Access Modal Functions
+        // ============================================================================
+
+        function showPatientAccessError() {
+            document.getElementById('patientModalTitle').textContent = translations.auth.login.patientAccessTitle;
+            document.getElementById('patientModalMessage').textContent = translations.auth.login.patientAccessMessage;
+            document.getElementById('patientAccessModal').classList.add('active');
+            setLoading(false);
+        }
+
+        function closePatientAccessModal() {
+            document.getElementById('patientAccessModal').classList.remove('active');
+        }
+
+        document.getElementById('patientAccessModal').addEventListener('click', (e) => {
+            if (e.target.id === 'patientAccessModal') {
+                closePatientAccessModal();
+            }
+        });
+
+        function resetPasswordReset() {
+            resetData = { phone: '', messageId: '', resetToken: '' };
+            document.getElementById('resetPhone').value = '';
+            hideModalMessage();
+            goToStep(1);
+            clearOtpInputs();
+            if (resendTimer) {
+                clearInterval(resendTimer);
+                resendCooldown = 0;
+            }
+        }
+
+        function goToStep(stepNumber) {
+            document.querySelectorAll('.reset-step').forEach(step => step.classList.remove('active'));
+            document.getElementById('step' + stepNumber).classList.add('active');
+        }
+
+        function showModalMessage(message, type = 'error') {
+            const msgElement = document.getElementById('modalMessage');
+            msgElement.textContent = message;
+            msgElement.className = 'modal-message ' + type;
+            msgElement.style.display = 'block';
+        }
+
+        function hideModalMessage() {
+            const msgElement = document.getElementById('modalMessage');
+            msgElement.style.display = 'none';
+        }
+
+        function setButtonLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            const btnText = document.getElementById(btnId + 'Text');
+
+            if (loading) {
+                btn.disabled = true;
+                btnText.innerHTML = '<div class="loading"></div> ' + translations.common.loading;
+            } else {
+                btn.disabled = false;
+                if (btnId === 'sendOtpBtn') {
+                    btnText.textContent = translations.auth.resetPassword.sendCode;
+                } else if (btnId === 'verifyOtpBtn') {
+                    btnText.textContent = translations.auth.resetPassword.verifyButton;
+                } else if (btnId === 'resetPasswordBtn') {
+                    btnText.textContent = translations.auth.resetPassword.resetButton;
+                } else {
+                    btnText.textContent = translations.common.submit;
+                }
+            }
+        }
+
+        // Step 1: Send OTP
+        async function sendResetOtp(event) {
+            event.preventDefault();
+            hideModalMessage();
+
+            const phone = document.getElementById('resetPhone').value.trim();
+            if (phone.length < 10) {
+                showModalMessage(translations.auth.resetPassword.invalidPhone);
+                return;
+            }
+
+            setButtonLoading('sendOtpBtn', true);
+
+            try {
+                const response = await fetch('/api/auth/password-reset/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resetData.phone = phone;
+                    resetData.messageId = data.messageId;
+                    // Format phone for display
+                    const formattedPhone = formatPhoneDisplay(phone);
+                    document.getElementById('otpPhoneDisplay').textContent = formattedPhone;
+                    goToStep(2);
+                    setupOtpInputs();
+                    startResendCooldown();
+                } else {
+                    showModalMessage(data.message || translations.auth.resetPassword.sendError);
+                }
+            } catch (error) {
+                console.error('Send OTP error:', error);
+                showModalMessage(translations.errors.networkError + '. ' + translations.errors.tryAgain);
+            } finally {
+                setButtonLoading('sendOtpBtn', false);
+            }
+        }
+
+        // Format phone for display
+        function formatPhoneDisplay(phone) {
+            const cleaned = phone.replace(/\D/g, '');
+            if (cleaned.length > 10) {
+                return `+${cleaned.substring(0, 3)} ${cleaned.substring(3, 5)} ${cleaned.substring(5, 8)} ${cleaned.substring(8)}`;
+            }
+            return phone;
+        }
+
+        // Step 2: Setup OTP inputs with improved handling
+        function setupOtpInputs() {
+            const inputs = document.querySelectorAll('#otpInputs .otp-input');
+
+            inputs.forEach((input, index) => {
+                input.value = '';
+                input.classList.remove('filled');
+
+                // Handle input event
+                input.addEventListener('input', (e) => {
+                    const value = e.target.value;
+
+                    // Only allow digits
+                    if (!/^\d*$/.test(value)) {
+                        e.target.value = '';
+                        return;
+                    }
+
+                    // Take only the last character if multiple entered
+                    if (value.length > 1) {
+                        e.target.value = value.slice(-1);
+                    }
+
+                    // Move to next input when a digit is entered
+                    if (e.target.value.length === 1 && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+
+                    // Update filled state
+                    e.target.classList.toggle('filled', e.target.value.length === 1);
+
+                    // Auto-submit when all filled
+                    if (Array.from(inputs).every(inp => inp.value.length === 1)) {
+                        setTimeout(() => {
+                            document.getElementById('otpForm').dispatchEvent(new Event('submit'));
+                        }, 300);
+                    }
+                });
+
+                // Handle keydown for backspace navigation
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace') {
+                        if (!e.target.value && index > 0) {
+                            // Move to previous input if current is empty
+                            inputs[index - 1].focus();
+                        }
+                        // Note: We don't prevent default, so backspace still clears the character
+                    }
+                });
+
+                // Handle paste event
+                input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+
+                    if (/^\d+$/.test(pastedData)) {
+                        pastedData.split('').forEach((char, i) => {
+                            if (inputs[i]) {
+                                inputs[i].value = char;
+                                inputs[i].classList.add('filled');
+                            }
+                        });
+
+                        // Focus the next empty input or the last one
+                        const nextEmpty = Array.from(inputs).findIndex(inp => !inp.value);
+                        if (nextEmpty !== -1) {
+                            inputs[nextEmpty].focus();
+                        } else {
+                            inputs[inputs.length - 1].focus();
+                        }
+
+                        // Auto-submit if all filled
+                        if (pastedData.length === 6) {
+                            setTimeout(() => {
+                                document.getElementById('otpForm').dispatchEvent(new Event('submit'));
+                            }, 100);
+                        }
+                    }
+                });
+
+                // Clear filled state on focus if empty
+                input.addEventListener('focus', () => {
+                    if (input.value) {
+                        input.select();
+                    }
+                });
+            });
+
+            // Focus first input
+            if (inputs.length > 0) {
+                setTimeout(() => {
+                    inputs[0].focus();
+                }, 100);
+            }
+        }
+
+        function clearOtpInputs() {
+            document.querySelectorAll('#otpInputs .otp-input').forEach(input => {
+                input.value = '';
+                input.classList.remove('filled');
+            });
+        }
+
+        function getOtpCode() {
+            const inputs = document.querySelectorAll('#otpInputs .otp-input');
+            return Array.from(inputs).map(input => input.value).join('');
+        }
+
+        // Step 2: Verify OTP
+        async function verifyResetOtp(event) {
+            event.preventDefault();
+            hideModalMessage();
+
+            const code = getOtpCode();
+            if (code.length !== 6) {
+                showModalMessage(translations.auth.resetPassword.invalidOtp);
+                return;
+            }
+
+            setButtonLoading('verifyOtpBtn', true);
+
+            try {
+                const response = await fetch('/api/auth/password-reset/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: resetData.phone,
+                        code: code,
+                        messageId: resetData.messageId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resetData.resetToken = data.resetToken;
+                    goToStep(3);
+                } else {
+                    showModalMessage(data.message || translations.auth.resetPassword.verifyError);
+                    clearOtpInputs();
+                    const inputs = document.querySelectorAll('#otpInputs .otp-input');
+                    if (inputs.length > 0) inputs[0].focus();
+                }
+            } catch (error) {
+                console.error('Verify OTP error:', error);
+                showModalMessage(translations.errors.networkError + '. ' + translations.errors.tryAgain);
+            } finally {
+                setButtonLoading('verifyOtpBtn', false);
+            }
+        }
+
+        // Resend OTP
+        async function resendResetOtp(event) {
+            event.preventDefault();
+            if (resendCooldown > 0) return;
+
+            hideModalMessage();
+
+            const resendBtn = document.getElementById('resendOtpBtn');
+            resendBtn.disabled = true;
+            resendBtn.innerHTML = '<div class="loading" style="width:14px;height:14px;border-width:2px;"></div>';
+
+            try {
+                const response = await fetch('/api/auth/password-reset/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: resetData.phone })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resetData.messageId = data.messageId;
+                    showModalMessage(translations.auth.resetPassword.sendSuccess, 'success');
+                    startResendCooldown();
+                    clearOtpInputs();
+                    const inputs = document.querySelectorAll('#otpInputs .otp-input');
+                    if (inputs.length > 0) inputs[0].focus();
+                } else {
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = translations.auth.resetPassword.resendCode;
+                    showModalMessage(data.message || translations.auth.resetPassword.sendError);
+                }
+            } catch (error) {
+                console.error('Resend OTP error:', error);
+                resendBtn.disabled = false;
+                resendBtn.textContent = translations.auth.resetPassword.resendCode;
+                showModalMessage(translations.errors.networkError + '. ' + translations.errors.tryAgain);
+            }
+        }
+
+        function startResendCooldown() {
+            resendCooldown = 60;
+            const resendBtn = document.getElementById('resendOtpBtn');
+
+            resendTimer = setInterval(() => {
+                resendCooldown--;
+                if (resendCooldown > 0) {
+                    resendBtn.disabled = true;
+                    resendBtn.textContent = translations.auth.resetPassword.resendIn.replace('{seconds}', resendCooldown);
+                } else {
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = translations.auth.resetPassword.resendCode;
+                    clearInterval(resendTimer);
+                }
+            }, 1000);
+        }
+
+        // Step 3: Confirm Password Reset
+        async function confirmResetPassword(event) {
+            event.preventDefault();
+            hideModalMessage();
+
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword.length < 8) {
+                showModalMessage(translations.auth.resetPassword.passwordTooShort);
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showModalMessage(translations.auth.resetPassword.passwordMismatch);
+                return;
+            }
+
+            setButtonLoading('resetPasswordBtn', true);
+
+            try {
+                const response = await fetch('/api/auth/password-reset/confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resetToken: resetData.resetToken,
+                        newPassword: newPassword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    goToStep(4);
+                } else {
+                    showModalMessage(data.message || translations.auth.resetPassword.resetError);
+                }
+            } catch (error) {
+                console.error('Reset password error:', error);
+                showModalMessage(translations.errors.networkError + '. ' + translations.errors.tryAgain);
+            } finally {
+                setButtonLoading('resetPasswordBtn', false);
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('resetModal').addEventListener('click', (e) => {
+            if (e.target.id === 'resetModal') {
+                closeResetModal();
+            }
+        });
+    </script>
+</body>
+</html>

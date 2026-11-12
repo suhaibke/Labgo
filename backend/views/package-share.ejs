@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= found ? (pkg.nameAr || pkg.name) + ' - LabGo' : 'LabGo' %></title>
+
+    <% if (found) { %>
+    <meta property="og:title" content="<%= pkg.nameAr || pkg.name %>">
+    <meta property="og:description" content="<%= pkg.testIds.length %> تحليل - <%= pkg.price.toLocaleString() %> د.ع">
+    <meta property="og:type" content="website">
+    <% } %>
+
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(160deg, #F6F4FD 0%, #EEEDFE 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 32px 24px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(90, 66, 184, 0.15);
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: 800;
+            color: #7257D8;
+            margin-bottom: 20px;
+        }
+        .icon-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #7257D8, #5A42B8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 32px;
+        }
+        h1 { font-size: 20px; font-weight: 700; color: #1f2937; margin-bottom: 6px; }
+        .lab-name { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #F6F4FD;
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+        }
+        .test-count { font-size: 13px; color: #6b7280; }
+        .price { font-size: 20px; font-weight: 800; color: #7257D8; }
+        .status-text {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-bottom: 16px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 15px;
+            text-decoration: none;
+            margin-bottom: 12px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #7257D8, #5A42B8);
+            color: #fff;
+        }
+        .btn-secondary {
+            background: #F6F4FD;
+            color: #5A42B8;
+        }
+        .hidden { display: none; }
+        .not-found { color: #6b7280; font-size: 14px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">LabGo</div>
+
+        <% if (found) { %>
+            <div class="icon-circle">🧪</div>
+            <h1><%= pkg.nameAr || pkg.name %></h1>
+            <div class="lab-name"><%= lab.name %> · <%= lab.city || '' %></div>
+            <div class="price-row">
+                <span class="test-count"><%= pkg.testIds.length %> تحليل</span>
+                <span class="price"><%= pkg.price.toLocaleString() %> د.ع</span>
+            </div>
+
+            <div id="openingState">
+                <div class="status-text">جاري التحويل...</div>
+            </div>
+
+            <div id="fallbackState" class="hidden">
+                <a id="openApp" class="btn btn-primary hidden">فتح في التطبيق</a>
+                <a id="appStore" href="<%= storeLinks.ios %>" class="btn btn-secondary">تحميل من App Store</a>
+                <a id="googlePlay" href="<%= storeLinks.android %>" class="btn btn-secondary">تحميل من Google Play</a>
+            </div>
+        <% } else { %>
+            <div class="icon-circle">🧪</div>
+            <h1>LabGo</h1>
+            <p class="not-found">هذه الباقة غير متاحة حالياً</p>
+            <a href="<%= storeLinks.ios %>" class="btn btn-secondary">تحميل من App Store</a>
+            <a href="<%= storeLinks.android %>" class="btn btn-secondary">تحميل من Google Play</a>
+        <% } %>
+    </div>
+
+    <% if (found) { %>
+    <script>
+        var stores = <%- JSON.stringify(storeLinks) %>;
+        var ua = navigator.userAgent;
+        var isIos = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var isAndroid = /Android/i.test(ua);
+
+        function hide(id) { document.getElementById(id).classList.add('hidden'); }
+        function show(id) { document.getElementById(id).classList.remove('hidden'); }
+        function showButtons() { hide('openingState'); show('fallbackState'); }
+
+        if (isIos) {
+            // With the app installed, iOS opens it from the Universal Link
+            // and this page never loads, so reaching here means go to the store.
+            hide('googlePlay');
+            window.location.replace(stores.ios);
+            setTimeout(showButtons, 2000);
+        } else if (isAndroid) {
+            // Android opens the app if installed, otherwise the fallback URL.
+            var intentUrl = 'intent://package/<%= pkg._id %>#Intent;scheme=labgo;package=com.labgo.app;S.browser_fallback_url='
+                + encodeURIComponent(stores.android) + ';end';
+            var openApp = document.getElementById('openApp');
+            openApp.href = intentUrl;
+            show('openApp');
+            hide('appStore');
+            window.location.href = intentUrl;
+            // Some in-app browsers ignore intent links; leave buttons to tap.
+            setTimeout(showButtons, 2000);
+        } else {
+            showButtons();
+        }
+    </script>
+    <% } %>
+</body>
+</html>

@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('shop.products') || 'Shop Products' %> - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <style>
+        body { font-family: <%= direction === 'rtl' ? "'Cairo', sans-serif" : "'Inter', sans-serif" %>; }
+        
+        .shop-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 24px 40px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .page-subtitle {
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            text-decoration: none;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        /* Filters */
+        .filters-bar {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-select {
+            padding: 10px 16px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            background: var(--white);
+            min-width: 150px;
+        }
+        
+        .search-input {
+            padding: 10px 16px;
+            padding-<%= direction === 'rtl' ? 'right' : 'left' %>: 40px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            min-width: 250px;
+            background: var(--white);
+        }
+        
+        .search-wrapper {
+            position: relative;
+        }
+        
+        .search-wrapper i {
+            position: absolute;
+            <%= direction === 'rtl' ? 'right' : 'left' %>: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-400);
+        }
+        
+        /* Products Table */
+        .products-table-container {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .products-table th,
+        .products-table td {
+            padding: 16px 20px;
+            text-align: <%= direction === 'rtl' ? 'right' : 'left' %>;
+        }
+        
+        .products-table th {
+            background: var(--gray-50);
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .products-table tbody tr {
+            border-top: 1px solid var(--gray-100);
+            transition: background var(--transition-fast);
+        }
+        
+        .products-table tbody tr:hover {
+            background: var(--gray-50);
+        }
+        
+        .product-cell {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        
+        .product-image {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-md);
+            object-fit: cover;
+            background: var(--gray-100);
+        }
+        
+        .product-image-placeholder {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--primary-100), var(--primary-200));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .product-image-placeholder i {
+            font-size: 20px;
+            color: var(--primary-500);
+        }
+        
+        .product-info h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .product-info p {
+            font-size: 13px;
+            color: var(--gray-500);
+        }
+        
+        .price-cell {
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+        
+        .price-original {
+            font-size: 12px;
+            color: var(--gray-400);
+            text-decoration: line-through;
+            margin-<%= direction === 'rtl' ? 'right' : 'left' %>: 8px;
+        }
+        
+        .category-badge {
+            display: inline-flex;
+            padding: 6px 12px;
+            background: var(--primary-50);
+            color: var(--primary-700);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .status-inactive {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+        
+        .status-draft {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+        
+        .featured-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .actions-cell {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--gray-200);
+            background: var(--white);
+            color: var(--gray-600);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .action-btn:hover {
+            background: var(--gray-100);
+            color: var(--gray-900);
+        }
+        
+        .action-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border-color: var(--error);
+        }
+        
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-top: 1px solid var(--gray-100);
+        }
+        
+        .pagination-info {
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+        
+        .pagination-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .page-btn {
+            padding: 8px 14px;
+            border: 1px solid var(--gray-200);
+            background: var(--white);
+            border-radius: var(--radius-md);
+            color: var(--gray-700);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all var(--transition-fast);
+        }
+        
+        .page-btn:hover:not(:disabled) {
+            background: var(--gray-100);
+        }
+        
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .page-btn.active {
+            background: var(--primary-500);
+            border-color: var(--primary-500);
+            color: var(--white);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            color: var(--gray-300);
+            margin-bottom: 16px;
+        }
+        
+        .empty-state h3 {
+            font-size: 18px;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+        
+        .empty-state p {
+            color: var(--gray-500);
+            margin-bottom: 24px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary-500);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 60px auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            padding: 20px;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .modal-body {
+            padding: 24px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 24px;
+            border-top: 1px solid var(--gray-100);
+        }
+        
+        .btn-secondary {
+            padding: 10px 20px;
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .btn-danger {
+            padding: 10px 20px;
+            background: var(--error);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        /* Stats Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .stat-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .stat-card-icon.blue {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--info);
+        }
+        
+        .stat-card-icon.green {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .stat-card-icon.orange {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+        
+        .stat-card-icon.purple {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--primary-500);
+        }
+        
+        .stat-card-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .stat-card-label {
+            font-size: 13px;
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
+        
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 100px;
+            <%= direction === 'rtl' ? 'left' : 'right' %>: 24px;
+            z-index: 1200;
+        }
+        
+        .toast {
+            padding: 16px 20px;
+            border-radius: var(--radius-lg);
+            background: var(--white);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            animation: toastSlide 0.3s ease;
+        }
+        
+        @keyframes toastSlide {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .toast.success { border-<%= direction === 'rtl' ? 'right' : 'left' %>: 4px solid var(--success); }
+        .toast.error { border-<%= direction === 'rtl' ? 'right' : 'left' %>: 4px solid var(--error); }
+        .toast.success i { color: var(--success); }
+        .toast.error i { color: var(--error); }
+    </style>
+</head>
+<body>
+    <%- include('../partials/admin-navbar') %>
+    
+    <div class="shop-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title"><%= __('shop.products') || 'Products' %></h1>
+                <p class="page-subtitle"><%= __('shop.productsSubtitle') || 'Manage your shop products' %></p>
+            </div>
+            <div class="header-actions">
+                <a href="/admin/shop/products/add" class="btn-primary">
+                    <i class="fas fa-plus"></i>
+                    <span><%= __('shop.addProduct') || 'Add Product' %></span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Stats Row -->
+        <div class="stats-row" id="statsRow">
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon blue"><i class="fas fa-box"></i></div>
+                </div>
+                <div class="stat-card-value" id="totalProducts">--</div>
+                <div class="stat-card-label"><%= __('shop.totalProducts') || 'Total Products' %></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon green"><i class="fas fa-check-circle"></i></div>
+                </div>
+                <div class="stat-card-value" id="activeProducts">--</div>
+                <div class="stat-card-label"><%= __('shop.activeProducts') || 'Active Products' %></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon orange"><i class="fas fa-star"></i></div>
+                </div>
+                <div class="stat-card-value" id="featuredProducts">--</div>
+                <div class="stat-card-label"><%= __('shop.featuredProducts') || 'Featured' %></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon purple"><i class="fas fa-tags"></i></div>
+                </div>
+                <div class="stat-card-value" id="totalCategories">--</div>
+                <div class="stat-card-label"><%= __('shop.categories') || 'Categories' %></div>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        <div class="filters-bar">
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="<%= __('shop.searchProducts') || 'Search products...' %>">
+            </div>
+            <div class="filter-group">
+                <select class="filter-select" id="categoryFilter">
+                    <option value=""><%= __('shop.allCategories') || 'All Categories' %></option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <select class="filter-select" id="statusFilter">
+                    <option value=""><%= __('shop.allStatus') || 'All Status' %></option>
+                    <option value="active"><%= __('common.active') || 'Active' %></option>
+                    <option value="inactive"><%= __('common.inactive') || 'Inactive' %></option>
+                    <option value="draft"><%= __('shop.draft') || 'Draft' %></option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Products Table -->
+        <div class="products-table-container" id="productsContainer">
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+    
+    <!-- Delete Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title"><%= __('common.confirmDelete') || 'Confirm Delete' %></h3>
+            </div>
+            <div class="modal-body">
+                <p><%= __('shop.deleteProductConfirm') || 'Are you sure you want to delete this product?' %></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDeleteModal()"><%= __('common.cancel') || 'Cancel' %></button>
+                <button class="btn-danger" onclick="confirmDelete()"><%= __('common.delete') || 'Delete' %></button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <script>
+        const currentLang = '<%= currentLang %>';
+        let products = [];
+        let categories = [];
+        let pagination = { page: 1, limit: 20, total: 0, pages: 0 };
+        let deleteId = null;
+        
+        // Get token from localStorage
+        function getToken() {
+            return localStorage.getItem('token') || '';
+        }
+        
+        // Load categories for filter
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/admin/shop/categories', {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    categories = data.data || [];
+                    const select = document.getElementById('categoryFilter');
+                    categories.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat._id;
+                        option.textContent = cat.name[currentLang] || cat.name.en;
+                        select.appendChild(option);
+                    });
+                    document.getElementById('totalCategories').textContent = categories.length;
+                }
+            } catch (error) {
+                console.error('Load categories error:', error);
+            }
+        }
+        
+        // Load products
+        async function loadProducts() {
+            const search = document.getElementById('searchInput').value;
+            const category = document.getElementById('categoryFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            
+            const params = new URLSearchParams({
+                page: pagination.page,
+                limit: pagination.limit
+            });
+            if (search) params.append('search', search);
+            if (category) params.append('category', category);
+            if (status) params.append('status', status);
+            
+            try {
+                const response = await fetch(`/api/admin/shop/products?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    products = data.data || [];
+                    pagination = data.pagination;
+                    renderProducts();
+                    updateStats();
+                }
+            } catch (error) {
+                console.error('Load products error:', error);
+                showToast('Failed to load products', 'error');
+            }
+        }
+        
+        // Update stats
+        async function updateStats() {
+            try {
+                const headers = { 'Authorization': `Bearer ${getToken()}` };
+                const [all, active, featured] = await Promise.all([
+                    fetch('/api/admin/shop/products?limit=1', { headers }),
+                    fetch('/api/admin/shop/products?status=active&limit=1', { headers }),
+                    fetch('/api/admin/shop/products?featured=true&limit=1', { headers })
+                ]);
+                
+                const [allData, activeData, featuredData] = await Promise.all([
+                    all.json(), active.json(), featured.json()
+                ]);
+                
+                document.getElementById('totalProducts').textContent = allData.pagination?.total || 0;
+                document.getElementById('activeProducts').textContent = activeData.pagination?.total || 0;
+                document.getElementById('featuredProducts').textContent = featuredData.pagination?.total || 0;
+            } catch (error) {
+                console.error('Update stats error:', error);
+            }
+        }
+        
+        // Render products table
+        function renderProducts() {
+            const container = document.getElementById('productsContainer');
+            
+            if (products.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-box-open"></i>
+                        <h3><%= __('shop.noProducts') || 'No products found' %></h3>
+                        <p><%= __('shop.noProductsDesc') || 'Start by adding your first product' %></p>
+                        <a href="/admin/shop/products/add" class="btn-primary">
+                            <i class="fas fa-plus"></i>
+                            <span><%= __('shop.addProduct') || 'Add Product' %></span>
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <table class="products-table">
+                    <thead>
+                        <tr>
+                            <th><%= __('shop.product') || 'Product' %></th>
+                            <th><%= __('shop.category') || 'Category' %></th>
+                            <th><%= __('shop.price') || 'Price' %></th>
+                            <th><%= __('shop.stock') || 'Stock' %></th>
+                            <th><%= __('common.status') || 'Status' %></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${products.map(p => `
+                            <tr>
+                                <td>
+                                    <div class="product-cell">
+                                        ${p.images && p.images[0]
+                                            ? `<img src="${p.images[0].url}" alt="" class="product-image">`
+                                            : `<div class="product-image-placeholder"><i class="fas fa-image"></i></div>`
+                                        }
+                                        <div class="product-info">
+                                            <h4>
+                                                ${p.name[currentLang] || p.name.en}
+                                                ${p.isFeatured ? '<span class="featured-badge"><i class="fas fa-star"></i> Featured</span>' : ''}
+                                            </h4>
+                                            <p>${p.shortDescription?.[currentLang] || p.shortDescription?.en || ''}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="category-badge">${p.category?.name?.[currentLang] || p.category?.name?.en || 'N/A'}</span>
+                                </td>
+                                <td>
+                                    <span class="price-cell">${formatPrice(p.price)}</span>
+                                    ${p.compareAtPrice ? `<span class="price-original">${formatPrice(p.compareAtPrice)}</span>` : ''}
+                                </td>
+                                <td>
+                                    ${p.inventory?.trackInventory 
+                                        ? `<span>${p.inventory.quantity}</span>` 
+                                        : '<span style="color: var(--gray-400)">∞</span>'
+                                    }
+                                </td>
+                                <td>
+                                    <span class="status-badge status-${p.status}">
+                                        ${p.status === 'active' ? '<%= __("common.active") || "Active" %>' 
+                                          : p.status === 'inactive' ? '<%= __("common.inactive") || "Inactive" %>'
+                                          : '<%= __("shop.draft") || "Draft" %>'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="actions-cell">
+                                        <a href="/admin/shop/products/edit/${p._id}" class="action-btn" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="action-btn danger" onclick="openDeleteModal('${p._id}')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <div class="pagination-info">
+                        Showing ${(pagination.page - 1) * pagination.limit + 1} - ${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total}
+                    </div>
+                    <div class="pagination-buttons">
+                        <button class="page-btn" onclick="changePage(${pagination.page - 1})" ${pagination.page <= 1 ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-<%= direction === 'rtl' ? 'right' : 'left' %>"></i>
+                        </button>
+                        ${generatePageButtons()}
+                        <button class="page-btn" onclick="changePage(${pagination.page + 1})" ${pagination.page >= pagination.pages ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-<%= direction === 'rtl' ? 'left' : 'right' %>"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generatePageButtons() {
+            let html = '';
+            const maxButtons = 5;
+            let start = Math.max(1, pagination.page - Math.floor(maxButtons / 2));
+            let end = Math.min(pagination.pages, start + maxButtons - 1);
+            
+            if (end - start < maxButtons - 1) {
+                start = Math.max(1, end - maxButtons + 1);
+            }
+            
+            for (let i = start; i <= end; i++) {
+                html += `<button class="page-btn ${i === pagination.page ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            }
+            return html;
+        }
+        
+        function changePage(page) {
+            if (page < 1 || page > pagination.pages) return;
+            pagination.page = page;
+            loadProducts();
+        }
+        
+        function formatPrice(price) {
+            return new Intl.NumberFormat('<%= currentLang %>', { style: 'decimal' }).format(price) + ' IQD';
+        }
+        
+        // Delete
+        function openDeleteModal(id) {
+            deleteId = id;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+        
+        function closeDeleteModal() {
+            deleteId = null;
+            document.getElementById('deleteModal').classList.remove('active');
+        }
+        
+        async function confirmDelete() {
+            if (!deleteId) return;
+            
+            try {
+                const response = await fetch(`/api/admin/shop/products/${deleteId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('<%= __("shop.productDeleted") || "Product deleted" %>', 'success');
+                    closeDeleteModal();
+                    loadProducts();
+                } else {
+                    showToast(data.message || 'Failed to delete', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to delete', 'error');
+            }
+        }
+        
+        // Toast
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', debounce(loadProducts, 300));
+        document.getElementById('categoryFilter').addEventListener('change', loadProducts);
+        document.getElementById('statusFilter').addEventListener('change', loadProducts);
+        
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCategories();
+            loadProducts();
+        });
+    </script>
+</body>
+</html>

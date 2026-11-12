@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <link rel="stylesheet" href="/css/lab-orders.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+        }
+    </style>
+</head>
+<body>
+    <!-- Lab Navbar -->
+    <%- include('../partials/lab-navbar') %>
+
+    <!-- Main Content Wrapper -->
+    <div class="lab-wrapper">
+        <main class="lab-orders-page">
+            <div class="orders-container">
+                <!-- Page Header -->
+                <section class="page-header">
+                    <div class="header-content">
+                        <h1><%= __('labOrders.title', currentLang) %></h1>
+                        <p class="subtitle"><%= __('labOrders.subtitle', currentLang) %></p>
+                    </div>
+                    <div class="header-actions">
+                        <button id="autoRefreshToggle" class="refresh-toggle active" title="<%= __('labOrders.autoRefresh', currentLang) %>">
+                            <i class="fas fa-sync-alt"></i>
+                            <span class="toggle-label">Auto</span>
+                        </button>
+                        <span class="last-updated"><%= __('labOrders.lastUpdated', currentLang) %>: <span id="lastUpdateTime">--</span></span>
+                    </div>
+                </section>
+
+                <!-- Stats Cards -->
+                <section class="stats-section">
+                    <div class="stat-card incoming">
+                        <div class="stat-icon">
+                            <i class="fas fa-truck-loading"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number" id="incomingCount"><%= stats.incoming %></h3>
+                            <p class="stat-label"><%= __('labOrders.incomingSamples', currentLang) %></p>
+                            <span class="stat-badge yellow"><%= __('orders.statusValues.sampleCollected', currentLang) %></span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card in-lab">
+                        <div class="stat-icon">
+                            <i class="fas fa-flask"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number" id="inLabCount"><%= stats.inLab %></h3>
+                            <p class="stat-label"><%= __('labOrders.inLab', currentLang) %></p>
+                            <span class="stat-badge blue"><%= __('orders.statusValues.atLab', currentLang) %></span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card completed">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number" id="completedCount"><%= stats.completed %></h3>
+                            <p class="stat-label"><%= __('labOrders.completed', currentLang) %></p>
+                            <span class="stat-badge green"><%= __('orders.statusValues.completed', currentLang) %></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Orders Grid -->
+                <section class="orders-grid">
+                    <!-- Incoming Samples Column -->
+                    <div class="orders-column incoming-column">
+                        <div class="column-header">
+                            <h2><i class="fas fa-truck-loading"></i> <%= __('labOrders.incomingSamples', currentLang) %></h2>
+                            <span class="column-count" id="incomingColumnCount"><%= stats.incoming %></span>
+                        </div>
+
+                        <!-- QR Scanner -->
+                        <div class="qr-scanner-card">
+                            <h3><i class="fas fa-qrcode"></i> <%= __('labOrders.scanQR', currentLang) %></h3>
+                            <form id="qrScanForm" class="qr-form">
+                                <input
+                                    type="text"
+                                    id="qrInput"
+                                    class="qr-input"
+                                    placeholder="<%= __('labOrders.scanQRPlaceholder', currentLang) %>"
+                                    autocomplete="off"
+                                    autofocus
+                                >
+                                <button type="submit" class="btn-scan">
+                                    <i class="fas fa-qrcode"></i>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Incoming Orders List -->
+                        <div class="orders-list" id="incomingOrdersList">
+                            <div class="loading-spinner">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- In Lab Orders Column -->
+                    <div class="orders-column in-lab-column">
+                        <div class="column-header">
+                            <h2><i class="fas fa-flask"></i> <%= __('labOrders.inLab', currentLang) %></h2>
+                            <span class="column-count" id="inLabColumnCount"><%= stats.inLab %></span>
+                        </div>
+
+                        <!-- In Lab Orders List -->
+                        <div class="orders-list" id="inLabOrdersList">
+                            <div class="loading-spinner">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><%= __('labOrders.fileUpload.title', currentLang) %></h3>
+                <button class="modal-close" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" class="upload-form" enctype="multipart/form-data">
+                    <input type="hidden" id="uploadOrderId" name="orderId">
+
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <label for="resultFile" class="file-upload-label">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <p class="upload-text"><%= __('labOrders.fileUpload.dragDrop', currentLang) %></p>
+                            <button type="button" class="upload-button">
+                                <%= __('labOrders.fileUpload.browse', currentLang) %>
+                            </button>
+                            <p class="upload-hint"><%= __('labOrders.fileUpload.supportedFormats', currentLang) %></p>
+                            <p class="upload-hint"><%= __('labOrders.fileUpload.maxFileSize', currentLang) %></p>
+                        </label>
+                        <input type="file" id="resultFile" name="resultFile" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp" class="hidden-file-input">
+                    </div>
+
+                    <div class="file-preview" id="filePreview" style="display: none;">
+                        <div class="preview-info">
+                            <i class="fas fa-file-alt file-icon"></i>
+                            <div class="file-details">
+                                <p class="file-name" id="fileName"></p>
+                                <p class="file-size" id="fileSize"></p>
+                            </div>
+                            <button type="button" class="remove-file" id="removeFile">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="upload-progress" id="uploadProgress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <p class="progress-text" id="progressText"><%= __('labOrders.fileUpload.uploading', currentLang) %>...</p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="cancelUpload"><%= __('common.cancel', currentLang) %></button>
+                <button class="btn-upload" id="confirmUpload" disabled>
+                    <i class="fas fa-check-circle"></i>
+                    <%= __('labOrders.completeOrder', currentLang) %>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script>
+        // Pass data to JavaScript
+        window.labOrdersData = {
+            apiBaseUrl: '/lab/api',
+            uploadUrl: '/lab/api/orders',
+            currentLang: '<%= currentLang %>',
+            texts: {
+                errorLoading: '<%= __('labOrders.notifications.errorLoading', currentLang) %>',
+                sampleReceived: '<%= __('labOrders.notifications.sampleReceived', currentLang) %>',
+                orderCompleted: '<%= __('labOrders.notifications.orderCompleted', currentLang) %>',
+                invalidQR: '<%= __('labOrders.notifications.invalidQR', currentLang) %>',
+                orderNotFound: '<%= __('labOrders.notifications.orderNotFound', currentLang) %>',
+                alreadyReceived: '<%= __('labOrders.notifications.alreadyReceived', currentLang) %>',
+                uploadSuccess: '<%= __('labOrders.fileUpload.uploadSuccess', currentLang) %>',
+                uploadError: '<%= __('labOrders.fileUpload.uploadError', currentLang) %>',
+                noIncomingSamples: '<%= __('labOrders.noIncomingSamples', currentLang) %>',
+                noOrdersInLab: '<%= __('labOrders.noOrdersInLab', currentLang) %>',
+                viewDetails: '<%= __('labOrders.viewDetails', currentLang) %>',
+                uploadResult: '<%= __('labOrders.uploadResult', currentLang) %>',
+                completeOrder: '<%= __('labOrders.completeOrder', currentLang) %>',
+                tests: '<%= __('common.tests', currentLang) %>',
+                patient: '<%= __('labOrders.patient', currentLang) %>',
+                status: '<%= __('common.status', currentLang) %>',
+                male: '<%= __('common.male', currentLang) %>',
+                female: '<%= __('common.female', currentLang) %>',
+                years: '<%= __('common.years', currentLang) %>',
+                notAvailable: '<%= __('common.notAvailable', currentLang) %>'
+            }
+        };
+    </script>
+    <script src="/js/lab-orders.js"></script>
+</body>
+</html>

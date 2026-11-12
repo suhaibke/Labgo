@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "1071527868214",
+    "project_id": "labgo-6dcc9",
+    "storage_bucket": "labgo-6dcc9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1071527868214:android:0a13dec728332c8995e597",
+        "android_client_info": {
+          "package_name": "com.example.labgo_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUCcZb-lYgGXBb5ePJPaq_H-h18zNpsjo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1071527868214:android:940abc7d22ec317395e597",
+        "android_client_info": {
+          "package_name": "com.labgo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUCcZb-lYgGXBb5ePJPaq_H-h18zNpsjo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1071527868214:android:d8fb1e393ba901ee95e597",
+        "android_client_info": {
+          "package_name": "iq.labgo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUCcZb-lYgGXBb5ePJPaq_H-h18zNpsjo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

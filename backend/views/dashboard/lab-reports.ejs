@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %>
+    </title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            font-family: <%=font %>;
+        }
+
+        .reports-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .page-header-left h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1d1d1f;
+            margin: 0 0 8px 0;
+        }
+
+        .page-header-left p {
+            color: #6b7280;
+            margin: 0;
+        }
+
+        /* Date Filter */
+        .date-filter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 12px 20px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            font-weight: 500;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 14px;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(0, 0, 0, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .date-inputs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-inputs input {
+            padding: 12px 16px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .date-inputs input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .apply-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+        }
+
+        .apply-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .stat-card .icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card .icon.blue {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+
+        .stat-card .icon.green {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
+        .stat-card .icon.purple {
+            background: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+        }
+
+        .stat-card .icon.orange {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1d1d1f;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .label {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .trend {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .stat-card .trend.up {
+            color: #10b981;
+        }
+
+        .stat-card .trend.down {
+            color: #ef4444;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .chart-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+            padding: 28px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .chart-card:hover {
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08), 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .chart-card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 24px 0;
+            letter-spacing: -0.01em;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Tables Grid */
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .table-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .table-card:hover {
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08), 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .table-card-header {
+            padding: 24px 28px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-card-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+
+        .table-card-body {
+            padding: 0;
+        }
+
+        .popular-tests-list {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .popular-tests-list li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .popular-tests-list li:last-child {
+            border-bottom: none;
+        }
+
+        .test-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .test-rank {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .test-rank.top {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .test-name {
+            font-weight: 500;
+            color: #1d1d1f;
+        }
+
+        .test-stats {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .test-count {
+            font-weight: 600;
+            color: #3b82f6;
+        }
+
+        .test-revenue {
+            font-weight: 500;
+            color: #10b981;
+        }
+
+        /* Rating Section */
+        .rating-overview {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            padding: 24px;
+        }
+
+        .rating-big {
+            text-align: center;
+        }
+
+        .rating-big .value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #1d1d1f;
+        }
+
+        .rating-big .stars {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            margin: 8px 0;
+        }
+
+        .rating-big .stars i {
+            color: #fbbf24;
+            font-size: 20px;
+        }
+
+        .rating-big .count {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .rating-bars {
+            flex: 1;
+        }
+
+        .rating-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .rating-bar-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .rating-bar-row .label {
+            width: 40px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .rating-bar-container {
+            flex: 1;
+            height: 8px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .rating-bar-fill {
+            height: 100%;
+            background: #fbbf24;
+            border-radius: 4px;
+        }
+
+        .rating-bar-row .count {
+            width: 30px;
+            text-align: right;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        /* Status Pills */
+        .status-list {
+            padding: 24px;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-badge.confirmed {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .status-badge.nurse_assigned {
+            background: #e0e7ff;
+            color: #4f46e5;
+        }
+
+        .status-badge.sample_collected {
+            background: #fce7f3;
+            color: #db2777;
+        }
+
+        .status-badge.at_lab {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .status-badge.completed {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .status-badge.cancelled {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .status-count {
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tables-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .rating-overview {
+                flex-direction: column;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .date-filter {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <%- include('../partials/lab-navbar') %>
+
+        <div class="lab-wrapper">
+            <main class="lab-orders-page">
+                <div class="reports-container">
+                    <!-- Page Header with Date Filter -->
+                    <div class="page-header">
+                        <div class="page-header-left">
+                            <h1>
+                                <%= __('navigation.reports') %>
+                            </h1>
+                            <p>
+                                <%= lab.name %> - <%= __('labReports.analyticsOverview') || 'Analytics Overview' %>
+                            </p>
+                        </div>
+                        <div class="date-filter">
+                            <button class="filter-btn active" data-filter="all" onclick="filterByDate('all')">
+                                <%= __('labReports.allTime') || 'All Time' %>
+                            </button>
+                            <button class="filter-btn" data-filter="today" onclick="filterByDate('today')">
+                                <%= __('labReports.today') || 'Today' %>
+                            </button>
+                            <button class="filter-btn" data-filter="week" onclick="filterByDate('week')">
+                                <%= __('labReports.thisWeek') || 'This Week' %>
+                            </button>
+                            <button class="filter-btn" data-filter="month" onclick="filterByDate('month')">
+                                <%= __('labReports.thisMonth') || 'This Month' %>
+                            </button>
+                            <div class="date-inputs">
+                                <input type="date" id="startDate" placeholder="From">
+                                <span>-</span>
+                                <input type="date" id="endDate" placeholder="To">
+                                <button class="apply-btn" onclick="filterByCustomDate()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="stats-grid" id="statsGrid">
+                        <div class="stat-card">
+                            <div class="stat-card-inner">
+                                <div class="stat-header">
+                                    <div class="stat-icon-wrapper">
+                                        <i class="fas fa-file-medical stat-icon"></i>
+                                    </div>
+                                    <div class="stat-trend-indicator <%= orderGrowth >= 0 ? 'positive' : 'negative' %>">
+                                        <i class="fas fa-arrow-<%= orderGrowth >= 0 ? 'up' : 'down' %>"></i>
+                                        <span><%= Math.abs(orderGrowth) %>%</span>
+                                    </div>
+                                </div>
+                                <div class="stat-value" id="totalOrders">
+                                    <%= overview.totalOrders.toLocaleString() %>
+                                </div>
+                                <div class="stat-label"><%= __('labReports.totalOrders') || 'Total Orders' %></div>
+                                <div class="stat-sublabel"><%= __('labReports.vsLastMonth') || 'vs last month' %></div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-inner">
+                                <div class="stat-header">
+                                    <div class="stat-icon-wrapper">
+                                        <i class="fas fa-money-bill-wave stat-icon"></i>
+                                    </div>
+                                    <div class="stat-trend-indicator <%= revenueGrowth >= 0 ? 'positive' : 'negative' %>">
+                                        <i class="fas fa-arrow-<%= revenueGrowth >= 0 ? 'up' : 'down' %>"></i>
+                                        <span><%= Math.abs(revenueGrowth) %>%</span>
+                                    </div>
+                                </div>
+                                <div class="stat-value" id="totalRevenue">
+                                    <%= new Intl.NumberFormat('en-IQ', { maximumFractionDigits: 0 }).format(overview.totalRevenue) %>
+                                </div>
+                                <div class="stat-label"><%= __('labReports.totalRevenue') || 'Total Revenue (IQD)' %></div>
+                                <div class="stat-sublabel"><%= __('labReports.vsLastMonth') || 'vs last month' %></div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-inner">
+                                <div class="stat-header">
+                                    <div class="stat-icon-wrapper">
+                                        <i class="fas fa-users stat-icon"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value" id="uniquePatients">
+                                    <%= overview.uniquePatients.toLocaleString() %>
+                                </div>
+                                <div class="stat-label"><%= __('labReports.uniquePatients') || 'Unique Patients' %></div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-inner">
+                                <div class="stat-header">
+                                    <div class="stat-icon-wrapper">
+                                        <i class="fas fa-vial stat-icon"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value" id="totalTests">
+                                    <%= overview.totalTests.toLocaleString() %>
+                                </div>
+                                <div class="stat-label"><%= __('labReports.totalTests') || 'Total Tests' %></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Stats -->
+                    <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+                        <div class="stat-card">
+                            <div class="stat-card-inner">
+                                <div class="stat-header">
+                                    <div class="stat-icon-wrapper">
+                                        <i class="fas fa-check-circle stat-icon"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value" id="completionRate">
+                                    <%= completionRate %>%
+                                </div>
+                                <div class="stat-label"><%= __('labReports.completionRate') || 'Completion Rate' %></div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-inner">
+                                <div class="stat-header">
+                                    <div class="stat-icon-wrapper">
+                                        <i class="fas fa-receipt stat-icon"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value" id="avgOrderValue">
+                                    <%= new Intl.NumberFormat('en-IQ', { maximumFractionDigits: 0 }).format(avgOrderValue) %>
+                                </div>
+                                <div class="stat-label"><%= __('labReports.avgOrderValue') || 'Avg Order Value (IQD)' %></div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-inner">
+                                <div class="stat-header">
+                                    <div class="stat-icon-wrapper">
+                                        <i class="fas fa-star stat-icon"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-value" id="avgRating">
+                                    <%= ratingData.avgRating ? ratingData.avgRating.toFixed(1) : '0.0' %>
+                                </div>
+                                <div class="stat-label"><%= __('labReports.avgRating') || 'Average Rating' %></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tables -->
+                    <div class="tables-grid">
+                        <!-- Popular Tests -->
+                        <div class="table-card">
+                            <div class="table-card-header">
+                                <h3>
+                                    <%= __('labReports.popularTests') || 'Most Popular Tests' %>
+                                </h3>
+                            </div>
+                            <div class="table-card-body">
+                                <ul class="popular-tests-list" id="popularTestsList">
+                                    <% if (popularTests.length> 0) { %>
+                                        <% popularTests.forEach((test, index)=> { %>
+                                            <li>
+                                                <div class="test-info">
+                                                    <span class="test-rank <%= index < 3 ? 'top' : '' %>">
+                                                        <%= index + 1 %>
+                                                    </span>
+                                                    <span class="test-name">
+                                                        <%= test._id %>
+                                                    </span>
+                                                </div>
+                                                <div class="test-stats">
+                                                    <span class="test-count">
+                                                        <%= test.count %> orders
+                                                    </span>
+                                                    <span class="test-revenue">
+                                                        <%= new Intl.NumberFormat('en-IQ', { maximumFractionDigits: 0
+                                                            }).format(test.revenue) %> IQD
+                                                    </span>
+                                                </div>
+                                            </li>
+                                            <% }); %>
+                                                <% } else { %>
+                                                    <li style="text-align: center; color: #6b7280; padding: 40px;">
+                                                        <i class="fas fa-flask"
+                                                            style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                                                        No test data yet
+                                                    </li>
+                                                    <% } %>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Order Status Breakdown -->
+                        <div class="table-card">
+                            <div class="table-card-header">
+                                <h3>
+                                    <%= __('labReports.statusBreakdown') || 'Status Breakdown' %>
+                                </h3>
+                            </div>
+                            <div class="table-card-body">
+                                <div class="status-list" id="statusList">
+                                    <% const statusLabels={ pending: 'Pending' , confirmed: 'Confirmed' ,
+                                        nurse_assigned: 'Nurse Assigned' , sample_collected: 'Sample Collected' ,
+                                        at_lab: 'At Lab' , completed: 'Completed' , cancelled: 'Cancelled' }; %>
+                                        <% statusBreakdown.forEach(status=> { %>
+                                            <div class="status-row">
+                                                <span class="status-badge <%= status._id %>">
+                                                    <%= statusLabels[status._id] || status._id %>
+                                                </span>
+                                                <span class="status-count">
+                                                    <%= status.count %>
+                                                </span>
+                                            </div>
+                                            <% }); %>
+                                                <% if (statusBreakdown.length===0) { %>
+                                                    <div style="text-align: center; color: #6b7280; padding: 40px;">
+                                                        <i class="fas fa-clipboard-list"
+                                                            style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                                                        No orders yet
+                                                    </div>
+                                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rating Section -->
+                    <div class="table-card" style="margin-bottom: 32px;">
+                        <div class="table-card-header">
+                            <h3>
+                                <%= __('labReports.ratingAnalysis') || 'Rating Analysis' %>
+                            </h3>
+                        </div>
+                        <div class="table-card-body">
+                            <div class="rating-overview">
+                                <div class="rating-big">
+                                    <div class="value">
+                                        <%= ratingData.avgRating ? ratingData.avgRating.toFixed(1) : '0.0' %>
+                                    </div>
+                                    <div class="stars">
+                                        <% for (let i=1; i <=5; i++) { %>
+                                            <i class="fas fa-star"
+                                                style="color: <%= i <= Math.round(ratingData.avgRating || 0) ? '#fbbf24' : '#d1d5db' %>"></i>
+                                            <% } %>
+                                    </div>
+                                    <div class="count">
+                                        <%= ratingData.totalRatings || 0 %>
+                                            <%= __('dashboard.reviews') || 'reviews' %>
+                                    </div>
+                                </div>
+                                <div class="rating-bars">
+                                    <% const totalRatings=ratingData.totalRatings || 1; %>
+                                        <div class="rating-bar-row">
+                                            <span class="label">5 ★</span>
+                                            <div class="rating-bar-container">
+                                                <div class="rating-bar-fill"
+                                                    style="width: <%= (ratingData.rating5 / totalRatings * 100) || 0 %>%">
+                                                </div>
+                                            </div>
+                                            <span class="count">
+                                                <%= ratingData.rating5 || 0 %>
+                                            </span>
+                                        </div>
+                                        <div class="rating-bar-row">
+                                            <span class="label">4 ★</span>
+                                            <div class="rating-bar-container">
+                                                <div class="rating-bar-fill"
+                                                    style="width: <%= (ratingData.rating4 / totalRatings * 100) || 0 %>%">
+                                                </div>
+                                            </div>
+                                            <span class="count">
+                                                <%= ratingData.rating4 || 0 %>
+                                            </span>
+                                        </div>
+                                        <div class="rating-bar-row">
+                                            <span class="label">3 ★</span>
+                                            <div class="rating-bar-container">
+                                                <div class="rating-bar-fill"
+                                                    style="width: <%= (ratingData.rating3 / totalRatings * 100) || 0 %>%">
+                                                </div>
+                                            </div>
+                                            <span class="count">
+                                                <%= ratingData.rating3 || 0 %>
+                                            </span>
+                                        </div>
+                                        <div class="rating-bar-row">
+                                            <span class="label">1-2 ★</span>
+                                            <div class="rating-bar-container">
+                                                <div class="rating-bar-fill"
+                                                    style="width: <%= (ratingData.ratingBelow3 / totalRatings * 100) || 0 %>%; background: #ef4444;">
+                                                </div>
+                                            </div>
+                                            <span class="count">
+                                                <%= ratingData.ratingBelow3 || 0 %>
+                                            </span>
+                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Pass data to JavaScript -->
+        <script>
+            // Chart data from server
+            const chartData = <%- JSON.stringify(chartData) %>;
+            const statusData = <%- JSON.stringify(statusBreakdown) %>;
+
+            // Status colors for charts
+            const statusColors = {
+                pending: '#f59e0b',
+                confirmed: '#3b82f6',
+                nurse_assigned: '#6366f1',
+                sample_collected: '#ec4899',
+                at_lab: '#10b981',
+                completed: '#22c55e',
+                cancelled: '#ef4444'
+            };
+
+            // Helper function to show empty state for charts
+            function showEmptyChartState(canvasId, message) {
+                const container = document.getElementById(canvasId + '-container');
+                if (!container) return;
+
+                // Save the original canvas HTML
+                if (!container.dataset.originalCanvas) {
+                    container.dataset.originalCanvas = container.innerHTML;
+                }
+
+                container.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; color: #9ca3af;">
+                        <i class="fas fa-chart-bar" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p style="margin: 0; font-size: 14px; font-weight: 500;">${message}</p>
+                    </div>
+                `;
+            }
+
+            function restoreCanvas(canvasId) {
+                const container = document.getElementById(canvasId + '-container');
+                if (!container || !container.dataset.originalCanvas) return false;
+
+                container.innerHTML = container.dataset.originalCanvas;
+                return true;
+            }
+
+            function initializeCharts() {
+                // Validate chart data exists
+                if (!chartData || !Array.isArray(chartData) || chartData.length === 0) {
+                    console.error('Invalid chart data:', chartData);
+                    showEmptyChartState('monthlyChart', 'No data available for the selected period');
+                    return;
+                }
+
+                // Check if chartData has any actual values
+                const hasData = chartData.some(d => d.orders > 0 || d.tests > 0 || d.patients > 0);
+                if (!hasData) {
+                    showEmptyChartState('monthlyChart', 'No activity recorded for this period');
+                    return;
+                }
+
+                // Restore canvas if it was replaced with empty state
+                restoreCanvas('monthlyChart');
+                restoreCanvas('statusChart');
+
+                // Monthly Performance Chart
+                const monthlyCtx = document.getElementById('monthlyChart');
+                if (monthlyCtx && typeof Chart !== 'undefined') {
+                    try {
+                        new Chart(monthlyCtx, {
+                            type: 'bar',
+                            data: {
+                                labels: chartData.map(d => d.month),
+                                datasets: [
+                                    {
+                                        label: 'Orders',
+                                        data: chartData.map(d => d.orders),
+                                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                                        borderRadius: 6
+                                    },
+                                    {
+                                        label: 'Patients',
+                                        data: chartData.map(d => d.patients),
+                                        backgroundColor: 'rgba(139, 92, 246, 0.8)',
+                                        borderRadius: 6
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'bottom' }
+                                },
+                                scales: {
+                                    y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                                    x: { grid: { display: false } }
+                                }
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error initializing monthly chart:', error);
+                        showEmptyChartState('monthlyChart', 'Error loading chart data');
+                    }
+                }
+
+                // Status Pie Chart - with validation
+                const statusCtx = document.getElementById('statusChart');
+                if (statusCtx && typeof Chart !== 'undefined') {
+                    if (!statusData || !Array.isArray(statusData) || statusData.length === 0) {
+                        showEmptyChartState('statusChart', 'No status data available');
+                        return;
+                    }
+
+                    try {
+                        new Chart(statusCtx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: statusData.map(s => s._id),
+                                datasets: [{
+                                    data: statusData.map(s => s.count),
+                                    backgroundColor: statusData.map(s => statusColors[s._id] || '#6b7280'),
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'bottom' }
+                                },
+                                cutout: '60%'
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error initializing status chart:', error);
+                        showEmptyChartState('statusChart', 'Error loading status data');
+                    }
+                }
+            }
+
+            // Initialize charts when DOM is ready
+            document.addEventListener('DOMContentLoaded', function () {
+                initializeCharts();
+            });
+
+            // Date filtering functions - defined in global scope for onclick handlers
+            window.filterByDate = function(filter) {
+                // Update active button
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                const activeBtn = document.querySelector(`[data-filter="${filter}"]`);
+                if (activeBtn) activeBtn.classList.add('active');
+
+                // Build URL with filter parameter and reload page
+                const url = new URL(window.location.href);
+                url.searchParams.set('filter', filter);
+                url.searchParams.delete('startDate');
+                url.searchParams.delete('endDate');
+                window.location.href = url.toString();
+            };
+
+            window.filterByCustomDate = function() {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+
+                if (!startDate || !endDate) {
+                    alert('Please select both start and end dates');
+                    return;
+                }
+
+                if (new Date(startDate) > new Date(endDate)) {
+                    alert('Start date must be before end date');
+                    return;
+                }
+
+                // Build URL with custom date parameters and reload page
+                const url = new URL(window.location.href);
+                url.searchParams.set('filter', 'custom');
+                url.searchParams.set('startDate', startDate);
+                url.searchParams.set('endDate', endDate);
+                window.location.href = url.toString();
+            };
+
+            // Set active filter button based on URL - run after DOM loads
+            document.addEventListener('DOMContentLoaded', function() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const filter = urlParams.get('filter') || 'all';
+                const btn = document.querySelector(`[data-filter="${filter}"]`);
+                if (btn) {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                }
+
+                // Set custom date inputs if present
+                const startDate = urlParams.get('startDate');
+                const endDate = urlParams.get('endDate');
+                if (startDate) document.getElementById('startDate').value = startDate;
+                if (endDate) document.getElementById('endDate').value = endDate;
+            });
+        </script>
+</body>
+
+</html>

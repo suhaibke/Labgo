@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('shop.orderDetails') || 'Order Details' %> - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <style>
+        body { font-family: <%= direction === 'rtl' ? "'Cairo', sans-serif" : "'Inter', sans-serif" %>; }
+        
+        .details-container {
+            padding: 100px 24px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--gray-600);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 8px;
+            transition: color var(--transition-fast);
+        }
+        
+        .back-link:hover {
+            color: var(--primary-500);
+        }
+        
+        .page-title-group {
+            flex: 1;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gray-900);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .status-badge.pending {
+            background: rgba(255, 193, 7, 0.15);
+            color: var(--warning);
+        }
+        
+        .status-badge.processing {
+            background: rgba(23, 162, 184, 0.15);
+            color: var(--info);
+        }
+        
+        .status-badge.done {
+            background: rgba(76, 175, 80, 0.15);
+            color: var(--success);
+        }
+        
+        .status-badge.cancelled {
+            background: rgba(244, 67, 54, 0.15);
+            color: var(--error);
+        }
+        
+        .status-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn-status {
+            padding: 10px 20px;
+            border-radius: var(--radius-lg);
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all var(--transition-fast);
+        }
+        
+        .btn-status.processing {
+            background: var(--info);
+            color: white;
+        }
+        
+        .btn-status.done {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-status.cancelled {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+        
+        .btn-status:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 1024px) {
+            .content-grid { grid-template-columns: 1fr; }
+        }
+        
+        .card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-100);
+            margin-bottom: 24px;
+        }
+        
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-100);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-900);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title i {
+            color: var(--primary-500);
+        }
+        
+        .card-body {
+            padding: 24px;
+        }
+        
+        /* Order Items */
+        .order-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-image {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-lg);
+            object-fit: cover;
+            background: var(--gray-100);
+        }
+        
+        .item-details {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .item-sku {
+            font-size: 13px;
+            color: var(--gray-500);
+            margin-bottom: 8px;
+        }
+        
+        .item-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+        
+        .item-price {
+            text-align: <%= direction === 'rtl' ? 'left' : 'right' %>;
+        }
+        
+        .item-unit-price {
+            font-size: 13px;
+            color: var(--gray-500);
+            margin-bottom: 4px;
+        }
+        
+        .item-total-price {
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+        
+        /* Order Summary */
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            font-size: 14px;
+        }
+        
+        .summary-row.total {
+            border-top: 2px solid var(--gray-200);
+            padding-top: 16px;
+            margin-top: 8px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .summary-row .label {
+            color: var(--gray-600);
+        }
+        
+        .summary-row .value {
+            font-weight: 500;
+            color: var(--gray-900);
+        }
+        
+        .summary-row.total .value {
+            color: var(--primary-500);
+        }
+        
+        /* Customer Info */
+        .info-group {
+            margin-bottom: 20px;
+        }
+        
+        .info-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .info-value {
+            font-size: 15px;
+            color: var(--gray-900);
+        }
+        
+        .info-value a {
+            color: var(--primary-500);
+            text-decoration: none;
+        }
+        
+        .info-value a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Status History Timeline */
+        .timeline {
+            position: relative;
+            padding-<%= direction === 'rtl' ? 'right' : 'left' %>: 24px;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            <%= direction === 'rtl' ? 'right' : 'left' %>: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--gray-200);
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+        
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            <%= direction === 'rtl' ? 'right' : 'left' %>: -24px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--white);
+            border: 2px solid var(--gray-300);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .timeline-marker.pending { border-color: var(--warning); }
+        .timeline-marker.processing { border-color: var(--info); }
+        .timeline-marker.done { border-color: var(--success); }
+        .timeline-marker.cancelled { border-color: var(--error); }
+        
+        .timeline-marker i {
+            font-size: 8px;
+        }
+        
+        .timeline-marker.pending i { color: var(--warning); }
+        .timeline-marker.processing i { color: var(--info); }
+        .timeline-marker.done i { color: var(--success); }
+        .timeline-marker.cancelled i { color: var(--error); }
+        
+        .timeline-content {
+            padding: 2px 0;
+        }
+        
+        .timeline-title {
+            font-weight: 500;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .timeline-date {
+            font-size: 13px;
+            color: var(--gray-500);
+        }
+        
+        .timeline-note {
+            margin-top: 8px;
+            padding: 10px 14px;
+            background: var(--gray-50);
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            color: var(--gray-600);
+        }
+        
+        /* Admin Notes */
+        .notes-form {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .notes-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            font-size: 14px;
+        }
+        
+        .notes-input:focus {
+            outline: none;
+            border-color: var(--primary-500);
+        }
+        
+        .btn-add-note {
+            padding: 12px 20px;
+            background: var(--primary-500);
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .btn-add-note:hover {
+            background: var(--primary-600);
+        }
+        
+        .admin-notes-list {
+            margin-top: 16px;
+        }
+        
+        .note-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: var(--gray-50);
+            border-radius: var(--radius-md);
+            margin-bottom: 8px;
+        }
+
+        .note-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .note-content {
+            flex: 1;
+        }
+
+        .note-text {
+            color: var(--gray-700);
+            margin-bottom: 4px;
+        }
+
+        .note-meta {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        .note-delete-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: var(--error);
+            color: white;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .note-delete-btn:hover {
+            background: #d32f2f;
+            transform: scale(1.05);
+        }
+
+        .note-delete-btn i {
+            font-size: 12px;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 100px;
+            <%= direction === 'rtl' ? 'left' : 'right' %>: 24px;
+            z-index: 1200;
+        }
+        
+        .toast {
+            padding: 16px 20px;
+            border-radius: var(--radius-lg);
+            background: var(--white);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            animation: toastSlide 0.3s ease;
+        }
+        
+        .toast.success { border-<%= direction === 'rtl' ? 'right' : 'left' %>: 4px solid var(--success); }
+        .toast.error { border-<%= direction === 'rtl' ? 'right' : 'left' %>: 4px solid var(--error); }
+        
+        @keyframes toastSlide {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .admin-navbar, .back-link, .status-actions, .card-header .btn-add-note { display: none; }
+            .details-container { padding-top: 20px; }
+            .content-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/admin-navbar') %>
+    
+    <div class="details-container">
+        <a href="/admin/shop/orders" class="back-link">
+            <i class="fas fa-arrow-<%= direction === 'rtl' ? 'right' : 'left' %>"></i>
+            <%= __('shop.backToOrders') || 'Back to Orders' %>
+        </a>
+        
+        <div class="page-header">
+            <div class="page-title-group">
+                <h1 class="page-title">
+                    <span id="orderNumber"></span>
+                    <span class="status-badge" id="statusBadge"></span>
+                </h1>
+            </div>
+            <div class="status-actions" id="statusActions"></div>
+        </div>
+        
+        <div class="content-grid">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Order Items -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-shopping-cart"></i>
+                            <%= __('shop.orderItems') || 'Order Items' %>
+                        </h2>
+                    </div>
+                    <div class="card-body" id="orderItems"></div>
+                </div>
+                
+                <!-- Order Summary -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-receipt"></i>
+                            <%= __('shop.orderSummary') || 'Order Summary' %>
+                        </h2>
+                    </div>
+                    <div class="card-body" id="orderSummary"></div>
+                </div>
+                
+                <!-- Admin Notes -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-sticky-note"></i>
+                            <%= __('shop.adminNotes') || 'Admin Notes' %>
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="notes-form">
+                            <input type="text" class="notes-input" id="noteInput" placeholder="<%= __('shop.addNote') || 'Add a note...' %>">
+                            <button class="btn-add-note" onclick="addNote()">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="admin-notes-list" id="adminNotes"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Customer Info -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-user"></i>
+                            <%= __('common.customer') || 'Customer' %>
+                        </h2>
+                    </div>
+                    <div class="card-body" id="customerInfo"></div>
+                </div>
+                
+                <!-- Delivery Address -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <%= __('shop.deliveryAddress') || 'Delivery Address' %>
+                        </h2>
+                    </div>
+                    <div class="card-body" id="deliveryAddress"></div>
+                </div>
+                
+                <!-- Status History -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-history"></i>
+                            <%= __('shop.statusHistory') || 'Status History' %>
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline" id="statusHistory"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <script>
+        const currentLang = '<%= currentLang %>';
+        const orderId = '<%= orderId %>';
+        // Status translations
+        const statusTexts = {
+            pending: '<%= __("shop.pending") || "Pending" %>',
+            processing: '<%= __("shop.processing") || "Processing" %>',
+            done: '<%= __("shop.done") || "Done" %>',
+            cancelled: '<%= __("common.cancelled") || "Cancelled" %>'
+        };
+        // Action button translations
+        const actionTexts = {
+            markAsProcessing: '<%= __("shop.markAsProcessing") || "Process" %>',
+            markAsDone: '<%= __("shop.markAsDone") || "Mark as Done" %>',
+            markAsCancelled: '<%= __("shop.markAsCancelled") || "Cancel" %>',
+            backToPending: '<%= __("shop.backToPending") || "Back to Pending" %>',
+            backToProcessing: '<%= __("shop.backToProcessing") || "Back to Processing" %>'
+        };
+        let orderData = null;
+        
+        // Get token from localStorage
+        function getToken() {
+            return localStorage.getItem('token') || '';
+        }
+        
+        // Load order details
+        async function loadOrder() {
+            try {
+                const response = await fetch(`/api/admin/shop/orders/${orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    orderData = data.data;
+                    renderOrder(orderData);
+                } else {
+                    showToast(data.message || 'Failed to load order', 'error');
+                }
+            } catch (error) {
+                console.error('Load order error:', error);
+                showToast('Failed to load order', 'error');
+            }
+        }
+        
+        // Render order
+        function renderOrder(order) {
+            // Order number & status
+            document.getElementById('orderNumber').textContent = order.orderNumber;
+            
+            const statusBadge = document.getElementById('statusBadge');
+            statusBadge.className = `status-badge ${order.status}`;
+            statusBadge.textContent = getStatusText(order.status);
+            
+            // Status actions
+            renderStatusActions(order.status);
+            
+            // Order items
+            document.getElementById('orderItems').innerHTML = order.items.map(item => `
+                <div class="order-item">
+                    <img src="${item.image || '/images/placeholder.png'}" alt="" class="item-image">
+                    <div class="item-details">
+                        <div class="item-name">${item.name?.[currentLang] || item.name?.en || 'Product'}</div>
+                        <div class="item-meta">
+                            <span>Qty: ${item.quantity}</span>
+                        </div>
+                    </div>
+                    <div class="item-price">
+                        <div class="item-unit-price">${formatPrice(item.price)} × ${item.quantity}</div>
+                        <div class="item-total-price">${formatPrice(item.subtotal)}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Order summary
+            document.getElementById('orderSummary').innerHTML = `
+                <div class="summary-row">
+                    <span class="label">Subtotal</span>
+                    <span class="value">${formatPrice(order.pricing.subtotal)}</span>
+                </div>
+                ${order.pricing.delivery > 0 ? `
+                <div class="summary-row">
+                    <span class="label">Delivery</span>
+                    <span class="value">${formatPrice(order.pricing.delivery)}</span>
+                </div>
+                ` : ''}
+                ${order.pricing.discount > 0 ? `
+                <div class="summary-row">
+                    <span class="label">Discount</span>
+                    <span class="value">-${formatPrice(order.pricing.discount)}</span>
+                </div>
+                ` : ''}
+                <div class="summary-row total">
+                    <span class="label">Total</span>
+                    <span class="value">${formatPrice(order.pricing.total)}</span>
+                </div>
+            `;
+            
+            // Customer info
+            document.getElementById('customerInfo').innerHTML = `
+                <div class="info-group">
+                    <div class="info-label">Name</div>
+                    <div class="info-value">${order.customer.name}</div>
+                </div>
+                <div class="info-group">
+                    <div class="info-label">Phone</div>
+                    <div class="info-value"><a href="tel:${order.customer.phone}">${order.customer.phone}</a></div>
+                </div>
+                ${order.customer.email ? `
+                <div class="info-group">
+                    <div class="info-label">Email</div>
+                    <div class="info-value"><a href="mailto:${order.customer.email}">${order.customer.email}</a></div>
+                </div>
+                ` : ''}
+                <div class="info-group">
+                    <div class="info-label">Order Date</div>
+                    <div class="info-value">${formatDate(order.createdAt)}</div>
+                </div>
+            `;
+            
+            // Delivery address
+            document.getElementById('deliveryAddress').innerHTML = `
+                <div class="info-group">
+                    <div class="info-label">Full Address</div>
+                    <div class="info-value">${order.deliveryAddress.fullAddress}</div>
+                </div>
+                ${order.deliveryAddress.city ? `
+                <div class="info-group">
+                    <div class="info-label">City</div>
+                    <div class="info-value">${order.deliveryAddress.city}</div>
+                </div>
+                ` : ''}
+                ${order.deliveryAddress.notes ? `
+                <div class="info-group">
+                    <div class="info-label">Notes</div>
+                    <div class="info-value">${order.deliveryAddress.notes}</div>
+                </div>
+                ` : ''}
+            `;
+            
+            // Status history
+            const history = order.statusHistory || [{ status: order.status, timestamp: order.createdAt }];
+            document.getElementById('statusHistory').innerHTML = history.map(item => `
+                <div class="timeline-item">
+                    <div class="timeline-marker ${item.status}">
+                        <i class="fas fa-circle"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">${getStatusText(item.status)}</div>
+                        <div class="timeline-date">${formatDate(item.timestamp)}</div>
+                        ${item.note ? `<div class="timeline-note">${item.note}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            // Admin notes
+            renderAdminNotes(order.adminNotes || []);
+        }
+        
+        // Render status actions
+        function renderStatusActions(currentStatus) {
+            const actionsDiv = document.getElementById('statusActions');
+            let html = '';
+
+            switch(currentStatus) {
+                case 'pending':
+                    html = `
+                        <button class="btn-status processing" onclick="updateStatus('processing')">
+                            <i class="fas fa-cog"></i> ${actionTexts.markAsProcessing}
+                        </button>
+                        <button class="btn-status cancelled" onclick="updateStatus('cancelled')">
+                            <i class="fas fa-times"></i> ${actionTexts.markAsCancelled}
+                        </button>
+                    `;
+                    break;
+                case 'processing':
+                    html = `
+                        <button class="btn-status done" onclick="updateStatus('done')">
+                            <i class="fas fa-check"></i> ${actionTexts.markAsDone}
+                        </button>
+                        <button class="btn-status pending" onclick="updateStatus('pending')">
+                            <i class="fas fa-clock"></i> ${actionTexts.backToPending}
+                        </button>
+                        <button class="btn-status cancelled" onclick="updateStatus('cancelled')">
+                            <i class="fas fa-times"></i> ${actionTexts.markAsCancelled}
+                        </button>
+                    `;
+                    break;
+                case 'cancelled':
+                    html = `
+                        <button class="btn-status processing" onclick="updateStatus('processing')">
+                            <i class="fas fa-redo"></i> ${actionTexts.backToProcessing}
+                        </button>
+                        <button class="btn-status pending" onclick="updateStatus('pending')">
+                            <i class="fas fa-clock"></i> ${actionTexts.backToPending}
+                        </button>
+                    `;
+                    break;
+                case 'done':
+                    html = `
+                        <button class="btn-status processing" onclick="updateStatus('processing')">
+                            <i class="fas fa-redo"></i> ${actionTexts.backToProcessing}
+                        </button>
+                    `;
+                    break;
+            }
+
+            actionsDiv.innerHTML = html;
+        }
+        
+        // Update status
+        async function updateStatus(status) {
+            const note = prompt('Add a note for this status change (optional):');
+            
+            try {
+                const response = await fetch(`/api/admin/shop/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ status, note })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Status updated successfully', 'success');
+                    loadOrder();
+                } else {
+                    showToast(data.message || 'Failed to update status', 'error');
+                }
+            } catch (error) {
+                console.error('Update status error:', error);
+                showToast('Failed to update status', 'error');
+            }
+        }
+        
+        // Render admin notes
+        function renderAdminNotes(notes) {
+            const container = document.getElementById('adminNotes');
+
+            if (notes.length === 0) {
+                container.innerHTML = '<p style="color: var(--gray-500); font-size: 14px;">No notes yet</p>';
+                return;
+            }
+
+            container.innerHTML = notes.map((note, index) => `
+                <div class="note-item">
+                    <div class="note-content">
+                        <div class="note-text">${note.note}</div>
+                        <div class="note-meta">${formatDate(note.addedAt)} by Admin</div>
+                    </div>
+                    <button class="note-delete-btn" onclick="deleteNote(${index})" title="Delete note">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Delete note
+        async function deleteNote(noteIndex) {
+            if (!confirm('Are you sure you want to delete this note?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/shop/orders/${orderId}/notes/${noteIndex}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Note deleted', 'success');
+                    loadOrder();
+                } else {
+                    showToast(data.message || 'Failed to delete note', 'error');
+                }
+            } catch (error) {
+                console.error('Delete note error:', error);
+                showToast('Failed to delete note', 'error');
+            }
+        }
+
+        // Add note
+        async function addNote() {
+            const noteInput = document.getElementById('noteInput');
+            const note = noteInput.value.trim();
+            
+            if (!note) {
+                showToast('Please enter a note', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/shop/orders/${orderId}/notes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ note })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Note added', 'success');
+                    noteInput.value = '';
+                    loadOrder();
+                } else {
+                    showToast(data.message || 'Failed to add note', 'error');
+                }
+            } catch (error) {
+                console.error('Add note error:', error);
+                showToast('Failed to add note', 'error');
+            }
+        }
+        
+        // Helpers
+        function getStatusText(status) {
+            return statusTexts[status] || status;
+        }
+        
+        function formatPrice(price) {
+            return new Intl.NumberFormat('<%= currentLang %>', { style: 'decimal' }).format(price) + ' IQD';
+        }
+        
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('<%= currentLang %>', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadOrder);
+        
+        // Enter key for notes
+        document.getElementById('noteInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addNote();
+        });
+    </script>
+</body>
+</html>

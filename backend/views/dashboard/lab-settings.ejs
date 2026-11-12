@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <style>
+        :root {
+            --primary-rgb: 102, 126, 234;
+            --secondary-rgb: 59, 130, 246;
+            --accent-rgb: 251, 146, 60;
+            --success-rgb: 16, 185, 129;
+            --warning-rgb: 245, 158, 11;
+            --danger-rgb: 239, 68, 68;
+            --info-rgb: 59, 130, 246;
+        }
+
+        body {
+            font-family: <%= font %>;
+        }
+
+        /* Ensure all elements use the imported font */
+        *, *::before, *::after {
+            font-family: inherit;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea,
+        .btn,
+        .section-title,
+        .form-label,
+        .form-group-title {
+            font-family: <%= font %>;
+        }
+
+        /* Settings Header */
+        .settings-header {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .settings-title i {
+            font-size: 2rem;
+            color: rgb(102, 126, 234);
+        }
+
+        .settings-title h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .settings-subtitle {
+            color: #6b7280;
+            margin: 0.5rem 0 0 0;
+            font-size: 1rem;
+        }
+
+        /* Settings Container */
+        .settings-container {
+            display: grid;
+            gap: 2rem;
+        }
+
+        /* Settings Sections */
+        .settings-section {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .section-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: white;
+            background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(79, 70, 229) 100%);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .section-description {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin: 0.25rem 0 0 0;
+        }
+
+        /* Forms */
+        .settings-form {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-label.required::after {
+            content: '*';
+            color: #ef4444;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: rgb(102, 126, 234);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Specializations Multi-select */
+        .specializations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .specialization-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .specialization-item:hover {
+            border-color: rgb(102, 126, 234);
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .specialization-item.selected {
+            border-color: rgb(102, 126, 234);
+            background: rgba(102, 126, 234, 0.1);
+            color: rgb(102, 126, 234);
+            font-weight: 600;
+        }
+
+        .specialization-item input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+
+        /* Operating Hours */
+        .operating-hours-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .day-schedule {
+            display: grid;
+            grid-template-columns: 100px 1fr 1fr auto;
+            gap: 1rem;
+            align-items: center;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .day-name {
+            font-weight: 600;
+            color: #374151;
+            text-transform: capitalize;
+        }
+
+        .time-input {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .closed-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+
+        /* Logo Upload */
+        .logo-upload-container {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 12px;
+            border: 2px dashed #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #f9fafb;
+        }
+
+        .logo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .logo-upload-btn {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Save Button */
+        .save-section {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .save-info {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .save-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(79, 70, 229) 100%);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px 0 rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: rgb(102, 126, 234);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            animation: slideInRight 0.3s ease;
+        }
+
+        .notification.error {
+            background: rgb(239, 68, 68);
+        }
+
+        .notification.success {
+            background: rgb(16, 185, 129);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .settings-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1.5rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .day-schedule {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .logo-upload-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .save-section {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+
+            .save-buttons {
+                justify-content: stretch;
+            }
+
+            .save-buttons .btn {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Lab Navbar -->
+    <%- include('../partials/lab-navbar') %>
+
+    <!-- Main Content Wrapper -->
+    <div class="lab-wrapper">
+        <main class="lab-dashboard">
+            <div class="dashboard-container">
+                <!-- Page Header -->
+                <div class="settings-header">
+                    <div class="settings-title">
+                        <i class="fas fa-cog"></i>
+                        <div>
+                            <h1><%= __('settings.title') %></h1>
+                            <p class="settings-subtitle"><%= __('profile.manageLabInfo') %></p>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="settingsForm" class="settings-container">
+                    <!-- Basic Information Section -->
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div>
+                                <h2 class="section-title"><%= __('profile.basicInfo') %></h2>
+                                <p class="section-description"><%= __('profile.basicInfoDesc') %></p>
+                            </div>
+                        </div>
+
+                        <div class="settings-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label required" for="labName"><%= __('profile.labName') %></label>
+                                    <input type="text" id="labName" name="name" class="form-input" value="<%= lab.name %>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label required" for="labEmail"><%= __('profile.emailAddress') %></label>
+                                    <input type="email" id="labEmail" name="email" class="form-input" value="<%= lab.email %>" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label required" for="labPhone"><%= __('profile.phoneNumber') %></label>
+                                    <input type="tel" id="labPhone" name="phone" class="form-input" value="<%= lab.phone %>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="labWebsite"><%= __('profile.website') %></label>
+                                    <input type="url" id="labWebsite" name="website" class="form-input" value="<%= lab.website || '' %>" placeholder="https://example.com">
+                                </div>
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label required" for="labDescription"><%= __('profile.description') %></label>
+                                <textarea id="labDescription" name="description" class="form-textarea" rows="4" placeholder="<%= __('profile.descriptionPlaceholder') %>"><%= lab.description || '' %></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Images Section -->
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <div class="section-icon" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <div>
+                                <h2 class="section-title"><%= __('profile.images') %></h2>
+                                <p class="section-description"><%= __('profile.imagesDesc') %></p>
+                            </div>
+                        </div>
+
+                        <div class="settings-form">
+                            <div class="form-group">
+                                <label class="form-label"><%= __('profile.logo') %></label>
+                                <div class="logo-upload-container">
+                                    <div class="logo-preview" id="logoPreview">
+                                        <% if (lab.logo) { %>
+                                            <img src="<%= lab.logo %>" alt="logo">
+                                        <% } else { %>
+                                            <i class="fas fa-flask" style="font-size: 32px; color: #9ca3af;"></i>
+                                        <% } %>
+                                    </div>
+                                    <div class="logo-upload-btn">
+                                        <input type="file" id="logoInput" accept="image/*" style="display: none;">
+                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('logoInput').click()">
+                                            <i class="fas fa-upload"></i> <span id="logoUploadLabel"><%= __('profile.chooseImage') %></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label class="form-label"><%= __('profile.coverImage') %></label>
+                                <p class="section-description" style="margin: 0 0 12px;"><%= __('profile.coverImageDesc') %></p>
+                                <div class="logo-upload-container">
+                                    <div class="logo-preview" id="coverPreview" style="width: 220px; height: 100px; border-radius: 12px;">
+                                        <% if (lab.coverImage) { %>
+                                            <img src="<%= lab.coverImage %>" alt="cover">
+                                        <% } else { %>
+                                            <i class="fas fa-panorama" style="font-size: 28px; color: #9ca3af;"></i>
+                                        <% } %>
+                                    </div>
+                                    <div class="logo-upload-btn">
+                                        <input type="file" id="coverInput" accept="image/*" style="display: none;">
+                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('coverInput').click()">
+                                            <i class="fas fa-upload"></i> <span id="coverUploadLabel"><%= __('profile.chooseImage') %></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address Section -->
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <div class="section-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div>
+                                <h2 class="section-title"><%= __('profile.addressInfo') %></h2>
+                                <p class="section-description"><%= __('profile.addressInfoDesc') %></p>
+                            </div>
+                        </div>
+
+                        <div class="settings-form">
+                            <div class="form-group full-width">
+                                <label class="form-label required" for="labAddress"><%= __('profile.streetAddress') %></label>
+                                <input type="text" id="labAddress" name="address" class="form-input" value="<%= lab.address %>" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label required" for="labCity"><%= __('profile.city') %></label>
+                                    <select id="labCity" name="city" class="form-select" required>
+                                        <option value=""><%= __('labManagement.selectCity') || 'Select City' %></option>
+                                        <option value="بغداد" <%= lab.city === 'بغداد' ? 'selected' : '' %>>بغداد</option>
+                                        <option value="البصرة" <%= lab.city === 'البصرة' ? 'selected' : '' %>>البصرة</option>
+                                        <option value="نينوى" <%= lab.city === 'نينوى' ? 'selected' : '' %>>نينوى</option>
+                                        <option value="الأنبار" <%= lab.city === 'الأنبار' ? 'selected' : '' %>>الأنبار</option>
+                                        <option value="كركوك" <%= lab.city === 'كركوك' ? 'selected' : '' %>>كركوك</option>
+                                        <option value="صلاح الدين" <%= lab.city === 'صلاح الدين' ? 'selected' : '' %>>صلاح الدين</option>
+                                        <option value="ديالى" <%= lab.city === 'ديالى' ? 'selected' : '' %>>ديالى</option>
+                                        <option value="بابل" <%= lab.city === 'بابل' ? 'selected' : '' %>>بابل</option>
+                                        <option value="كربلاء" <%= lab.city === 'كربلاء' ? 'selected' : '' %>>كربلاء</option>
+                                        <option value="النجف" <%= lab.city === 'النجف' ? 'selected' : '' %>>النجف</option>
+                                        <option value="القادسية" <%= lab.city === 'القادسية' ? 'selected' : '' %>>القادسية</option>
+                                        <option value="المثنى" <%= lab.city === 'المثنى' ? 'selected' : '' %>>المثنى</option>
+                                        <option value="واسط" <%= lab.city === 'واسط' ? 'selected' : '' %>>واسط</option>
+                                        <option value="ذي قار" <%= lab.city === 'ذي قار' ? 'selected' : '' %>>ذي قار</option>
+                                        <option value="ميسان" <%= lab.city === 'ميسان' ? 'selected' : '' %>>ميسان</option>
+                                        <option value="أربيل" <%= lab.city === 'أربيل' ? 'selected' : '' %>>أربيل</option>
+                                        <option value="السليمانية" <%= lab.city === 'السليمانية' ? 'selected' : '' %>>السليمانية</option>
+                                        <option value="دهوك" <%= lab.city === 'دهوك' ? 'selected' : '' %>>دهوك</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label required" for="labCountry"><%= __('profile.country') %></label>
+                                    <input type="text" id="labCountry" name="country" class="form-input" value="<%= lab.country %>" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Specializations Section -->
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <div class="section-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                <i class="fas fa-stethoscope"></i>
+                            </div>
+                            <div>
+                                <h2 class="section-title"><%= __('profile.specializations') %></h2>
+                                <p class="section-description"><%= __('profile.specializationsDesc') %></p>
+                            </div>
+                        </div>
+
+                        <div class="specializations-grid" id="specializationsGrid">
+                            <% availableSpecializations.forEach(spec => { %>
+                                <div class="specialization-item <%= lab.specialization && lab.specialization.includes(spec) ? 'selected' : '' %>" data-spec="<%= spec %>">
+                                    <input type="checkbox" <%= lab.specialization && lab.specialization.includes(spec) ? 'checked' : '' %> value="<%= spec %>">
+                                    <span><%= __('tests.specializations.' + spec, spec) %></span>
+                                </div>
+                            <% }) %>
+                        </div>
+                    </div>
+
+                    <!-- Operating Hours Section -->
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <div class="section-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <h2 class="section-title"><%= __('profile.operatingHours') %></h2>
+                                <p class="section-description"><%= __('profile.operatingHoursDesc') %></p>
+                            </div>
+                        </div>
+
+                        <div class="operating-hours-grid">
+                            <% const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']; %>
+                            <% days.forEach(day => { %>
+                                <div class="day-schedule">
+                                    <div class="day-name"><%= day.charAt(0).toUpperCase() + day.slice(1) %></div>
+                                    <input type="time" class="time-input" name="operatingHours.<%= day %>.open"
+                                           value="<%= lab.operatingHours && lab.operatingHours[day] && lab.operatingHours[day].open ? lab.operatingHours[day].open : '09:00' %>">
+                                    <input type="time" class="time-input" name="operatingHours.<%= day %>.close"
+                                           value="<%= lab.operatingHours && lab.operatingHours[day] && lab.operatingHours[day].close ? lab.operatingHours[day].close : '17:00' %>">
+                                    <div class="closed-checkbox">
+                                        <input type="checkbox" id="<%= day %>Closed" name="operatingHours.<%= day %>.closed" value="true"
+                                               <%= lab.operatingHours && lab.operatingHours[day] && lab.operatingHours[day].closed ? 'checked' : '' %>>
+                                        <label for="<%= day %>Closed"><%= __('profile.closed') %></label>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+                    </div>
+
+                    <!-- Save Section -->
+                    <div class="save-section">
+                        <div>
+                            <p class="save-info"><%= __('profile.lastUpdated') %>: <%= lab.updatedAt ? new Date(lab.updatedAt).toLocaleDateString() : 'Never' %></p>
+                        </div>
+                        <div class="save-buttons">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                <%= __('common.save') %> <%= __('profile.changes') %>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Handle specializations selection
+        document.querySelectorAll('.specialization-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+                this.classList.toggle('selected');
+            });
+        });
+
+        // Handle operating hours closed state
+        document.querySelectorAll('.day-schedule input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const daySchedule = this.closest('.day-schedule');
+                const timeInputs = daySchedule.querySelectorAll('.time-input');
+
+                if (this.checked) {
+                    timeInputs.forEach(input => input.disabled = true);
+                } else {
+                    timeInputs.forEach(input => input.disabled = false);
+                }
+            });
+        });
+
+        // Initialize closed states
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.day-schedule input[type="checkbox"]:checked').forEach(checkbox => {
+                const daySchedule = checkbox.closest('.day-schedule');
+                const timeInputs = daySchedule.querySelectorAll('.time-input');
+                timeInputs.forEach(input => input.disabled = true);
+            });
+        });
+
+        // Logo / cover image upload - each uploads immediately on selection
+        function setupImageUpload(inputId, previewId, labelId, endpoint, fieldName) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            const label = document.getElementById(labelId);
+            const originalLabel = label.textContent;
+
+            input.addEventListener('change', async () => {
+                const file = input.files[0];
+                if (!file) return;
+
+                label.textContent = <%- JSON.stringify(__('profile.uploadingImage')) %>;
+                input.disabled = true;
+
+                try {
+                    const body = new FormData();
+                    body.append(fieldName, file);
+                    const response = await fetch(endpoint, { method: 'POST', body });
+                    const data = await response.json();
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || <%- JSON.stringify(__('profile.imageUploadError')) %>);
+                    }
+
+                    const url = data.data[fieldName];
+                    preview.innerHTML = `<img src="${url}" alt="${fieldName}">`;
+                    showNotification(<%- JSON.stringify(__('profile.imageUploadSuccess')) %>, 'success');
+                } catch (error) {
+                    showNotification(error.message || <%- JSON.stringify(__('profile.imageUploadError')) %>, 'error');
+                } finally {
+                    label.textContent = originalLabel;
+                    input.disabled = false;
+                    input.value = '';
+                }
+            });
+        }
+
+        setupImageUpload('logoInput', 'logoPreview', 'logoUploadLabel', '/lab/api/profile/logo', 'logo');
+        setupImageUpload('coverInput', 'coverPreview', 'coverUploadLabel', '/lab/api/profile/cover-image', 'coverImage');
+
+        // Handle form submission
+        document.getElementById('settingsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const updateData = {};
+
+            // Convert form data to object
+            for (let [key, value] of formData.entries()) {
+                if (key.includes('operatingHours')) {
+                    // Handle nested operating hours
+                    const parts = key.split('.');
+                    if (!updateData.operatingHours) updateData.operatingHours = {};
+                    if (!updateData.operatingHours[parts[1]]) updateData.operatingHours[parts[1]] = {};
+
+                    if (parts[2] === 'closed') {
+                        updateData.operatingHours[parts[1]].closed = value === 'true';
+                    } else if (parts[2] === 'open') {
+                        updateData.operatingHours[parts[1]].open = value;
+                    } else if (parts[2] === 'close') {
+                        updateData.operatingHours[parts[1]].close = value;
+                    }
+                } else {
+                    updateData[key] = value;
+                }
+            }
+
+            // Add specializations
+            updateData.specialization = [];
+            document.querySelectorAll('.specialization-item.selected input[type="checkbox"]').forEach(checkbox => {
+                updateData.specialization.push(checkbox.value);
+            });
+
+            // Ensure at least one specialization is selected
+            if (updateData.specialization.length === 0) {
+                updateData.specialization = ['Blood Tests'];
+            }
+
+
+
+            try {
+                const response = await fetch('/lab/api/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const successMessage = {
+                        ar: 'تم تحديث إعدادات المختبر بنجاح!',
+                        en: 'Lab settings updated successfully!',
+                        ku: 'بۆشاییە کاتی بە سەرکەوتنی!'
+                    };
+
+                    // Get current language from HTML lang attribute or use fallback
+                    const htmlLang = document.documentElement.lang || 'en';
+                    const currentLanguage = successMessage[htmlLang] || successMessage.en;
+
+                    showNotification(currentLanguage, 'success');
+                } else {
+                    console.error('Settings update error:', data);
+                    showNotification(data.message || 'Error updating settings', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating settings:', error);
+                showNotification('Error updating settings', 'error');
+            }
+        });
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                ${message}
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Reset form
+        function resetForm() {
+            if (confirm('Are you sure you want to reset all changes?')) {
+                location.reload();
+            }
+        }
+
+        // Add slide out animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+            </script>
+</body>
+</html>

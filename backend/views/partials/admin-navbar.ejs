@@ -1,0 +1,683 @@
+<!-- Language Switcher -->
+<div class="language-switcher">
+  <div class="language-selector">
+    <button class="language-trigger" id="languageTrigger" aria-haspopup="true" aria-expanded="false"
+      aria-label="Select language">
+      <div class="current-language">
+        <svg class="language-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+          <rect x="3" y="3" width="18" height="18" rx="3" fill="url(#arGradient)" />
+          <text x="12" y="16" font-family="Cairo, sans-serif" font-size="10" font-weight="bold" text-anchor="middle"
+            fill="white" style="direction: rtl">أب</text>
+          <defs>
+            <linearGradient id="arGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#F7931E;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+
+        </svg>
+        <span class="language-code">
+
+
+          AR
+
+
+
+
+
+
+        </span>
+      </div>
+      <svg class="dropdown-indicator" width="8" height="5" viewBox="0 0 8 5" fill="none">
+        <path d="M1 1L4 4L7 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+          stroke-linejoin="round" />
+      </svg>
+    </button>
+
+    <div class="language-menu" id="languageMenu" role="menu">
+
+      <a href="?lang=ar" class="language-item active" data-lang="ar" data-dir="rtl" role="menuitem">
+        <div class="language-icon-wrapper">
+          <svg class="language-icon-small" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+            <rect x="4" y="4" width="16" height="16" rx="2" fill="#FF6B35" />
+            <text x="12" y="15" font-family="Cairo, sans-serif" font-size="8" font-weight="bold" text-anchor="middle"
+              fill="white" style="direction: rtl">أب</text>
+
+          </svg>
+        </div>
+        <div class="language-info">
+          <span class="language-name">العربية</span>
+          <span class="language-native">
+
+            العربية
+
+          </span>
+        </div>
+
+        <svg class="checkmark" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="8" fill="currentColor" />
+          <path d="M4 8l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+            fill="none" />
+        </svg>
+
+      </a>
+
+      <a href="?lang=en" class="language-item " data-lang="en" data-dir="ltr" role="menuitem">
+        <div class="language-icon-wrapper">
+          <svg class="language-icon-small" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+            <rect x="4" y="4" width="16" height="16" rx="2" fill="#4285F4" />
+            <text x="12" y="15" font-family="Georgia, serif" font-size="8" font-weight="bold" text-anchor="middle"
+              fill="white">Aa</text>
+
+          </svg>
+        </div>
+        <div class="language-info">
+          <span class="language-name">English</span>
+          <span class="language-native">
+            English
+
+
+          </span>
+        </div>
+
+      </a>
+
+      <a href="?lang=ku" class="language-item " data-lang="ku" data-dir="rtl" role="menuitem">
+        <div class="language-icon-wrapper">
+          <svg class="language-icon-small" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+            <rect x="4" y="4" width="16" height="16" rx="2" fill="#00D2A0" />
+            <text x="12" y="15" font-family="Cairo, sans-serif" font-size="8" font-weight="bold" text-anchor="middle"
+              fill="white" style="direction: rtl">ک</text>
+
+          </svg>
+        </div>
+        <div class="language-info">
+          <span class="language-name">کوردی</span>
+          <span class="language-native">
+
+
+            کوردی
+          </span>
+        </div>
+
+      </a>
+
+    </div>
+  </div>
+</div>
+
+<style>
+  .language-switcher {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    z-index: 1000;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+  }
+
+  .language-selector {
+    position: relative;
+  }
+
+  .language-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 22px;
+    color: #1d1d1f;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+    min-width: 70px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .language-trigger:hover {
+    background: rgba(255, 255, 255, 0.98);
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .language-trigger:active {
+    transform: scale(0.98);
+  }
+
+  .current-language {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .language-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .language-icon-small {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .language-code {
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  .dropdown-indicator {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+    opacity: 0.6;
+  }
+
+  .language-trigger[aria-expanded="true"] .dropdown-indicator {
+    transform: rotate(180deg);
+  }
+
+  .language-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 200px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(0.95);
+    transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  .language-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+
+  .language-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    color: #1d1d1f;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    border-radius: 12px;
+    margin: 4px;
+    position: relative;
+  }
+
+  .language-item:hover {
+    background: rgba(131, 120, 244, 0.08);
+    transform: scale(1.02);
+  }
+
+  .language-item.active {
+    background: linear-gradient(135deg, rgba(131, 120, 244, 0.1) 0%, rgba(123, 108, 246, 0.1) 100%);
+    color: #5856d6;
+    font-weight: 500;
+  }
+
+  .language-icon-wrapper {
+    width: 32px;
+    height: 32px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.03);
+    flex-shrink: 0;
+  }
+
+  .language-item.active .language-icon-wrapper {
+    background: rgba(88, 86, 214, 0.1);
+  }
+
+  .language-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .language-name {
+    font-weight: 500;
+    font-size: 14px;
+    display: block;
+    line-height: 1.2;
+  }
+
+  .language-native {
+    font-size: 12px;
+    color: #86868b;
+    display: block;
+    line-height: 1.2;
+  }
+
+  .language-item.active .language-native {
+    color: #5856d6;
+    opacity: 0.8;
+  }
+
+  .checkmark {
+    width: 20px;
+    height: 20px;
+    color: #5856d6;
+    flex-shrink: 0;
+    animation: checkmark-pop 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+
+  @keyframes checkmark-pop {
+    0% {
+      transform: scale(0);
+      opacity: 0;
+    }
+
+    50% {
+      transform: scale(1.2);
+    }
+
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* RTL Support */
+  [dir="rtl"] .language-switcher {
+    left: auto;
+    right: 24px;
+  }
+
+  [dir="rtl"] .language-menu {
+    left: auto;
+    right: 0;
+  }
+
+  /* Mobile Responsiveness */
+  @media (max-width: 768px) {
+    .language-switcher {
+      top: 16px;
+      left: 16px;
+    }
+
+    [dir="rtl"] .language-switcher {
+      left: auto;
+      right: 16px;
+    }
+
+    .language-trigger {
+      padding: 6px 10px;
+      min-width: 60px;
+    }
+
+    .language-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .language-code {
+      font-size: 11px;
+    }
+
+    .language-menu {
+      min-width: 180px;
+    }
+
+    .language-item {
+      padding: 8px 12px;
+    }
+
+    .language-icon-wrapper {
+      width: 28px;
+      height: 28px;
+      border-radius: 16px;
+    }
+
+    .language-name {
+      font-size: 13px;
+    }
+
+    .language-native {
+      font-size: 11px;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .language-trigger {
+      background: rgba(28, 28, 30, 0.95);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #f5f5f7;
+    }
+
+    .language-trigger:hover {
+      background: rgba(28, 28, 30, 0.98);
+    }
+
+    .language-menu {
+      background: rgba(28, 28, 30, 0.98);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .language-item {
+      color: #f5f5f7;
+    }
+
+    .language-item:hover {
+      background: rgba(131, 120, 244, 0.15);
+    }
+
+    .language-icon-wrapper {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .language-native {
+      color: #98989d;
+    }
+
+    .language-item.active .language-native {
+      color: #a1a1a6;
+      opacity: 0.8;
+    }
+  }
+</style>
+
+<!-- Modern Navigation -->
+<nav class="admin-navbar">
+  <div class="navbar-container">
+    <div class="navbar-menu">
+      <a href="/admin/dashboard"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'dashboard' ? 'active' : '' %>">
+        <i class="fas fa-home"></i>
+        <span>
+          <%= __('navigation.dashboard') %>
+        </span>
+      </a>
+      <a href="/admin/labs" class="nav-item <%= typeof page !== 'undefined' && page === 'labs' ? 'active' : '' %>">
+        <i class="fas fa-flask"></i>
+        <span>
+          <%= __('labManagement.manageLabs') %>
+        </span>
+      </a>
+      <a href="/admin/orders" class="nav-item <%= typeof page !== 'undefined' && page === 'orders' ? 'active' : '' %>">
+        <i class="fas fa-clipboard-list"></i>
+        <span>
+          <%= __('orders.title') %>
+        </span>
+      </a>
+      <a href="/admin/nurses" class="nav-item <%= typeof page !== 'undefined' && page === 'nurses' ? 'active' : '' %>">
+        <i class="fas fa-user-nurse"></i>
+        <span>
+          <%= __('roles.nurse') %>
+        </span>
+      </a>
+      <a href="/admin/finance"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'finance' ? 'active' : '' %>">
+        <i class="fas fa-coins"></i>
+        <span>
+          <%= __('navigation.finance') || 'Finance' %>
+        </span>
+      </a>
+      <a href="/admin/custody"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'custody' ? 'active' : '' %>">
+        <i class="fas fa-box-open"></i>
+        <span>
+          <%= __('navigation.custody') || 'العهد والأمانات' %>
+        </span>
+      </a>
+      <a href="/admin/services"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'services' ? 'active' : '' %>">
+        <i class="fas fa-bolt"></i>
+        <span>
+          <%= __('navigation.quickServices') || 'الخدمات السريعة' %>
+        </span>
+      </a>
+      <a href="/admin/banners"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'banners' ? 'active' : '' %>">
+        <i class="fas fa-images"></i>
+        <span>
+          <%= __('navigation.banners') || 'بانر الرئيسية' %>
+        </span>
+      </a>
+      <a href="/admin/patients"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'patients' ? 'active' : '' %>">
+        <i class="fas fa-users"></i>
+        <span>
+          <%= __('navigation.patients') %>
+        </span>
+      </a>
+      <a href="/admin/reports"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'reports' ? 'active' : '' %>">
+        <i class="fas fa-chart-line"></i>
+        <span>
+          <%= __('navigation.reports') %>
+        </span>
+      </a>
+      <a href="/admin/offers"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'offers' ? 'active' : '' %>">
+        <i class="fas fa-tags"></i>
+        <span>
+          <%= __('navigation.offers') || 'Offers' %>
+        </span>
+      </a>
+      <a href="/admin/coupons"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'coupons' ? 'active' : '' %>">
+        <i class="fas fa-ticket-alt"></i>
+        <span>
+          <%= __('navigation.coupons') || 'القسائم' %>
+        </span>
+      </a>
+      <!-- Shop Dropdown -->
+      <div
+        class="nav-item-dropdown <%= typeof page !== 'undefined' && (page === 'shop' || page === 'shop-orders') ? 'active' : '' %>">
+        <a href="#" class="nav-item dropdown-trigger">
+          <i class="fas fa-shopping-bag"></i>
+          <span>
+            <%= __('navigation.shop') || 'Shop' %>
+          </span>
+          <i class="fas fa-chevron-down dropdown-arrow"></i>
+        </a>
+        <div class="dropdown-menu">
+          <a href="/admin/shop/categories" class="dropdown-item">
+            <i class="fas fa-tags"></i>
+            <span>
+              <%= __('shop.categories') || 'Categories' %>
+            </span>
+          </a>
+          <a href="/admin/shop/products" class="dropdown-item">
+            <i class="fas fa-box"></i>
+            <span>
+              <%= __('shop.products') || 'Products' %>
+            </span>
+          </a>
+          <a href="/admin/shop/orders" class="dropdown-item">
+            <i class="fas fa-shopping-cart"></i>
+            <span>
+              <%= __('shop.orders') || 'Shop Orders' %>
+            </span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Menu -->
+    <div class="profile-menu">
+      <button class="profile-trigger" id="profileTrigger">
+        <i class="fas fa-cog"></i>
+      </button>
+      <div class="profile-dropdown" id="profileDropdown">
+        <div class="dropdown-header">
+          <div class="user-info">
+            <div class="user-avatar">
+              <i class="fas fa-user"></i>
+            </div>
+            <div class="user-details">
+              <div class="user-name">
+                <%= typeof user !=='undefined' ? user.name : 'Admin User' %>
+              </div>
+              <div class="user-role">
+                <%= __('roles.admin') %>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-content">
+          <div class="dropdown-section">
+            <div class="section-title">
+              <%= __('common.language') %>
+            </div>
+            <div class="language-options">
+              <button class="lang-option <%= currentLang === 'en' ? 'active' : '' %>" onclick="changeLanguage('en')">
+                <span class="lang-icon">Aa</span>
+                <span class="lang-name">
+                  <%= __('languages.en') %>
+                </span>
+                <i class="fas fa-check check-icon"></i>
+              </button>
+              <button class="lang-option <%= currentLang === 'ar' ? 'active' : '' %>" onclick="changeLanguage('ar')">
+                <span class="lang-icon">أب</span>
+                <span class="lang-name">
+                  <%= __('languages.ar') %>
+                </span>
+                <i class="fas fa-check check-icon"></i>
+              </button>
+              <button class="lang-option <%= currentLang === 'ku' ? 'active' : '' %>" onclick="changeLanguage('ku')">
+                <span class="lang-icon">ک</span>
+                <span class="lang-name">
+                  <%= __('languages.ku') %>
+                </span>
+                <i class="fas fa-check check-icon"></i>
+              </button>
+              <button class="lang-option <%= currentLang === 'tr' ? 'active' : '' %>" onclick="changeLanguage('tr')">
+                <span class="lang-icon">TR</span>
+                <span class="lang-name">
+                  <%= __('languages.tr') %>
+                </span>
+                <i class="fas fa-check check-icon"></i>
+              </button>
+            </div>
+          </div>
+          <div class="dropdown-section">
+            <button class="dropdown-item logout-btn" onclick="handleLogout()">
+              <i class="fas fa-sign-out-alt"></i>
+              <span>
+                <%= __('common.logout') %>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<script>
+  // Language Switcher JavaScript
+  document.addEventListener('DOMContentLoaded', function () {
+    const trigger = document.getElementById('languageTrigger');
+    const menu = document.getElementById('languageMenu');
+
+    // Toggle dropdown with Apple-style animations
+    if (trigger && menu) {
+      trigger.addEventListener('click', function (e) {
+        e.preventDefault();
+        const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+
+        trigger.setAttribute('aria-expanded', !isExpanded);
+
+        if (!isExpanded) {
+          // Show menu
+          menu.classList.add('show');
+
+          // Add haptic feedback if available
+          if (navigator.vibrate) {
+            navigator.vibrate(10);
+          }
+
+          // Focus first non-active item
+          const firstNonActive = menu.querySelector('.language-item:not(.active)');
+          if (firstNonActive) {
+            setTimeout(() => firstNonActive.focus(), 100);
+          }
+        } else {
+          // Hide menu
+          menu.classList.remove('show');
+        }
+      });
+
+      // Close dropdown with Apple-style interactions
+      document.addEventListener('click', function (e) {
+        if (!trigger.contains(e.target) && !menu.contains(e.target)) {
+          trigger.setAttribute('aria-expanded', 'false');
+          menu.classList.remove('show');
+        }
+      });
+
+      // Keyboard navigation
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          trigger.setAttribute('aria-expanded', 'false');
+          menu.classList.remove('show');
+          trigger.focus();
+        }
+
+        if (trigger.getAttribute('aria-expanded') === 'true') {
+          const items = Array.from(menu.querySelectorAll('.language-item'));
+          const currentIndex = items.findIndex(item => item === document.activeElement);
+
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const nextIndex = (currentIndex + 1) % items.length;
+            items[nextIndex].focus();
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prevIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
+            items[prevIndex].focus();
+          }
+        }
+      });
+    }
+
+    // Handle language switching with smooth Apple-style transition
+    const languageOptions = document.querySelectorAll('.language-item');
+    languageOptions.forEach(option => {
+      option.addEventListener('click', function (e) {
+        const newLang = this.dataset.lang;
+        const newDir = this.dataset.dir;
+
+        // Add subtle page transition
+        document.body.style.transition = 'opacity 0.15s ease-out, transform 0.15s ease-out';
+        document.body.style.opacity = '0';
+        document.body.style.transform = 'scale(1.005)';
+
+        // Update document direction and language
+        document.documentElement.dir = newDir;
+        document.documentElement.lang = newLang;
+
+        // Navigate to new language
+        setTimeout(() => {
+          window.location.href = this.href;
+        }, 100);
+      });
+    });
+  });
+</script>
+
+<!-- Profile Menu Script -->
+<script src="/js/admin-profile-menu.js"></script>

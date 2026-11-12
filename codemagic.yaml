@@ -1,0 +1,63 @@
+workflows:
+  ios-workflow:
+    name: iOS Workflow
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: "LabGo LLC"
+    environment:
+      groups:
+        - maps # must define CARTO_API_KEY (Codemagic app > Environment variables)
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.labgollc.labgo
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Install CocoaPods dependencies
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      # Applies the fetched/generated provisioning profile to the Xcode
+      # project and writes a matching ExportOptions.plist. This is the
+      # actual fix: the manually/UI-configured export path Codemagic's
+      # "Flutter Workflow Editor" was using produced an IPA whose
+      # ExportOptions.plist didn't correctly carry the Push Notifications
+      # entitlement through, even though the profile itself has it - so
+      # every build published fine but could never register for APNs.
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Flutter build ipa for distribution
+        script: |
+          flutter build ipa --release \
+            --dart-define=CARTO_API_KEY=$CARTO_API_KEY \
+            --export-options-plist=/Users/builder/export_options.plist
+      # Diagnostic requested by Codemagic support (ticket #19746): confirm
+      # aps-environment is actually present in both the embedded provisioning
+      # profile and the final codesigned binary, not just in project settings.
+      - name: Verify entitlements in signed IPA
+        script: |
+          IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
+          rm -rf /tmp/ipa_check
+          mkdir -p /tmp/ipa_check
+          unzip -q "$IPA" -d /tmp/ipa_check
+          APP=$(find /tmp/ipa_check/Payload -maxdepth 1 -name "*.app" | head -1)
+          {
+            echo "=== Signed app entitlements ==="
+            codesign -d --entitlements :- "$APP" 2>&1
+            echo "=== Provisioning profile entitlements ==="
+            security cms -D -i "$APP/embedded.mobileprovision" > /tmp/profile.plist
+            /usr/libexec/PlistBuddy -c "Print :Entitlements" /tmp/profile.plist
+          } | tee /tmp/entitlements_check.txt
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - /tmp/entitlements_check.txt
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

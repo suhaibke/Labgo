@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>العهد والأمانات - LabGo Admin</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-nurses.css">
+    <link rel="stylesheet" href="/css/admin-custody.css">
+    <style>body { font-family: <%= font %>; }</style>
+</head>
+
+<body>
+    <%- include('../partials/admin-navbar') %>
+
+        <main class="admin-dashboard">
+            <div class="nurse-management-container">
+
+                <div class="page-header">
+                    <div class="header-left">
+                        <h1>العهد والأمانات</h1>
+                        <p class="header-subtitle">إدارة أدوات الفنيين وطلبات الاستلام والإرجاع</p>
+                    </div>
+                </div>
+
+                <div class="custody-tabs">
+                    <button class="custody-tab-btn active" data-tab="requests">الطلبات</button>
+                    <button class="custody-tab-btn" data-tab="inventory">المخزون</button>
+                </div>
+
+                <!-- ===================== REQUESTS TAB ===================== -->
+                <section class="custody-tab-panel active" id="tab-requests">
+                    <div class="filters-row">
+                        <select id="requestStatusFilter">
+                            <option value="pending">قيد الانتظار</option>
+                            <option value="approved">موافق عليها، بانتظار التسليم</option>
+                            <option value="delivered">تم التسليم</option>
+                            <option value="return_requested">طلب إرجاع</option>
+                            <option value="returned">مُرجعة</option>
+                            <option value="rejected">مرفوضة</option>
+                            <option value="">الكل</option>
+                        </select>
+                        <button class="modern-btn refresh-btn" onclick="loadRequests()">
+                            <i class="fas fa-sync-alt"></i><span>تحديث</span>
+                        </button>
+                    </div>
+                    <div class="custody-table-wrapper">
+                        <table class="custody-table">
+                            <thead>
+                                <tr>
+                                    <th>الفني</th>
+                                    <th>الأمانة المطلوبة</th>
+                                    <th>المدة</th>
+                                    <th>تاريخ الطلب</th>
+                                    <th>الحالة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestsTableBody">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding:30px;"><i
+                                            class="fas fa-spinner fa-spin"></i></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ===================== INVENTORY TAB ===================== -->
+                <section class="custody-tab-panel" id="tab-inventory">
+                    <div class="header-actions" style="margin-bottom:16px;">
+                        <button class="modern-btn" onclick="openCreateModal()">
+                            <i class="fas fa-plus"></i><span>إضافة أمانة جديدة</span>
+                        </button>
+                        <button class="modern-btn refresh-btn" onclick="loadItems()">
+                            <i class="fas fa-sync-alt"></i><span>تحديث</span>
+                        </button>
+                    </div>
+                    <div class="filters-row">
+                        <input type="text" id="searchInput" placeholder="بحث بالاسم أو الرمز...">
+                        <select id="categoryFilter">
+                            <option value="">كل الأنواع</option>
+                            <option value="equipment">معدات</option>
+                            <option value="consumable">مستلزمات</option>
+                            <option value="sensitive">مواد حساسة</option>
+                            <option value="financial">أمانات مالية</option>
+                        </select>
+                        <select id="statusFilter">
+                            <option value="">كل الحالات</option>
+                            <option value="available">متاحة</option>
+                            <option value="in_use">قيد الاستخدام</option>
+                            <option value="damaged">تالفة</option>
+                            <option value="missing">مفقودة</option>
+                            <option value="needs_maintenance">بحاجة صيانة</option>
+                        </select>
+                    </div>
+                    <div class="custody-table-wrapper">
+                        <table class="custody-table">
+                            <thead>
+                                <tr>
+                                    <th>الاسم</th>
+                                    <th>النوع</th>
+                                    <th>الرمز</th>
+                                    <th>الحالة</th>
+                                    <th>المسؤول عنها حاليًا</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsTableBody">
+                                <tr>
+                                    <td colspan="5" style="text-align:center; padding:30px;"><i
+                                            class="fas fa-spinner fa-spin"></i></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Create Item Modal -->
+        <div class="modal-overlay" id="createModal">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h3>إضافة أمانة جديدة</h3>
+                    <button class="modal-close-btn" onclick="closeModal('createModal')"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>الاسم</label>
+                        <input type="text" id="createName" class="form-control" placeholder="مثال: جهاز قياس ضغط الدم">
+                    </div>
+                    <div class="form-group">
+                        <label>النوع</label>
+                        <select id="createCategory" class="form-control">
+                            <option value="equipment">معدات</option>
+                            <option value="consumable">مستلزمات</option>
+                            <option value="sensitive">مواد حساسة</option>
+                            <option value="financial">أمانات مالية</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>عدد الوحدات (كل وحدة تحصل على رمز مستقل)</label>
+                        <input type="number" id="createQuantity" class="form-control" value="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>الرقم التسلسلي (اختياري)</label>
+                        <input type="text" id="createSerial" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>القيمة لكل وحدة (د.ع)</label>
+                        <input type="number" id="createValue" class="form-control" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>الجهة المسلّمة (اختياري)</label>
+                        <input type="text" id="createReceivedFrom" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>ملاحظات</label>
+                        <textarea id="createNotes" class="form-control"></textarea>
+                    </div>
+                    <button class="modern-btn confirm-btn" style="width:100%;" onclick="submitCreate()">
+                        <i class="fas fa-check"></i> حفظ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Item Details Modal -->
+        <div class="modal-overlay" id="detailsModal">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h3 id="detailsTitle">تفاصيل الأمانة</h3>
+                    <button class="modal-close-btn" onclick="closeModal('detailsModal')"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body" id="detailsBody"></div>
+            </div>
+        </div>
+
+        <!-- Unit Picker Modal (approve) -->
+        <div class="modal-overlay" id="pickUnitModal">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h3>اختر الوحدة لتخصيصها لهذا الطلب</h3>
+                    <button class="modal-close-btn" onclick="closeModal('pickUnitModal')"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body" id="pickUnitBody"></div>
+            </div>
+        </div>
+
+        <!-- Scanner Modal (deliver / confirm return) -->
+        <div class="modal-overlay" id="scannerModal">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h3 id="scannerTitle">امسح الباركود</h3>
+                    <button class="modal-close-btn" onclick="closeScannerModal()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div id="scannerRegion"></div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const API_BASE = '/api/admin/custody';
+            let currentItemId = null;
+            let currentRequestId = null;
+            let scannerAction = null; // 'deliver' | 'confirm-return'
+            let html5QrCode = null;
+
+            const CATEGORY_LABELS = { equipment: 'معدات', consumable: 'مستلزمات', sensitive: 'مواد حساسة', financial: 'أمانات مالية' };
+            const ITEM_STATUS_LABELS = {
+                available: 'متاحة', in_use: 'قيد الاستخدام',
+                damaged: 'تالفة', missing: 'مفقودة', needs_maintenance: 'بحاجة صيانة'
+            };
+            const REQUEST_STATUS_LABELS = {
+                pending: 'قيد الانتظار', approved: 'موافق عليها، بانتظار التسليم', rejected: 'مرفوضة',
+                delivered: 'تم التسليم', return_requested: 'طلب إرجاع', returned: 'مُرجعة'
+            };
+
+            function getToken() {
+                return localStorage.getItem('token') || document.cookie.split('; ').find(r => r.startsWith('token='))?.split('=')[1];
+            }
+
+            function showToast(message, type = 'success') {
+                const el = document.createElement('div');
+                el.textContent = message;
+                el.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${type === 'success' ? '#1a8c4a' : '#c53030'};color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.15);`;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 3000);
+            }
+
+            function closeModal(id) {
+                document.getElementById(id).classList.remove('show');
+            }
+
+            // ---------------- Tabs ----------------
+            document.querySelectorAll('.custody-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.custody-tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.custody-tab-panel').forEach(p => p.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+                });
+            });
+
+            // ---------------- Inventory ----------------
+            async function loadItems() {
+                const search = document.getElementById('searchInput').value;
+                const category = document.getElementById('categoryFilter').value;
+                const status = document.getElementById('statusFilter').value;
+                const params = new URLSearchParams();
+                if (search) params.set('search', search);
+                if (category) params.set('category', category);
+                if (status) params.set('status', status);
+
+                const tbody = document.getElementById('itemsTableBody');
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px;"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+
+                try {
+                    const res = await fetch(`${API_BASE}/items?${params}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+
+                    if (data.data.items.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">لا توجد أمانات مسجلة بعد</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = data.data.items.map(item => `
+                    <tr onclick="openDetails('${item._id}')" style="cursor:pointer;">
+                        <td>${item.name}</td>
+                        <td>${CATEGORY_LABELS[item.category] || item.category}</td>
+                        <td><code>${item.code}</code></td>
+                        <td><span class="custody-status ${item.status}">${ITEM_STATUS_LABELS[item.status] || item.status}</span></td>
+                        <td>${item.currentHolder ? item.currentHolder.name : '-'}</td>
+                    </tr>
+                `).join('');
+                } catch (err) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#c53030;">حدث خطأ أثناء التحميل</td></tr>';
+                }
+            }
+
+            function openCreateModal() {
+                document.getElementById('createModal').classList.add('show');
+            }
+
+            async function submitCreate() {
+                const body = {
+                    name: document.getElementById('createName').value.trim(),
+                    category: document.getElementById('createCategory').value,
+                    quantity: Number(document.getElementById('createQuantity').value) || 1,
+                    serialNumber: document.getElementById('createSerial').value.trim(),
+                    value: Number(document.getElementById('createValue').value) || 0,
+                    receivedFrom: document.getElementById('createReceivedFrom').value.trim(),
+                    notes: document.getElementById('createNotes').value.trim(),
+                };
+                if (!body.name) { showToast('يرجى إدخال اسم الأمانة', 'error'); return; }
+
+                try {
+                    const res = await fetch(`${API_BASE}/items`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                        body: JSON.stringify(body),
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    showToast(`تمت إضافة ${data.data.items.length} وحدة بنجاح`);
+                    closeModal('createModal');
+                    loadItems();
+                } catch (err) {
+                    showToast(err.message || 'حدث خطأ', 'error');
+                }
+            }
+
+            async function openDetails(id) {
+                currentItemId = id;
+                const modal = document.getElementById('detailsModal');
+                const body = document.getElementById('detailsBody');
+                body.innerHTML = '<div style="text-align:center; padding:30px;"><i class="fas fa-spinner fa-spin"></i></div>';
+                modal.classList.add('show');
+
+                try {
+                    const res = await fetch(`${API_BASE}/items/${id}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    const item = data.data.item;
+
+                    document.getElementById('detailsTitle').textContent = item.name;
+                    body.innerHTML = `
+                    <div class="qr-preview">
+                        <img src="${data.data.qrDataUrl}" alt="QR" />
+                        <div><code>${item.code}</code></div>
+                    </div>
+                    <div class="form-group"><label>النوع</label><div>${CATEGORY_LABELS[item.category] || item.category}</div></div>
+                    <div class="form-group"><label>الحالة</label><div><span class="custody-status ${item.status}">${ITEM_STATUS_LABELS[item.status] || item.status}</span></div></div>
+                    <div class="form-group"><label>الرقم التسلسلي</label><div>${item.serialNumber || '-'}</div></div>
+                    <div class="form-group"><label>القيمة</label><div>${item.value} د.ع</div></div>
+                    <div class="form-group"><label>المسؤول عنها حاليًا</label><div>${item.currentHolder ? item.currentHolder.name + ' - ' + item.currentHolder.phone : '-'}</div></div>
+                `;
+                } catch (err) {
+                    body.innerHTML = `<div style="text-align:center; padding:30px; color:#c53030;">${err.message || 'حدث خطأ'}</div>`;
+                }
+            }
+
+            document.getElementById('searchInput').addEventListener('input', () => {
+                clearTimeout(window._searchDebounce);
+                window._searchDebounce = setTimeout(loadItems, 300);
+            });
+            document.getElementById('categoryFilter').addEventListener('change', loadItems);
+            document.getElementById('statusFilter').addEventListener('change', loadItems);
+
+            // ---------------- Requests ----------------
+            async function loadRequests() {
+                const status = document.getElementById('requestStatusFilter').value;
+                const params = new URLSearchParams();
+                if (status) params.set('status', status);
+
+                const tbody = document.getElementById('requestsTableBody');
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+
+                try {
+                    const res = await fetch(`${API_BASE}/requests?${params}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+
+                    if (data.data.requests.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#888;">لا توجد طلبات</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = data.data.requests.map(r => {
+                        let actionsHtml = '-';
+                        if (r.status === 'pending') {
+                            actionsHtml = `
+                            <button class="action-btn approve" onclick="openPickUnit('${r._id}', '${r.itemName}')">موافقة</button>
+                            <button class="action-btn reject" onclick="rejectRequest('${r._id}')">رفض</button>
+                        `;
+                        } else if (r.status === 'approved') {
+                            actionsHtml = `<button class="action-btn scan" onclick="openScanner('${r._id}', 'deliver')">تأكيد التسليم (مسح)</button>`;
+                        } else if (r.status === 'return_requested') {
+                            actionsHtml = `<button class="action-btn scan" onclick="openScanner('${r._id}', 'confirm-return')">تأكيد الاستلام (مسح)</button>`;
+                        }
+
+                        return `
+                        <tr>
+                            <td>${r.nurseId ? r.nurseId.name : '-'}</td>
+                            <td>${r.itemName}${r.itemId ? ' (' + r.itemId.code + ')' : ''}</td>
+                            <td>${r.requestedDurationDays} يوم</td>
+                            <td>${new Date(r.requestedAt).toLocaleDateString('ar-IQ')}</td>
+                            <td><span class="request-status ${r.status}">${REQUEST_STATUS_LABELS[r.status] || r.status}</span></td>
+                            <td>${actionsHtml}</td>
+                        </tr>
+                    `;
+                    }).join('');
+                } catch (err) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#c53030;">حدث خطأ أثناء التحميل</td></tr>';
+                }
+            }
+
+            document.getElementById('requestStatusFilter').addEventListener('change', loadRequests);
+
+            async function openPickUnit(requestId, itemName) {
+                currentRequestId = requestId;
+                const body = document.getElementById('pickUnitBody');
+                body.innerHTML = '<div style="text-align:center; padding:30px;"><i class="fas fa-spinner fa-spin"></i></div>';
+                document.getElementById('pickUnitModal').classList.add('show');
+
+                try {
+                    const res = await fetch(`${API_BASE}/requests/${requestId}/available-units`, { headers: { Authorization: `Bearer ${getToken()}` } });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+
+                    if (data.data.units.length === 0) {
+                        body.innerHTML = `<div style="text-align:center; padding:20px; color:#c53030;">لا توجد وحدات متاحة حاليًا من "${itemName}"</div>`;
+                        return;
+                    }
+
+                    body.innerHTML = `<p>اختر الوحدة المحددة لتسليمها:</p><div class="unit-pick-list">${data.data.units.map(u => `
+                    <div class="unit-pick-item" onclick="approveWithUnit('${u._id}')">
+                        <span>${u.name}</span><code>${u.code}</code>
+                    </div>
+                `).join('')}</div>`;
+                } catch (err) {
+                    body.innerHTML = `<div style="text-align:center; padding:20px; color:#c53030;">${err.message || 'حدث خطأ'}</div>`;
+                }
+            }
+
+            async function approveWithUnit(itemId) {
+                try {
+                    const res = await fetch(`${API_BASE}/requests/${currentRequestId}/approve`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                        body: JSON.stringify({ itemId }),
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    showToast('تمت الموافقة على الطلب');
+                    closeModal('pickUnitModal');
+                    loadRequests();
+                } catch (err) {
+                    showToast(err.message || 'حدث خطأ', 'error');
+                }
+            }
+
+            async function rejectRequest(requestId) {
+                const reason = prompt('سبب الرفض (اختياري):') || '';
+                try {
+                    const res = await fetch(`${API_BASE}/requests/${requestId}/reject`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                        body: JSON.stringify({ reason }),
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    showToast('تم رفض الطلب');
+                    loadRequests();
+                } catch (err) {
+                    showToast(err.message || 'حدث خطأ', 'error');
+                }
+            }
+
+            // ---------------- Scanner (deliver / confirm-return) ----------------
+            function openScanner(requestId, action) {
+                currentRequestId = requestId;
+                scannerAction = action;
+                document.getElementById('scannerTitle').textContent =
+                    action === 'deliver' ? 'امسح باركود الأمانة لتأكيد التسليم' : 'امسح رمز الإرجاع من هاتف الفني';
+                document.getElementById('scannerModal').classList.add('show');
+
+                html5QrCode = new Html5Qrcode('scannerRegion');
+                html5QrCode.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: 220 },
+                    onScanSuccess,
+                    () => { }
+                ).catch(() => {
+                    document.getElementById('scannerRegion').innerHTML =
+                        '<p style="text-align:center; color:#c53030;">تعذّر الوصول للكاميرا. تحقق من الصلاحيات.</p>';
+                });
+            }
+
+            function closeScannerModal() {
+                if (html5QrCode) {
+                    html5QrCode.stop().catch(() => { }).finally(() => { html5QrCode = null; });
+                }
+                closeModal('scannerModal');
+            }
+
+            async function onScanSuccess(scannedCode) {
+                if (html5QrCode) {
+                    html5QrCode.stop().catch(() => { });
+                }
+                closeModal('scannerModal');
+
+                const endpoint = scannerAction === 'deliver' ? 'deliver' : 'confirm-return';
+                try {
+                    const res = await fetch(`${API_BASE}/requests/${currentRequestId}/${endpoint}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                        body: JSON.stringify({ scannedCode }),
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    showToast(scannerAction === 'deliver' ? 'تم تأكيد التسليم' : 'تم تأكيد الاستلام');
+                    loadRequests();
+                } catch (err) {
+                    showToast(err.message || 'الرمز الممسوح غير مطابق', 'error');
+                }
+            }
+
+            loadRequests();
+            loadItems();
+        </script>
+</body>
+
+</html>

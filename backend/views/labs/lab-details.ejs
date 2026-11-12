@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= lab.name %> - <%= __('labManagement.labDetails') %> - LabGo <%= __('roles.admin') %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <style>
+        :root {
+            --sf-pro-display: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+            --sf-pro-text: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+            --apple-blue: #007AFF;
+            --apple-green: #34C759;
+            --apple-orange: #FF9500;
+            --apple-red: #FF3B30;
+            --apple-purple: #AF52DE;
+            --apple-gray: #8E8E93;
+            --apple-gray-light: #C7C7CC;
+            --apple-gray-ultralight: #F2F2F7;
+            --apple-background: #FFFFFF;
+            --apple-surface: #F9F9F9;
+            --apple-label: #1D1D1F;
+            --apple-secondary: #6E6E73;
+            --apple-tertiary: #8E8E93;
+            --apple-separator: #D1D1D6;
+            --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --card-shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
+            --border-radius: 12px;
+            --border-radius-large: 20px;
+            --spacing-xs: 4px;
+            --spacing-s: 8px;
+            --spacing-m: 16px;
+            --spacing-l: 24px;
+            --spacing-xl: 32px;
+            --spacing-xxl: 48px;
+        }
+
+              /* Base Styles */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--sf-pro-text), -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--apple-surface);
+            color: var(--apple-label);
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Header Section */
+        .header-section {
+            background: var(--apple-background);
+            border-bottom: 1px solid var(--apple-separator);
+            padding: var(--spacing-xl) 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-l);
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-s);
+            margin-bottom: var(--spacing-l);
+            font-size: 14px;
+            color: var(--apple-secondary);
+        }
+
+        .breadcrumb a {
+            color: var(--apple-blue);
+            text-decoration: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .breadcrumb a:hover {
+            opacity: 0.7;
+        }
+
+        .breadcrumb .separator {
+            color: var(--apple-tertiary);
+        }
+
+        /* Lab Header */
+        .lab-header {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-xl);
+            margin-bottom: var(--spacing-l);
+        }
+
+        .lab-logo {
+            width: 88px;
+            height: 88px;
+            border-radius: var(--border-radius);
+            background: var(--apple-gray-ultralight);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+            border: 1px solid var(--apple-separator);
+        }
+
+        .lab-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .lab-logo i {
+            font-size: 32px;
+            color: var(--apple-secondary);
+        }
+
+        .lab-title-section {
+            flex: 1;
+        }
+
+        .lab-title {
+            font-family: var(--sf-pro-display);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0 0 var(--spacing-m) 0;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .lab-subtitle {
+            font-size: 17px;
+            color: var(--apple-secondary);
+            margin: 0 0 var(--spacing-l) 0;
+            line-height: 1.4;
+            max-width: 600px;
+        }
+
+        .lab-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-m);
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: var(--border-radius);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .status-badge.active {
+            background: rgba(52, 199, 89, 0.1);
+            color: var(--apple-green);
+        }
+
+        .status-badge.inactive {
+            background: rgba(142, 142, 147, 0.1);
+            color: var(--apple-gray);
+        }
+
+        .status-badge.pending {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--apple-orange);
+        }
+
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: 6px 12px;
+            background: rgba(52, 199, 89, 0.1);
+            color: var(--apple-green);
+            border-radius: var(--border-radius);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .verified-badge i {
+            font-size: 12px;
+        }
+
+        /* Content Layout */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-l);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        @media (max-width: 968px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--apple-background);
+            border-radius: var(--border-radius-large);
+            border: 1px solid var(--apple-separator);
+            overflow: hidden;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        .card-header {
+            padding: var(--spacing-l);
+            border-bottom: 1px solid var(--apple-separator);
+            background: rgba(249, 249, 249, 0.5);
+        }
+
+        .card-title {
+            font-family: var(--sf-pro-display);
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--apple-label);
+            margin: 0 0 var(--spacing-xs) 0;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-s);
+        }
+
+        .card-title i {
+            color: var(--apple-blue);
+            font-size: 16px;
+        }
+
+        .card-subtitle {
+            font-size: 14px;
+            color: var(--apple-secondary);
+            margin: 0;
+        }
+
+        .card-content {
+            padding: var(--spacing-l);
+        }
+
+            /* Owner Section */
+        .owner-section {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-l);
+        }
+
+        .owner-avatar {
+            width: 56px;
+            height: 56px;
+            background: var(--apple-blue);
+            color: var(--apple-background);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            border: 2px solid var(--apple-background);
+            box-shadow: 0 0 0 1px var(--apple-separator);
+        }
+
+        .owner-info {
+            flex: 1;
+        }
+
+        .owner-name {
+            font-family: var(--sf-pro-display);
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--apple-label);
+            margin: 0 0 var(--spacing-xs) 0;
+        }
+
+        .owner-email {
+            color: var(--apple-blue);
+            text-decoration: none;
+            font-size: 15px;
+            margin-bottom: var(--spacing-s);
+            display: inline-block;
+        }
+
+        .owner-email:hover {
+            text-decoration: underline;
+        }
+
+        .owner-badges {
+            display: flex;
+            gap: var(--spacing-s);
+            margin-bottom: var(--spacing-m);
+        }
+
+        .role-badge {
+            padding: 4px 10px;
+            border-radius: var(--border-radius);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .role-badge.lab {
+            background: rgba(0, 122, 255, 0.08);
+            color: var(--apple-blue);
+        }
+
+        .role-badge.admin {
+            background: rgba(255, 59, 48, 0.08);
+            color: var(--apple-red);
+        }
+
+        .role-badge.patient {
+            background: rgba(142, 142, 147, 0.08);
+            color: var(--apple-gray);
+        }
+
+        .role-badge.nurse {
+            background: rgba(255, 149, 0, 0.08);
+            color: var(--apple-orange);
+        }
+
+        .owner-details {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-s);
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-s);
+            font-size: 14px;
+            color: var(--apple-secondary);
+        }
+
+        .detail-item i {
+            width: 16px;
+            color: var(--apple-tertiary);
+            text-align: center;
+            font-size: 14px;
+        }
+
+          /* Stats Section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-m);
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: var(--spacing-l);
+            background: var(--apple-gray-ultralight);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--apple-separator);
+        }
+
+        .stat-number {
+            font-family: var(--sf-pro-display);
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--apple-label);
+            margin-bottom: var(--spacing-xs);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--apple-secondary);
+            font-weight: 500;
+        }
+
+        /* Contact Section */
+        .contact-grid {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-l);
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-m);
+        }
+
+        .contact-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--apple-gray-ultralight);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--apple-blue);
+            font-size: 16px;
+            flex-shrink: 0;
+            border: 1px solid var(--apple-separator);
+        }
+
+        .contact-text {
+            flex: 1;
+        }
+
+        .contact-label {
+            font-size: 12px;
+            color: var(--apple-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
+        }
+
+        .contact-value {
+            font-size: 15px;
+            color: var(--apple-label);
+            font-weight: 500;
+        }
+
+        .contact-value a {
+            color: var(--apple-blue);
+            text-decoration: none;
+        }
+
+        .contact-value a:hover {
+            text-decoration: underline;
+        }
+
+        /* Specializations */
+        .specializations-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-s);
+        }
+
+        .specialization-tag {
+            padding: 8px 14px;
+            background: rgba(0, 122, 255, 0.08);
+            color: var(--apple-blue);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            border: 1px solid rgba(0, 122, 255, 0.15);
+        }
+
+        /* Recent Tests */
+        .tests-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-s);
+        }
+
+        .test-item {
+            background: var(--apple-gray-ultralight);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-m);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border: 1px solid var(--apple-separator);
+            transition: background-color 0.2s ease;
+        }
+
+        .test-item:hover {
+            background: var(--apple-background);
+        }
+
+        .test-info {
+            flex: 1;
+        }
+
+        .test-name {
+            font-weight: 600;
+            color: var(--apple-label);
+            margin-bottom: 2px;
+            font-size: 15px;
+        }
+
+        .test-patient {
+            font-size: 14px;
+            color: var(--apple-secondary);
+            margin-bottom: 2px;
+        }
+
+        .test-date {
+            font-size: 13px;
+            color: var(--apple-tertiary);
+        }
+
+        .test-meta {
+            display: flex;
+            gap: var(--spacing-s);
+        }
+
+        .test-status {
+            padding: 4px 10px;
+            border-radius: var(--border-radius);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .test-status.completed {
+            background: rgba(52, 199, 89, 0.08);
+            color: var(--apple-green);
+            border: 1px solid rgba(52, 199, 89, 0.15);
+        }
+
+        .test-status.pending {
+            background: rgba(255, 149, 0, 0.08);
+            color: var(--apple-orange);
+            border: 1px solid rgba(255, 149, 0, 0.15);
+        }
+
+        /* Actions */
+        .actions-container {
+            display: flex;
+            gap: var(--spacing-m);
+            justify-content: center;
+            margin-top: var(--spacing-xl);
+            padding: var(--spacing-xl) 0;
+        }
+
+        .action-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 15px;
+            font-weight: 600;
+            font-family: var(--sf-pro-text);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-s);
+            text-decoration: none;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .action-btn i {
+            font-size: 14px;
+        }
+
+        .action-btn.primary {
+            background: var(--apple-blue);
+            color: var(--apple-background);
+            border: 1px solid var(--apple-blue);
+        }
+
+        .action-btn.primary:hover {
+            background: #0051D5;
+            transform: translateY(-1px);
+        }
+
+        .action-btn.secondary {
+            background: var(--apple-background);
+            color: var(--apple-label);
+            border: 1px solid var(--apple-separator);
+        }
+
+        .action-btn.secondary:hover {
+            background: var(--apple-gray-ultralight);
+        }
+
+          /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--spacing-m);
+            }
+
+            .lab-header {
+                flex-direction: column;
+                gap: var(--spacing-l);
+                text-align: center;
+            }
+
+            .lab-title {
+                font-size: 2rem;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-m);
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .owner-section {
+                flex-direction: column;
+                gap: var(--spacing-m);
+                text-align: center;
+            }
+
+            .test-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--spacing-s);
+            }
+
+            .test-meta {
+                align-self: flex-end;
+            }
+
+            .actions-container {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .action-btn {
+                width: 100%;
+            }
+        }
+
+        /* RTL Support */
+        [dir="rtl"] .lab-header {
+            flex-direction: row-reverse;
+        }
+
+        [dir="rtl"] .owner-section,
+        [dir="rtl"] .contact-item,
+        [dir="rtl"] .detail-item {
+            flex-direction: row-reverse;
+        }
+
+        [dir="rtl"] .test-meta {
+            flex-direction: row-reverse;
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Navbar -->
+    <%- include('../partials/admin-navbar') %>
+
+    <!-- Header Section -->
+    <header class="header-section">
+        <div class="container">
+            <!-- Breadcrumb -->
+            <nav class="breadcrumb">
+                <a href="/admin/labs">
+                    <i class="fas fa-flask"></i>
+                    <%= __('labManagement.title') %>
+                </a>
+                <span class="separator">/</span>
+                <span><%= lab.name %></span>
+            </nav>
+
+            <!-- Lab Header -->
+            <div class="lab-header">
+                <div class="lab-logo">
+                    <% if (lab.logo) { %>
+                        <img src="<%= lab.logo %>" alt="<%= lab.name %>">
+                    <% } else { %>
+                        <i class="fas fa-flask"></i>
+                    <% } %>
+                </div>
+
+                <div class="lab-title-section">
+                    <h1 class="lab-title"><%= lab.name %></h1>
+                    <% if (lab.description) { %>
+                        <p class="lab-subtitle"><%= lab.description %></p>
+                    <% } %>
+                    <div class="lab-meta">
+                        <span class="status-badge <%= lab.status.toLowerCase() %>">
+                            <%= __('labManagement.' + lab.status.toLowerCase()) || lab.status %>
+                        </span>
+                        <% if (lab.isVerified) { %>
+                            <span class="verified-badge">
+                                <i class="fas fa-check-circle"></i>
+                                <%= __('labManagement.verified') %>
+                            </span>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <div class="content-grid">
+            <!-- Owner Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-user-tie"></i>
+                        <%= __('labManagement.owner') %> <%= __('labManagement.ownerInfo') %>
+                    </h2>
+                    <p class="card-subtitle">Contact information and account details</p>
+                </div>
+                <div class="card-content">
+                    <div class="owner-section">
+                        <div class="owner-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="owner-info">
+                            <h3 class="owner-name"><%= lab.ownerId?.name || 'N/A' %></h3>
+                            <a href="mailto:<%= lab.ownerId?.email || '#' %>" class="owner-email">
+                                <%= lab.ownerId?.email || 'N/A' %>
+                            </a>
+                            <div class="owner-badges">
+                                <span class="role-badge <%= lab.ownerId?.role || 'lab' %>">
+                                    <%= __('roles.' + (lab.ownerId?.role || 'lab')) %>
+                                </span>
+                            </div>
+                            <div class="owner-details">
+                                <div class="detail-item">
+                                    <i class="fas fa-phone"></i>
+                                    <span><%= lab.ownerId?.phone || 'N/A' %></span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>Member since: <%= lab.ownerId?.createdAt ? new Date(lab.ownerId.createdAt).toLocaleDateString() : 'N/A' %></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lab Statistics -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-chart-line"></i>
+                        <%= __('dashboard.statistics') %>
+                    </h2>
+                    <p class="card-subtitle">Performance metrics and indicators</p>
+                </div>
+                <div class="card-content">
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number"><%= stats.totalTests || 0 %></div>
+                            <div class="stat-label"><%= __('labManagement.totalTests') %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number"><%= stats.completedTests || 0 %></div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number"><%= stats.pendingTests || 0 %></div>
+                            <div class="stat-label">Pending</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number"><%= stats.totalPatientsServed || 0 %></div>
+                            <div class="stat-label"><%= __('labManagement.totalPatients') %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-address-card"></i>
+                    <%= __('labManagement.contactInfo') %>
+                </h2>
+                <p class="card-subtitle">How to reach this laboratory</p>
+            </div>
+            <div class="card-content">
+                <div class="contact-grid">
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="contact-text">
+                            <div class="contact-label">Email</div>
+                            <div class="contact-value">
+                                <a href="mailto:<%= lab.email %>"><%= lab.email %></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="contact-text">
+                            <div class="contact-label">Phone</div>
+                            <div class="contact-value"><%= lab.phone %></div>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="contact-text">
+                            <div class="contact-label"><%= __('labManagement.website') %></div>
+                            <div class="contact-value">
+                                <% if (lab.website) { %>
+                                    <a href="<%= lab.website %>" target="_blank" rel="noopener noreferrer">
+                                        <%= lab.website.replace(/https?:\/\//, '') %>
+                                    </a>
+                                <% } else { %>
+                                    N/A
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="contact-text">
+                            <div class="contact-label"><%= __('labManagement.address') %></div>
+                            <div class="contact-value"><%= lab.address %>, <%= lab.city %>, <%= lab.country %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Specializations -->
+        <% if (lab.specialization && lab.specialization.length > 0) { %>
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-microscope"></i>
+                    <%= __('labManagement.specializations') %>
+                </h2>
+                <p class="card-subtitle">Medical tests and services offered</p>
+            </div>
+            <div class="card-content">
+                <div class="specializations-container">
+                    <% lab.specialization.forEach(function(spec) { %>
+                        <span class="specialization-tag"><%= spec %></span>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+        <% } %>
+
+        <!-- Recent Tests -->
+        <% if (recentTests && recentTests.length > 0) { %>
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-history"></i>
+                    Recent <%= __('orders.title') %>
+                </h2>
+                <p class="card-subtitle">Latest test requests and results</p>
+            </div>
+            <div class="card-content">
+                <div class="tests-list">
+                    <% recentTests.forEach(function(test) { %>
+                        <div class="test-item">
+                            <div class="test-info">
+                                <div class="test-name"><%= test.testName %></div>
+                                <div class="test-patient">Patient: <%= test.patientId?.name || 'Unknown' %></div>
+                                <div class="test-date">Requested: <%= new Date(test.requestDate).toLocaleDateString() %></div>
+                            </div>
+                            <div class="test-meta">
+                                <span class="test-status <%= test.status.toLowerCase() %>">
+                                    <%= test.status %>
+                                </span>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+        <% } %>
+
+        <!-- Actions -->
+        <div class="actions-container">
+            <a href="/admin/labs" class="action-btn secondary">
+                <i class="fas fa-arrow-left"></i>
+                <%= __('common.back') %> <%= __('labManagement.title') %>
+            </a>
+            <button class="action-btn primary" onclick="editLab('<%= lab._id %>')">
+                <i class="fas fa-edit"></i>
+                <%= __('common.edit') %> Lab
+            </button>
+        </div>
+    </main>
+
+    <script>
+        function editLab(labId) {
+            window.location.href = `/admin/labs/edit/${labId}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Smooth scroll behavior for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

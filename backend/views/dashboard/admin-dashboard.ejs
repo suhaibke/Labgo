@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('navigation.dashboard') %> - LabGo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <style>
+        body {
+            font-family: <%= direction === 'rtl' ? "'Cairo', sans-serif" : "'Inter', sans-serif" %>;
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Navbar -->
+    <%- include('../partials/admin-navbar') %>
+
+    <!-- Main Dashboard Content -->
+    <main class="admin-dashboard">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <h1><%= __('dashboard.welcome') %>, <%= typeof user !== 'undefined' && user.name ? user.name.split(' ')[0] : 'Admin' %></h1>
+            <p><%= __('dashboard.overview') || 'Here\'s what\'s happening today' %></p>
+        </div>
+
+        <!-- Stats Overview (4 Colored Cards) -->
+        <div class="stats-overview">
+            <div class="stat-card blue" onclick="window.location.href='/admin/patients'">
+                <div class="stat-value" data-stat="totalPatients">--</div>
+                <div class="stat-label"><%= __('dashboard.totalPatients') || 'Total Patients' %></div>
+                <div class="stat-trend" data-trend="patientsTrend">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>--%</span>
+                </div>
+            </div>
+
+            <div class="stat-card purple" onclick="window.location.href='/admin/orders'">
+                <div class="stat-value" data-stat="todayAppointments">--</div>
+                <div class="stat-label"><%= __('dashboard.todayAppointments') || 'Today\'s Appointments' %></div>
+                <div class="stat-trend positive">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+            </div>
+
+            <div class="stat-card orange" onclick="window.location.href='/admin/labs'">
+                <div class="stat-value" data-stat="activeLabs">--</div>
+                <div class="stat-label"><%= __('labManagement.activeLabs') || 'Active Labs' %></div>
+                <div class="stat-trend neutral">
+                    <i class="fas fa-flask"></i>
+                </div>
+            </div>
+
+            <div class="stat-card green" onclick="window.location.href='/admin/nurses'">
+                <div class="stat-value" data-stat="activeNurses">--</div>
+                <div class="stat-label"><%= __('nurseManagement.activeNurses') || 'Active Nurses' %></div>
+                <div class="stat-trend neutral">
+                    <i class="fas fa-user-nurse"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Map: labs, nurses, and active orders (click an order to reveal its patient pin) -->
+        <div class="section-card" style="margin-bottom: 24px;">
+            <div class="section-header">
+                <h3><%= __('dashboard.liveMap') || 'Live Map' %></h3>
+                <div class="icon">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+            </div>
+            <div class="section-content">
+                <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                    <div id="overviewMap" style="flex:2; min-width:320px; height:420px; border-radius:8px;"></div>
+                    <div style="flex:1; min-width:260px; max-height:420px; overflow-y:auto;">
+                        <div style="display:flex; gap:8px; margin-bottom:10px; font-size:12px; color:#888;">
+                            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3B82F6;"></span> <%= __('labManagement.title') || 'Labs' %></span>
+                            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10B981;"></span> <%= __('nurseManagement.nurses') || 'Nurses' %></span>
+                            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#8378F4;"></span> <%= __('orders.patient') || 'Patient' %></span>
+                        </div>
+                        <div id="overviewOrdersList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Grid (12-Column Layout) -->
+        <div class="content-grid">
+
+            <!-- Activity Chart Section (8 columns) -->
+            <div class="section-card chart-section">
+                <div class="section-header">
+                    <h3><%= __('dashboard.activityChart') || 'Activity Overview' %></h3>
+                    <div class="icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="chart-container">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Approvals Section (4 columns) -->
+            <div class="section-card approvals-section">
+                <div class="section-header">
+                    <h3><%= __('dashboard.requiresAttention') || 'Requires Attention' %></h3>
+                    <div class="icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="approval-list">
+                        <a href="/admin/labs?status=Pending" class="approval-item">
+                            <div class="approval-icon blue">
+                                <i class="fas fa-flask"></i>
+                            </div>
+                            <div class="approval-info">
+                                <div class="approval-count" data-stat="pendingLabs">--</div>
+                                <div class="approval-label"><%= __('dashboard.pendingLabVerifications') || 'Pending Lab Verifications' %></div>
+                            </div>
+                            <div class="approval-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="/admin/nurses?status=pending" class="approval-item">
+                            <div class="approval-icon orange">
+                                <i class="fas fa-user-nurse"></i>
+                            </div>
+                            <div class="approval-info">
+                                <div class="approval-count" data-stat="pendingNurses">--</div>
+                                <div class="approval-label"><%= __('dashboard.nurseApplications') || 'Nurse Applications' %></div>
+                            </div>
+                            <div class="approval-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="/admin/orders?status=pending" class="approval-item">
+                            <div class="approval-icon green">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <div class="approval-info">
+                                <div class="approval-count" data-stat="pendingOrders">--</div>
+                                <div class="approval-label"><%= __('dashboard.pendingOrdersCount') || 'Pending Orders' %></div>
+                            </div>
+                            <div class="approval-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="/admin/reports?tab=ratings" class="approval-item">
+                            <div class="approval-icon red">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="approval-info">
+                                <div class="approval-count" data-stat="lowRatings">--</div>
+                                <div class="approval-label"><%= __('dashboard.lowRatings') || 'Low Ratings' %></div>
+                            </div>
+                            <div class="approval-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders Section (8 columns) -->
+            <div class="section-card orders-section">
+                <div class="section-header">
+                    <h3><%= __('dashboard.recentOrders') || 'Recent Orders' %></h3>
+                    <div class="icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th><%= __('orders.patient') || 'Patient' %></th>
+                                <th><%= __('orders.test') || 'Test' %></th>
+                                <th><%= __('orders.status') || 'Status' %></th>
+                                <th><%= __('common.date') || 'Date' %></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 2rem;">
+                                    <div class="loading-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Financial Overview Section (4 columns) -->
+            <div class="section-card finance-section">
+                <div class="section-header">
+                    <h3><%= __('dashboard.financialOverview') || 'Financial Overview' %></h3>
+                    <div class="icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="finance-item">
+                        <div class="finance-label"><%= __('dashboard.totalRevenue') || 'Total Revenue' %></div>
+                        <div class="finance-value" data-stat="totalRevenue">--</div>
+                    </div>
+                    <div class="finance-item">
+                        <div class="finance-label"><%= __('dashboard.pendingSettlements') || 'Pending Settlements' %></div>
+                        <div class="finance-value" data-stat="pendingSettlements">--</div>
+                    </div>
+                    <div class="finance-item">
+                        <div class="finance-label"><%= __('dashboard.nurseBalances') || 'Nurse Balances' %></div>
+                        <div class="finance-value" data-stat="nurseBalances">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Status Breakdown Section (6 columns) -->
+            <div class="section-card status-breakdown-section">
+                <div class="section-header">
+                    <h3><%= __('dashboard.orderStatus') || 'Order Status' %></h3>
+                    <div class="icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="status-grid">
+                        <div class="status-item" onclick="window.location.href='/admin/orders?status=pending'">
+                            <div class="status-count" data-stat="pendingStatus">--</div>
+                            <div class="status-label"><%= __('orders.statusValues.pending') || 'Pending' %></div>
+                        </div>
+                        <div class="status-item" onclick="window.location.href='/admin/orders?status=confirmed'">
+                            <div class="status-count" data-stat="confirmedStatus">--</div>
+                            <div class="status-label"><%= __('orders.statusValues.confirmed') || 'Confirmed' %></div>
+                        </div>
+                        <div class="status-item" onclick="window.location.href='/admin/orders?status=in_progress'">
+                            <div class="status-count" data-stat="inProgressStatus">--</div>
+                            <div class="status-label"><%= __('orders.statusValues.inProgress') || 'In Progress' %></div>
+                        </div>
+                        <div class="status-item" onclick="window.location.href='/admin/orders?status=completed'">
+                            <div class="status-count" data-stat="completedStatus">--</div>
+                            <div class="status-label"><%= __('orders.statusValues.completed') || 'Completed' %></div>
+                        </div>
+                        <div class="status-item" onclick="window.location.href='/admin/orders?status=cancelled'">
+                            <div class="status-count" data-stat="cancelledStatus">--</div>
+                            <div class="status-label"><%= __('orders.statusValues.cancelled') || 'Cancelled' %></div>
+                        </div>
+                        <div class="status-item" onclick="window.location.href='/admin/orders?urgency=urgent'">
+                            <div class="status-count" data-stat="urgentStatus">--</div>
+                            <div class="status-label"><%= __('orders.urgent') || 'Urgent' %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nurse Stats Section (6 columns) -->
+            <div class="section-card nurse-stats-section">
+                <div class="section-header">
+                    <h3><%= __('nurseManagement.nurseStats') || 'Nurse Statistics' %></h3>
+                    <div class="icon">
+                        <i class="fas fa-user-nurse"></i>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="nurse-stats-grid">
+                        <div class="nurse-stat">
+                            <div class="nurse-stat-value" data-stat="totalNurses">--</div>
+                            <div class="nurse-stat-label"><%= __('dashboard.total') || 'Total' %></div>
+                        </div>
+                        <div class="nurse-stat">
+                            <div class="nurse-stat-value" data-stat="activeNurses">--</div>
+                            <div class="nurse-stat-label"><%= __('nurseManagement.activeNurses') || 'Active' %></div>
+                        </div>
+                        <div class="nurse-stat">
+                            <div class="nurse-stat-value" data-stat="blockedNurses">--</div>
+                            <div class="nurse-stat-label"><%= __('nurseManagement.blockedNurses') || 'Blocked' %></div>
+                        </div>
+                        <div class="nurse-stat">
+                            <div class="nurse-stat-value" data-stat="pendingNurses">--</div>
+                            <div class="nurse-stat-label"><%= __('dashboard.pending') || 'Pending' %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/admin-dashboard.js"></script>
+</body>
+</html>

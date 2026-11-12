@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('shop.categories') || 'Shop Categories' %> - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <style>
+        body { font-family: <%= direction === 'rtl' ? "'Cairo', sans-serif" : "'Inter', sans-serif" %>; }
+        
+        .shop-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 24px 40px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .page-subtitle {
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
+        
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        
+        .category-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-100);
+            transition: all var(--transition-normal);
+        }
+        
+        .category-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .category-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .category-image {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-lg);
+            object-fit: cover;
+            background: var(--gray-100);
+            flex-shrink: 0;
+        }
+        
+        .category-image-placeholder {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, var(--primary-100), var(--primary-200));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .category-image-placeholder i {
+            font-size: 24px;
+            color: var(--primary-500);
+        }
+        
+        .category-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .category-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .category-description {
+            font-size: 14px;
+            color: var(--gray-500);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .category-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--gray-100);
+            margin-top: 16px;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--gray-600);
+        }
+        
+        .meta-item i {
+            color: var(--primary-500);
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .status-inactive {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+        
+        .category-actions {
+            display: flex;
+            gap: 8px;
+            margin-<%= direction === 'rtl' ? 'right' : 'left' %>: auto;
+        }
+        
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--gray-200);
+            background: var(--white);
+            color: var(--gray-600);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .action-btn:hover {
+            background: var(--gray-100);
+            color: var(--gray-900);
+        }
+        
+        .action-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border-color: var(--error);
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            padding: 20px;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            width: 100%;
+            max-width: 540px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+        
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            border: none;
+            background: var(--gray-100);
+            color: var(--gray-600);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .modal-close:hover {
+            background: var(--gray-200);
+            color: var(--gray-900);
+        }
+        
+        .modal-body {
+            padding: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            font-size: 14px;
+            transition: all var(--transition-fast);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(107, 92, 230, 0.1);
+        }
+        
+        .form-input::placeholder {
+            color: var(--gray-400);
+        }
+        
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .lang-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .lang-tab {
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--gray-200);
+            background: var(--white);
+            color: var(--gray-600);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .lang-tab.active {
+            background: var(--primary-500);
+            color: var(--white);
+            border-color: var(--primary-500);
+        }
+        
+        .lang-content {
+            display: none;
+        }
+        
+        .lang-content.active {
+            display: block;
+        }
+        
+        .image-upload {
+            border: 2px dashed var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .image-upload:hover {
+            border-color: var(--primary-400);
+            background: var(--primary-50);
+        }
+        
+        .image-upload i {
+            font-size: 32px;
+            color: var(--gray-400);
+            margin-bottom: 8px;
+        }
+        
+        .image-upload p {
+            color: var(--gray-500);
+            font-size: 14px;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: var(--radius-md);
+            margin-top: 12px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 20px 24px;
+            border-top: 1px solid var(--gray-100);
+        }
+        
+        .btn-secondary {
+            padding: 12px 24px;
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: none;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            font-size: 14px;
+            background: var(--white);
+            cursor: pointer;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary-500);
+        }
+        
+        .form-hint {
+            display: block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-100);
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            color: var(--gray-300);
+            margin-bottom: 16px;
+        }
+        
+        .empty-state h3 {
+            font-size: 18px;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+        
+        .empty-state p {
+            color: var(--gray-500);
+            margin-bottom: 24px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary-500);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 60px auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 100px;
+            <%= direction === 'rtl' ? 'left' : 'right' %>: 24px;
+            z-index: 1200;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .toast {
+            padding: 16px 20px;
+            border-radius: var(--radius-lg);
+            background: var(--white);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: toastSlideIn 0.3s ease;
+            min-width: 300px;
+        }
+        
+        @keyframes toastSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(<%= direction === 'rtl' ? '-100px' : '100px' %>);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .toast.success {
+            border-<%= direction === 'rtl' ? 'right' : 'left' %>: 4px solid var(--success);
+        }
+        
+        .toast.error {
+            border-<%= direction === 'rtl' ? 'right' : 'left' %>: 4px solid var(--error);
+        }
+        
+        .toast i {
+            font-size: 20px;
+        }
+        
+        .toast.success i {
+            color: var(--success);
+        }
+        
+        .toast.error i {
+            color: var(--error);
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/admin-navbar') %>
+    
+    <div class="shop-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title"><%= __('shop.categories') || 'Shop Categories' %></h1>
+                <p class="page-subtitle"><%= __('shop.categoriesSubtitle') || 'Manage your product categories' %></p>
+            </div>
+            <button class="btn-primary" onclick="openAddModal()">
+                <i class="fas fa-plus"></i>
+                <span><%= __('shop.addCategory') || 'Add Category' %></span>
+            </button>
+        </div>
+        
+        <div id="categoriesContainer">
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+    
+    <!-- Add/Edit Category Modal -->
+    <div class="modal-overlay" id="categoryModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle"><%= __('shop.addCategory') || 'Add Category' %></h2>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="categoryForm" onsubmit="saveCategory(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="categoryId">
+                    
+                    <!-- Language Tabs -->
+                    <div class="lang-tabs">
+                        <button type="button" class="lang-tab active" data-lang="en">English</button>
+                        <button type="button" class="lang-tab" data-lang="ar">العربية</button>
+                        <button type="button" class="lang-tab" data-lang="ku">کوردی</button>
+                    </div>
+                    
+                    <!-- English Fields -->
+                    <div class="lang-content active" data-lang="en">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.categoryName') || 'Category Name' %> (English) *</label>
+                            <input type="text" class="form-input" id="nameEn" required placeholder="Enter category name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('common.description') || 'Description' %> (English)</label>
+                            <textarea class="form-input form-textarea" id="descriptionEn" placeholder="Enter description"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Arabic Fields -->
+                    <div class="lang-content" data-lang="ar">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.categoryName') || 'Category Name' %> (العربية) *</label>
+                            <input type="text" class="form-input" id="nameAr" required placeholder="أدخل اسم الفئة" dir="rtl">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('common.description') || 'Description' %> (العربية)</label>
+                            <textarea class="form-input form-textarea" id="descriptionAr" placeholder="أدخل الوصف" dir="rtl"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Kurdish Fields -->
+                    <div class="lang-content" data-lang="ku">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.categoryName') || 'Category Name' %> (کوردی) *</label>
+                            <input type="text" class="form-input" id="nameKu" required placeholder="ناوی پۆل داخڵ بکە" dir="rtl">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('common.description') || 'Description' %> (کوردی)</label>
+                            <textarea class="form-input form-textarea" id="descriptionKu" placeholder="وەسف داخڵ بکە" dir="rtl"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Image Upload -->
+                    <div class="form-group">
+                        <label class="form-label"><%= __('shop.categoryImage') || 'Category Image' %></label>
+                        <div class="image-upload" onclick="document.getElementById('categoryImage').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p><%= __('shop.uploadImage') || 'Click to upload image' %></p>
+                            <img id="imagePreview" class="image-preview" style="display: none;">
+                        </div>
+                        <input type="file" id="categoryImage" accept="image/*" style="display: none;" onchange="previewImage(this)">
+                    </div>
+                    
+                    <!-- Display Order & Status -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.displayOrder') || 'Display Order' %></label>
+                            <input type="number" class="form-input" id="displayOrder" value="0" min="0">
+                            <small class="form-hint"><%= __('shop.displayOrderHint') || 'Lower numbers appear first (0 = first position)' %></small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('common.status') || 'Status' %></label>
+                            <select class="form-select" id="status">
+                                <option value="active"><%= __('common.active') || 'Active' %></option>
+                                <option value="inactive"><%= __('common.inactive') || 'Inactive' %></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">
+                        <%= __('common.cancel') || 'Cancel' %>
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i>
+                        <span><%= __('common.save') || 'Save' %></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 class="modal-title"><%= __('common.confirmDelete') || 'Confirm Delete' %></h2>
+                <button class="modal-close" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p><%= __('shop.deleteCategoryConfirm') || 'Are you sure you want to delete this category? This action cannot be undone.' %></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeDeleteModal()">
+                    <%= __('common.cancel') || 'Cancel' %>
+                </button>
+                <button type="button" class="btn-primary" style="background: var(--error);" onclick="confirmDelete()">
+                    <i class="fas fa-trash"></i>
+                    <span><%= __('common.delete') || 'Delete' %></span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <script>
+        const currentLang = '<%= currentLang %>';
+        let categories = [];
+        let deleteId = null;
+        
+        // Get token from localStorage
+        function getToken() {
+            return localStorage.getItem('token') || '';
+        }
+        
+        // Language tabs
+        document.querySelectorAll('.lang-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const lang = tab.dataset.lang;
+                document.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.lang-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelector(`.lang-content[data-lang="${lang}"]`).classList.add('active');
+            });
+        });
+        
+        // Load categories
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/admin/shop/categories', {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    categories = data.data || [];
+                    renderCategories();
+                } else {
+                    // Show empty state instead of error when no categories
+                    categories = [];
+                    renderCategories();
+                }
+            } catch (error) {
+                console.error('Load categories error:', error);
+                categories = [];
+                renderCategories();
+                showToast('<%= __('shop.failedLoadCategories') || 'Failed to load categories' %>', 'error');
+            }
+        }
+        
+        // Render categories
+        function renderCategories() {
+            const container = document.getElementById('categoriesContainer');
+            
+            if (categories.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-tags"></i>
+                        <h3><%= __('shop.noCategories') || 'No categories yet' %></h3>
+                        <p><%= __('shop.noCategoriesDesc') || 'Start by adding your first category' %></p>
+                        <button class="btn-primary" onclick="openAddModal()">
+                            <i class="fas fa-plus"></i>
+                            <span><%= __('shop.addCategory') || 'Add Category' %></span>
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="categories-grid">
+                    ${categories.map(cat => `
+                        <div class="category-card">
+                            <div class="category-header">
+                                ${cat.image 
+                                    ? `<img src="${cat.image}" alt="${cat.name[currentLang] || cat.name.en}" class="category-image">`
+                                    : `<div class="category-image-placeholder"><i class="fas fa-tags"></i></div>`
+                                }
+                                <div class="category-info">
+                                    <h3 class="category-name">${cat.name[currentLang] || cat.name.en}</h3>
+                                    <p class="category-description">${cat.description[currentLang] || cat.description.en || 'No description'}</p>
+                                </div>
+                                <div class="category-actions">
+                                    <button class="action-btn" onclick="editCategory('${cat._id}')" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn danger" onclick="openDeleteModal('${cat._id}')" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="category-meta">
+                                <div class="meta-item">
+                                    <i class="fas fa-box"></i>
+                                    <span>${cat.productCount || 0} <%= __('shop.products') || 'Products' %></span>
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fas fa-sort"></i>
+                                    <span><%= __('shop.order') || 'Order' %>: ${cat.displayOrder || 0}</span>
+                                </div>
+                                <span class="status-badge ${cat.status === 'active' ? 'status-active' : 'status-inactive'}">
+                                    ${cat.status === 'active' ? '<%= __("common.active") || "Active" %>' : '<%= __("common.inactive") || "Inactive" %>'}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // Open add modal
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = '<%= __("shop.addCategory") || "Add Category" %>';
+            document.getElementById('categoryForm').reset();
+            document.getElementById('categoryId').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('categoryModal').classList.add('active');
+        }
+        
+        // Edit category
+        async function editCategory(id) {
+            const cat = categories.find(c => c._id === id);
+            if (!cat) return;
+            
+            document.getElementById('modalTitle').textContent = '<%= __("shop.editCategory") || "Edit Category" %>';
+            document.getElementById('categoryId').value = cat._id;
+            document.getElementById('nameEn').value = cat.name.en || '';
+            document.getElementById('nameAr').value = cat.name.ar || '';
+            document.getElementById('nameKu').value = cat.name.ku || '';
+            document.getElementById('descriptionEn').value = cat.description.en || '';
+            document.getElementById('descriptionAr').value = cat.description.ar || '';
+            document.getElementById('descriptionKu').value = cat.description.ku || '';
+            document.getElementById('displayOrder').value = cat.displayOrder || 0;
+            document.getElementById('status').value = cat.status;
+            
+            if (cat.image) {
+                document.getElementById('imagePreview').src = cat.image;
+                document.getElementById('imagePreview').style.display = 'block';
+            } else {
+                document.getElementById('imagePreview').style.display = 'none';
+            }
+            
+            document.getElementById('categoryModal').classList.add('active');
+        }
+        
+        // Save category
+        async function saveCategory(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('categoryId').value;
+            const formData = new FormData();
+            
+            formData.append('nameEn', document.getElementById('nameEn').value);
+            formData.append('nameAr', document.getElementById('nameAr').value);
+            formData.append('nameKu', document.getElementById('nameKu').value);
+            formData.append('descriptionEn', document.getElementById('descriptionEn').value);
+            formData.append('descriptionAr', document.getElementById('descriptionAr').value);
+            formData.append('descriptionKu', document.getElementById('descriptionKu').value);
+            formData.append('displayOrder', document.getElementById('displayOrder').value);
+            formData.append('status', document.getElementById('status').value);
+            
+            const imageFile = document.getElementById('categoryImage').files[0];
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+            
+            try {
+                const url = id ? `/api/admin/shop/categories/${id}` : '/api/admin/shop/categories';
+                const method = id ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(id ? '<%= __("shop.categoryUpdated") || "Category updated successfully" %>' : '<%= __("shop.categoryCreated") || "Category created successfully" %>', 'success');
+                    closeModal();
+                    loadCategories();
+                } else {
+                    showToast(data.message || 'Failed to save category', 'error');
+                }
+            } catch (error) {
+                console.error('Save category error:', error);
+                showToast('Failed to save category', 'error');
+            }
+        }
+        
+        // Close modal
+        function closeModal() {
+            document.getElementById('categoryModal').classList.remove('active');
+            document.getElementById('categoryForm').reset();
+            document.getElementById('imagePreview').style.display = 'none';
+        }
+        
+        // Image preview
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const preview = document.getElementById('imagePreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        // Delete modal
+        function openDeleteModal(id) {
+            deleteId = id;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+        
+        function closeDeleteModal() {
+            deleteId = null;
+            document.getElementById('deleteModal').classList.remove('active');
+        }
+        
+        async function confirmDelete() {
+            if (!deleteId) return;
+            
+            try {
+                const response = await fetch(`/api/admin/shop/categories/${deleteId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('<%= __("shop.categoryDeleted") || "Category deleted successfully" %>', 'success');
+                    closeDeleteModal();
+                    loadCategories();
+                } else {
+                    showToast(data.message || 'Failed to delete category', 'error');
+                }
+            } catch (error) {
+                console.error('Delete category error:', error);
+                showToast('Failed to delete category', 'error');
+            }
+        }
+        
+        // Toast notifications
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadCategories);
+    </script>
+</body>
+</html>

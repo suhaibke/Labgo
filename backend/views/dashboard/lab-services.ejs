@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %>
+    </title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .service-card {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .service-card img {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+
+        .service-card h4 {
+            margin: 0 0 12px;
+            font-size: 15px;
+        }
+
+        .service-test-select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-family: inherit;
+        }
+
+        .service-linked-test {
+            font-size: 13px;
+            color: #555;
+            background: #f7f7fb;
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+        }
+
+        .service-linked-test .price {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .no-tests-hint {
+            font-size: 12px;
+            color: #c53030;
+            margin-bottom: 10px;
+        }
+
+        .service-adopt-btn {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .service-adopt-btn.adopt {
+            background: #667eea;
+            color: #fff;
+        }
+
+        .service-adopt-btn.remove {
+            background: #fdeeee;
+            color: #c53030;
+        }
+
+        .adopted-badge {
+            display: inline-block;
+            background: #e6f7ee;
+            color: #1a8c4a;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <%- include('../partials/lab-navbar') %>
+
+        <main class="lab-dashboard">
+            <div class="dashboard-container">
+                <div class="page-header" style="margin-bottom: 8px;">
+                    <h1>الخدمات السريعة</h1>
+                    <p style="color:#888;">فعّل الخدمات التي يوفرها مختبرك من الكتالوج التالي، وحدد سعرها. ستظهر
+                        للمرضى عند البحث عن هذه الخدمة في التطبيق.</p>
+                </div>
+
+                <div class="services-grid" id="servicesGrid">
+                    <div style="grid-column: 1/-1; text-align:center; padding: 30px;"><i
+                            class="fas fa-spinner fa-spin"></i></div>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            const API_BASE = '/lab/api/services';
+
+            function getToken() {
+                return localStorage.getItem('token') || document.cookie.split('; ').find(r => r.startsWith('token='))?.split('=')[1];
+            }
+
+            function showToast(message, type = 'success') {
+                const el = document.createElement('div');
+                el.textContent = message;
+                el.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${type === 'success' ? '#1a8c4a' : '#c53030'};color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.15);`;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 3000);
+            }
+
+            let availableTests = [];
+
+            async function loadServices() {
+                const grid = document.getElementById('servicesGrid');
+                try {
+                    const res = await fetch(API_BASE, { headers: { Authorization: `Bearer ${getToken()}` } });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+
+                    availableTests = data.data.availableTests || [];
+
+                    if (data.data.services.length === 0) {
+                        grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 30px; color:#888;">لا توجد خدمات سريعة متاحة حاليًا من الإدارة</div>';
+                        return;
+                    }
+
+                    grid.innerHTML = data.data.services.map(s => {
+                        if (s.adopted) {
+                            return `
+                            <div class="service-card">
+                                <img src="${s.icon}" alt="${s.name}" />
+                                <div class="adopted-badge">مُفعّلة</div>
+                                <h4>${s.nameAr || s.name}</h4>
+                                <div class="service-linked-test">${s.testName || ''} <span class="price">- ${s.price ?? ''} د.ع</span></div>
+                                <button class="service-adopt-btn remove" onclick="removeService('${s._id}')">إيقاف التوفير</button>
+                            </div>`;
+                        }
+
+                        if (availableTests.length === 0) {
+                            return `
+                            <div class="service-card">
+                                <img src="${s.icon}" alt="${s.name}" />
+                                <h4>${s.nameAr || s.name}</h4>
+                                <div class="no-tests-hint">أضف فحصاً بمختبرك أولاً من صفحة الفحوصات لتتمكن من ربطه بهذه الخدمة</div>
+                            </div>`;
+                        }
+
+                        return `
+                        <div class="service-card">
+                            <img src="${s.icon}" alt="${s.name}" />
+                            <h4>${s.nameAr || s.name}</h4>
+                            <select class="service-test-select" id="test-${s._id}">
+                                <option value="">اختر فحص من فحوصاتك</option>
+                                ${availableTests.map(t => `<option value="${t._id}">${t.nameAr || t.name} - ${t.price} د.ع</option>`).join('')}
+                            </select>
+                            <button class="service-adopt-btn adopt" onclick="adoptService('${s._id}')">توفير هذه الخدمة</button>
+                        </div>`;
+                    }).join('');
+                } catch (err) {
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 30px; color:#c53030;">حدث خطأ أثناء التحميل</div>';
+                }
+            }
+
+            async function adoptService(id) {
+                const testId = document.getElementById(`test-${id}`).value;
+                if (!testId) {
+                    showToast('يرجى اختيار فحص', 'error');
+                    return;
+                }
+                try {
+                    const res = await fetch(`${API_BASE}/${id}/adopt`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                        body: JSON.stringify({ testId }),
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    showToast('تم تفعيل الخدمة بنجاح');
+                    loadServices();
+                } catch (err) {
+                    showToast(err.message || 'حدث خطأ', 'error');
+                }
+            }
+
+            async function removeService(id) {
+                try {
+                    const res = await fetch(`${API_BASE}/${id}/adopt`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${getToken()}` },
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    showToast('تم إيقاف الخدمة');
+                    loadServices();
+                } catch (err) {
+                    showToast(err.message || 'حدث خطأ', 'error');
+                }
+            }
+
+            loadServices();
+        </script>
+</body>
+
+</html>

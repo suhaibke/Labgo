@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= __('nurseManagement.applications') %> - LabGo Admin
+    </title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-nurses.css">
+    <style>
+        body {
+            font-family: <%=font %>;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--gray-100);
+            border: none;
+            border-radius: var(--radius-md);
+            color: var(--gray-700);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .back-btn:hover {
+            background: var(--gray-200);
+        }
+
+        /* Fix card body padding */
+        .application-card .card-body {
+            padding: var(--spacing-md) !important;
+        }
+
+        /* Status Cards */
+        .status-cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .status-card {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .status-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .status-card.active {
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 2px var(--primary-100);
+        }
+
+        .status-card .card-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            font-size: 1.25rem;
+        }
+
+        .status-card.pending-card .card-icon {
+            background: var(--primary-100);
+            color: var(--primary-600);
+        }
+
+        .status-card.pending-review-card .card-icon {
+            background: var(--secondary-100);
+            color: var(--secondary-600);
+        }
+
+        .status-card.under-review-card .card-icon {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+
+        .status-card.approved-card .card-icon {
+            background: #d1fae5;
+            color: var(--success);
+        }
+
+        .status-card.rejected-card .card-icon {
+            background: #fee2e2;
+            color: var(--error);
+        }
+
+        .status-card.on-hold-card .card-icon {
+            background: var(--gray-200);
+            color: var(--gray-600);
+        }
+
+        .status-card .card-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .status-card .card-count {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .status-card .card-label {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Document Preview Modal Styles */
+        .document-preview-modal {
+            max-width: 90vw;
+            max-height: 90vh;
+            width: auto;
+        }
+
+        .document-preview-body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: var(--spacing-md);
+            overflow: auto;
+            min-height: 300px;
+            max-height: 70vh;
+        }
+
+        .document-preview-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        #documentPreviewImage {
+            max-width: 100%;
+            max-height: 65vh;
+            object-fit: contain;
+            border-radius: var(--radius-md);
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Admin Navbar -->
+    <%- include('../partials/admin-navbar') %>
+
+        <!-- Main Content -->
+        <main class="admin-dashboard">
+            <div class="nurse-management-container">
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="header-left">
+                        <button class="back-btn" onclick="window.location.href='/admin/nurses'">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>
+                                <%= __('common.back') %>
+                            </span>
+                        </button>
+                        <h1>
+                            <%= __('nurseManagement.applications') %>
+                        </h1>
+                        <p class="header-subtitle">
+                            <%= __('nurseManagement.totalApplications') %>: <span id="totalCount">-</span>
+                        </p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="modern-btn refresh-btn" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>
+                                <%= __('common.refresh') %>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Cards -->
+                <div class="status-cards-container">
+                    <div class="status-card pending-card active" onclick="filterByStatus('')" data-status="">
+                        <div class="card-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-count" id="allCount">-</span>
+                            <span class="card-label">
+                                <%= __('nurseManagement.allStatus') %>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="status-card pending-review-card" onclick="filterByStatus('pending')"
+                        data-status="pending">
+                        <div class="card-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-count" id="pendingCount">-</span>
+                            <span class="card-label">
+                                <%= __('nurseManagement.pendingReview') %>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="status-card under-review-card" onclick="filterByStatus('under_review')"
+                        data-status="under_review">
+                        <div class="card-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-count" id="underReviewCount">-</span>
+                            <span class="card-label">
+                                <%= __('nurseManagement.underReview') %>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="status-card approved-card" onclick="filterByStatus('approved')" data-status="approved">
+                        <div class="card-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-count" id="approvedCount">-</span>
+                            <span class="card-label">
+                                <%= __('nurseManagement.approved') %>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="status-card rejected-card" onclick="filterByStatus('rejected')" data-status="rejected">
+                        <div class="card-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-count" id="rejectedCount">-</span>
+                            <span class="card-label">
+                                <%= __('nurseManagement.rejected') %>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="status-card on-hold-card" onclick="filterByStatus('on_hold')" data-status="on_hold">
+                        <div class="card-icon">
+                            <i class="fas fa-pause-circle"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-count" id="onHoldCount">-</span>
+                            <span class="card-label">
+                                <%= __('nurseManagement.onHold') %>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Applications Section -->
+                <section class="main-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-clipboard-list"></i>
+                            <h2>
+                                <%= __('nurseManagement.applications') %>
+                            </h2>
+                            <span class="count-badge" id="applicationsCount">-</span>
+                        </div>
+                        <div class="section-actions">
+                            <select id="statusFilter" class="filter-select">
+                                <option value="">
+                                    <%= __('nurseManagement.allStatus') %>
+                                </option>
+                                <option value="pending">
+                                    <%= __('nurseManagement.pendingReview') %>
+                                </option>
+                                <option value="under_review">
+                                    <%= __('nurseManagement.underReview') %>
+                                </option>
+                                <option value="approved">
+                                    <%= __('nurseManagement.approved') %>
+                                </option>
+                                <option value="rejected">
+                                    <%= __('nurseManagement.rejected') %>
+                                </option>
+                                <option value="on_hold">
+                                    <%= __('nurseManagement.onHold') %>
+                                </option>
+                            </select>
+                            <input type="text" id="searchInput" class="search-input"
+                                placeholder="<%= __('nurseManagement.searchApplications') %>">
+                        </div>
+                    </div>
+
+                    <!-- Applications List -->
+                    <div class="applications-list" id="applicationsList">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>
+                                <%= __('nurseManagement.loadingApplications') %>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Applications Pagination -->
+                    <div class="pagination" id="applicationsPagination"></div>
+                </section>
+
+            </div>
+        </main>
+
+        <!-- Application Details Modal -->
+        <div class="modal-overlay" id="applicationModal">
+            <div class="modal-container application-modal">
+                <div class="modal-header">
+                    <h3>
+                        <%= __('nurseManagement.applicationDetails') %>
+                    </h3>
+                    <button class="modal-close-btn" onclick="closeApplicationModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="applicationModalBody">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+                <div class="modal-footer" id="applicationModalFooter">
+                    <!-- Action buttons will be loaded dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Reject Modal -->
+        <div class="modal-overlay" id="rejectModal">
+            <div class="modal-container reject-modal">
+                <div class="modal-header">
+                    <h3>
+                        <%= __('nurseManagement.reject') %>
+                    </h3>
+                    <button class="modal-close-btn" onclick="closeRejectModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-description">
+                        <%= __('nurseManagement.rejectReason') %>
+                    </p>
+                    <textarea id="rejectReason" class="modal-textarea"
+                        placeholder="<%= __('nurseManagement.rejectReasonPlaceholder') %>"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="modern-btn" onclick="closeRejectModal()">
+                        <span>
+                            <%= __('common.cancel') %>
+                        </span>
+                    </button>
+                    <button class="modern-btn reject-btn" onclick="submitReject()">
+                        <i class="fas fa-times"></i>
+                        <span>
+                            <%= __('nurseManagement.reject') %>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hold Modal -->
+        <div class="modal-overlay" id="holdModal">
+            <div class="modal-container hold-modal">
+                <div class="modal-header">
+                    <h3>
+                        <%= __('nurseManagement.putOnHold') %>
+                    </h3>
+                    <button class="modal-close-btn" onclick="closeHoldModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-description">
+                        <%= __('nurseManagement.holdNotes') %>
+                    </p>
+                    <textarea id="holdNotes" class="modal-textarea" placeholder="Enter notes..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="modern-btn" onclick="closeHoldModal()">
+                        <span>
+                            <%= __('common.cancel') %>
+                        </span>
+                    </button>
+                    <button class="modern-btn warning-btn" onclick="submitHold()">
+                        <i class="fas fa-pause"></i>
+                        <span>
+                            <%= __('nurseManagement.putOnHold') %>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commission Rate Modal -->
+        <div class="modal-overlay" id="commissionModal">
+            <div class="modal-container commission-modal">
+                <div class="modal-header">
+                    <h3>
+                        <%= __('nurseManagement.approveWithCommission') %>
+                    </h3>
+                    <button class="modal-close-btn" onclick="closeCommissionModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-description">
+                        <%= __('nurseManagement.enterCommissionToApprove') %>
+                    </p>
+                    <div class="commission-input-group">
+                        <label for="commissionRate">
+                            <%= __('nurseManagement.commissionRate') %>
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" id="commissionRate" class="commission-input" min="0" max="100"
+                                step="0.01" placeholder="<%= __('nurseManagement.commissionRatePlaceholder') %>">
+                            <span class="input-suffix">%</span>
+                        </div>
+                        <small class="input-hint">
+                            <%= __('nurseManagement.commissionRatePlaceholder') %>
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modern-btn" onclick="closeCommissionModal()">
+                        <span>
+                            <%= __('common.cancel') %>
+                        </span>
+                    </button>
+                    <button class="modern-btn confirm-btn" onclick="submitWithCommission()">
+                        <i class="fas fa-check"></i>
+                        <span>
+                            <%= __('nurseManagement.approve') %>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Preview Modal -->
+        <div class="modal-overlay" id="documentPreviewModal">
+            <div class="modal-container document-preview-modal">
+                <div class="modal-header">
+                    <h3 id="documentPreviewTitle">
+                        <%= __('nurseManagement.documentPreview') || 'Document Preview' %>
+                    </h3>
+                    <button class="modal-close-btn" onclick="closeDocumentPreview()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body document-preview-body">
+                    <div class="document-preview-container">
+                        <img id="documentPreviewImage" src="" alt="Document Preview" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modern-btn" onclick="closeDocumentPreview()">
+                        <span>
+                            <%= __('common.close') %>
+                        </span>
+                    </button>
+                    <a id="documentDownloadLink" href="" target="_blank" class="modern-btn confirm-btn" download>
+                        <i class="fas fa-download"></i>
+                        <span>
+                            <%= __('common.download') || 'Download' %>
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div class="toast-notification" id="toast">
+            <div class="toast-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="toast-content">
+                <h4 class="toast-title" id="toastTitle">
+                    <%= __('common.success') %>
+                </h4>
+                <p class="toast-message" id="toastMessage">
+                    <%= __('common.success') %>
+                </p>
+            </div>
+            <button class="toast-close" onclick="hideToast()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <script>
+            const API_BASE = '/api/admin/nurses';
+            let currentApplicationPage = 1;
+            let currentApplicationId = null;
+
+            // Initialize on page load
+            document.addEventListener('DOMContentLoaded', function () {
+                loadApplications();
+                loadStatusStats();
+
+                document.getElementById('statusFilter').addEventListener('change', () => {
+                    currentApplicationPage = 1;
+                    loadApplications();
+                });
+
+                document.getElementById('searchInput').addEventListener('input', debounce(() => {
+                    currentApplicationPage = 1;
+                    loadApplications();
+                }, 500));
+            });
+
+            // Load status statistics
+            async function loadStatusStats() {
+                try {
+                    const response = await fetch(`${API_BASE}/stats/overview`, {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const stats = data.data.stats;
+                        document.getElementById('allCount').textContent = stats.totalApplications || 0;
+                        document.getElementById('pendingCount').textContent = stats.pending || 0;
+                        document.getElementById('underReviewCount').textContent = stats.underReview || 0;
+                        document.getElementById('approvedCount').textContent = stats.approved || 0;
+                        document.getElementById('rejectedCount').textContent = stats.rejected || 0;
+                        document.getElementById('onHoldCount').textContent = stats.onHold || 0;
+                    }
+                } catch (error) {
+                    console.error('Error loading stats:', error);
+                }
+            }
+
+            // Filter by status (from cards)
+            function filterByStatus(status) {
+                // Update active card
+                document.querySelectorAll('.status-card').forEach(card => {
+                    card.classList.remove('active');
+                    if (card.getAttribute('data-status') === status) {
+                        card.classList.add('active');
+                    }
+                });
+
+                // Update filter dropdown
+                document.getElementById('statusFilter').value = status;
+
+                // Reload applications
+                currentApplicationPage = 1;
+                loadApplications();
+            }
+
+            // Load applications
+            async function loadApplications() {
+                const statusFilter = document.getElementById('statusFilter').value;
+                const searchQuery = document.getElementById('searchInput').value;
+
+                const params = new URLSearchParams({
+                    page: currentApplicationPage,
+                    limit: 10
+                });
+
+                if (statusFilter) params.append('status', statusFilter);
+                if (searchQuery) params.append('search', searchQuery);
+
+                try {
+                    const response = await fetch(`${API_BASE}/applications?${params}`, {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        renderApplications(data.data.applications);
+                        renderPagination('applicationsPagination', data.data.page, data.data.pages, (page) => {
+                            currentApplicationPage = page;
+                            loadApplications();
+                        });
+                        document.getElementById('applicationsCount').textContent = data.data.total;
+                        document.getElementById('totalCount').textContent = data.data.total;
+                    } else {
+                        showError('<%= __('common.error') %>');
+                    }
+                } catch (error) {
+                    console.error('Error loading applications:', error);
+                    showError('<%= __('common.error') %>');
+                }
+            }
+
+            // Render applications list
+            function renderApplications(applications) {
+                const container = document.getElementById('applicationsList');
+
+                if (applications.length === 0) {
+                    container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span><%= __('nurseManagement.noApplicationsFound') %></span>
+                    </div>
+                `;
+                    return;
+                }
+
+                container.innerHTML = applications.map(app => `
+                <div class="application-card" onclick="openApplicationModal('${app._id}')">
+                    <div class="card-header">
+                        <div class="applicant-info">
+                            <div class="applicant-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="applicant-details">
+                                <h4 class="applicant-name">${app.personalInfo.name}</h4>
+                                <p class="applicant-email">${app.personalInfo.email}</p>
+                            </div>
+                        </div>
+                        <span class="status-badge ${app.status}">${formatStatus(app.status)}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-row">
+                            <i class="fas fa-phone"></i>
+                            <span>${app.personalInfo.phone}</span>
+                        </div>
+                        <div class="info-row">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${app.location.city}, ${app.location.zone}</span>
+                        </div>
+                        <div class="info-row">
+                            <i class="fas fa-calendar"></i>
+                            <span><%= __('nurseManagement.appliedOn') %>: ${formatDate(app.submittedAt)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            }
+
+            // Open application modal
+            async function openApplicationModal(applicationId) {
+                currentApplicationId = applicationId;
+
+                try {
+                    const response = await fetch(`${API_BASE}/applications/${applicationId}`, {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        renderApplicationModal(data.data.application);
+                        document.getElementById('applicationModal').classList.add('show');
+                    }
+                } catch (error) {
+                    console.error('Error loading application:', error);
+                    showError('<%= __('common.error') %>');
+                }
+            }
+
+            // Render application modal content
+            function renderApplicationModal(app) {
+                const modalBody = document.getElementById('applicationModalBody');
+                const modalFooter = document.getElementById('applicationModalFooter');
+
+                // Translation map for questionnaire answers
+                const answerTranslations = {
+                    yes: '<%= __("common.yes") %>',
+                    no: '<%= __("common.no") %>'
+                };
+
+                modalBody.innerHTML = `
+                <div class="application-details">
+                    <section class="detail-section">
+                        <h4><%= __('nurseManagement.personalInfo') %></h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="label"><%= __('nurseManagement.name') %></span>
+                                <span class="value">${app.personalInfo.name}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label"><%= __('nurseManagement.email') %></span>
+                                <span class="value">${app.personalInfo.email}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label"><%= __('nurseManagement.phone') %></span>
+                                <span class="value">${app.personalInfo.phone}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label"><%= __('nurseManagement.dateOfBirth') %></span>
+                                <span class="value">${formatDate(app.personalInfo.dateOfBirth)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label"><%= __('nurseManagement.gender') %></span>
+                                <span class="value">${app.personalInfo.gender}</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="detail-section">
+                        <h4><%= __('nurseManagement.location') %></h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="label"><%= __('nurseManagement.city') %></span>
+                                <span class="value">${app.location.city}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label"><%= __('nurseManagement.zone') %></span>
+                                <span class="value">${app.location.zone}</span>
+                            </div>
+                            ${app.location.address ? `
+                            <div class="detail-item full-width">
+                                <span class="label"><%= __('nurseManagement.address') %></span>
+                                <span class="value">${app.location.address}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </section>
+
+                    <section class="detail-section">
+                        <h4><%= __('nurseManagement.documents') %></h4>
+                        <div class="documents-grid">
+                            <div class="document-card" onclick="previewDocument('${app.nationalCardImageFront || app.nationalCardImage}', '<%= __('nurseManagement.nationalIdCard') %> (<%= __('common.front') %>)')">
+                                <i class="fas fa-id-card"></i>
+                                <span><%= __('nurseManagement.nationalIdCard') %> (<%= __('common.front') %>)</span>
+                            </div>
+                            ${app.nationalCardImageBack ? `
+                            <div class="document-card" onclick="previewDocument('${app.nationalCardImageBack}', '<%= __('nurseManagement.nationalIdCard') %> (<%= __('common.back') %>)')">
+                                <i class="fas fa-id-card"></i>
+                                <span><%= __('nurseManagement.nationalIdCard') %> (<%= __('common.back') %>)</span>
+                            </div>
+                            ` : ''}
+                            <div class="document-card" onclick="previewDocument('${app.certificateImage}', '<%= __('nurseManagement.nursingCertificate') %>')">
+                                <i class="fas fa-certificate"></i>
+                                <span><%= __('nurseManagement.nursingCertificate') %></span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="detail-section">
+                        <h4><%= __('nurseManagement.questionnaire') %></h4>
+                        <div class="questionnaire-list">
+                            <div class="question-item">
+                                <i class="fas fa-car"></i>
+                                <span><%= __('nurseManagement.ownsCar') %>: <strong>${app.questionnaire.ownsCar ? answerTranslations.yes : answerTranslations.no}</strong></span>
+                            </div>
+                            <div class="question-item">
+                                <i class="fas fa-briefcase"></i>
+                                <span><%= __('nurseManagement.isEmployed') %>: <strong>${app.questionnaire.isEmployed ? answerTranslations.yes : answerTranslations.no}</strong></span>
+                            </div>
+                        </div>
+                    </section>
+
+                    ${app.additionalInfo ? `
+                    <section class="detail-section">
+                        <h4><%= __('nurseManagement.additionalInfo') %></h4>
+                        <p>${app.additionalInfo}</p>
+                    </section>
+                    ` : ''}
+
+                    ${app.reviewDetails ? `
+                    <section class="detail-section">
+                        <h4><%= __('nurseManagement.reviewDetails') %></h4>
+                        <div class="review-info">
+                            <p><strong><%= __('nurseManagement.status') %>:</strong> <span class="status-badge ${app.status}">${formatStatus(app.status)}</span></p>
+                            <p><strong><%= __('nurseManagement.reviewedBy') %>:</strong> ${app.reviewDetails.reviewedBy?.name || '-'}</p>
+                            <p><strong><%= __('nurseManagement.reviewedAt') %>:</strong> ${formatDate(app.reviewDetails.reviewedAt)}</p>
+                            ${app.reviewDetails.notes ? `<p><strong><%= __('nurseManagement.notes') %>:</strong> ${app.reviewDetails.notes}</p>` : ''}
+                            ${app.reviewDetails.rejectionReason ? `<p><strong><%= __('nurseManagement.rejectReason') %>:</strong> ${app.reviewDetails.rejectionReason}</p>` : ''}
+                        </div>
+                    </section>
+                    ` : ''}
+                </div>
+            `;
+
+                // Action buttons based on status
+                if (app.status === 'pending' || app.status === 'under_review') {
+                    modalFooter.innerHTML = `
+                    <button class="modern-btn" onclick="markAsUnderReview('${app._id}')" ${app.status === 'under_review' ? 'disabled' : ''}>
+                        <i class="fas fa-search"></i>
+                        <span><%= __('nurseManagement.markAsUnderReview') %></span>
+                    </button>
+                    <button class="modern-btn warning-btn" onclick="showHoldModal('${app._id}')">
+                        <i class="fas fa-pause"></i>
+                        <span><%= __('nurseManagement.putOnHold') %></span>
+                    </button>
+                    <button class="modern-btn reject-btn" onclick="showRejectModal('${app._id}')">
+                        <i class="fas fa-times"></i>
+                        <span><%= __('nurseManagement.reject') %></span>
+                    </button>
+                    <button class="modern-btn confirm-btn" onclick="approveApplication('${app._id}')">
+                        <i class="fas fa-check"></i>
+                        <span><%= __('nurseManagement.approve') %></span>
+                    </button>
+                `;
+                } else if (app.status === 'on_hold') {
+                    modalFooter.innerHTML = `
+                    <button class="modern-btn confirm-btn" onclick="removeFromHold('${app._id}')">
+                        <i class="fas fa-play"></i>
+                        <span><%= __('nurseManagement.removeFromHold') %></span>
+                    </button>
+                    <button class="modern-btn reject-btn" onclick="showRejectModal('${app._id}')">
+                        <i class="fas fa-times"></i>
+                        <span><%= __('nurseManagement.reject') %></span>
+                    </button>
+                `;
+                } else {
+                    modalFooter.innerHTML = `
+                    <button class="modern-btn" onclick="closeApplicationModal()"><%= __('common.close') %></button>
+                `;
+                }
+            }
+
+            // Application actions
+            async function markAsUnderReview(applicationId) {
+                try {
+                    const response = await fetch(`${API_BASE}/applications/${applicationId}/review`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showToast('success', '<%= __('nurseManagement.applicationUnderReview') %>');
+                        closeApplicationModal();
+                        loadApplications();
+                        loadStatusStats();
+                    } else {
+                        showToast('error', data.message);
+                    }
+                } catch (error) {
+                    showToast('error', '<%= __('common.error') %>');
+                }
+            }
+
+            function approveApplication(applicationId) {
+                closeApplicationModal();
+                showCommissionModal(applicationId);
+            }
+
+            function showCommissionModal(applicationId) {
+                currentApplicationId = applicationId;
+                document.getElementById('commissionRate').value = '';
+                document.getElementById('commissionModal').classList.add('show');
+            }
+
+            function closeCommissionModal() {
+                document.getElementById('commissionModal').classList.remove('show');
+                document.getElementById('commissionRate').value = '';
+                currentApplicationId = null;
+            }
+
+            async function submitWithCommission() {
+                const commissionRate = document.getElementById('commissionRate').value.trim();
+
+                if (!commissionRate) {
+                    showToast('error', '<%= __('nurseManagement.commissionRateRequired') %>');
+                    return;
+                }
+
+                const parsedRate = parseFloat(commissionRate);
+                if (isNaN(parsedRate) || parsedRate < 0 || parsedRate > 100) {
+                    showToast('error', '<%= __('nurseManagement.commissionRateInvalid') %>');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE}/applications/${currentApplicationId}/approve`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${getToken()}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            notes: 'Application approved',
+                            commissionRate: parsedRate
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showToast('success', '<%= __('nurseManagement.applicationApproved') %>');
+                        closeCommissionModal();
+                        loadApplications();
+                        loadStatusStats();
+                    } else {
+                        showToast('error', data.message);
+                    }
+                } catch (error) {
+                    showToast('error', '<%= __('common.error') %>');
+                }
+            }
+
+            function showRejectModal(applicationId) {
+                currentApplicationId = applicationId;
+                document.getElementById('rejectModal').classList.add('show');
+            }
+
+            function closeRejectModal() {
+                document.getElementById('rejectModal').classList.remove('show');
+                document.getElementById('rejectReason').value = '';
+            }
+
+            async function submitReject() {
+                const reason = document.getElementById('rejectReason').value.trim();
+
+                if (!reason) {
+                    showToast('error', '<%= __('nurseManagement.rejectReasonRequired') %>');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE}/applications/${currentApplicationId}/reject`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${getToken()}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ reason })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showToast('success', '<%= __('nurseManagement.applicationRejected') %>');
+                        closeRejectModal();
+                        closeApplicationModal();
+                        loadApplications();
+                        loadStatusStats();
+                    } else {
+                        showToast('error', data.message);
+                    }
+                } catch (error) {
+                    showToast('error', '<%= __('common.error') %>');
+                }
+            }
+
+            function showHoldModal(applicationId) {
+                currentApplicationId = applicationId;
+                document.getElementById('holdModal').classList.add('show');
+            }
+
+            function closeHoldModal() {
+                document.getElementById('holdModal').classList.remove('show');
+                document.getElementById('holdNotes').value = '';
+            }
+
+            async function submitHold() {
+                const notes = document.getElementById('holdNotes').value.trim();
+
+                try {
+                    const response = await fetch(`${API_BASE}/applications/${currentApplicationId}/hold`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${getToken()}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ notes })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showToast('success', '<%= __('nurseManagement.applicationOnHold') %>');
+                        closeHoldModal();
+                        closeApplicationModal();
+                        loadApplications();
+                        loadStatusStats();
+                    } else {
+                        showToast('error', data.message);
+                    }
+                } catch (error) {
+                    showToast('error', '<%= __('common.error') %>');
+                }
+            }
+
+            async function removeFromHold(applicationId) {
+                try {
+                    const response = await fetch(`${API_BASE}/applications/${applicationId}/remove-hold`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showToast('success', '<%= __('nurseManagement.removeFromHold') %>');
+                        closeApplicationModal();
+                        loadApplications();
+                        loadStatusStats();
+                    } else {
+                        showToast('error', data.message);
+                    }
+                } catch (error) {
+                    showToast('error', '<%= __('common.error') %>');
+                }
+            }
+
+            function closeApplicationModal() {
+                document.getElementById('applicationModal').classList.remove('show');
+                currentApplicationId = null;
+            }
+
+            // Pagination
+            function renderPagination(containerId, currentPage, totalPages, onPageChange) {
+                const container = document.getElementById(containerId);
+
+                if (totalPages <= 1) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                let html = '';
+
+                if (currentPage > 1) {
+                    html += `<button class="pagination-btn" onclick="pageChange(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+                }
+
+                for (let i = 1; i <= totalPages; i++) {
+                    if (i === currentPage) {
+                        html += `<button class="pagination-btn active">${i}</button>`;
+                    } else if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                        html += `<button class="pagination-btn" onclick="pageChange(${i})">${i}</button>`;
+                    } else if (i === currentPage - 2 || i === currentPage + 2) {
+                        html += `<span class="pagination-ellipsis">...</span>`;
+                    }
+                }
+
+                if (currentPage < totalPages) {
+                    html += `<button class="pagination-btn" onclick="pageChange(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+                }
+
+                container.innerHTML = html;
+
+                // Store the page change function
+                container._onPageChange = onPageChange;
+            }
+
+            function pageChange(page) {
+                const container = document.querySelector('.pagination:hover') || document.getElementById('applicationsPagination');
+                if (container && container._onPageChange) {
+                    container._onPageChange(page);
+                }
+            }
+
+            // Utility functions
+            function formatStatus(status) {
+                const statusMap = {
+                    'pending': '<%= __("nurseManagement.pendingReview") %>',
+                    'under_review': '<%= __("nurseManagement.underReview") %>',
+                    'approved': '<%= __("nurseManagement.approved") %>',
+                    'rejected': '<%= __("nurseManagement.rejected") %>',
+                    'on_hold': '<%= __("nurseManagement.onHold") %>'
+                };
+                return statusMap[status] || status;
+            }
+
+            function formatDate(dateString) {
+                if (!dateString) return '-';
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                });
+            }
+
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            function refreshData() {
+                loadApplications();
+                loadStatusStats();
+                showToast('success', '<%= __('common.success') %>');
+            }
+
+            function getToken() {
+                return localStorage.getItem('token') || '';
+            }
+
+            function showToast(type, message) {
+                const toast = document.getElementById('toast');
+                const icon = toast.querySelector('.toast-icon i');
+                const title = toast.querySelector('.toast-title');
+                const msg = toast.querySelector('.toast-message');
+
+                icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+                toast.classList.remove('success', 'error');
+                toast.classList.add(type);
+                title.textContent = type === 'success' ? '<%= __("common.success") %>' : '<%= __("common.error") %>';
+                msg.textContent = message;
+
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            }
+
+            function showError(message) {
+                showToast('error', message);
+            }
+
+            function hideToast() {
+                document.getElementById('toast').classList.remove('show');
+            }
+
+            // Document Preview Functions
+            function previewDocument(url, title) {
+                const modal = document.getElementById('documentPreviewModal');
+                const image = document.getElementById('documentPreviewImage');
+                const titleEl = document.getElementById('documentPreviewTitle');
+                const downloadLink = document.getElementById('documentDownloadLink');
+
+                if (!modal || !image) return;
+
+                // Set image and title
+                image.src = url;
+                if (titleEl) titleEl.textContent = title || '<%= __("nurseManagement.documentPreview") || "Document Preview" %>';
+                if (downloadLink) downloadLink.href = url;
+
+                // Show loading state
+                image.style.opacity = '0';
+                image.onload = function () {
+                    image.style.opacity = '1';
+                };
+                image.onerror = function () {
+                    // Fallback to opening in new tab if image fails to load
+                    window.open(url, '_blank');
+                    closeDocumentPreview();
+                };
+
+                // Show modal
+                modal.classList.add('show');
+            }
+
+            function closeDocumentPreview() {
+                const modal = document.getElementById('documentPreviewModal');
+                const image = document.getElementById('documentPreviewImage');
+                if (modal) modal.classList.remove('show');
+                if (image) image.src = '';
+            }
+
+            // Close modals on overlay click
+            document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                overlay.addEventListener('click', function (e) {
+                    if (e.target === this) {
+                        this.classList.remove('show');
+                    }
+                });
+            });
+
+            // Close modals with Escape key
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal-overlay').forEach(modal => {
+                        modal.classList.remove('show');
+                    });
+                }
+            });
+        </script>
+</body>
+
+</html>

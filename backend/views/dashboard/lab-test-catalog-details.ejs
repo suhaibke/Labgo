@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+        }
+    </style>
+</head>
+<body>
+    <!-- Lab Navbar -->
+    <%- include('../partials/lab-navbar') %>
+
+    <!-- Main Content Wrapper -->
+    <div class="lab-wrapper">
+        <main class="lab-dashboard">
+            <div class="test-catalog-details-wrapper">
+                <!-- Back Navigation -->
+                <div class="back-navigation">
+                    <a href="/lab/tests" class="back-link">
+                        <i class="fas fa-arrow-left"></i>
+                        <span><%= __('tests.details.backToCatalog') %></span>
+                    </a>
+                </div>
+
+                <!-- Page Header -->
+                <div class="test-header">
+                    <div class="header-main">
+                        <div class="test-badge <%= test.category.toLowerCase().replace(' ', '-') %>">
+                            <i class="fas fa-vial"></i>
+                        </div>
+                        <div class="header-text">
+                            <div class="breadcrumb">
+                                <span><%= __('navigation.tests') %></span>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><%= __('tests.specializations.' + test.category, test.category) %></span>
+                            </div>
+                            <h1><%= test.nameAr || test.name %></h1>
+                            <% if (test.nameAr && test.name && test.nameAr !== test.name) { %>
+                                <p class="test-subtitle-en"><%= test.name %></p>
+                            <% } %>
+                            <div class="test-meta">
+                                <span class="code-tag"><i class="fas fa-barcode"></i> <%= test.code %></span>
+                                <span class="price-tag"><i class="fas fa-tag"></i> <%= Math.round(test.price).toLocaleString() %> IQD</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-primary" onclick="openEditModal()">
+                            <i class="fas fa-edit"></i>
+                            <span><%= __('common.edit') %></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content Grid -->
+                <div class="content-grid">
+                    <!-- Left Column - Test Details -->
+                    <div class="main-column">
+                        <!-- Description Card -->
+                        <div class="info-card description-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-info-circle"></i> <%= __('tests.details.testDescription') %></h3>
+                            </div>
+                            <div class="card-body">
+                                <% if (test.description) { %>
+                                    <p class="description-text"><%= test.description %></p>
+                                <% } else { %>
+                                    <p class="no-description"><%= __('tests.details.noDescription') %></p>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <!-- Instructions Card -->
+                        <div class="info-card instructions-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-clipboard-list"></i> <%= __('tests.specialInstructions') %></h3>
+                            </div>
+                            <div class="card-body">
+                                <% if (test.instructions) { %>
+                                    <div class="instructions-content">
+                                        <%= test.instructions.replace(/\n/g, '<br>') %>
+                                    </div>
+                                <% } else { %>
+                                    <p class="no-instructions"><%= __('tests.details.noInstructions') %></p>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <!-- Statistics Card -->
+                        <div class="info-card stats-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-chart-bar"></i> <%= __('tests.details.testStatistics') %></h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="stats-grid-small">
+                                    <div class="stat-item">
+                                        <div class="stat-icon-small total">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <div class="stat-info">
+                                            <span class="stat-number"><%= testStats.totalRequests %></span>
+                                            <span class="stat-label"><%= __('tests.details.totalRequests') %></span>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-icon-small completed">
+                                            <i class="fas fa-check"></i>
+                                        </div>
+                                        <div class="stat-info">
+                                            <span class="stat-number"><%= testStats.completedRequests %></span>
+                                            <span class="stat-label"><%= __('tests.details.completedRequests') %></span>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-icon-small pending">
+                                            <i class="fas fa-clock"></i>
+                                        </div>
+                                        <div class="stat-info">
+                                            <span class="stat-number"><%= testStats.pendingRequests %></span>
+                                            <span class="stat-label"><%= __('tests.details.pendingRequests') %></span>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-icon-small progress">
+                                            <i class="fas fa-spinner"></i>
+                                        </div>
+                                        <div class="stat-info">
+                                            <span class="stat-number"><%= testStats.inProgressRequests %></span>
+                                            <span class="stat-label"><%= __('tests.details.inProgressRequests') %></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Requests Card -->
+                        <% if (recentRequests.length > 0) { %>
+                        <div class="info-card requests-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-history"></i> <%= __('tests.details.recentPatientRequests') %></h3>
+                                <a href="/lab/patient-tests" class="view-all-link"><%= __('dashboard.viewAll') %></a>
+                            </div>
+                            <div class="card-body">
+                                <div class="requests-list">
+                                    <% recentRequests.forEach(request => { %>
+                                    <div class="request-item">
+                                        <div class="request-avatar">
+                                            <%= request.patientName.charAt(0).toUpperCase() %>
+                                        </div>
+                                        <div class="request-details">
+                                            <h4><%= request.patientName %></h4>
+                                            <p class="request-date">
+                                                <%= request.patientGender === 'male' ? __('common.male') :
+                                                    request.patientGender === 'female' ? __('common.female') : __('common.notAvailable') %>
+                                                ·
+                                                <%= Number.isInteger(request.patientAge) ? `${request.patientAge} ${__('common.years')}` : __('common.notAvailable') %>
+                                                · <%= new Date(request.requestDate).toLocaleDateString(currentLang) %>
+                                            </p>
+                                        </div>
+                                        <div class="request-status">
+                                            <span class="status-badge <%= request.status.toLowerCase().replace(' ', '-') %>">
+                                                <%= request.status === 'Pending' ? __('patientTests.pending') :
+                                                   request.status === 'In Progress' ? __('patientTests.inProgress') :
+                                                   request.status === 'Completed' ? __('patientTests.completed') : request.status %>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <% }) %>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+                    </div>
+
+                    <!-- Right Column - Quick Actions -->
+                    <div class="side-column">
+                        <!-- Quick Actions Card -->
+                        <div class="info-card quick-actions-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-bolt"></i> <%= __('tests.details.quickActions') %></h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="actions-menu">
+                                    <button class="action-item" onclick="openEditModal()">
+                                        <i class="fas fa-edit"></i>
+                                        <span><%= __('tests.details.editTestBtn') %></span>
+                                    </button>
+                                    <button class="action-item" onclick="duplicateTest()">
+                                        <i class="fas fa-copy"></i>
+                                        <span><%= __('tests.details.duplicateTest') %></span>
+                                    </button>
+                                    <button class="action-item" onclick="exportTestData()">
+                                        <i class="fas fa-download"></i>
+                                        <span><%= __('tests.details.exportData') %></span>
+                                    </button>
+                                    <button class="action-item danger" onclick="deleteTest()">
+                                        <i class="fas fa-trash"></i>
+                                        <span><%= __('tests.details.deleteTestBtn') %></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category Info Card -->
+                        <div class="info-card category-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-folder"></i> <%= __('tests.details.categoryInfo') %></h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="category-display">
+                                    <span class="category-badge <%= test.category.toLowerCase().replace(' ', '-') %>">
+                                        <%= __('tests.specializations.' + test.category, test.category) %>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Test Info Card -->
+                        <div class="info-card test-info-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-cog"></i> <%= __('tests.details.testInformation') %></h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-rows">
+                                    <div class="info-row">
+                                        <span class="info-label"><%= __('tests.details.testCodeLabel') %></span>
+                                        <span class="info-value"><%= test.code %></span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label"><%= __('tests.details.testPriceLabel') %></span>
+                                        <span class="info-value price-value"><%= Math.round(test.price).toLocaleString() %> IQD</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label"><%= __('tests.details.testCategoryLabel') %></span>
+                                        <span class="info-value"><%= __('tests.specializations.' + test.category, test.category) %></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lab Info Card -->
+                        <div class="info-card lab-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-building"></i> <%= __('tests.details.laboratory') %></h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="lab-mini-info">
+                                    <% if (lab.logo) { %>
+                                    <img src="<%= lab.logo %>" alt="<%= lab.name %>" class="lab-mini-logo">
+                                    <% } else { %>
+                                    <div class="lab-mini-logo-placeholder">
+                                        <i class="fas fa-flask"></i>
+                                    </div>
+                                    <% } %>
+                                    <div class="lab-mini-details">
+                                        <h4><%= lab.name %></h4>
+                                        <p><i class="fas fa-map-marker-alt"></i> <%= lab.city %>, <%= lab.country %></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Test Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-overlay" onclick="closeEditModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><%= __('tests.details.editTestTitle') %></h2>
+                <button class="modal-close" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="editTestForm" class="modal-body">
+                <div class="form-group">
+                    <label for="editNameAr"><%= __('tests.testNameAr') %> *</label>
+                    <input type="text" id="editNameAr" name="nameAr" value="<%= test.nameAr || '' %>" required dir="rtl">
+                </div>
+                <div class="form-group">
+                    <label for="editName"><%= __('tests.testNameEn') %> *</label>
+                    <input type="text" id="editName" name="name" value="<%= test.name %>" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCode"><%= __('tests.testCode') %> *</label>
+                    <input type="text" id="editCode" name="code" value="<%= test.code %>" required>
+                </div>
+                <div class="form-group">
+                    <label for="editPrice"><%= __('tests.price') %> *</label>
+                    <input type="number" id="editPrice" name="price" value="<%= test.price %>" required min="0">
+                </div>
+                <div class="form-group">
+                    <label for="editCategory"><%= __('tests.category') %> *</label>
+                    <select id="editCategory" name="category" required>
+                        <option value="Blood Tests" <%= test.category === 'Blood Tests' ? 'selected' : '' %>><%= __('tests.specializations.Blood Tests', 'Blood Tests') %></option>
+                        <option value="X-Ray" <%= test.category === 'X-Ray' ? 'selected' : '' %>><%= __('tests.specializations.X-Ray', 'X-Ray') %></option>
+                        <option value="MRI" <%= test.category === 'MRI' ? 'selected' : '' %>><%= __('tests.specializations.MRI', 'MRI') %></option>
+                        <option value="CT Scan" <%= test.category === 'CT Scan' ? 'selected' : '' %>><%= __('tests.specializations.CT Scan', 'CT Scan') %></option>
+                        <option value="Ultrasound" <%= test.category === 'Ultrasound' ? 'selected' : '' %>><%= __('tests.specializations.Ultrasound', 'Ultrasound') %></option>
+                        <option value="Pathology" <%= test.category === 'Pathology' ? 'selected' : '' %>><%= __('tests.specializations.Pathology', 'Pathology') %></option>
+                        <option value="Microbiology" <%= test.category === 'Microbiology' ? 'selected' : '' %>><%= __('tests.specializations.Microbiology', 'Microbiology') %></option>
+                        <option value="Biochemistry" <%= test.category === 'Biochemistry' ? 'selected' : '' %>><%= __('tests.specializations.Biochemistry', 'Biochemistry') %></option>
+                        <option value="Genetics" <%= test.category === 'Genetics' ? 'selected' : '' %>><%= __('tests.specializations.Genetics', 'Genetics') %></option>
+                        <option value="Allergy" <%= test.category === 'Allergy' ? 'selected' : '' %>><%= __('tests.specializations.Allergy', 'Allergy') %></option>
+                        <option value="Cardiology" <%= test.category === 'Cardiology' ? 'selected' : '' %>><%= __('tests.specializations.Cardiology', 'Cardiology') %></option>
+                        <option value="Neurology" <%= test.category === 'Neurology' ? 'selected' : '' %>><%= __('tests.specializations.Neurology', 'Neurology') %></option>
+                        <option value="General" <%= test.category === 'General' ? 'selected' : '' %>><%= __('tests.specializations.General', 'General') %></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editDescription"><%= __('tests.description') %></label>
+                    <textarea id="editDescription" name="description" rows="3"><%= test.description || '' %></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editInstructions"><%= __('tests.specialInstructions') %></label>
+                    <textarea id="editInstructions" name="instructions" rows="3"><%= test.instructions || '' %></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeEditModal()"><%= __('tests.details.cancelBtn') %></button>
+                    <button type="submit" class="btn-primary"><%= __('tests.details.saveChanges') %></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        /* Test Catalog Details - Apple Professional Design */
+        .test-catalog-details-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Back Navigation */
+        .back-navigation {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--gray-600);
+            text-decoration: none;
+            font-weight: 500;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-lg);
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover {
+            background: var(--gray-100);
+            color: var(--primary-600);
+        }
+
+        .back-link i {
+            transition: transform 0.2s ease;
+        }
+
+        .back-link:hover i {
+            transform: translateX(-4px);
+        }
+
+        [dir="rtl"] .back-link:hover i {
+            transform: translateX(4px);
+        }
+
+        /* Test Header */
+        .test-header {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-2xl);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xl);
+            border: 1px solid var(--gray-200);
+        }
+
+        .header-main {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .test-badge {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-3xl);
+            color: var(--white);
+        }
+
+        .test-badge.blood-tests,
+        .test-badge.pathology,
+        .test-badge.biochemistry {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .test-badge.x-ray,
+        .test-badge.mri,
+        .test-badge.ct-scan,
+        .test-badge.ultrasound {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .test-badge.genetics,
+        .test-badge.microbiology {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .test-badge.allergy,
+        .test-badge.cardiology,
+        .test-badge.neurology {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .test-badge.general {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+
+        .header-text h1 {
+            font-size: var(--font-size-3xl);
+            font-weight: 700;
+            color: var(--gray-900);
+            margin: var(--spacing-sm) 0;
+        }
+
+        .test-subtitle-en {
+            margin: 0 0 var(--spacing-sm);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--gray-400, #9ca3af);
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--gray-500);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .breadcrumb i {
+            font-size: var(--font-size-xs);
+        }
+
+        .test-meta {
+            display: flex;
+            gap: var(--spacing-md);
+        }
+
+        .code-tag {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-family: monospace;
+        }
+
+        .price-tag {
+            background: var(--success);
+            color: var(--white);
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+            color: var(--white);
+            border: none;
+            padding: var(--spacing-md) var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            font-family: <%= font %>;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: var(--spacing-xl);
+        }
+
+        .main-column,
+        .side-column {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+        }
+
+        /* Info Cards */
+        .info-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--gray-100);
+            background: linear-gradient(to bottom, var(--gray-50), var(--white));
+        }
+
+        .card-header h3 {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .card-header h3 i {
+            color: var(--primary-500);
+        }
+
+        .view-all-link {
+            color: var(--primary-500);
+            text-decoration: none;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            margin-left: auto;
+        }
+
+        .card-body {
+            padding: var(--spacing-lg);
+        }
+
+        /* Description Card */
+        .description-text {
+            color: var(--gray-700);
+            font-size: var(--font-size-md);
+            line-height: 1.8;
+            margin: 0;
+        }
+
+        .no-description,
+        .no-instructions {
+            color: var(--gray-400);
+            font-style: italic;
+        }
+
+        /* Instructions Card */
+        .instructions-content {
+            background: var(--primary-50);
+            border-left: 4px solid var(--primary-500);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-lg);
+            color: var(--gray-700);
+            line-height: 1.7;
+        }
+
+        /* Stats Grid Small */
+        .stats-grid-small {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-md);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+        }
+
+        .stat-icon-small {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+        }
+
+        .stat-icon-small.total {
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+        }
+
+        .stat-icon-small.completed {
+            background: linear-gradient(135deg, var(--success), #059669);
+        }
+
+        .stat-icon-small.pending {
+            background: linear-gradient(135deg, var(--warning), #d97706);
+        }
+
+        .stat-icon-small.progress {
+            background: linear-gradient(135deg, var(--info), #0284c7);
+        }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-number {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .stat-label {
+            font-size: var(--font-size-xs);
+            color: var(--gray-600);
+        }
+
+        /* Requests List */
+        .requests-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .request-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+            transition: all 0.2s ease;
+        }
+
+        .request-item:hover {
+            background: var(--gray-100);
+        }
+
+        .request-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .request-details {
+            flex: 1;
+        }
+
+        .request-details h4 {
+            font-size: var(--font-size-md);
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0 0 var(--spacing-xs) 0;
+        }
+
+        .request-date {
+            color: var(--gray-500);
+            font-size: var(--font-size-xs);
+            margin: 0;
+        }
+
+        /* Actions Menu */
+        .actions-menu {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .action-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            font-family: <%= font %>;
+            color: var(--gray-700);
+            text-align: left;
+        }
+
+        .action-item:hover {
+            background: var(--primary-50);
+            border-color: var(--primary-200);
+            color: var(--primary-700);
+        }
+
+        .action-item.danger:hover {
+            background: #fef2f2;
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .action-item i {
+            font-size: var(--font-size-lg);
+            width: 20px;
+        }
+
+        /* Category Display */
+        .category-display {
+            text-align: center;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: var(--spacing-sm) var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            font-size: var(--font-size-md);
+        }
+
+        .category-badge.blood-tests,
+        .category-badge.pathology,
+        .category-badge.biochemistry {
+            background: var(--error);
+            color: var(--white);
+        }
+
+        .category-badge.x-ray,
+        .category-badge.mri,
+        .category-badge.ct-scan,
+        .category-badge.ultrasound {
+            background: var(--info);
+            color: var(--white);
+        }
+
+        .category-badge.genetics,
+        .category-badge.microbiology {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .category-badge.allergy,
+        .category-badge.cardiology,
+        .category-badge.neurology {
+            background: var(--warning);
+            color: var(--white);
+        }
+
+        .category-badge.general {
+            background: var(--primary-500);
+            color: var(--white);
+        }
+
+        /* Info Rows */
+        .info-rows {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--gray-600);
+            font-size: var(--font-size-sm);
+        }
+
+        .info-value {
+            color: var(--gray-900);
+            font-weight: 500;
+        }
+
+        .info-value.price-value {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        /* Lab Mini Info */
+        .lab-mini-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .lab-mini-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-md);
+            object-fit: cover;
+        }
+
+        .lab-mini-logo-placeholder {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+        }
+
+        .lab-mini-details h4 {
+            font-size: var(--font-size-md);
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0 0 var(--spacing-xs) 0;
+        }
+
+        .lab-mini-details p {
+            color: var(--gray-600);
+            font-size: var(--font-size-xs);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            position: relative;
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-xl);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .modal-header h2 {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: var(--font-size-lg);
+            color: var(--gray-400);
+            cursor: pointer;
+            padding: var(--spacing-sm);
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .modal-body {
+            padding: var(--spacing-xl);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: var(--spacing-sm);
+            font-size: var(--font-size-sm);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-lg);
+            font-size: var(--font-size-md);
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-400);
+            box-shadow: 0 0 0 3px var(--primary-100);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: flex-end;
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: none;
+            padding: var(--spacing-md) var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            font-family: <%= font %>;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .test-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--spacing-lg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-main {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .test-meta {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+
+            .stats-grid-small {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <script>
+        const testId = '<%= test._id %>';
+
+        // Translation helper for JS
+        const translations = {
+            testUpdated: '<%= __("tests.testUpdated") %>',
+            testDuplicated: '<%= __("tests.testDuplicated") %>',
+            dataExported: '<%= __("tests.details.dataExported") %>',
+            confirmDeleteTest: '<%= __("tests.details.confirmDeleteTest") %>',
+            confirmDuplicateTest: '<%= __("tests.details.confirmDuplicateTest") %>',
+            errorUpdatingTest: '<%= __("tests.details.errorUpdatingTest") %>',
+            errorDeletingTest: '<%= __("tests.details.errorDeletingTest") %>',
+            errorDuplicatingTest: '<%= __("tests.details.errorDuplicatingTest") %>'
+        };
+
+        function openEditModal() {
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        // Handle form submission
+        document.getElementById('editTestForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const data = {
+                name: formData.get('name'),
+                nameAr: formData.get('nameAr'),
+                code: formData.get('code'),
+                price: parseFloat(formData.get('price')),
+                category: formData.get('category'),
+                description: formData.get('description'),
+                instructions: formData.get('instructions')
+            };
+
+            try {
+                const response = await fetch(`/lab/api/tests/${testId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification(translations.testUpdated, 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showNotification(result.message || translations.errorUpdatingTest, 'error');
+                }
+            } catch (error) {
+                showNotification(translations.errorUpdatingTest, 'error');
+            }
+        });
+
+        async function duplicateTest() {
+            if (!confirm(translations.confirmDuplicateTest)) return;
+
+            try {
+                const response = await fetch('/lab/api/tests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: '<%= test.name %> (Copy)',
+                        nameAr: '<%= (test.nameAr || test.name).replace(/'/g, "\\'") %> (نسخة)',
+                        code: '<%= test.code %>-COPY',
+                        price: <%= test.price %>,
+                        category: '<%= test.category %>',
+                        description: '<%= test.description || "" %>',
+                        instructions: '<%= test.instructions || "" %>'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification(translations.testDuplicated, 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showNotification(result.message || translations.errorDuplicatingTest, 'error');
+                }
+            } catch (error) {
+                showNotification(translations.errorDuplicatingTest, 'error');
+            }
+        }
+
+        function exportTestData() {
+            const data = {
+                name: '<%= test.name %>',
+                nameAr: '<%= test.nameAr || "" %>',
+                code: '<%= test.code %>',
+                price: <%= test.price %>,
+                priceFormatted: '<%= Math.round(test.price).toLocaleString() %> IQD',
+                category: '<%= test.category %>',
+                description: '<%= test.description || "" %>',
+                instructions: '<%= test.instructions || "" %>',
+                currency: 'IQD'
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `test-${test.code}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showNotification(translations.dataExported, 'success');
+        }
+
+        async function deleteTest() {
+            if (!confirm(translations.confirmDeleteTest)) return;
+
+            try {
+                const response = await fetch(`/lab/api/tests/${testId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification(translations.testDeleted, 'success');
+                    setTimeout(() => window.location.href = '/lab/tests', 1000);
+                } else {
+                    showNotification(result.message || translations.errorDeletingTest, 'error');
+                }
+            } catch (error) {
+                showNotification(translations.errorDeletingTest, 'error');
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : '#ef4444'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 1rem;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                z-index: 10001;
+                animation: slideIn 0.3s ease;
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Add animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

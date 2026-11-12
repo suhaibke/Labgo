@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %>
+    </title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <style>
+        body {
+            font-family: <%=font %>;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Lab Navbar -->
+    <%- include('../partials/lab-navbar') %>
+
+        <!-- Main Content Wrapper -->
+        <div class="lab-wrapper">
+            <main class="lab-dashboard">
+                <div class="dashboard-container">
+                    <!-- Lab Header Section -->
+                    <section class="lab-header">
+                        <div class="lab-info">
+                            <div class="lab-logo">
+                                <% if (lab.logo) { %>
+                                    <img src="<%= lab.logo %>" alt="<%= lab.name %> Logo" class="logo-img">
+                                    <% } else { %>
+                                        <div class="logo-placeholder">
+                                            <i class="fas fa-flask"></i>
+                                        </div>
+                                        <% } %>
+                            </div>
+                            <div class="lab-details">
+                                <h1>
+                                    <%= lab.name %>
+                                </h1>
+                                <p class="lab-subtitle">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <%= lab.city %>, <%= lab.country %>
+                                            <% if (lab.isVerified) { %>
+                                                <span class="verified-badge">
+                                                    <i class="fas fa-check-circle"></i>
+                                                    <%= __('dashboard.verified') %>
+                                                </span>
+                                                <% } %>
+                                </p>
+                                <div class="lab-rating">
+                                    <div class="stars" dir="<%= direction %>">
+                                        <% for (var i=1; i <=5; i++) { %>
+                                            <% if (i <=Math.floor(lab.averageRating)) { %>
+                                                <i class="fas fa-star active"></i>
+                                                <% } else if (i===Math.ceil(lab.averageRating) && (lab.averageRating %
+                                                    1)>= 0.5) { %>
+                                                    <i class="fas fa-star-half-alt active"></i>
+                                                    <% } else { %>
+                                                        <i class="far fa-star"></i>
+                                                        <% } %>
+                                                            <% } %>
+                                    </div>
+                                    <span class="rating-text">
+                                        <%= lab.averageRating.toFixed(1) %> (<%= lab.totalReviews %>
+                                                <%= __('dashboard.reviews') %>)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="lab-status">
+                            <span class="status-badge <%= lab.status.toLowerCase() %>">
+                                <%= lab.status %>
+                            </span>
+                            <div class="specializations">
+                                <% lab.specialization.slice(0, 3).forEach(function(spec) { %>
+                                    <span class="spec-tag">
+                                        <%= spec %>
+                                    </span>
+                                    <% }); %>
+                                        <% if (lab.specialization.length> 3) { %>
+                                            <span class="spec-tag">+<%= lab.specialization.length - 3 %></span>
+                                            <% } %>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Overview Section -->
+                    <section class="dashboard-section active" id="overview">
+                        <div class="section-header">
+                            <h2>
+                                <%= __('dashboard.welcome') %>, <%= user.name %>
+                            </h2>
+                            <p class="section-subtitle">
+                                <%= __('dashboard.subtitle') %>
+                            </p>
+                        </div>
+
+                        <!-- Stats Cards -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-card-inner">
+                                    <div class="stat-header">
+                                        <div class="stat-icon-wrapper">
+                                            <i class="fas fa-users stat-icon"></i>
+                                        </div>
+                                        <div class="stat-trend-indicator <%= stats.patientGrowth >= 0 ? 'positive' : 'negative' %>">
+                                            <i class="fas fa-arrow-<%= stats.patientGrowth >= 0 ? 'up' : 'down' %>"></i>
+                                            <span><%= Math.abs(stats.patientGrowth) %>%</span>
+                                        </div>
+                                    </div>
+                                    <div class="stat-value" data-counter="<%= stats.totalPatientsServed %>">
+                                        <%= stats.totalPatientsServed.toLocaleString() %>
+                                    </div>
+                                    <div class="stat-label"><%= __('dashboard.totalPatients') %></div>
+                                    <div class="stat-sublabel"><%= __('dashboard.fromLastMonth') %></div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-card-inner">
+                                    <div class="stat-header">
+                                        <div class="stat-icon-wrapper">
+                                            <i class="fas fa-vial stat-icon"></i>
+                                        </div>
+                                        <div class="stat-trend-indicator <%= stats.testsGrowth >= 0 ? 'positive' : 'negative' %>">
+                                            <i class="fas fa-arrow-<%= stats.testsGrowth >= 0 ? 'up' : 'down' %>"></i>
+                                            <span><%= Math.abs(stats.testsGrowth) %>%</span>
+                                        </div>
+                                    </div>
+                                    <div class="stat-value" data-counter="<%= stats.totalTestsPerformed %>">
+                                        <%= stats.totalTestsPerformed.toLocaleString() %>
+                                    </div>
+                                    <div class="stat-label"><%= __('dashboard.totalTests') %></div>
+                                    <div class="stat-sublabel"><%= __('dashboard.fromLastMonth') %></div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-card-inner">
+                                    <div class="stat-header">
+                                        <div class="stat-icon-wrapper">
+                                            <i class="fas fa-clock stat-icon"></i>
+                                        </div>
+                                        <div class="stat-trend-indicator <%= stats.pendingChange <= 0 ? 'positive' : 'negative' %>">
+                                            <i class="fas fa-arrow-<%= stats.pendingChange <= 0 ? 'down' : 'up' %>"></i>
+                                            <span><%= Math.abs(stats.pendingChange) %>%</span>
+                                        </div>
+                                    </div>
+                                    <div class="stat-value" data-counter="<%= stats.pendingPatientTests %>">
+                                        <%= stats.pendingPatientTests %>
+                                    </div>
+                                    <div class="stat-label"><%= __('dashboard.pendingResults') %></div>
+                                    <div class="stat-sublabel"><%= __('dashboard.fromLastMonth') %></div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-card-inner">
+                                    <div class="stat-header">
+                                        <div class="stat-icon-wrapper">
+                                            <i class="fas fa-star stat-icon"></i>
+                                        </div>
+                                        <div class="stat-trend-indicator <%= stats.ratingChange >= 0 ? 'positive' : 'negative' %>">
+                                            <i class="fas fa-arrow-<%= stats.ratingChange >= 0 ? 'up' : 'down' %>"></i>
+                                            <span><%= Math.abs(stats.ratingChange) %></span>
+                                        </div>
+                                    </div>
+                                    <div class="stat-value">
+                                        <%= stats.averageRating.toFixed(1) %>
+                                    </div>
+                                    <div class="stat-label"><%= __('dashboard.averageRating') %></div>
+                                    <div class="stat-sublabel"><%= __('dashboard.points') %></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Row -->
+                        <div class="charts-row">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h3>
+                                        <%= __('dashboard.monthlyPerformance') %>
+                                    </h3>
+                                    <div class="chart-controls">
+                                        <button class="chart-control active" data-period="6months">
+                                            <%= __('dashboard.sixMonths') %>
+                                        </button>
+                                        <button class="chart-control" data-period="year">
+                                            <%= __('dashboard.year') %>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="chart-content">
+                                    <canvas id="performanceChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="quick-actions-card">
+                                <h3>
+                                    <%= __('dashboard.quickActions') %>
+                                </h3>
+                                <div class="actions-grid">
+                                    <a href="/lab/tests" class="action-btn">
+                                        <i class="fas fa-plus-circle"></i>
+                                        <span>
+                                            <%= __('dashboard.addTest') %>
+                                        </span>
+                                    </a>
+                                    <a href="/lab/patient-tests" class="action-btn">
+                                        <i class="fas fa-clipboard-list"></i>
+                                        <span>
+                                            <%= __('dashboard.viewTests') %>
+                                        </span>
+                                    </a>
+                                    <a href="/lab/settings" class="action-btn">
+                                        <i class="fas fa-cog"></i>
+                                        <span>
+                                            <%= __('dashboard.settings') %>
+                                        </span>
+                                    </a>
+                                    <button class="action-btn" onclick="generateReport()">
+                                        <i class="fas fa-chart-line"></i>
+                                        <span>
+                                            <%= __('dashboard.reports') %>
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity & Urgent Tests -->
+                        <div class="activity-row">
+                            <div class="recent-activity-table">
+                                <div class="table-header">
+                                    <h3>
+                                        <%= __('dashboard.recentActivity') %>
+                                    </h3>
+                                    <a href="/lab/patient-tests" class="view-all-btn">
+                                        <%= __('dashboard.viewAll') %>
+                                    </a>
+                                </div>
+                                <div class="table-content">
+                                    <% if (recentTests.length> 0) { %>
+                                        <table class="modern-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>
+                                                        <%= __('dashboard.patient') %>
+                                                    </th>
+                                                    <th>
+                                                        <%= __('dashboard.test') %>
+                                                    </th>
+                                                    <th>
+                                                        <%= __('dashboard.date') %>
+                                                    </th>
+                                                    <th>
+                                                        <%= __('dashboard.status') %>
+                                                    </th>
+                                                    <th>
+                                                        <%= __('dashboard.actions') %>
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% recentTests.slice(0, 5).forEach(function(test) { %>
+                                                    <tr data-test-id="<%= test._id %>">
+                                                        <td>
+                                                            <div class="patient-cell">
+                                                                <i class="fas fa-user-circle patient-avatar"></i>
+                                                                <span class="patient-summary">
+                                                                    <strong><%= test.patientInfo?.name || __('common.notAvailable') %></strong>
+                                                                    <small>
+                                                                        <%= test.patientInfo?.gender === 'male' ? __('common.male') :
+                                                                            test.patientInfo?.gender === 'female' ? __('common.female') : __('common.notAvailable') %>
+                                                                        ·
+                                                                        <%= Number.isInteger(test.patientInfo?.age) ? `${test.patientInfo.age} ${__('common.years')}` : __('common.notAvailable') %>
+                                                                    </small>
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <%= test.testName %>
+                                                        </td>
+                                                        <td>
+                                                            <%= new Date(test.requestDate).toLocaleDateString() %>
+                                                        </td>
+                                                        <td>
+                                                            <span
+                                                                class="status-badge <%= test.status.toLowerCase().replace(' ', '-') %>">
+                                                                <%= test.status %>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="table-action-btn"
+                                                                onclick="viewTestDetails('<%= test._id %>')">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                    <% }); %>
+                                            </tbody>
+                                        </table>
+                                        <% } else { %>
+                                            <div class="empty-state">
+                                                <i class="fas fa-clipboard-list"></i>
+                                                <p>
+                                                    <%= __('dashboard.noRecentTests') %>
+                                                </p>
+                                            </div>
+                                            <% } %>
+                                </div>
+                            </div>
+
+                        </div>
+                    </section>
+                </div>
+            </main>
+
+            <!-- Monthly stats data for JavaScript -->
+            <script type="application/json" id="monthly-stats">
+        <%= JSON.stringify(monthlyStats) %>
+    </script>
+
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="/js/lab-dashboard.js"></script>
+
+        </div>
+</body>
+
+</html>

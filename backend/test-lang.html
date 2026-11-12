@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Test</title>
+</head>
+<body>
+    <h1>Language Test Page</h1>
+    <p>This page will test the language functionality.</p>
+
+    <div>
+        <button onclick="testLanguage('ar')">Test Arabic</button>
+        <button onclick="testLanguage('en')">Test English</button>
+        <button onclick="testLanguage('ku')">Test Kurdish</button>
+        <button onclick="testLanguage('tr')">Test Turkish</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        async function testLanguage(lang) {
+            const result = document.getElementById('result');
+            result.textContent = 'Setting language to ' + lang + '...';
+
+            try {
+                const response = await fetch('/api/language/set', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ language: lang })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    result.textContent = 'Language set to ' + lang + ' successfully! Refresh to see changes.';
+                    result.style.color = 'green';
+                } else {
+                    result.textContent = 'Failed to set language: ' + data.message;
+                    result.style.color = 'red';
+                }
+            } catch (error) {
+                result.textContent = 'Error: ' + error.message;
+                result.style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>

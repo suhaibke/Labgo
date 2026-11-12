@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('labManagement.title') %> - LabGo <%= __('roles.admin') %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/lab-management.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Navbar -->
+    <%- include('../partials/admin-navbar') %>
+
+    <!-- Main Lab Management Content -->
+    <main class="admin-dashboard">
+        <div class="dashboard-container">
+
+            <!-- Section Header -->
+            <section class="dashboard-section active">
+                <div class="section-header">
+                    <div>
+                        <h1><%= __('labManagement.title') %></h1>
+                        <p><%= __('labManagement.subtitle') %></p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="secondary-btn" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i>
+                            <%= __('common.refresh') %>
+                        </button>
+                        <a href="/admin/labs/add" class="primary-btn">
+                            <i class="fas fa-plus"></i>
+                            <%= __('labManagement.addNewLab') %>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card primary">
+                        <div class="stat-icon">
+                            <i class="fas fa-flask"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number" id="totalLabs">-</h3>
+                            <p class="stat-label"><%= __('labManagement.totalLabs') %></p>
+                            <span class="stat-change positive" id="labsGrowth">+0%</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card success">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number" id="activeLabs">-</h3>
+                            <p class="stat-label"><%= __('labManagement.activeLabs') %></p>
+                            <span class="stat-change positive" id="activeRate">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card secondary">
+                        <div class="stat-icon">
+                            <i class="fas fa-vial"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number" id="totalTests">-</h3>
+                            <p class="stat-label"><%= __('labManagement.totalTests') %></p>
+                            <span class="stat-change positive" id="testsGrowth">+0%</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card accent">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number" id="totalPatients">-</h3>
+                            <p class="stat-label"><%= __('labManagement.totalPatients') %></p>
+                            <span class="stat-change positive" id="patientsGrowth">+0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search and Filters -->
+                <div class="labs-controls">
+                    <div class="controls-wrapper">
+                        <div class="search-group">
+                            <div class="search-container">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="searchInput" placeholder="<%= __('common.search') %>..." class="search-input">
+                            </div>
+                        </div>
+
+                        <div class="filter-group">
+                            <select id="statusFilter" class="filter-select">
+                                <option value=""><%= __('labManagement.allStatus') %></option>
+                                <option value="Active"><%= __('labManagement.activeLabs') %></option>
+                                <option value="Inactive"><%= __('labManagement.inactiveLabs') %></option>
+                                <option value="Pending"><%= __('labManagement.pendingLabs') %></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Labs Table -->
+                <div class="labs-table-container">
+                    <div class="table-header">
+                        <h3><%= __('labManagement.manageLabs') %></h3>
+                        <div class="table-info">
+                            <span id="resultsCount">Loading...</span>
+                        </div>
+                    </div>
+
+                    <div class="table-content">
+                        <table class="modern-table" id="labsTable">
+                            <thead>
+                                <tr>
+                                    <th><%= __('labManagement.labInfo') %></th>
+                                    <th><%= __('labManagement.contactInfo') %></th>
+                                    <th><%= __('labManagement.owner') %></th>
+                                    <th><%= __('labManagement.status') %></th>
+                                    <th><%= __('labManagement.tests') %></th>
+                                    <th><%= __('labManagement.patients') %></th>
+                                    <th><%= __('labManagement.created') %></th>
+                                    <th><%= __('common.actions') %></th>
+                                </tr>
+                            </thead>
+                            <tbody id="labsTableBody">
+                                <tr>
+                                    <td colspan="8" class="loading-row">
+                                        <div class="loading-spinner">
+                                            <i class="fas fa-spinner fa-spin"></i>
+                                            <%= __('common.loading') %>...
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination-container" id="pagination">
+                        <!-- Pagination will be dynamically generated -->
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Add/Edit Lab Modal -->
+    <div id="labModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle"><%= __('labManagement.addNewLab') %></h3>
+                <button class="modal-close" onclick="closeLabModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="labForm" class="lab-form">
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h4><%= __('labManagement.basicInfo') %></h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label><%= __('labManagement.labName') %>*</label>
+                            <input type="text" id="labName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label><%= __('labManagement.labEmail') %>*</label>
+                            <input type="email" id="labEmail" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label><%= __('labManagement.labPhone') %>*</label>
+                            <input type="tel" id="labPhone" name="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label><%= __('labManagement.website') %></label>
+                            <input type="url" id="labWebsite" name="website">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Address Information -->
+                <div class="form-section">
+                    <h4><%= __('labManagement.addressInfo') %></h4>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label><%= __('labManagement.address') %>*</label>
+                            <input type="text" id="labAddress" name="address" required>
+                        </div>
+                        <div class="form-group">
+                            <label><%= __('labManagement.city') %>*</label>
+                            <select id="labCity" name="city" required>
+                                <option value=""><%= __('labManagement.selectCity') || 'Select City' %></option>
+                                <option value="بغداد">بغداد</option>
+                                <option value="البصرة">البصرة</option>
+                                <option value="نينوى">نينوى</option>
+                                <option value="الأنبار">الأنبار</option>
+                                <option value="كركوك">كركوك</option>
+                                <option value="صلاح الدين">صلاح الدين</option>
+                                <option value="ديالى">ديالى</option>
+                                <option value="بابل">بابل</option>
+                                <option value="كربلاء">كربلاء</option>
+                                <option value="النجف">النجف</option>
+                                <option value="القادسية">القادسية</option>
+                                <option value="المثنى">المثنى</option>
+                                <option value="واسط">واسط</option>
+                                <option value="ذي قار">ذي قار</option>
+                                <option value="ميسان">ميسان</option>
+                                <option value="أربيل">أربيل</option>
+                                <option value="السليمانية">السليمانية</option>
+                                <option value="دهوك">دهوك</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><%= __('labManagement.country') %>*</label>
+                            <input type="text" id="labCountry" name="country" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lab Details -->
+                <div class="form-section">
+                    <h4><%= __('labManagement.labDetails') %></h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label><%= __('labManagement.specialization') %></label>
+                            <div class="checkbox-group" id="specializationCheckboxes">
+                                <!-- Specialization checkboxes will be added dynamically -->
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label><%= __('labManagement.status') %></label>
+                            <select id="labStatus" name="status">
+                                <option value="Active"><%= __('labManagement.active') %></option>
+                                <option value="Inactive"><%= __('labManagement.inactive') %></option>
+                                <option value="Pending"><%= __('labManagement.pending') %></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Owner Selection -->
+                <div class="form-section">
+                    <h4><%= __('labManagement.ownerAssignment') %></h4>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label><%= __('labManagement.selectOwner') %></label>
+                            <select id="labOwner" name="ownerId" required>
+                                <option value=""><%= __('labManagement.selectOwner') %></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="secondary-btn" onclick="closeLabModal()">
+                        <%= __('common.cancel') %>
+                    </button>
+                    <button type="submit" class="primary-btn">
+                        <i class="fas fa-save"></i>
+                        <%= __('common.save') %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lab Details Modal -->
+    <div id="labDetailsModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3><%= __('labManagement.labDetails') %></h3>
+                <button class="modal-close" onclick="closeDetailsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div id="labDetailsContent">
+                <!-- Lab details will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Lab Tests Modal -->
+    <% const testCategories = ['Blood Tests', 'X-Ray', 'MRI', 'CT Scan', 'Ultrasound', 'Pathology', 'Microbiology', 'Biochemistry', 'Genetics', 'Allergy', 'Cardiology', 'Neurology', 'General']; %>
+    <div id="labTestsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <%= __('labManagement.manageLabTests') %>
+                    <span id="labTestsLabName" class="lab-tests-lab-name"></span>
+                </h3>
+                <button type="button" class="modal-close" onclick="closeLabTestsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="labTestForm" class="lab-form lab-test-form">
+                <div class="form-section">
+                    <h4><%= __('labManagement.tests') %></h4>
+                    <div id="labTestsList" class="lab-tests-list"></div>
+                </div>
+
+                <div class="form-section">
+                    <h4><%= __('labManagement.labTestImport.title') %></h4>
+                    <p class="lab-tests-import-hint"><%= __('labManagement.labTestImport.hint') %></p>
+                    <div class="lab-tests-import-actions">
+                        <button type="button" class="secondary-btn" onclick="downloadLabTestTemplate()">
+                            <i class="fas fa-download"></i>
+                            <%= __('labManagement.labTestImport.downloadTemplate') %>
+                        </button>
+                        <button type="button" id="labTestImportButton" class="primary-btn" onclick="document.getElementById('labTestImportFile').click()">
+                            <i class="fas fa-file-excel"></i>
+                            <%= __('labManagement.labTestImport.upload') %>
+                        </button>
+                        <input type="file" id="labTestImportFile" accept=".xlsx,.xls" hidden>
+                    </div>
+                    <p id="labTestImportStatus" class="lab-test-status lab-tests-import-status" role="status" hidden></p>
+                    <ul id="labTestImportIssues" class="lab-tests-import-issues" hidden></ul>
+                </div>
+
+                <div class="form-section">
+                    <h4><%= __('tests.addNewTest') %></h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="labTestNameAr"><%= __('tests.testNameAr') %>*</label>
+                            <input type="text" id="labTestNameAr" name="nameAr" dir="rtl" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="labTestName"><%= __('tests.testNameEn') %>*</label>
+                            <input type="text" id="labTestName" name="name" dir="ltr" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="labTestPrice"><%= __('tests.price') %>*</label>
+                            <input type="number" id="labTestPrice" name="price" min="0" step="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="labTestCategory"><%= __('tests.category') %>*</label>
+                            <select id="labTestCategory" name="category" required>
+                                <% testCategories.forEach(function(category) { %>
+                                    <option value="<%= category %>"><%= __('tests.specializations.' + category, category) %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="labTestDescription"><%= __('tests.description') %></label>
+                            <textarea id="labTestDescription" name="description" rows="2"></textarea>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="labTestInstructions"><%= __('labManagement.labTestInstructions') %></label>
+                            <textarea id="labTestInstructions" name="instructions" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="labTestStatus" class="lab-test-status" role="status" hidden></p>
+
+                <div class="form-actions">
+                    <button type="button" class="secondary-btn" onclick="closeLabTestsModal()">
+                        <%= __('common.cancel') %>
+                    </button>
+                    <button type="submit" id="labTestSubmit" class="primary-btn">
+                        <i class="fas fa-plus"></i>
+                        <%= __('tests.addNewTest') %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        window.labTestLabels = <%- JSON.stringify({
+            manageTests: __('labManagement.manageLabTests'),
+            empty: __('tests.noTestsAvailable'),
+            added: __('labManagement.labTestAdded'),
+            loadError: __('labManagement.labTestsLoadError'),
+            addError: __('labManagement.labTestAddError'),
+            import: Object.fromEntries([
+                'uploading', 'summary', 'row', 'missingName', 'missingNameAr', 'invalidPrice', 'invalidCategory',
+                'duplicate', 'invalidFile', 'emptyFile', 'tooManyRows', 'failed', 'templateError'
+            ].map(function(key) {
+                return [key, __('labManagement.labTestImport.' + key)];
+            })),
+            categories: Object.fromEntries(testCategories.map(function(category) {
+                return [category, __('tests.specializations.' + category, category)];
+            }))
+        }).replace(/</g, '\\u003c') %>;
+        window.labDocumentLabels = <%- JSON.stringify({
+            documentsTitle: __('labManagement.documentsTitle'),
+            labCertificates: __('labManagement.labCertificates'),
+            labOpeningLetter: __('labManagement.labOpeningLetter'),
+            labOpeningLicense: __('labManagement.labOpeningLicense'),
+            practiceLicense: __('labManagement.practiceLicense'),
+            ownerUnifiedCard: __('labManagement.ownerUnifiedCard'),
+            ownerDepartmentOrRetirementId: __('labManagement.ownerDepartmentOrRetirementId'),
+            noDocuments: __('labManagement.noDocuments'),
+            openDocument: __('labManagement.openDocument'),
+            documentLoadError: __('labManagement.documentLoadError')
+        }).replace(/</g, '\\u003c') %>;
+    </script>
+    <script src="/js/lab-management.js"></script>
+</body>
+</html>

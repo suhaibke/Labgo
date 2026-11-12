@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('labManagement.addNewLab') %> - LabGo <%= __('roles.admin') %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+            background: #f5f5f7;
+        }
+
+        /* Add Lab Page Styles */
+        .add-lab-container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 48px;
+            padding-top: 20px;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1d1d1f;
+            margin-bottom: 16px;
+            letter-spacing: -0.015em;
+        }
+
+        .page-header p {
+            font-size: 1.125rem;
+            color: #86868b;
+            font-weight: 400;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #06c;
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 32px;
+            transition: opacity 0.2s ease;
+        }
+
+        .back-link:hover {
+            opacity: 0.7;
+        }
+
+        .back-link i {
+            margin-<%= direction === 'rtl' ? 'left' : 'right' %>: 8px;
+            transition: transform 0.2s ease;
+        }
+
+        .back-link:hover i {
+            transform: translateX(<%= direction === 'rtl' ? '4px' : '-4px' %>);
+        }
+
+        /* Form Container */
+        .form-container {
+            background: white;
+            border-radius: 18px;
+            padding: 48px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 32px;
+        }
+
+        .form-section {
+            margin-bottom: 48px;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            letter-spacing: -0.015em;
+        }
+
+        .section-subtitle {
+            font-size: 1rem;
+            color: #86868b;
+            margin-bottom: 32px;
+            font-weight: 400;
+        }
+
+        /* Form Grid */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Form Labels */
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            letter-spacing: 0.01em;
+        }
+
+        .optional-label {
+            font-weight: 400;
+            color: #86868b;
+            font-size: 0.75rem;
+            margin-<%= direction === 'rtl' ? 'right' : 'left' %>: 8px;
+        }
+
+        /* Form Inputs */
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 16px 20px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 400;
+            color: #1d1d1f;
+            background: white;
+            transition: all 0.2s ease;
+            font-family: <%= font %>;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.5;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #06c;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: #86868b;
+        }
+
+        /* Form Select */
+        .form-select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2386868B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: <%= direction === 'rtl' ? '20px center' : 'calc(100% - 20px) center' %>;
+            padding-<%= direction === 'rtl' ? 'left' : 'right' %>: 48px;
+        }
+
+        /* Owner Selection */
+        .owner-select-container {
+            position: relative;
+        }
+
+        .owner-loading {
+            display: none;
+            position: absolute;
+            <%= direction === 'rtl' ? 'left' : 'right' %>: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #86868b;
+        }
+
+        .owner-loading.show {
+            display: block;
+        }
+
+        /* Logo Upload */
+        .logo-upload-container {
+            position: relative;
+        }
+
+        .logo-preview {
+            width: 120px;
+            height: 120px;
+            border: 2px dashed #d2d2d7;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 16px;
+            background: #f9f9fb;
+        }
+
+        .logo-preview:hover {
+            border-color: #06c;
+            background: rgba(0, 122, 255, 0.03);
+        }
+
+        .logo-preview i {
+            font-size: 2rem;
+            color: #86868b;
+            margin-bottom: 8px;
+        }
+
+        .logo-preview span {
+            font-size: 0.875rem;
+            color: #86868b;
+            text-align: center;
+            max-width: 100px;
+        }
+
+        .logo-preview.has-image {
+            border-style: solid;
+            border-color: #06c;
+            background: rgba(0, 122, 255, 0.05);
+        }
+
+        .logo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        /* Owner Search */
+        .owner-email-container {
+            position: relative;
+        }
+
+        .owner-search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+
+        .owner-search-results.show {
+            display: block;
+        }
+
+        .owner-search-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            border-bottom: 1px solid #f5f5f7;
+        }
+
+        .owner-search-item:last-child {
+            border-bottom: none;
+        }
+
+        .owner-search-item:hover {
+            background: #f5f5f7;
+        }
+
+        .owner-search-item.selected {
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .owner-search-name {
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 4px;
+        }
+
+        .owner-search-email {
+            font-size: 0.875rem;
+            color: #86868b;
+        }
+
+        .selected-owner {
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(0, 122, 255, 0.05);
+            border: 1px solid #06c;
+            border-radius: 12px;
+        }
+
+        .owner-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .owner-avatar {
+            width: 48px;
+            height: 48px;
+            background: #06c;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .owner-details {
+            flex: 1;
+        }
+
+        .owner-name {
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 4px;
+        }
+
+        .owner-email-text {
+            font-size: 0.875rem;
+            color: #86868b;
+        }
+
+        .remove-owner-btn {
+            background: none;
+            border: none;
+            color: #ff3b30;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+
+        .remove-owner-btn:hover {
+            background: rgba(255, 59, 48, 0.1);
+        }
+
+        .owner-loading {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #86868b;
+            display: none;
+        }
+
+        .owner-loading.show {
+            display: block;
+        }
+
+        /* Specializations */
+        .specializations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .specialization-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .specialization-item:hover {
+            border-color: #06c;
+            background: rgba(0, 122, 255, 0.03);
+        }
+
+        .specialization-item.selected {
+            border-color: #06c;
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .specialization-item input[type="checkbox"] {
+            margin-<%= direction === 'rtl' ? 'left' : 'right' %>: 12px;
+            width: 18px;
+            height: 18px;
+            accent-color: #06c;
+        }
+
+        .specialization-item label {
+            cursor: pointer;
+            font-size: 0.9375rem;
+            color: #1d1d1f;
+            margin: 0;
+        }
+
+        /* Operating Hours */
+        .operating-hours-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+        }
+
+        .day-hours {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .day-label {
+            min-width: 100px;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: #1d1d1f;
+        }
+
+        .time-inputs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .time-input {
+            width: 100px;
+            padding: 10px 12px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+
+        /* Form Actions */
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 32px;
+            border-top: 1px solid #e5e5e7;
+            margin-top: 48px;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: <%= font %>;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn i {
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background: #007aff;
+            color: white;
+            box-shadow: 0 4px 14px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #0056d2;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #f2f2f7;
+            color: #1d1d1f;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e5ea;
+        }
+
+        /* Progress Indicator */
+        .progress-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            color: #86868b;
+        }
+
+        .progress-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #d2d2d7;
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.active {
+            background: #007aff;
+            transform: scale(1.2);
+        }
+
+        /* Error States */
+        .form-group.error .form-input,
+        .form-group.error .form-select,
+        .form-group.error .form-textarea {
+            border-color: #ff3b30;
+            box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.1);
+        }
+
+        .error-message {
+            display: none;
+            font-size: 0.875rem;
+            color: #ff3b30;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        .form-group.error .error-message {
+            display: block;
+        }
+
+        /* Success State */
+        .success-message {
+            display: none;
+            padding: 16px 24px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 12px;
+            color: #155724;
+            margin-bottom: 24px;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .success-message.show {
+            display: flex;
+        }
+
+        /* Loading State */
+        .btn.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn.loading i {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .add-lab-container {
+                padding: 20px 16px;
+            }
+
+            .form-container {
+                padding: 32px 24px;
+            }
+
+            .page-header h1 {
+                font-size: 2rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .specializations-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .operating-hours-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* RTL Support */
+        [dir="rtl"] .time-inputs {
+            direction: ltr;
+            text-align: center;
+        }
+
+        [dir="rtl"] .day-hours {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        [dir="rtl"] .day-label {
+            min-width: auto;
+        }
+
+        /* Focus Management */
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            transform: translateY(-1px);
+        }
+
+        /* Micro-interactions */
+        .specialization-item {
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        .btn {
+            transform: translateZ(0);
+            will-change: transform;
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Navbar -->
+    <%- include('../partials/admin-navbar') %>
+
+    <!-- Main Add Lab Content -->
+    <div class="add-lab-container">
+        <!-- Back Navigation -->
+        <a href="/admin/labs" class="back-link">
+            <i class="fas fa-arrow-<%= direction === 'rtl' ? 'right' : 'left' %>"></i>
+            <%= __('common.back') %> <%= __('labManagement.title') %>
+        </a>
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1><%= __('labManagement.addNewLab') %></h1>
+            <p><%= __('labManagement.subtitle') %></p>
+        </div>
+
+        <!-- Success Message -->
+        <div class="success-message" id="successMessage">
+            <i class="fas fa-check-circle"></i>
+            <span><%= __('notifications.labCreatedSuccess') %></span>
+        </div>
+
+        <!-- Form Container -->
+        <form class="form-container" id="addLabForm">
+            <!-- Basic Information Section -->
+            <div class="form-section">
+                <h2 class="section-title"><%= __('labManagement.basicInfo') %></h2>
+                <p class="section-subtitle">Enter the basic information about the laboratory</p>
+
+                <!-- Lab Logo Upload -->
+                <div class="form-group">
+                    <label class="form-label" for="labLogo">
+                        <%= __('labManagement.labLogo') %> <span class="text-danger">*</span>
+                    </label>
+                    <div class="logo-upload-container">
+                        <div class="logo-preview" id="logoPreview">
+                            <i class="fas fa-flask"></i>
+                            <span><%= __('labManagement.uploadLogo') %></span>
+                        </div>
+                        <input
+                            type="file"
+                            id="labLogo"
+                            name="logo"
+                            class="form-input"
+                            accept="image/*"
+                            required
+                        >
+                        <div class="error-message"><%= __('labManagement.logoRequired') %></div>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="labName">
+                            <%= __('labManagement.labName') %> <span class="text-danger">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="labName"
+                            name="name"
+                            class="form-input"
+                            placeholder="<%= __('labManagement.labName') %>"
+                            required
+                        >
+                        <div class="error-message"><%= __('auth.validation.nameRequired') %></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="labEmail">
+                            <%= __('labManagement.labEmail') %> <span class="text-danger">*</span>
+                        </label>
+                        <input
+                            type="email"
+                            id="labEmail"
+                            name="email"
+                            class="form-input"
+                            placeholder="lab@example.com"
+                            required
+                        >
+                        <div class="error-message"><%= __('auth.validation.emailInvalid') %></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="labPhone">
+                            <%= __('labManagement.labPhone') %> <span class="text-danger">*</span>
+                        </label>
+                        <input
+                            type="tel"
+                            id="labPhone"
+                            name="phone"
+                            class="form-input"
+                            placeholder="0770 000 0000"
+                            required
+                        >
+                        <div class="error-message"><%= __('auth.validation.required') %></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="website">
+                            <%= __('labManagement.website') %> <span class="optional-label">(<%= __('common.optional') %>)</span>
+                        </label>
+                        <input
+                            type="url"
+                            id="website"
+                            name="website"
+                            class="form-input"
+                            placeholder="https://example.com"
+                        >
+                        <div class="error-message"><%= __('auth.validation.required') %></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address Information Section -->
+            <div class="form-section">
+                <h2 class="section-title"><%= __('labManagement.addressInfo') %></h2>
+                <p class="section-subtitle">Provide the location details of the laboratory</p>
+
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label class="form-label required" for="labCity">
+                            <%= __('profile.city') %>
+                        </label>
+                        <select id="labCity" name="city" class="form-select" required>
+                            <option value=""><%= __('labManagement.selectCity') || 'Select City' %></option>
+                            <option value="بغداد">بغداد</option>
+                            <option value="البصرة">البصرة</option>
+                            <option value="نينوى">نينوى</option>
+                            <option value="الأنبار">الأنبار</option>
+                            <option value="كركوك">كركوك</option>
+                            <option value="صلاح الدين">صلاح الدين</option>
+                            <option value="ديالى">ديالى</option>
+                            <option value="بابل">بابل</option>
+                            <option value="كربلاء">كربلاء</option>
+                            <option value="النجف">النجف</option>
+                            <option value="القادسية">القادسية</option>
+                            <option value="المثنى">المثنى</option>
+                            <option value="واسط">واسط</option>
+                            <option value="ذي قار">ذي قار</option>
+                            <option value="ميسان">ميسان</option>
+                            <option value="أربيل">أربيل</option>
+                            <option value="السليمانية">السليمانية</option>
+                            <option value="دهوك">دهوك</option>
+                        </select>
+                        <small style="display:block; margin-top:4px; color:#888; font-size:12px;">
+                            <%= __('labManagement.cityAutoFillHint') || 'Auto-filled when you pick a point on the map below - always double-check it.' %>
+                        </small>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label">
+                            <%= __('labManagement.mapLocation') %>
+                        </label>
+                        <div style="display:flex; gap:8px; margin-bottom:8px;">
+                            <button type="button" class="btn btn-secondary" onclick="useMyLocation()">
+                                <i class="fas fa-location-arrow"></i>
+                                <%= __('labManagement.useMyLocation') %>
+                            </button>
+                            <span id="labCoordsDisplay" style="align-self:center; font-size:13px; color:#888;">
+                                <%= __('labManagement.clickMapToSetLocation') %>
+                            </span>
+                        </div>
+                        <div id="labLocationMap" style="width:100%; height:300px; border-radius:8px;"></div>
+                        <input type="hidden" id="labCoordinates" name="coordinates">
+
+                        <div id="labLocationSummary" style="margin-top:12px; padding:12px 14px; background:#f5f5f7; border-radius:8px; font-size:14px; color:#555;">
+                            <%= __('labManagement.pickLocationToDetect') %>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label" for="labZone">
+                            <%= __('labManagement.zone') %>
+                        </label>
+                        <input
+                            type="text"
+                            id="labZone"
+                            name="zone"
+                            class="form-input"
+                            placeholder="<%= __('labManagement.zone') %>"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lab Details Section -->
+            <div class="form-section">
+                <h2 class="section-title"><%= __('labManagement.labDetails') %></h2>
+                <p class="section-subtitle">Specify the lab services and working hours</p>
+
+                <!-- Specializations -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <%= __('labManagement.specializations') %> <span class="optional-label">(<%= __('common.optional') %>)</span>
+                    </label>
+                    <div class="specializations-grid">
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-blood" name="specializations" value="Blood Tests">
+                            <label for="spec-blood">Blood Tests</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-xray" name="specializations" value="X-Ray">
+                            <label for="spec-xray">X-Ray</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-mri" name="specializations" value="MRI">
+                            <label for="spec-mri">MRI</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-ct" name="specializations" value="CT Scan">
+                            <label for="spec-ct">CT Scan</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-ultrasound" name="specializations" value="Ultrasound">
+                            <label for="spec-ultrasound">Ultrasound</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-pathology" name="specializations" value="Pathology">
+                            <label for="spec-pathology">Pathology</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-microbiology" name="specializations" value="Microbiology">
+                            <label for="spec-microbiology">Microbiology</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-biochemistry" name="specializations" value="Biochemistry">
+                            <label for="spec-biochemistry">Biochemistry</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-genetics" name="specializations" value="Genetics">
+                            <label for="spec-genetics">Genetics</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-allergy" name="specializations" value="Allergy">
+                            <label for="spec-allergy">Allergy</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-cardiology" name="specializations" value="Cardiology">
+                            <label for="spec-cardiology">Cardiology</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-neurology" name="specializations" value="Neurology">
+                            <label for="spec-neurology">Neurology</label>
+                        </div>
+                        <div class="specialization-item">
+                            <input type="checkbox" id="spec-general" name="specializations" value="General">
+                            <label for="spec-general">General</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Operating Hours -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <%= __('labManagement.operatingHours') %> <span class="optional-label">(<%= __('common.optional') %>)</span>
+                    </label>
+                    <div class="operating-hours-grid">
+                        <div class="day-hours">
+                            <span class="day-label">Saturday</span>
+                            <div class="time-inputs">
+                                <input type="time" class="time-input" name="saturday-open">
+                                <span>-</span>
+                                <input type="time" class="time-input" name="saturday-close">
+                            </div>
+                        </div>
+                        <div class="day-hours">
+                            <span class="day-label">Sunday</span>
+                            <div class="time-inputs">
+                                <input type="time" class="time-input" name="sunday-open">
+                                <span>-</span>
+                                <input type="time" class="time-input" name="sunday-close">
+                            </div>
+                        </div>
+                        <div class="day-hours">
+                            <span class="day-label">Monday</span>
+                            <div class="time-inputs">
+                                <input type="time" class="time-input" name="monday-open">
+                                <span>-</span>
+                                <input type="time" class="time-input" name="monday-close">
+                            </div>
+                        </div>
+                        <div class="day-hours">
+                            <span class="day-label">Tuesday</span>
+                            <div class="time-inputs">
+                                <input type="time" class="time-input" name="tuesday-open">
+                                <span>-</span>
+                                <input type="time" class="time-input" name="tuesday-close">
+                            </div>
+                        </div>
+                        <div class="day-hours">
+                            <span class="day-label">Wednesday</span>
+                            <div class="time-inputs">
+                                <input type="time" class="time-input" name="wednesday-open">
+                                <span>-</span>
+                                <input type="time" class="time-input" name="wednesday-close">
+                            </div>
+                        </div>
+                        <div class="day-hours">
+                            <span class="day-label">Thursday</span>
+                            <div class="time-inputs">
+                                <input type="time" class="time-input" name="thursday-open">
+                                <span>-</span>
+                                <input type="time" class="time-input" name="thursday-close">
+                            </div>
+                        </div>
+                        <div class="day-hours">
+                            <span class="day-label">Friday</span>
+                            <div class="time-inputs">
+                                <input type="time" class="time-input" name="friday-open">
+                                <span>-</span>
+                                <input type="time" class="time-input" name="friday-close">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Owner Assignment Section -->
+            <div class="form-section">
+                <h2 class="section-title"><%= __('labManagement.ownerAssignment') %></h2>
+                <p class="section-subtitle">Assign a lab owner who will manage this laboratory</p>
+
+                <div class="form-group">
+                    <label class="form-label" for="ownerEmail">
+                        <%= __('labManagement.ownerEmail') %> <span class="text-danger">*</span>
+                    </label>
+                    <div class="owner-email-container">
+                        <input
+                            type="email"
+                            id="ownerEmail"
+                            name="ownerEmail"
+                            class="form-input"
+                            placeholder="owner@example.com"
+                        >
+                        <div class="owner-search-results" id="ownerSearchResults">
+                            <!-- Owner search results will appear here -->
+                        </div>
+                        <div class="owner-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                    <div class="error-message"><%= __('labManagement.ownerRequired') %></div>
+
+                    <!-- Selected Owner Display -->
+                    <div class="selected-owner" id="selectedOwner" style="display: none;">
+                        <div class="owner-info">
+                            <div class="owner-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="owner-details">
+                                <div class="owner-name" id="selectedOwnerName"></div>
+                                <div class="owner-email-text" id="selectedOwnerEmail"></div>
+                            </div>
+                            <button type="button" class="remove-owner-btn" id="removeOwner">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="ownerId" name="ownerId" required>
+                </div>
+            </div>
+
+            <!-- Optional Lab Registration Documents -->
+            <div class="form-section">
+                <h2 class="section-title">
+                    <i class="fas fa-folder-open" style="color: #06c; margin-<%= direction === 'rtl' ? 'left' : 'right' %>: 10px;"></i>
+                    <%= __('labManagement.documentsTitle') %>
+                </h2>
+                <p class="section-subtitle"><%= __('labManagement.documentsOptionalHint') %></p>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="labCertificates">
+                            <%= __('labManagement.labCertificates') %>
+                            <span class="optional-label">(<%= __('common.optional') %>)</span>
+                        </label>
+                        <input type="file" id="labCertificates" name="labCertificates" class="form-input" accept="image/*,application/pdf" multiple>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="labOpeningLetter">
+                            <%= __('labManagement.labOpeningLetter') %>
+                            <span class="optional-label">(<%= __('common.optional') %>)</span>
+                        </label>
+                        <input type="file" id="labOpeningLetter" name="labOpeningLetter" class="form-input" accept="image/*,application/pdf">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="labOpeningLicense">
+                            <%= __('labManagement.labOpeningLicense') %>
+                            <span class="optional-label">(<%= __('common.optional') %>)</span>
+                        </label>
+                        <input type="file" id="labOpeningLicense" name="labOpeningLicense" class="form-input" accept="image/*,application/pdf">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="practiceLicense">
+                            <%= __('labManagement.practiceLicense') %>
+                            <span class="optional-label">(<%= __('common.optional') %>)</span>
+                        </label>
+                        <input type="file" id="practiceLicense" name="practiceLicense" class="form-input" accept="image/*,application/pdf">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="ownerUnifiedCard">
+                            <%= __('labManagement.ownerUnifiedCard') %>
+                            <span class="optional-label">(<%= __('common.optional') %>)</span>
+                        </label>
+                        <input type="file" id="ownerUnifiedCard" name="ownerUnifiedCard" class="form-input" accept="image/*,application/pdf" multiple>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="ownerDepartmentOrRetirementId">
+                            <%= __('labManagement.ownerDepartmentOrRetirementId') %>
+                            <span class="optional-label">(<%= __('common.optional') %>)</span>
+                        </label>
+                        <input type="file" id="ownerDepartmentOrRetirementId" name="ownerDepartmentOrRetirementId" class="form-input" accept="image/*,application/pdf" multiple>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Commission & Financial Settings Section -->
+            <div class="form-section">
+                <h2 class="section-title"><i class="fas fa-percentage" style="color: #06c; margin-<%= direction === 'rtl' ? 'left' : 'right' %>: 10px;"></i><%= __('labManagement.commissionSettings') || 'Commission Settings' %></h2>
+                <p class="section-subtitle"><%= __('labManagement.commissionDescription') || 'Set the percentage commission that will be deducted from each order for admin revenue' %></p>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="commissionRate">
+                            <%= __('labManagement.commissionRate') || 'Commission Rate' %> (%) <span class="text-danger">*</span>
+                        </label>
+                        <div style="position: relative;">
+                            <input
+                                type="number"
+                                id="commissionRate"
+                                name="commissionRate"
+                                class="form-input"
+                                placeholder="0"
+                                min="0"
+                                max="100"
+                                step="0.5"
+                                value="0"
+                                required
+                                style="padding-<%= direction === 'rtl' ? 'left' : 'right' %>: 50px;"
+                            >
+                            <span style="position: absolute; <%= direction === 'rtl' ? 'left' : 'right' %>: 20px; top: 50%; transform: translateY(-50%); color: #86868b; font-weight: 600;">%</span>
+                        </div>
+                        <div class="error-message"><%= __('auth.validation.required') %></div>
+                        <p style="margin-top: 8px; font-size: 0.875rem; color: #86868b;">
+                            <i class="fas fa-info-circle" style="margin-<%= direction === 'rtl' ? 'left' : 'right' %>: 6px;"></i>
+                            <%= __('labManagement.commissionInfo') || 'Example: For a 10,000 IQD order with 20% commission, admin receives 2,000 IQD and lab receives 8,000 IQD' %>
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <%= __('labManagement.commissionPreview') || 'Commission Preview' %>
+                        </label>
+                        <div style="background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%); padding: 20px; border-radius: 12px; border: 1px solid #d2d2d7;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="color: #86868b;"><%= __('labManagement.sampleOrder') || 'Sample Order:' %></span>
+                                <span style="font-weight: 600; color: #1d1d1f;">10,000 IQD</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="color: #ff9500;"><i class="fas fa-user-shield" style="margin-<%= direction === 'rtl' ? 'left' : 'right' %>: 6px;"></i><%= __('labManagement.adminReceives') || 'Admin Receives:' %></span>
+                                <span id="previewAdminAmount" style="font-weight: 600; color: #ff9500;">0 IQD</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #34c759;"><i class="fas fa-flask" style="margin-<%= direction === 'rtl' ? 'left' : 'right' %>: 6px;"></i><%= __('labManagement.labReceives') || 'Lab Receives:' %></span>
+                                <span id="previewLabAmount" style="font-weight: 600; color: #34c759;">10,000 IQD</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <div class="progress-indicator">
+                    <span>Form Progress</span>
+                    <div class="progress-dots">
+                        <span class="progress-dot active"></span>
+                        <span class="progress-dot"></span>
+                        <span class="progress-dot"></span>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-secondary" onclick="cancelForm()">
+                        <i class="fas fa-times"></i>
+                        <%= __('common.cancel') %>
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        <%= __('labManagement.addLab') %>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/js/add-lab.js"></script>
+</body>
+</html>

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+            background: #f8fafc;
+            margin: 0;
+            padding: 0;
+        }
+
+        *, *::before, *::after {
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-title p {
+            color: #6b7280;
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(79, 70, 229) 100%);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px 0 rgba(102, 126, 234, 0.4); }
+
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary:hover { background: #f9fafb; border-color: #d1d5db; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.75rem; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-card.primary .stat-icon { background: linear-gradient(135deg, rgb(102, 126, 234), rgb(79, 70, 229)); }
+        .stat-card.success .stat-icon { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .stat-card.warning .stat-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+        .stat-info h3 { font-size: 1.75rem; font-weight: 700; color: #1f2937; margin: 0; }
+        .stat-info p { font-size: 0.875rem; color: #6b7280; margin: 0.25rem 0 0 0; }
+
+        .packages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .package-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .package-header {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%);
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .package-category-badge {
+            background: rgba(102, 126, 234, 0.15);
+            color: #4f46e5;
+            padding: 0.35rem 0.85rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .package-status { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; }
+        .package-status.active { color: #22c55e; }
+        .package-status.inactive { color: #ef4444; }
+        .package-status .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .package-status.active .status-dot { background: #22c55e; }
+        .package-status.inactive .status-dot { background: #ef4444; }
+
+        .package-body { padding: 1.25rem; }
+        .package-title { font-size: 1.125rem; font-weight: 700; color: #1f2937; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem; }
+
+        .most-requested-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+        }
+
+        .package-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; }
+        .package-test-count { font-size: 0.8rem; color: #6b7280; }
+        .package-price { font-size: 1.25rem; font-weight: 700; color: #4f46e5; }
+
+        .package-footer {
+            padding: 1rem 1.25rem;
+            background: #f9fafb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .empty-state-icon {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(79, 70, 229, 0.1));
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.5rem auto;
+        }
+        .empty-state-icon i { font-size: 2rem; color: #4f46e5; }
+        .empty-state h3 { font-size: 1.25rem; font-weight: 600; color: #1f2937; margin: 0 0 0.5rem 0; }
+        .empty-state p { color: #6b7280; margin: 0 0 1.5rem 0; }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5); z-index: 1000;
+            align-items: center; justify-content: center; padding: 1rem;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; }
+        .modal-header {
+            padding: 1.5rem; border-bottom: 1px solid #e5e7eb;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; background: white; z-index: 10;
+        }
+        .modal-header h2 { font-size: 1.25rem; font-weight: 700; color: #1f2937; margin: 0; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; color: #6b7280; cursor: pointer; padding: 0; line-height: 1; }
+        .modal-close:hover { color: #1f2937; }
+        .modal-body { padding: 1.5rem; }
+        .modal-footer {
+            padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb;
+            display: flex; justify-content: flex-end; gap: 0.75rem;
+            position: sticky; bottom: 0; background: white;
+        }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; }
+        .form-label .optional { font-weight: 400; color: #9ca3af; font-size: 0.75rem; }
+        .form-input, .form-select, .form-textarea {
+            width: 100%; padding: 0.75rem 1rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.875rem;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .form-textarea { min-height: 70px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .form-hint { font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; }
+
+        .tests-selection-container { border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+        .tests-selection-header {
+            padding: 1rem; background: #f9fafb; border-bottom: 1px solid #e5e7eb;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .tests-selection-header h4 { margin: 0; font-size: 0.875rem; font-weight: 600; color: #374151; }
+        #selectedCount { font-weight: 700; color: #667eea; }
+        .tests-list { max-height: 280px; overflow-y: auto; }
+        .test-item {
+            display: flex; align-items: center; padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f3f4f6; gap: 0.75rem;
+        }
+        .test-item:last-child { border-bottom: none; }
+        .test-item:hover { background: #f9fafb; }
+        .test-item.selected { background: rgba(102, 126, 234, 0.05); }
+        .test-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #667eea; cursor: pointer; }
+        .test-item-info { flex: 1; }
+        .test-item-name { font-size: 0.875rem; font-weight: 500; color: #1f2937; }
+        .test-item-price { font-size: 0.75rem; color: #6b7280; }
+
+        .price-hint-box {
+            background: #f9fafb; border-radius: 8px; padding: 0.75rem 1rem;
+            display: flex; justify-content: space-between; font-size: 0.8rem; color: #6b7280;
+            margin-top: 0.5rem;
+        }
+        .price-hint-box .value { font-weight: 700; color: #374151; }
+
+        .switch-container { display: flex; align-items: center; gap: 0.75rem; }
+        .switch { position: relative; width: 48px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch-slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #e5e7eb; transition: 0.3s; border-radius: 24px;
+        }
+        .switch-slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: 0.3s; border-radius: 50%;
+        }
+        .switch input:checked + .switch-slider { background: linear-gradient(135deg, #667eea, #4f46e5); }
+        .switch input:checked + .switch-slider:before { transform: translateX(24px); }
+
+        .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 2000; display: flex; flex-direction: column; gap: 0.5rem; }
+        .toast {
+            background: white; padding: 1rem 1.5rem; border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); display: flex; align-items: center; gap: 0.75rem;
+        }
+        .toast.success { border-left: 4px solid #22c55e; }
+        .toast.error { border-left: 4px solid #ef4444; }
+        .toast i { font-size: 1.25rem; }
+        .toast.success i { color: #22c55e; }
+        .toast.error i { color: #ef4444; }
+
+        @media (max-width: 768px) {
+            .main-content { padding: 1rem; }
+            .header-content { flex-direction: column; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .packages-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/lab-navbar', { user: lab, activePage: 'packages' }) %>
+
+    <main class="main-content">
+        <div class="page-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <h1><i class="fas fa-box-open"></i> <%= t ? t('packages.title') : 'Packages' %></h1>
+                    <p><%= t ? t('packages.subtitle') : 'Bundle several of your tests into one package sold at a combined price' %></p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="openCreateModal()">
+                        <i class="fas fa-plus"></i> <%= t ? t('packages.createPackage') : 'Create Package' %>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-icon"><i class="fas fa-box-open"></i></div>
+                <div class="stat-info">
+                    <h3><%= packages.length %></h3>
+                    <p><%= t ? t('packages.totalPackages') : 'Total Packages' %></p>
+                </div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <h3><%= packages.filter(p => p.isActive).length %></h3>
+                    <p><%= t ? t('packages.activePackages') : 'Active Packages' %></p>
+                </div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon"><i class="fas fa-flask"></i></div>
+                <div class="stat-info">
+                    <h3><%= tests.length %></h3>
+                    <p><%= t ? t('packages.availableTests') : 'Available Tests' %></p>
+                </div>
+            </div>
+        </div>
+
+        <% if (packages.length === 0) { %>
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-box-open"></i></div>
+                <h3><%= t ? t('packages.noPackages') : 'No Packages Yet' %></h3>
+                <p><%= t ? t('packages.noPackagesDescription') : 'Bundle tests together to offer patients a combined checkup package' %></p>
+                <button class="btn btn-primary" onclick="openCreateModal()">
+                    <i class="fas fa-plus"></i> <%= t ? t('packages.createFirstPackage') : 'Create First Package' %>
+                </button>
+            </div>
+        <% } else { %>
+            <div class="packages-grid" id="packagesGrid">
+                <% const categoryLabels = { General: t ? t('packages.categoryGeneral') : 'General Health', Heart: t ? t('packages.categoryHeart') : 'Heart', Diabetes: t ? t('packages.categoryDiabetes') : 'Diabetes', Women: t ? t('packages.categoryWomen') : 'Women' }; %>
+                <% packages.forEach(pkg => { %>
+                    <div class="package-card" data-package-id="<%= pkg._id %>">
+                        <div class="package-header">
+                            <div class="package-category-badge"><%= categoryLabels[pkg.category] || pkg.category %></div>
+                            <div class="package-status <%= pkg.isActive ? 'active' : 'inactive' %>">
+                                <span class="status-dot"></span>
+                                <%= pkg.isActive ? (t ? t('offers.active') : 'Active') : (t ? t('offers.inactive') : 'Inactive') %>
+                            </div>
+                        </div>
+                        <div class="package-body">
+                            <div class="package-title">
+                                <%= currentLang === 'ar' && pkg.nameAr ? pkg.nameAr : pkg.name %>
+                                <% if (pkg.isMostRequested) { %><span class="most-requested-badge"><%= t ? t('packages.mostRequested') : 'Most Requested' %></span><% } %>
+                            </div>
+                            <div class="package-meta">
+                                <span class="package-test-count"><%= pkg.testIds.length %> <%= t ? t('packages.tests') : 'tests' %></span>
+                                <span class="package-price"><%= pkg.price.toLocaleString() %> IQD</span>
+                            </div>
+                        </div>
+                        <div class="package-footer">
+                            <button class="btn btn-secondary btn-sm" onclick="togglePackage('<%= pkg._id %>')">
+                                <i class="fas <%= pkg.isActive ? 'fa-pause' : 'fa-play' %>"></i>
+                                <%= pkg.isActive ? (t ? t('offers.deactivate') : 'Deactivate') : (t ? t('offers.activate') : 'Activate') %>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="editPackage('<%= pkg._id %>')">
+                                <i class="fas fa-edit"></i> <%= t ? t('offers.edit') : 'Edit' %>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deletePackage('<%= pkg._id %>')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        <% } %>
+    </main>
+
+    <div class="modal-overlay" id="packageModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle"><%= t ? t('packages.createPackage') : 'Create Package' %></h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="packageForm" onsubmit="savePackage(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="packageId" name="packageId">
+
+                    <div class="form-group">
+                        <label class="form-label"><%= t ? t('packages.name') : 'Package Name' %> *</label>
+                        <input type="text" class="form-input" id="packageName" name="name" required placeholder="e.g., Full Checkup Package">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label"><%= t ? t('packages.nameArabic') : 'Name (Arabic)' %> <span class="optional">(<%= t ? t('common.optional') : 'optional' %>)</span></label>
+                            <input type="text" class="form-input" id="packageNameAr" name="nameAr" dir="rtl" placeholder="مثال: باقة الفحص الشامل">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= t ? t('packages.category') : 'Category' %></label>
+                            <select class="form-select" id="packageCategory" name="category">
+                                <option value="General"><%= t ? t('packages.categoryGeneral') : 'General Health' %></option>
+                                <option value="Heart"><%= t ? t('packages.categoryHeart') : 'Heart' %></option>
+                                <option value="Diabetes"><%= t ? t('packages.categoryDiabetes') : 'Diabetes' %></option>
+                                <option value="Women"><%= t ? t('packages.categoryWomen') : 'Women' %></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><%= t ? t('packages.description') : 'Description' %> <span class="optional">(<%= t ? t('common.optional') : 'optional' %>)</span></label>
+                        <textarea class="form-textarea" id="packageDescription" name="description" placeholder="Brief description of what this package covers..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><%= t ? t('packages.selectTests') : 'Select at least 2 tests' %> *</label>
+                        <div class="tests-selection-container">
+                            <div class="tests-selection-header">
+                                <h4><span id="selectedCount">0</span> <%= t ? t('packages.selected') : 'selected' %></h4>
+                            </div>
+                            <div class="tests-list" id="testsList">
+                                <% tests.forEach(test => { %>
+                                    <div class="test-item" data-test-id="<%= test._id %>" data-test-price="<%= test.price %>">
+                                        <input type="checkbox" class="test-checkbox" onchange="onTestToggle(this)">
+                                        <div class="test-item-info">
+                                            <div class="test-item-name"><%= test.name %></div>
+                                            <div class="test-item-price"><%= test.price.toLocaleString() %> IQD</div>
+                                        </div>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
+                        <div class="price-hint-box">
+                            <span><%= t ? t('packages.individualTotal') : "Sum of selected tests' own prices" %></span>
+                            <span class="value" id="individualTotalValue">0 IQD</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><%= t ? t('packages.combinedPrice') : 'Combined Package Price' %> *</label>
+                        <input type="number" class="form-input" id="packagePrice" name="price" min="0" required placeholder="e.g., 120000">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="switch-container" style="margin-bottom: 0.75rem;">
+                            <label class="switch">
+                                <input type="checkbox" id="isMostRequested" name="isMostRequested">
+                                <span class="switch-slider"></span>
+                            </label>
+                            <span><%= t ? t('packages.markMostRequested') : 'Mark as "Most Requested"' %></span>
+                        </div>
+                        <div class="switch-container">
+                            <label class="switch">
+                                <input type="checkbox" id="isActive" name="isActive" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                            <span><%= t ? t('offers.activeImmediately') : 'Activate immediately' %></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()"><%= t ? t('common.cancel') : 'Cancel' %></button>
+                    <button type="submit" class="btn btn-primary" id="saveBtn">
+                        <i class="fas fa-save"></i> <%= t ? t('common.save') : 'Save Package' %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        const packagesData = <%- JSON.stringify(packages) %>;
+
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = '<%= t ? t("packages.createPackage") : "Create Package" %>';
+            document.getElementById('packageForm').reset();
+            document.getElementById('packageId').value = '';
+            document.querySelectorAll('.test-item').forEach(item => {
+                item.classList.remove('selected');
+                item.querySelector('.test-checkbox').checked = false;
+            });
+            updateSelectionSummary();
+            document.getElementById('packageModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('packageModal').classList.remove('active');
+        }
+
+        function editPackage(packageId) {
+            const pkg = packagesData.find(p => p._id === packageId);
+            if (!pkg) return;
+
+            document.getElementById('modalTitle').textContent = '<%= t ? t("packages.editPackage") : "Edit Package" %>';
+            document.getElementById('packageId').value = packageId;
+            document.getElementById('packageName').value = pkg.name || '';
+            document.getElementById('packageNameAr').value = pkg.nameAr || '';
+            document.getElementById('packageCategory').value = pkg.category || 'General';
+            document.getElementById('packageDescription').value = pkg.description || '';
+            document.getElementById('packagePrice').value = pkg.price || '';
+            document.getElementById('isMostRequested').checked = pkg.isMostRequested || false;
+            document.getElementById('isActive').checked = pkg.isActive;
+
+            const selectedIds = new Set((pkg.testIds || []).map(id => String(id)));
+            document.querySelectorAll('.test-item').forEach(item => {
+                const isSelected = selectedIds.has(item.dataset.testId);
+                item.classList.toggle('selected', isSelected);
+                item.querySelector('.test-checkbox').checked = isSelected;
+            });
+            updateSelectionSummary();
+
+            document.getElementById('packageModal').classList.add('active');
+        }
+
+        function onTestToggle(checkbox) {
+            checkbox.closest('.test-item').classList.toggle('selected', checkbox.checked);
+            updateSelectionSummary();
+        }
+
+        function updateSelectionSummary() {
+            const checked = document.querySelectorAll('.test-item .test-checkbox:checked');
+            document.getElementById('selectedCount').textContent = checked.length;
+            let total = 0;
+            checked.forEach(cb => { total += Number(cb.closest('.test-item').dataset.testPrice) || 0; });
+            document.getElementById('individualTotalValue').textContent = total.toLocaleString() + ' IQD';
+        }
+
+        async function savePackage(event) {
+            event.preventDefault();
+            const form = document.getElementById('packageForm');
+            const formData = new FormData(form);
+            const packageId = formData.get('packageId');
+
+            const checkedTests = document.querySelectorAll('.test-item .test-checkbox:checked');
+            if (checkedTests.length < 2) {
+                showToast('<%= t ? t("packages.selectAtLeastTwo") : "Select at least 2 tests" %>', 'error');
+                return;
+            }
+
+            const price = parseFloat(formData.get('price'));
+            if (!price || price <= 0) {
+                showToast('<%= t ? t("packages.priceRequired") : "Enter a valid combined price" %>', 'error');
+                return;
+            }
+
+            const data = {
+                name: formData.get('name'),
+                nameAr: formData.get('nameAr'),
+                description: formData.get('description'),
+                category: formData.get('category'),
+                testIds: Array.from(checkedTests).map(cb => cb.closest('.test-item').dataset.testId),
+                price,
+                isMostRequested: document.getElementById('isMostRequested').checked,
+                isActive: document.getElementById('isActive').checked,
+            };
+
+            try {
+                const url = packageId ? `/lab/api/packages/${packageId}` : '/lab/api/packages';
+                const method = packageId ? 'PUT' : 'POST';
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast(packageId ? '<%= t ? t("packages.packageUpdated") : "Package updated successfully" %>' : '<%= t ? t("packages.packageCreated") : "Package created successfully" %>', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(result.message || '<%= t ? t("common.error") : "Error" %>', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('<%= t ? t("common.error") : "Error" %>', 'error');
+            }
+        }
+
+        async function togglePackage(packageId) {
+            try {
+                const response = await fetch(`/lab/api/packages/${packageId}/toggle`, { method: 'PATCH' });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('<%= t ? t("packages.statusUpdated") : "Package status updated" %>', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(result.message || '<%= t ? t("common.error") : "Error" %>', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('<%= t ? t("common.error") : "Error" %>', 'error');
+            }
+        }
+
+        async function deletePackage(packageId) {
+            if (!confirm('<%= t ? t("packages.confirmDelete") : "Are you sure you want to delete this package?" %>')) return;
+            try {
+                const response = await fetch(`/lab/api/packages/${packageId}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('<%= t ? t("packages.packageDeleted") : "Package deleted successfully" %>', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(result.message || '<%= t ? t("common.error") : "Error" %>', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('<%= t ? t("common.error") : "Error" %>', 'error');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

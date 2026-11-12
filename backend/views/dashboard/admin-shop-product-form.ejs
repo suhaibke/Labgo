@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= mode === 'edit' ? (__('shop.editProduct') || 'Edit Product') : (__('shop.addProduct') || 'Add Product') %> - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <style>
+        body { font-family: <%= direction === 'rtl' ? "'Cairo', sans-serif" : "'Inter', sans-serif" %>; }
+        
+        .form-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 100px 24px 40px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--gray-600);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 8px;
+            transition: color var(--transition-fast);
+        }
+        
+        .back-link:hover {
+            color: var(--primary-500);
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .form-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-100);
+            margin-bottom: 24px;
+        }
+        
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-900);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title i {
+            color: var(--primary-500);
+        }
+        
+        .card-body {
+            padding: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+        
+        .form-label .required {
+            color: var(--error);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            font-size: 14px;
+            transition: all var(--transition-fast);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(107, 92, 230, 0.1);
+        }
+        
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            font-size: 14px;
+            background: var(--white);
+            cursor: pointer;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+        
+        .lang-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--gray-100);
+            padding-bottom: 12px;
+        }
+        
+        .lang-tab {
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--gray-200);
+            background: var(--white);
+            color: var(--gray-600);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .lang-tab.active {
+            background: var(--primary-500);
+            color: var(--white);
+            border-color: var(--primary-500);
+        }
+        
+        .lang-content {
+            display: none;
+        }
+        
+        .lang-content.active {
+            display: block;
+        }
+        
+        /* Image Upload */
+        .images-upload-area {
+            border: 2px dashed var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            margin-bottom: 16px;
+        }
+        
+        .images-upload-area:hover {
+            border-color: var(--primary-400);
+            background: var(--primary-50);
+        }
+        
+        .images-upload-area i {
+            font-size: 40px;
+            color: var(--gray-400);
+            margin-bottom: 12px;
+        }
+        
+        .images-upload-area p {
+            color: var(--gray-500);
+            font-size: 14px;
+        }
+        
+        .images-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 16px;
+        }
+        
+        .image-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            border: 2px solid var(--gray-200);
+        }
+        
+        .image-item.primary {
+            border-color: var(--primary-500);
+        }
+        
+        .image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .image-item-actions {
+            position: absolute;
+            top: 8px;
+            <%= direction === 'rtl' ? 'left' : 'right' %>: 8px;
+            display: flex;
+            gap: 4px;
+        }
+        
+        .image-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all var(--transition-fast);
+        }
+        
+        .image-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+        
+        .image-btn.primary-btn {
+            background: var(--primary-500);
+        }
+        
+        .primary-badge {
+            position: absolute;
+            bottom: 8px;
+            <%= direction === 'rtl' ? 'right' : 'left' %>: 8px;
+            padding: 4px 8px;
+            background: var(--primary-500);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+        
+        /* Toggle Switch */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        
+        .toggle-group:last-child {
+            border-bottom: none;
+        }
+        
+        .toggle-info h4 {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .toggle-info p {
+            font-size: 13px;
+            color: var(--gray-500);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 28px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: var(--gray-300);
+            transition: 0.3s;
+            border-radius: 28px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            <%= direction === 'rtl' ? 'right' : 'left' %>: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--primary-500);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(<%= direction === 'rtl' ? '-20px' : '20px' %>);
+        }
+        
+        /* Form Actions */
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 24px;
+            background: var(--gray-50);
+            border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+            border-top: 1px solid var(--gray-100);
+        }
+        
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            padding: 12px 24px;
+            background: var(--white);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-secondary:hover {
+            background: var(--gray-100);
+        }
+        
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 100px;
+            <%= direction === 'rtl' ? 'left' : 'right' %>: 24px;
+            z-index: 1200;
+        }
+        
+        .toast {
+            padding: 16px 20px;
+            border-radius: var(--radius-lg);
+            background: var(--white);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            animation: toastSlide 0.3s ease;
+        }
+        
+        .toast.success { border-<%= direction === 'rtl' ? 'right' : 'left' %>: 4px solid var(--success); }
+        .toast.error { border-<%= direction === 'rtl' ? 'right' : 'left' %>: 4px solid var(--error); }
+        .toast.success i { color: var(--success); }
+        .toast.error i { color: var(--error); }
+        
+        @keyframes toastSlide {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .inventory-fields {
+            display: none;
+            padding-top: 16px;
+            border-top: 1px solid var(--gray-100);
+            margin-top: 16px;
+        }
+        
+        .inventory-fields.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/admin-navbar') %>
+    
+    <div class="form-container">
+        <a href="/admin/shop/products" class="back-link">
+            <i class="fas fa-arrow-<%= direction === 'rtl' ? 'right' : 'left' %>"></i>
+            <%= __('shop.backToProducts') || 'Back to Products' %>
+        </a>
+        
+        <div class="page-header">
+            <h1 class="page-title"><%= mode === 'edit' ? (__('shop.editProduct') || 'Edit Product') : (__('shop.addProduct') || 'Add Product') %></h1>
+        </div>
+        
+        <form id="productForm" onsubmit="saveProduct(event)">
+            <input type="hidden" id="productId" value="<%= typeof product !== 'undefined' ? product._id : '' %>">
+            
+            <!-- Basic Information -->
+            <div class="form-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-info-circle"></i>
+                        <%= __('shop.basicInfo') || 'Basic Information' %>
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="lang-tabs">
+                        <button type="button" class="lang-tab active" data-lang="en">English</button>
+                        <button type="button" class="lang-tab" data-lang="ar">العربية</button>
+                        <button type="button" class="lang-tab" data-lang="ku">کوردی</button>
+                    </div>
+                    
+                    <!-- English -->
+                    <div class="lang-content active" data-lang="en">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.productName') || 'Product Name' %> <span class="required">*</span></label>
+                            <input type="text" class="form-input" id="nameEn" required placeholder="Enter product name" value="<%= typeof product !== 'undefined' ? product.name.en : '' %>">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.shortDescription') || 'Short Description' %></label>
+                            <input type="text" class="form-input" id="shortDescriptionEn" maxlength="200" placeholder="Brief description for listings" value="<%= typeof product !== 'undefined' ? (product.shortDescription?.en || '') : '' %>">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('common.description') || 'Description' %></label>
+                            <textarea class="form-input form-textarea" id="descriptionEn" placeholder="Full product description"><%= typeof product !== 'undefined' ? (product.description?.en || '') : '' %></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Arabic -->
+                    <div class="lang-content" data-lang="ar">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.productName') || 'Product Name' %> <span class="required">*</span></label>
+                            <input type="text" class="form-input" id="nameAr" required placeholder="أدخل اسم المنتج" dir="rtl" value="<%= typeof product !== 'undefined' ? product.name.ar : '' %>">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.shortDescription') || 'Short Description' %></label>
+                            <input type="text" class="form-input" id="shortDescriptionAr" maxlength="200" placeholder="وصف مختصر للعرض" dir="rtl" value="<%= typeof product !== 'undefined' ? (product.shortDescription?.ar || '') : '' %>">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('common.description') || 'Description' %></label>
+                            <textarea class="form-input form-textarea" id="descriptionAr" placeholder="وصف المنتج الكامل" dir="rtl"><%= typeof product !== 'undefined' ? (product.description?.ar || '') : '' %></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Kurdish -->
+                    <div class="lang-content" data-lang="ku">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.productName') || 'Product Name' %> <span class="required">*</span></label>
+                            <input type="text" class="form-input" id="nameKu" required placeholder="ناوی بەرهەم داخڵ بکە" dir="rtl" value="<%= typeof product !== 'undefined' ? product.name.ku : '' %>">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.shortDescription') || 'Short Description' %></label>
+                            <input type="text" class="form-input" id="shortDescriptionKu" maxlength="200" placeholder="وەسفی کورت" dir="rtl" value="<%= typeof product !== 'undefined' ? (product.shortDescription?.ku || '') : '' %>">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('common.description') || 'Description' %></label>
+                            <textarea class="form-input form-textarea" id="descriptionKu" placeholder="وەسفی تەواو" dir="rtl"><%= typeof product !== 'undefined' ? (product.description?.ku || '') : '' %></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label"><%= __('shop.category') || 'Category' %> <span class="required">*</span></label>
+                        <select class="form-select" id="category" required>
+                            <option value=""><%= __('shop.selectCategory') || 'Select a category' %></option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label"><%= __('shop.tags') || 'Tags' %></label>
+                        <input type="text" class="form-input" id="tags" placeholder="health, medical, equipment (comma separated)" value="<%= typeof product !== 'undefined' ? (product.tags?.join(', ') || '') : '' %>">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Images -->
+            <div class="form-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-images"></i>
+                        <%= __('shop.productImages') || 'Product Images' %>
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="images-upload-area" id="uploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p><%= __('shop.uploadImages') || 'Click to upload images (max 5)' %></p>
+                    </div>
+                    <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                    <div class="images-preview" id="imagesPreview"></div>
+                </div>
+            </div>
+            
+            <!-- Pricing -->
+            <div class="form-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-tag"></i>
+                        <%= __('shop.pricing') || 'Pricing' %>
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.price') || 'Price' %> (IQD) <span class="required">*</span></label>
+                            <input type="number" class="form-input" id="price" required min="0" step="100" placeholder="0" value="<%= typeof product !== 'undefined' ? product.price : '' %>">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('shop.compareAtPrice') || 'Compare at Price' %> (IQD)</label>
+                            <input type="number" class="form-input" id="compareAtPrice" min="0" step="100" placeholder="Original price for showing discount" value="<%= typeof product !== 'undefined' && product.compareAtPrice ? product.compareAtPrice : '' %>">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Inventory -->
+            <div class="form-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-boxes"></i>
+                        <%= __('shop.inventory') || 'Inventory' %>
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="toggle-group">
+                        <div class="toggle-info">
+                            <h4><%= __('shop.trackInventory') || 'Track Inventory' %></h4>
+                            <p><%= __('shop.trackInventoryDesc') || 'Enable stock tracking for this product' %></p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="trackInventory" <%= typeof product !== 'undefined' && product.inventory?.trackInventory ? 'checked' : '' %>>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="inventory-fields <%= typeof product !== 'undefined' && product.inventory?.trackInventory ? 'active' : '' %>" id="inventoryFields">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label"><%= __('shop.quantity') || 'Quantity' %></label>
+                                <input type="number" class="form-input" id="quantity" min="0" value="<%= typeof product !== 'undefined' ? (product.inventory?.quantity || 0) : 0 %>">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><%= __('shop.lowStockThreshold') || 'Low Stock Alert' %></label>
+                                <input type="number" class="form-input" id="lowStockThreshold" min="0" value="<%= typeof product !== 'undefined' ? (product.inventory?.lowStockThreshold || 5) : 5 %>">
+                            </div>
+                        </div>
+                        <div class="toggle-group">
+                            <div class="toggle-info">
+                                <h4><%= __('shop.allowBackorder') || 'Allow Backorders' %></h4>
+                                <p><%= __('shop.allowBackorderDesc') || 'Continue selling when out of stock' %></p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="allowBackorder" <%= typeof product !== 'undefined' && product.inventory?.allowBackorder ? 'checked' : '' %>>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status & Visibility -->
+            <div class="form-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-eye"></i>
+                        <%= __('shop.visibility') || 'Status & Visibility' %>
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label"><%= __('common.status') || 'Status' %></label>
+                        <select class="form-select" id="status">
+                            <option value="draft" <%= typeof product !== 'undefined' && product.status === 'draft' ? 'selected' : '' %>><%= __('shop.draft') || 'Draft' %></option>
+                            <option value="active" <%= typeof product !== 'undefined' && product.status === 'active' ? 'selected' : '' %>><%= __('common.active') || 'Active' %></option>
+                            <option value="inactive" <%= typeof product !== 'undefined' && product.status === 'inactive' ? 'selected' : '' %>><%= __('common.inactive') || 'Inactive' %></option>
+                        </select>
+                    </div>
+                    
+                    <div class="toggle-group">
+                        <div class="toggle-info">
+                            <h4><%= __('shop.featured') || 'Featured Product' %></h4>
+                            <p><%= __('shop.featuredDesc') || 'Show this product in featured sections' %></p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="isFeatured" <%= typeof product !== 'undefined' && product.isFeatured ? 'checked' : '' %>>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <a href="/admin/shop/products" class="btn-secondary">
+                        <i class="fas fa-times"></i>
+                        <%= __('common.cancel') || 'Cancel' %>
+                    </a>
+                    <button type="submit" class="btn-primary" id="submitBtn">
+                        <i class="fas fa-save"></i>
+                        <span><%= mode === 'edit' ? (__('common.update') || 'Update') : (__('common.create') || 'Create') %></span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <script>
+        const currentLang = '<%= currentLang %>';
+        const mode = '<%= mode %>';
+        let existingImages = [];
+        let newImages = [];
+        let imagesToRemove = [];
+        let primaryImage = null;
+        
+        // Initialize existing images from server data (if edit mode)
+        <% if (typeof product !== 'undefined' && product.images && product.images.length > 0) { %>
+        existingImages = <%- JSON.stringify(product.images) %>;
+        primaryImage = existingImages.find(i => i.isPrimary)?.url || existingImages[0]?.url || null;
+        <% } %>
+        
+        // Get token from localStorage
+        function getToken() {
+            return localStorage.getItem('token') || '';
+        }
+        
+        // Initialize language tabs
+        function initLanguageTabs() {
+            document.querySelectorAll('.lang-tab').forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const lang = this.dataset.lang;
+                    
+                    // Update active tab
+                    document.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update active content
+                    document.querySelectorAll('.lang-content').forEach(c => c.classList.remove('active'));
+                    const content = document.querySelector(`.lang-content[data-lang="${lang}"]`);
+                    if (content) {
+                        content.classList.add('active');
+                    }
+                });
+            });
+        }
+        
+        // Load categories
+        async function loadCategories() {
+            try {
+                const token = getToken();
+                console.log('Loading categories, token exists:', !!token);
+                
+                const response = await fetch('/api/admin/shop/categories', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                console.log('Categories response status:', response.status);
+                const data = await response.json();
+                console.log('Categories data:', data);
+                
+                if (data.success) {
+                    const select = document.getElementById('category');
+                    if (!select) {
+                        console.error('Category select not found');
+                        return;
+                    }
+                    
+                    (data.data || []).forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat._id;
+                        option.textContent = cat.name?.[currentLang] || cat.name?.en || 'Unknown';
+                        <% if (typeof product !== 'undefined' && product.category) { %>
+                        if (cat._id === '<%= product.category._id || product.category %>') {
+                            option.selected = true;
+                        }
+                        <% } %>
+                        select.appendChild(option);
+                    });
+                    console.log('Categories loaded successfully:', data.data?.length || 0, 'items');
+                } else {
+                    console.error('Failed to load categories:', data.message);
+                    showToast(data.message || 'Failed to load categories', 'error');
+                }
+            } catch (error) {
+                console.error('Load categories error:', error);
+                showToast('Failed to load categories', 'error');
+            }
+        }
+        
+        // Toggle inventory fields
+        function toggleInventoryFields() {
+            const fields = document.getElementById('inventoryFields');
+            const checkbox = document.getElementById('trackInventory');
+            if (fields && checkbox) {
+                if (checkbox.checked) {
+                    fields.classList.add('active');
+                } else {
+                    fields.classList.remove('active');
+                }
+            }
+        }
+        
+        // Handle image upload - bind event to the upload area
+        function initImageUpload() {
+            const uploadArea = document.getElementById('uploadArea');
+            const imageInput = document.getElementById('imageInput');
+            
+            if (uploadArea && imageInput) {
+                uploadArea.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    imageInput.click();
+                });
+                
+                imageInput.addEventListener('change', function() {
+                    handleImageUpload(this);
+                });
+                
+                console.log('Image upload initialized');
+            } else {
+                console.error('Upload area or input not found');
+            }
+        }
+        
+        // Handle image upload logic
+        function handleImageUpload(input) {
+            const files = Array.from(input.files);
+            const totalImages = existingImages.length - imagesToRemove.length + newImages.length;
+            
+            if (totalImages + files.length > 5) {
+                showToast('Maximum 5 images allowed', 'error');
+                return;
+            }
+            
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    newImages.push({ file, preview: e.target.result });
+                    renderImages();
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            input.value = '';
+        }
+        
+        // Render images
+        function renderImages() {
+            const container = document.getElementById('imagesPreview');
+            let html = '';
+            
+            // Existing images
+            existingImages.filter(img => !imagesToRemove.includes(img.url)).forEach(img => {
+                const isPrimary = primaryImage === img.url;
+                html += `
+                    <div class="image-item ${isPrimary ? 'primary' : ''}">
+                        <img src="${img.url}" alt="">
+                        <div class="image-item-actions">
+                            ${!isPrimary ? `<button type="button" class="image-btn primary-btn" onclick="setPrimaryImage('${img.url}')" title="Set as primary"><i class="fas fa-star"></i></button>` : ''}
+                            <button type="button" class="image-btn" onclick="removeExistingImage('${img.url}')" title="Remove"><i class="fas fa-times"></i></button>
+                        </div>
+                        ${isPrimary ? '<span class="primary-badge">Primary</span>' : ''}
+                    </div>
+                `;
+            });
+            
+            // New images
+            newImages.forEach((img, index) => {
+                html += `
+                    <div class="image-item">
+                        <img src="${img.preview}" alt="">
+                        <div class="image-item-actions">
+                            <button type="button" class="image-btn" onclick="removeNewImage(${index})" title="Remove"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function setPrimaryImage(url) {
+            primaryImage = url;
+            renderImages();
+        }
+        
+        function removeExistingImage(url) {
+            imagesToRemove.push(url);
+            if (primaryImage === url) {
+                const remaining = existingImages.filter(img => !imagesToRemove.includes(img.url));
+                primaryImage = remaining.length > 0 ? remaining[0].url : null;
+            }
+            renderImages();
+        }
+        
+        function removeNewImage(index) {
+            newImages.splice(index, 1);
+            renderImages();
+        }
+        
+        // Save product
+        async function saveProduct(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            
+            const formData = new FormData();
+            formData.append('nameEn', document.getElementById('nameEn').value);
+            formData.append('nameAr', document.getElementById('nameAr').value);
+            formData.append('nameKu', document.getElementById('nameKu').value);
+            formData.append('shortDescriptionEn', document.getElementById('shortDescriptionEn').value);
+            formData.append('shortDescriptionAr', document.getElementById('shortDescriptionAr').value);
+            formData.append('shortDescriptionKu', document.getElementById('shortDescriptionKu').value);
+            formData.append('descriptionEn', document.getElementById('descriptionEn').value);
+            formData.append('descriptionAr', document.getElementById('descriptionAr').value);
+            formData.append('descriptionKu', document.getElementById('descriptionKu').value);
+            formData.append('category', document.getElementById('category').value);
+            formData.append('price', document.getElementById('price').value);
+            formData.append('compareAtPrice', document.getElementById('compareAtPrice').value || '');
+            formData.append('trackInventory', document.getElementById('trackInventory').checked);
+            formData.append('quantity', document.getElementById('quantity').value);
+            formData.append('lowStockThreshold', document.getElementById('lowStockThreshold').value);
+            formData.append('allowBackorder', document.getElementById('allowBackorder').checked);
+            formData.append('status', document.getElementById('status').value);
+            formData.append('isFeatured', document.getElementById('isFeatured').checked);
+            formData.append('tags', document.getElementById('tags').value);
+            
+            if (mode === 'edit') {
+                formData.append('removeImages', JSON.stringify(imagesToRemove));
+                if (primaryImage) {
+                    formData.append('primaryImage', primaryImage);
+                }
+            }
+            
+            newImages.forEach(img => {
+                formData.append('images', img.file);
+            });
+            
+            try {
+                const productId = document.getElementById('productId').value;
+                const url = productId ? `/api/admin/shop/products/${productId}` : '/api/admin/shop/products';
+                const method = productId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(mode === 'edit' ? 'Product updated successfully' : 'Product created successfully', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin/shop/products';
+                    }, 1000);
+                } else {
+                    showToast(data.message || 'Failed to save product', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save"></i> <span>' + (mode === 'edit' ? 'Update' : 'Create') + '</span>';
+                }
+            } catch (error) {
+                console.error('Save product error:', error);
+                showToast('Failed to save product', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> <span>' + (mode === 'edit' ? 'Update' : 'Create') + '</span>';
+            }
+        }
+        
+        // Toast
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                console.log('DOM loaded, initializing product form...');
+                console.log('Mode:', mode);
+                console.log('Current language:', currentLang);
+                console.log('Existing images:', existingImages);
+                console.log('Primary image:', primaryImage);
+                
+                initLanguageTabs();
+                console.log('Language tabs initialized');
+                
+                initImageUpload();
+                console.log('Image upload initialized');
+                
+                await loadCategories();
+                console.log('Categories loaded');
+                
+                renderImages();
+                console.log('Images rendered');
+                
+                // Initialize toggle states and add event listener
+                const trackInventory = document.getElementById('trackInventory');
+                if (trackInventory) {
+                    trackInventory.addEventListener('change', toggleInventoryFields);
+                    toggleInventoryFields();
+                    console.log('Inventory toggle initialized');
+                }
+                
+                console.log('Product form initialization complete');
+            } catch (error) {
+                console.error('Error initializing product form:', error);
+            }
+        });
+    </script>
+</body>
+</html>

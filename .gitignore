@@ -1,0 +1,95 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Keep Flutter APK outputs; ignore huge intermediate build cache (~3GB)
+/build/**
+!/build/app/
+!/build/app/outputs/
+!/build/app/outputs/**
+
+# Debug APK exceeds GitHub 100MB limit
+**/app-debug.apk
+**/app-debug.apk.sha1
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Cursor / Claude
+.claude/
+
+LabGo_iOS.zip
+LabGo_iOS_upload_source.zip
+
+backend/.git_backend_backup/
+
+# iOS dSYMs too large for GitHub (Flutter DWARF ~127MB)
+**/dSYMs/
+
+
+# Secrets
+.env
+*.env
+!.env.example
+*firebase-adminsdk*.json
+*.jks
+*.keystore
+key.properties
+*.p8
+*.p12
+*.mobileprovision
+
+# Node
+**/node_modules/
+
+# Duplicate iOS workspace build artifacts
+/LabGo_iOS/build/
+/LabGo_iOS/archive/
+/LabGo_iOS/prebuilt_unsigned/
+/LabGo_iOS/.dart_tool/

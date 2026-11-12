@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('shop.orderConfirmed') || 'Order Confirmed' %> - LabGo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/shop.css">
+    <style>
+        .confirmation-page {
+            min-height: 100vh;
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.1) 0%, white 50%);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .confirmation-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 120px 20px 60px;
+            flex: 1;
+        }
+        
+        /* Success Animation */
+        .success-animation {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .checkmark-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--success), #2e7d32);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            animation: scaleIn 0.5s ease;
+        }
+        
+        .checkmark-circle i {
+            font-size: 48px;
+            color: white;
+            animation: checkIn 0.3s ease 0.3s both;
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+        
+        @keyframes checkIn {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .success-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 12px;
+        }
+        
+        .success-subtitle {
+            font-size: 16px;
+            color: var(--gray-600);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        /* Order Card */
+        .order-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        
+        .order-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 24px;
+            color: white;
+            text-align: center;
+        }
+        
+        .order-number-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+        
+        .order-number-value {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        
+        .order-body {
+            padding: 32px;
+        }
+        
+        .order-section {
+            margin-bottom: 28px;
+        }
+        
+        .order-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title i {
+            color: var(--primary);
+        }
+        
+        .order-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .order-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px;
+            background: var(--gray-50);
+            border-radius: 12px;
+        }
+        
+        .order-item-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+        }
+        
+        .order-item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .order-item-details {
+            flex: 1;
+        }
+        
+        .order-item-name {
+            font-weight: 500;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .order-item-qty {
+            font-size: 13px;
+            color: var(--gray-500);
+        }
+        
+        .order-item-price {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .order-totals {
+            background: var(--gray-50);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 15px;
+        }
+        
+        .total-row .label {
+            color: var(--gray-600);
+        }
+        
+        .total-row .value {
+            font-weight: 500;
+            color: var(--gray-900);
+        }
+        
+        .total-row.grand {
+            border-top: 2px solid var(--gray-200);
+            margin-top: 12px;
+            padding-top: 16px;
+            font-size: 18px;
+        }
+        
+        .total-row.grand .value {
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        /* Info Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 500px) {
+            .info-grid { grid-template-columns: 1fr; }
+        }
+        
+        .info-item {
+            padding: 16px;
+            background: var(--gray-50);
+            border-radius: 12px;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .info-value {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--gray-900);
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 193, 7, 0.15);
+            color: var(--warning);
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .status-badge.processing {
+            background: rgba(23, 162, 184, 0.15);
+            color: var(--info);
+        }
+        
+        .status-badge.done {
+            background: rgba(76, 175, 80, 0.15);
+            color: var(--success);
+        }
+        
+        /* Actions */
+        .actions-container {
+            display: flex;
+            gap: 16px;
+            margin-top: 32px;
+        }
+        
+        @media (max-width: 500px) {
+            .actions-container { flex-direction: column; }
+        }
+        
+        .btn-primary {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(107, 92, 230, 0.3);
+        }
+        
+        .btn-secondary {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 24px;
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+        
+        /* Track Order Note */
+        .track-note {
+            text-align: center;
+            padding: 20px;
+            background: var(--info-light, #e3f2fd);
+            border-radius: 12px;
+            margin-top: 24px;
+        }
+        
+        .track-note i {
+            color: var(--info);
+            margin-<%= direction === 'rtl' ? 'left' : 'right' %>: 8px;
+        }
+        
+        .track-note p {
+            color: var(--gray-700);
+            font-size: 14px;
+        }
+        
+        /* Loading */
+        .loading-state {
+            text-align: center;
+            padding: 100px 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Error */
+        .error-state {
+            text-align: center;
+            padding: 100px 20px;
+        }
+        
+        .error-state i {
+            font-size: 64px;
+            color: var(--error);
+            margin-bottom: 20px;
+        }
+        
+        .error-state h2 {
+            font-size: 24px;
+            color: var(--gray-900);
+            margin-bottom: 12px;
+        }
+        
+        .error-state p {
+            color: var(--gray-500);
+            margin-bottom: 24px;
+        }
+        
+        /* Info Box */
+        .info-box {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .info-box i {
+            color: var(--primary);
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .info-box p {
+            color: var(--gray-700);
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0;
+        }
+        
+        /* Contact Link */
+        .contact-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: var(--gray-100);
+            border-radius: var(--radius-lg);
+            color: var(--gray-700);
+            font-weight: 600;
+            text-decoration: none;
+            transition: all var(--transition-fast);
+        }
+        
+        .contact-link:hover {
+            background: var(--gray-200);
+        }
+        
+        .contact-link i {
+            color: var(--success);
+        }
+        
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 100;
+        }
+        
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            animation: confettiFall 3s linear forwards;
+        }
+        
+        @keyframes confettiFall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="shop-nav">
+        <div class="nav-container">
+            <a href="/shop" class="nav-logo">
+                <img src="/images/logo.png" alt="LabGo" onerror="this.style.display='none'">
+      
+            </a>
+            
+            <div class="nav-links">
+                <a href="/" class="nav-link"><%= __('nav.home') || 'Home' %></a>
+                <a href="/shop" class="nav-link"><%= __('shop.shop') || 'Shop' %></a>
+            </div>
+            
+            <div class="nav-actions">
+                <a href="/shop/cart" class="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="confirmation-page">
+        <div class="confirmation-container">
+            <!-- Success Content - Show Immediately -->
+            <div id="orderContent">
+                <!-- Success Animation -->
+                <div class="success-animation">
+                    <div class="checkmark-circle">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <h1 class="success-title"><%= __('shop.thankYou') || 'Thank You!' %></h1>
+                    <p class="success-subtitle"><%= __('shop.orderReceivedDesc') || 'We received your order successfully and we will contact you as soon as possible.' %></p>
+                </div>
+                
+                <!-- Order Card -->
+                <div class="order-card">
+                    <div class="order-header">
+                        <p class="order-number-label"><%= __('shop.orderNumber') || 'Order Number' %></p>
+                        <p class="order-number-value"><%= orderNumber %></p>
+                    </div>
+                    
+                    <div class="order-body">
+                        <!-- Status -->
+                        <div class="order-section" style="text-align: center;">
+                            <span class="status-badge pending">
+                                <i class="fas fa-clock"></i>
+                                <%= __('shop.orderStatus.pending') || 'Pending' %>
+                            </span>
+                        </div>
+                        
+                        <!-- Info Message -->
+                        <div class="order-section">
+                            <div class="info-box">
+                                <i class="fas fa-info-circle"></i>
+                                <p><%= __('shop.orderInfoMessage') || 'Please save your order number. We will call you to confirm the order and delivery details.' %></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact Info -->
+                        <div class="order-section">
+                            <h3 class="section-title">
+                                <i class="fas fa-phone"></i>
+                                <%= __('shop.needHelp') || 'Need Help?' %>
+                            </h3>
+                            <p style="color: var(--gray-600); font-size: 14px; margin-bottom: 16px;">
+                                <%= __('shop.contactSupportDesc') || 'If you have any questions about your order, please contact us.' %>
+                            </p>
+                            <a href="tel:+9647700000000" class="contact-link">
+                                <i class="fas fa-phone"></i>
+                                +964 770 000 0000
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="confirmation-actions">
+                    <a href="/shop" class="btn-primary">
+                        <i class="fas fa-arrow-<%= direction === 'rtl' ? 'right' : 'left' %>"></i>
+                        <%= __('shop.continueShopping') || 'Continue Shopping' %>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div class="confetti" id="confetti"></div>
+    
+    <script>
+        const currentLang = '<%= currentLang %>';
+        const direction = '<%= direction %>';
+        const orderNumber = '<%= orderNumber %>';
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCartCount();
+            showConfetti();
+        });
+        
+        // Confetti effect
+        function showConfetti() {
+            const container = document.getElementById('confetti');
+            const colors = ['#6B5CE7', '#4CAF50', '#FFC107', '#E91E63', '#00BCD4'];
+            
+            for (let i = 0; i < 50; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = Math.random() * 100 + 'vw';
+                piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.animationDelay = Math.random() * 2 + 's';
+                piece.style.width = (Math.random() * 10 + 5) + 'px';
+                piece.style.height = (Math.random() * 10 + 5) + 'px';
+                container.appendChild(piece);
+            }
+            
+            setTimeout(() => container.innerHTML = '', 3500);
+        }
+        
+        // Update cart count
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('labgo_cart') || '[]');
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = count;
+        }
+        
+        // Format price
+        function formatPrice(price) {
+            return new Intl.NumberFormat(currentLang, { style: 'decimal' }).format(price) + ' IQD';
+        }
+    </script>
+</body>
+</html>

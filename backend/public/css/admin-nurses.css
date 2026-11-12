@@ -1,0 +1,1288 @@
+/* ==========================================
+   LabGo Nurse Management - Apple Style Design
+   ========================================== */
+
+/* Container */
+.nurse-management-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
+}
+
+/* Page Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+}
+
+.header-left h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-xs);
+}
+
+.header-subtitle {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+}
+
+/* Main Section (Nurses) */
+.main-section {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Secondary Section (Applications) */
+.secondary-section {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    padding: var(--spacing-xl);
+}
+
+/* Section Header */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.section-title i {
+    font-size: 1.5rem;
+    color: var(--primary-500);
+}
+
+.section-title h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.count-badge {
+    background: var(--primary-100);
+    color: var(--primary-600);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    min-width: 28px;
+    text-align: center;
+}
+
+.section-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.search-input,
+.filter-select {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    color: var(--gray-900);
+    transition: all var(--transition-normal);
+    min-width: 200px;
+}
+
+.search-input:focus,
+.filter-select:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px var(--primary-100);
+    background: var(--white);
+}
+
+/* Nurses Grid */
+.nurses-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.nurse-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    overflow: hidden;
+}
+
+.nurse-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-300);
+}
+
+.nurse-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.nurse-avatar {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #d1fae5;
+    color: var(--success);
+    border-radius: var(--radius-lg);
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.nurse-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.nurse-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nurse-email {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nurse-card .card-body {
+    padding: var(--spacing-lg);
+}
+
+/* Applications List */
+.applications-list {
+    display: grid;
+    gap: var(--spacing-md);
+}
+
+.application-card {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    overflow: hidden;
+}
+
+.application-card:hover {
+    background: var(--white);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-md);
+}
+
+html[dir="rtl"] .application-card:hover {
+    transform: translateX(-4px);
+}
+
+.application-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.applicant-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.applicant-avatar {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-100);
+    color: var(--primary-600);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+}
+
+.applicant-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.applicant-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 2px;
+}
+
+.applicant-email {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+}
+
+/* Status Badges */
+.status-badge {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.status-badge.pending {
+    background: var(--secondary-100);
+    color: var(--secondary-600);
+}
+
+.status-badge.under_review {
+    background: #dbeafe;
+    color: #3b82f6;
+}
+
+.status-badge.approved,
+.status-badge.active {
+    background: #d1fae5;
+    color: var(--success);
+}
+
+.status-badge.rejected {
+    background: #fee2e2;
+    color: var(--error);
+}
+
+.status-badge.on_hold {
+    background: var(--gray-200);
+    color: var(--gray-600);
+}
+
+/* Info Row */
+.info-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) 0;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.info-row i {
+    width: 16px;
+    color: var(--gray-400);
+    text-align: center;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-normal);
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-container {
+    background: var(--white);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
+    max-width: 700px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.95);
+    transition: transform var(--transition-slow);
+}
+
+.modal-overlay.show .modal-container {
+    transform: scale(1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.modal-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.modal-close-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-100);
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--gray-500);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.modal-close-btn:hover {
+    background: var(--gray-200);
+    color: var(--gray-700);
+}
+
+.modal-body {
+    padding: var(--spacing-xl);
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-footer {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+/* Detail Sections */
+.detail-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.detail-section h4 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.detail-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.detail-item .label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-item .value {
+    font-size: 0.875rem;
+    color: var(--gray-900);
+    font-weight: 500;
+}
+
+/* Documents Grid */
+.documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.document-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-lg);
+    background: var(--gray-50);
+    border: 2px dashed var(--gray-300);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.document-card:hover {
+    border-color: var(--primary-500);
+    background: var(--primary-50);
+}
+
+.document-card i {
+    font-size: 1.5rem;
+    color: var(--primary-500);
+}
+
+.document-card span {
+    font-size: 0.8125rem;
+    color: var(--gray-700);
+    font-weight: 500;
+    text-align: center;
+}
+
+/* Documents Images Grid */
+.documents-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.document-image-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.document-image-card:hover {
+    border-color: var(--primary-500);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.document-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--gray-100);
+    text-align: center;
+}
+
+.document-image {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+    background: var(--white);
+}
+
+/* Questionnaire List */
+.questionnaire-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.question-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+}
+
+.question-item i {
+    color: var(--primary-500);
+}
+
+.review-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.review-info p {
+    font-size: 0.875rem;
+    color: var(--gray-700);
+}
+
+/* History & Orders */
+.applications-history,
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.history-item,
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+}
+
+/* Loading and Empty States */
+.loading-state,
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+    gap: var(--spacing-md);
+    color: var(--gray-400);
+}
+
+.loading-state i,
+.empty-state i {
+    font-size: 2.5rem;
+}
+
+.loading-state span,
+.empty-state span {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-lg);
+}
+
+.pagination-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.pagination-btn:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-300);
+}
+
+.pagination-btn.active {
+    background: var(--primary-500);
+    border-color: var(--primary-500);
+    color: var(--white);
+}
+
+.pagination-ellipsis {
+    color: var(--gray-400);
+    padding: 0 var(--spacing-xs);
+    font-size: 0.8125rem;
+}
+
+/* Toast Notification */
+.toast-notification {
+    position: fixed;
+    bottom: var(--spacing-xl);
+    right: var(--spacing-xl);
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    padding: var(--spacing-md) var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    min-width: 300px;
+    transform: translateY(120%);
+    transition: transform var(--transition-slow);
+    z-index: 2000;
+}
+
+.toast-notification.show {
+    transform: translateY(0);
+}
+
+.toast-notification.success {
+    border-left: 4px solid var(--success);
+}
+
+.toast-notification.error {
+    border-left: 4px solid var(--error);
+}
+
+.toast-icon i {
+    font-size: 1.25rem;
+}
+
+.toast-notification.success .toast-icon {
+    color: var(--success);
+}
+
+.toast-notification.error .toast-icon {
+    color: var(--error);
+}
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 2px;
+}
+
+.toast-message {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+}
+
+.toast-close {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--gray-400);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.toast-close:hover {
+    background: var(--gray-100);
+    color: var(--gray-600);
+}
+
+/* Modern Buttons */
+.modern-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--gray-100);
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--gray-700);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.modern-btn:hover:not(:disabled) {
+    background: var(--gray-200);
+}
+
+.modern-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.modern-btn.confirm-btn {
+    background: var(--primary-500);
+    color: var(--white);
+}
+
+.modern-btn.confirm-btn:hover:not(:disabled) {
+    background: var(--primary-600);
+}
+
+.modern-btn.reject-btn {
+    background: var(--error);
+    color: var(--white);
+}
+
+.modern-btn.reject-btn:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+.modern-btn.warning-btn {
+    background: var(--warning);
+    color: var(--white);
+}
+
+.modern-btn.warning-btn:hover:not(:disabled) {
+    background: #d97706;
+}
+
+.modern-btn.refresh-btn {
+    background: var(--primary-500);
+    color: var(--white);
+}
+
+.modern-btn i {
+    font-size: 0.875rem;
+}
+
+/* RTL Support */
+html[dir="rtl"] .application-card:hover {
+    transform: translateX(-4px);
+}
+
+html[dir="rtl"] .toast-notification {
+    right: auto;
+    left: var(--spacing-xl);
+}
+
+html[dir="rtl"] .toast-notification.success,
+html[dir="rtl"] .toast-notification.error {
+    border-left: none;
+    border-right: 4px solid;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .nurse-management-container {
+        padding: var(--spacing-md);
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .section-actions {
+        width: 100%;
+    }
+
+    .search-input,
+    .filter-select {
+        width: 100%;
+    }
+
+    .nurses-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-container {
+        width: 95%;
+        max-height: 95vh;
+    }
+
+    .modal-footer {
+        flex-direction: column;
+    }
+
+    .modal-footer button {
+        width: 100%;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .toast-notification {
+        min-width: calc(100% - var(--spacing-xl) * 2);
+        right: var(--spacing-md);
+        left: var(--spacing-md);
+        bottom: var(--spacing-md);
+    }
+
+    html[dir="rtl"] .toast-notification {
+        right: var(--spacing-md);
+        left: var(--spacing-md);
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.nurse-card,
+.application-card {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Textarea Styles */
+textarea.modal-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: var(--spacing-md);
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    color: var(--gray-900);
+    font-family: inherit;
+    line-height: 1.5;
+    resize: vertical;
+    transition: all var(--transition-normal);
+}
+
+textarea.modal-textarea:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px var(--primary-100);
+    background: var(--white);
+}
+
+textarea.modal-textarea::placeholder {
+    color: var(--gray-400);
+}
+
+/* Commission Input Styles */
+.commission-input-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.commission-input-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-sm);
+}
+
+.commission-input-group .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.commission-input-group .commission-input {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-xl) var(--spacing-md) var(--spacing-md);
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    color: var(--gray-900);
+    transition: all var(--transition-normal);
+}
+
+.commission-input-group .commission-input:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px var(--primary-100);
+    background: var(--white);
+}
+
+.commission-input-group .input-suffix {
+    position: absolute;
+    right: var(--spacing-md);
+    color: var(--gray-500);
+    font-size: 0.875rem;
+    font-weight: 500;
+    pointer-events: none;
+}
+
+.commission-input-group .input-hint {
+    display: block;
+    color: var(--gray-500);
+    font-size: 0.8125rem;
+    margin-top: var(--spacing-xs);
+}
+
+/* Nurse Actions Section */
+.nurse-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+/* Modal Description */
+.modal-description {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-bottom: var(--spacing-md);
+}
+
+/* ==========================================
+   Modern Block/Unblock Modal Styles
+   ========================================== */
+
+/* Block Modal Container */
+.block-modal,
+.unblock-modal {
+    max-width: 520px;
+}
+
+/* Modern Modal Header */
+.modal-header-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+    flex: 1;
+}
+
+.modal-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    flex-shrink: 0;
+}
+
+.modal-icon-wrapper.danger {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: var(--error);
+}
+
+.modal-icon-wrapper.success {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: var(--success);
+}
+
+.modal-icon-wrapper i {
+    font-size: 1.5rem;
+}
+
+.modal-header-text {
+    flex: 1;
+}
+
+.modal-header-text h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-xs);
+}
+
+.modal-header-subtitle {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Block Form Styles */
+.block-form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.block-form-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-sm);
+}
+
+.block-form-label i {
+    color: var(--warning);
+    font-size: 0.875rem;
+}
+
+.required-mark {
+    color: var(--error);
+    font-weight: 700;
+}
+
+.block-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: var(--spacing-md);
+    background: var(--gray-50);
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    color: var(--gray-900);
+    font-family: inherit;
+    line-height: 1.6;
+    resize: vertical;
+    transition: all var(--transition-normal);
+}
+
+.block-textarea:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 4px var(--primary-100);
+    background: var(--white);
+}
+
+.block-textarea::placeholder {
+    color: var(--gray-400);
+}
+
+.field-hint {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-top: var(--spacing-xs);
+    margin-bottom: 0;
+}
+
+/* Modern Button Variants */
+.modern-btn.secondary-btn {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.modern-btn.secondary-btn:hover:not(:disabled) {
+    background: var(--gray-200);
+}
+
+/* Blocked Status Badge */
+.status-badge.blocked {
+    background: #fee2e2;
+    color: var(--error);
+}
+
+/* RTL Support for Modal Header */
+html[dir="rtl"] .modal-header-content {
+    flex-direction: row-reverse;
+}
+
+/* RTL Support for Icon Wrapper */
+html[dir="rtl"] .modal-icon-wrapper {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* RTL Support for Form Label */
+html[dir="rtl"] .block-form-label {
+    flex-direction: row-reverse;
+}
+
+/* Responsive Design */
+@media (max-width: 576px) {
+    .block-modal,
+    .unblock-modal {
+        max-width: 95%;
+    }
+
+    .modal-header-content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    html[dir="rtl"] .modal-header-content {
+        flex-direction: column;
+    }
+
+    .modal-icon-wrapper {
+        width: 56px;
+        height: 56px;
+    }
+
+    .modal-icon-wrapper i {
+        font-size: 1.75rem;
+    }
+
+    .modal-header-text h3 {
+        font-size: 1rem;
+    }
+
+    .modal-header-subtitle {
+        font-size: 0.8125rem;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    html[dir="rtl"] .modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    .modal-footer button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Subtle Animation */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.block-modal,
+.unblock-modal {
+    animation: modalSlideIn 0.25s ease-out;
+}
+
+/* ==========================================
+   Nurse Card Action Buttons Redesign
+   ========================================== */
+
+/* Card Footer */
+.nurse-card .card-footer {
+    display: flex;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--gray-100);
+    background: var(--gray-50);
+}
+
+/* Nurse Card Action Buttons */
+.nurse-card .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--white);
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    flex-shrink: 0;
+}
+
+.nurse-card .action-btn i {
+    font-size: 0.875rem;
+}
+
+/* View Button */
+.nurse-card .action-btn.view:hover {
+    background: var(--primary-50);
+    border-color: var(--primary-300);
+    color: var(--primary-600);
+}
+
+/* Block Button */
+.nurse-card .action-btn.block {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: var(--error);
+}
+
+.nurse-card .action-btn.block:hover {
+    background: #fecaca;
+    border-color: #fca5a5;
+    color: #b91c1c;
+    transform: scale(1.05);
+}
+
+/* Unblock Button */
+.nurse-card .action-btn.unblock {
+    background: #d1fae5;
+    border-color: #a7f3d0;
+    color: var(--success);
+}
+
+.nurse-card .action-btn.unblock:hover {
+    background: #a7f3d0;
+    border-color: #6ee7b7;
+    color: #047857;
+    transform: scale(1.05);
+}
+
+/* Active state for action buttons */
+.nurse-card .action-btn:active {
+    transform: scale(0.98);
+}
+
+/* RTL Support for Action Buttons */
+html[dir="rtl"] .nurse-card .card-footer {
+    flex-direction: row-reverse;
+}
+
+/* Responsive Design for Card Actions */
+@media (max-width: 768px) {
+    .nurse-card .action-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .nurse-card .action-btn i {
+        font-size: 0.8125rem;
+    }
+}
+
+/* ==========================================
+   Blocked Nurses Button
+   ========================================== */
+
+.modern-btn.blocked-btn {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: var(--error);
+    border: 1.5px solid #fecaca;
+}
+
+.modern-btn.blocked-btn:hover {
+    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+    border-color: #fca5a5;
+    color: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.modern-btn.blocked-btn:active {
+    transform: translateY(0);
+}

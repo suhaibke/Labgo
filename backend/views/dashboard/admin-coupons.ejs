@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('coupons.title') || 'Coupons' %> - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-orders.css">
+    <style>
+        body { font-family: <%= font %>; }
+        *, *::before, *::after { box-sizing: border-box; }
+
+        .coupons-stats-row { display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
+        .stat-card {
+            flex: 1; min-width: 150px; background: white; border-radius: 12px;
+            padding: 20px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: flex; align-items: center; gap: 14px;
+        }
+        .stat-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem; color: white; background: linear-gradient(135deg, #667eea, #4f46e5);
+        }
+        .stat-info h3 { font-size: 1.5rem; font-weight: 700; color: #1f2937; margin: 0; }
+        .stat-info p { font-size: 0.8rem; color: #6b7280; margin: 0.2rem 0 0 0; }
+
+        .coupons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem; }
+        .coupon-card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.25rem; }
+        .coupon-code { font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; color: #4f46e5; font-family: monospace; }
+        .coupon-status { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; }
+        .coupon-status.active { color: #22c55e; }
+        .coupon-status.inactive { color: #ef4444; }
+        .coupon-status .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .coupon-status.active .dot { background: #22c55e; }
+        .coupon-status.inactive .dot { background: #ef4444; }
+        .coupon-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .coupon-discount { font-size: 0.9rem; color: #374151; margin-bottom: 8px; }
+        .coupon-meta { font-size: 0.75rem; color: #9ca3af; margin-bottom: 10px; }
+        .usage-bar-track { height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+        .usage-bar-fill { height: 100%; background: linear-gradient(90deg, #667eea, #4f46e5); }
+        .coupon-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+        .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #4f46e5); color: white; }
+        .btn-secondary { background: #f9fafb; color: #374151; border: 1px solid #e5e7eb; }
+        .btn-danger { background: #fee2e2; color: #dc2626; }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 16px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { padding: 1.5rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { font-size: 1.25rem; font-weight: 700; margin: 0; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; }
+        .modal-body { padding: 1.5rem; }
+        .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 0.75rem; }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.4rem; }
+        .form-input, .form-select { width: 100%; padding: 0.7rem 1rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.875rem; }
+        .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .form-hint { font-size: 0.72rem; color: #9ca3af; margin-top: 0.25rem; }
+
+        .switch-container { display: flex; align-items: center; gap: 0.75rem; }
+        .switch { position: relative; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch-slider { position: absolute; inset: 0; background: #e5e7eb; border-radius: 22px; transition: 0.3s; }
+        .switch-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+        .switch input:checked + .switch-slider { background: linear-gradient(135deg, #667eea, #4f46e5); }
+        .switch input:checked + .switch-slider:before { transform: translateX(22px); }
+
+        .empty-state { text-align: center; padding: 4rem 2rem; background: white; border-radius: 16px; }
+        .empty-state i { font-size: 2.5rem; color: #a5a5f0; margin-bottom: 1rem; }
+        .empty-state h3 { font-size: 1.1rem; font-weight: 700; color: #1f2937; }
+        .empty-state p { color: #6b7280; font-size: 0.85rem; }
+
+        .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 2000; display: flex; flex-direction: column; gap: 0.5rem; }
+        .toast { background: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 0.75rem; }
+        .toast.success { border-left: 4px solid #22c55e; }
+        .toast.error { border-left: 4px solid #ef4444; }
+    </style>
+</head>
+<body>
+    <%- include('../partials/admin-navbar') %>
+
+    <main class="admin-dashboard">
+        <div class="orders-dashboard-container">
+            <div class="orders-page-header">
+                <div class="header-content">
+                    <h1><%= __('coupons.title') || 'Coupons' %></h1>
+                    <p class="header-subtitle"><%= __('coupons.subtitle') || 'Create discount codes for patient test orders' %></p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="openCreateModal()">
+                        <i class="fas fa-plus"></i> <%= __('coupons.createCoupon') || 'Create Coupon' %>
+                    </button>
+                </div>
+            </div>
+
+            <div class="coupons-stats-row">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-ticket-alt"></i></div>
+                    <div class="stat-info">
+                        <h3 id="totalCoupons">0</h3>
+                        <p><%= __('coupons.totalCoupons') || 'Total Coupons' %></p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #22c55e, #16a34a);"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-info">
+                        <h3 id="activeCoupons">0</h3>
+                        <p><%= __('coupons.activeCoupons') || 'Active Coupons' %></p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);"><i class="fas fa-users"></i></div>
+                    <div class="stat-info">
+                        <h3 id="totalRedemptions">0</h3>
+                        <p><%= __('coupons.totalRedemptions') || 'Total Redemptions' %></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="couponsGrid" class="coupons-grid"></div>
+        </div>
+    </main>
+
+    <div class="modal-overlay" id="couponModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle"><%= __('coupons.createCoupon') || 'Create Coupon' %></h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="couponForm" onsubmit="saveCoupon(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="couponId">
+
+                    <div class="form-group">
+                        <label class="form-label"><%= __('coupons.code') || 'Coupon Code' %> *</label>
+                        <input type="text" class="form-input" id="couponCode" required placeholder="SUMMER20" style="text-transform:uppercase;">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('offers.discountType') || 'Discount Type' %></label>
+                            <select class="form-select" id="discountType">
+                                <option value="percentage"><%= __('offers.percentage') || 'Percentage (%)' %></option>
+                                <option value="fixed"><%= __('offers.fixedAmount') || 'Fixed Amount (IQD)' %></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('offers.discountValue') || 'Discount Value' %> *</label>
+                            <input type="number" class="form-input" id="discountValue" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('coupons.minOrderAmount') || 'Minimum Order Amount' %></label>
+                            <input type="number" class="form-input" id="minOrderAmount" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('coupons.maxDiscount') || 'Max Discount Cap' %></label>
+                            <input type="number" class="form-input" id="maxDiscount" min="0" value="0">
+                            <p class="form-hint"><%= __('coupons.maxDiscountHint') || '0 = no cap (percentage type only)' %></p>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('coupons.usageLimit') || 'Total Usage Limit' %></label>
+                            <input type="number" class="form-input" id="usageLimit" min="0" placeholder="<%= __('coupons.unlimited') || 'Unlimited' %>">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('coupons.usageLimitPerUser') || 'Usage Limit Per User' %></label>
+                            <input type="number" class="form-input" id="usageLimitPerUser" min="0" placeholder="<%= __('coupons.unlimited') || 'Unlimited' %>">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label"><%= __('offers.startDate') || 'Start Date' %></label>
+                            <input type="date" class="form-input" id="startDate">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><%= __('offers.endDate') || 'End Date' %></label>
+                            <input type="date" class="form-input" id="endDate">
+                        </div>
+                    </div>
+
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="isActive" checked>
+                            <span class="switch-slider"></span>
+                        </label>
+                        <span><%= __('offers.activeImmediately') || 'Activate immediately' %></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()"><%= __('common.cancel') %></button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <%= __('common.save') %></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        const API_BASE = '/api/admin/coupons';
+        let couponsData = [];
+
+        function getToken() {
+            return localStorage.getItem('token') || document.cookie.split('; ').find(r => r.startsWith('token='))?.split('=')[1];
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function loadCoupons() {
+            const grid = document.getElementById('couponsGrid');
+            try {
+                const res = await fetch(API_BASE, { headers: { Authorization: `Bearer ${getToken()}` } });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.message);
+
+                couponsData = data.data.coupons;
+                document.getElementById('totalCoupons').textContent = couponsData.length;
+                document.getElementById('activeCoupons').textContent = couponsData.filter(c => c.isActive).length;
+                document.getElementById('totalRedemptions').textContent = couponsData.reduce((sum, c) => sum + (c.usedCount || 0), 0);
+
+                if (couponsData.length === 0) {
+                    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-ticket-alt"></i><h3>${'<%= __("coupons.noCoupons") || "No coupons yet" %>'}</h3><p>${'<%= __("coupons.noCouponsDescription") || "Create a discount code for patients to use at checkout" %>'}</p></div>`;
+                    return;
+                }
+
+                grid.innerHTML = couponsData.map(c => {
+                    const discountText = c.discountType === 'percentage' ? `${c.discountValue}%` : `${c.discountValue} IQD`;
+                    const usagePct = c.usageLimit ? Math.min(100, Math.round((c.usedCount / c.usageLimit) * 100)) : 0;
+                    return `
+                    <div class="coupon-card">
+                        <div class="coupon-header">
+                            <span class="coupon-code">${c.code}</span>
+                            <span class="coupon-status ${c.isActive ? 'active' : 'inactive'}">
+                                <span class="dot"></span>${c.isActive ? '<%= __("offers.active") %>' : '<%= __("offers.inactive") %>'}
+                            </span>
+                        </div>
+                        <div class="coupon-discount">${'<%= __("offers.discountValue") || "Discount" %>'}: <strong>${discountText}</strong></div>
+                        <div class="coupon-meta">
+                            ${c.minOrderAmount ? `${'<%= __("coupons.minOrderAmount") %>'}: ${c.minOrderAmount} IQD · ` : ''}
+                            ${'<%= __("coupons.used") || "Used" %>'}: ${c.usedCount || 0}${c.usageLimit ? ' / ' + c.usageLimit : ''}
+                        </div>
+                        ${c.usageLimit ? `<div class="usage-bar-track"><div class="usage-bar-fill" style="width:${usagePct}%;"></div></div>` : ''}
+                        <div class="coupon-actions">
+                            <button class="btn btn-secondary" onclick="toggleCoupon('${c._id}')">
+                                <i class="fas ${c.isActive ? 'fa-pause' : 'fa-play'}"></i>
+                            </button>
+                            <button class="btn btn-secondary" onclick="editCoupon('${c._id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger" onclick="deleteCoupon('${c._id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><p>${'<%= __("common.error") %>'}</p></div>`;
+            }
+        }
+
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = '<%= __("coupons.createCoupon") || "Create Coupon" %>';
+            document.getElementById('couponForm').reset();
+            document.getElementById('couponId').value = '';
+            document.getElementById('isActive').checked = true;
+            document.getElementById('couponModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('couponModal').classList.remove('active');
+        }
+
+        function editCoupon(id) {
+            const c = couponsData.find(x => x._id === id);
+            if (!c) return;
+            document.getElementById('modalTitle').textContent = '<%= __("coupons.editCoupon") || "Edit Coupon" %>';
+            document.getElementById('couponId').value = id;
+            document.getElementById('couponCode').value = c.code;
+            document.getElementById('discountType').value = c.discountType;
+            document.getElementById('discountValue').value = c.discountValue;
+            document.getElementById('minOrderAmount').value = c.minOrderAmount || 0;
+            document.getElementById('maxDiscount').value = c.maxDiscount || 0;
+            document.getElementById('usageLimit').value = c.usageLimit || '';
+            document.getElementById('usageLimitPerUser').value = c.usageLimitPerUser || '';
+            document.getElementById('startDate').value = c.startDate ? c.startDate.split('T')[0] : '';
+            document.getElementById('endDate').value = c.endDate ? c.endDate.split('T')[0] : '';
+            document.getElementById('isActive').checked = c.isActive;
+            document.getElementById('couponModal').classList.add('active');
+        }
+
+        async function saveCoupon(event) {
+            event.preventDefault();
+            const id = document.getElementById('couponId').value;
+
+            const data = {
+                code: document.getElementById('couponCode').value.trim().toUpperCase(),
+                discountType: document.getElementById('discountType').value,
+                discountValue: parseFloat(document.getElementById('discountValue').value),
+                minOrderAmount: parseFloat(document.getElementById('minOrderAmount').value) || 0,
+                maxDiscount: parseFloat(document.getElementById('maxDiscount').value) || 0,
+                usageLimit: document.getElementById('usageLimit').value ? parseInt(document.getElementById('usageLimit').value) : null,
+                usageLimitPerUser: document.getElementById('usageLimitPerUser').value ? parseInt(document.getElementById('usageLimitPerUser').value) : null,
+                startDate: document.getElementById('startDate').value || null,
+                endDate: document.getElementById('endDate').value || null,
+                isActive: document.getElementById('isActive').checked,
+            };
+
+            try {
+                const url = id ? `${API_BASE}/${id}` : API_BASE;
+                const method = id ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                    body: JSON.stringify(data),
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast(id ? '<%= __("coupons.couponUpdated") || "Coupon updated" %>' : '<%= __("coupons.couponCreated") || "Coupon created" %>');
+                    closeModal();
+                    loadCoupons();
+                } else {
+                    showToast(result.message || '<%= __("common.error") %>', 'error');
+                }
+            } catch (err) {
+                showToast('<%= __("common.error") %>', 'error');
+            }
+        }
+
+        async function toggleCoupon(id) {
+            try {
+                const res = await fetch(`${API_BASE}/${id}/toggle`, { method: 'PATCH', headers: { Authorization: `Bearer ${getToken()}` } });
+                const result = await res.json();
+                if (result.success) { loadCoupons(); } else { showToast(result.message || '<%= __("common.error") %>', 'error'); }
+            } catch (err) {
+                showToast('<%= __("common.error") %>', 'error');
+            }
+        }
+
+        async function deleteCoupon(id) {
+            if (!confirm('<%= __("coupons.confirmDelete") || "Delete this coupon?" %>')) return;
+            try {
+                const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
+                const result = await res.json();
+                if (result.success) { showToast('<%= __("coupons.couponDeleted") || "Coupon deleted" %>'); loadCoupons(); }
+                else { showToast(result.message || '<%= __("common.error") %>', 'error'); }
+            } catch (err) {
+                showToast('<%= __("common.error") %>', 'error');
+            }
+        }
+
+        loadCoupons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,2192 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <style>
+        :root {
+            --primary-rgb: 102, 126, 234;
+            --secondary-rgb: 59, 130, 246;
+            --accent-rgb: 251, 146, 60;
+            --success-rgb: 102, 126, 234;
+            --warning-rgb: 251, 146, 60;
+            --danger-rgb: 239, 68, 68;
+            --info-rgb: 59, 130, 246;
+        }
+
+        body {
+            font-family: <%= font %>;
+        }
+
+        /* Ensure all elements use the imported font */
+        *, *::before, *::after {
+            font-family: inherit;
+        }
+
+        .btn,
+        .form-input,
+        .form-select,
+        .form-textarea,
+        .filter-dropdown select,
+        .search-box input,
+        .test-category,
+        .stat-number,
+        .stat-label,
+        .stat-trend,
+        .modal-title,
+        .form-label,
+        .empty-state-title,
+        .empty-state-description {
+            font-family: <%= font %>;
+        }
+
+        /* Header Section */
+        .tests-page-header {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .header-title {
+            flex: 1;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-title p {
+            color: #6b7280;
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(79, 70, 229) 100%);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px 0 rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: rgb(102, 126, 234);
+            border: 1px solid rgb(102, 126, 234);
+        }
+
+        .btn-outline:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        /* Statistics Cards - Matching Lab Dashboard Design */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--card-color, var(--primary-500)), var(--card-color, var(--primary-600)));
+        }
+
+        .stat-card.primary::before {
+            background: linear-gradient(90deg, var(--primary-500), var(--primary-600));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-xl);
+            color: var(--white);
+        }
+
+        .stat-card.primary .stat-icon {
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+        }
+
+        .stat-card.secondary .stat-icon {
+            background: linear-gradient(135deg, var(--secondary-500), var(--secondary-600));
+        }
+
+        .stat-card.accent .stat-icon {
+            background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
+        }
+
+        .stat-card.success .stat-icon {
+            background: linear-gradient(135deg, var(--success), #059669);
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: var(--font-size-3xl);
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: var(--spacing-xs);
+            line-height: 1;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .stat-label {
+            color: var(--gray-600);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            margin-bottom: var(--spacing-sm);
+            line-height: 1.4;
+        }
+
+        .stat-trend {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+
+        .stat-trend.positive {
+            color: var(--primary-600);
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .stat-trend.negative {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Filter and Search Section */
+        .filters-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .filters-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filters-content {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: rgb(102, 126, 234);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        .filter-dropdown {
+            min-width: 150px;
+        }
+
+        .filter-dropdown select {
+            width: 100%;
+            padding: 0.75rem 2rem 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            background: white;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1em;
+        }
+
+        /* Test Grid */
+        .tests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .test-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px 0 rgba(0, 0, 0, 0.15);
+        }
+
+        .test-card-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .test-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .test-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .test-name-en {
+            margin: 0.2rem 0 0;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #9ca3af;
+        }
+
+        .test-category {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            background: rgba(102, 126, 234, 0.1);
+            color: rgb(102, 126, 234);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        /* Different colors for different specializations */
+        .test-category[data-specialization="Blood Tests"] {
+            background: rgba(239, 68, 68, 0.1);
+            color: rgb(239, 68, 68);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .test-category[data-specialization="X-Ray"] {
+            background: rgba(59, 130, 246, 0.1);
+            color: rgb(59, 130, 246);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .test-category[data-specialization="MRI"] {
+            background: rgba(147, 51, 234, 0.1);
+            color: rgb(147, 51, 234);
+            border-color: rgba(147, 51, 234, 0.2);
+        }
+
+        .test-category[data-specialization="CT Scan"] {
+            background: rgba(236, 72, 153, 0.1);
+            color: rgb(236, 72, 153);
+            border-color: rgba(236, 72, 153, 0.2);
+        }
+
+        .test-category[data-specialization="Ultrasound"] {
+            background: rgba(34, 197, 94, 0.1);
+            color: rgb(34, 197, 94);
+            border-color: rgba(34, 197, 94, 0.2);
+        }
+
+        .test-category[data-specialization="Pathology"] {
+            background: rgba(168, 85, 247, 0.1);
+            color: rgb(168, 85, 247);
+            border-color: rgba(168, 85, 247, 0.2);
+        }
+
+        .test-category[data-specialization="Microbiology"] {
+            background: rgba(6, 182, 212, 0.1);
+            color: rgb(6, 182, 212);
+            border-color: rgba(6, 182, 212, 0.2);
+        }
+
+        .test-category[data-specialization="Biochemistry"] {
+            background: rgba(251, 146, 60, 0.1);
+            color: rgb(251, 146, 60);
+            border-color: rgba(251, 146, 60, 0.2);
+        }
+
+        .test-category[data-specialization="Genetics"] {
+            background: rgba(99, 102, 241, 0.1);
+            color: rgb(99, 102, 241);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .test-category[data-specialization="Allergy"] {
+            background: rgba(244, 63, 94, 0.1);
+            color: rgb(244, 63, 94);
+            border-color: rgba(244, 63, 94, 0.2);
+        }
+
+        .test-category[data-specialization="Cardiology"] {
+            background: rgba(220, 38, 38, 0.1);
+            color: rgb(220, 38, 38);
+            border-color: rgba(220, 38, 38, 0.2);
+        }
+
+        .test-category[data-specialization="Neurology"] {
+            background: rgba(14, 165, 233, 0.1);
+            color: rgb(14, 165, 233);
+            border-color: rgba(14, 165, 233, 0.2);
+        }
+
+        .test-category[data-specialization="General"] {
+            background: rgba(102, 126, 234, 0.1);
+            color: rgb(102, 126, 234);
+            border-color: rgba(102, 126, 234, 0.2);
+        }
+
+        .test-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .test-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .test-card-body {
+            padding: 1.5rem;
+        }
+
+        .test-description {
+            color: #4b5563;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .test-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: rgb(102, 126, 234);
+            text-align: center;
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(102, 126, 234, 0.1) 100%);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .test-price::before {
+            content: 'IQD';
+            font-size: 1rem;
+            font-weight: 500;
+            margin-right: 0.25rem;
+            opacity: 0.8;
+        }
+
+        .test-card-footer {
+            padding: 1.5rem;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .test-actions {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.813rem;
+            flex: 1;
+        }
+
+        .btn-edit {
+            background: white;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-edit:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .btn-delete {
+            background: white;
+            color: #ef4444;
+            border: 1px solid #fecaca;
+        }
+
+        .btn-delete:hover {
+            background: #fef2f2;
+            border-color: #ef4444;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 25px 50px 0 rgba(0, 0, 0, 0.25);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 2rem 2rem 1rem 2rem;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.25rem;
+            color: #6b7280;
+        }
+
+        .modal-close:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+            color: #374151;
+        }
+
+        .modal-body {
+            padding: 2rem;
+            max-height: calc(90vh - 200px);
+            overflow-y: auto;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: rgb(102, 126, 234);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .price-input-group {
+            position: relative;
+        }
+
+        .price-input-group::before {
+            content: 'IQD';
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .price-input-group input {
+            padding-left: 3rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem 2rem 2rem 2rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 16px;
+            border: 2px dashed #e5e7eb;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            color: #d1d5db;
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-state-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state-description {
+            color: #6b7280;
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            background: #f3f4f6;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .view-btn {
+            padding: 0.5rem 0.75rem;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .view-btn:hover {
+            color: #374151;
+        }
+
+        .view-btn.active {
+            background: white;
+            color: rgb(102, 126, 234);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Table View Styles */
+        .tests-table-container {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 2rem;
+        }
+
+        .tests-table-container.active {
+            display: block;
+        }
+
+        .tests-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .tests-table thead {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+        }
+
+        .tests-table th {
+            padding: 1rem 1.25rem;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #374151;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+            white-space: nowrap;
+        }
+
+        /* Column widths for proper alignment */
+        .tests-table th:nth-child(1),
+        .tests-table td:nth-child(1) { width: 25%; }  /* Test Name */
+        .tests-table th:nth-child(2),
+        .tests-table td:nth-child(2) { width: 15%; }  /* Category */
+        .tests-table th:nth-child(3),
+        .tests-table td:nth-child(3) { width: 30%; }  /* Description */
+        .tests-table th:nth-child(4),
+        .tests-table td:nth-child(4) { width: 12%; }  /* Price */
+        .tests-table th:nth-child(5),
+        .tests-table td:nth-child(5) { width: 18%; }  /* Actions */
+
+        .tests-table td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+            color: #4b5563;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .tests-table tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        .tests-table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .tests-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-test-name {
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .table-test-name-en {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: #9ca3af;
+            margin-top: 0.15rem;
+        }
+
+        .table-test-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgb(102, 126, 234);
+        }
+
+        .table-category {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            background: rgba(102, 126, 234, 0.1);
+            color: rgb(102, 126, 234);
+            display: inline-block;
+        }
+
+        /* Table category colors */
+        .table-category[data-specialization="Blood Tests"] {
+            background: rgba(239, 68, 68, 0.1);
+            color: rgb(239, 68, 68);
+        }
+
+        .table-category[data-specialization="X-Ray"] {
+            background: rgba(59, 130, 246, 0.1);
+            color: rgb(59, 130, 246);
+        }
+
+        .table-category[data-specialization="MRI"] {
+            background: rgba(147, 51, 234, 0.1);
+            color: rgb(147, 51, 234);
+        }
+
+        .table-category[data-specialization="CT Scan"] {
+            background: rgba(236, 72, 153, 0.1);
+            color: rgb(236, 72, 153);
+        }
+
+        .table-category[data-specialization="Ultrasound"] {
+            background: rgba(34, 197, 94, 0.1);
+            color: rgb(34, 197, 94);
+        }
+
+        .table-category[data-specialization="Pathology"] {
+            background: rgba(168, 85, 247, 0.1);
+            color: rgb(168, 85, 247);
+        }
+
+        .table-category[data-specialization="Microbiology"] {
+            background: rgba(6, 182, 212, 0.1);
+            color: rgb(6, 182, 212);
+        }
+
+        .table-category[data-specialization="Biochemistry"] {
+            background: rgba(251, 146, 60, 0.1);
+            color: rgb(251, 146, 60);
+        }
+
+        .table-category[data-specialization="Genetics"] {
+            background: rgba(99, 102, 241, 0.1);
+            color: rgb(99, 102, 241);
+        }
+
+        .table-category[data-specialization="Allergy"] {
+            background: rgba(244, 63, 94, 0.1);
+            color: rgb(244, 63, 94);
+        }
+
+        .table-category[data-specialization="Cardiology"] {
+            background: rgba(220, 38, 38, 0.1);
+            color: rgb(220, 38, 38);
+        }
+
+        .table-category[data-specialization="Neurology"] {
+            background: rgba(14, 165, 233, 0.1);
+            color: rgb(14, 165, 233);
+        }
+
+        .table-category[data-specialization="General"] {
+            background: rgba(102, 126, 234, 0.1);
+            color: rgb(102, 126, 234);
+        }
+
+        .table-price {
+            font-weight: 700;
+            color: rgb(102, 126, 234);
+            white-space: nowrap;
+        }
+
+        .table-price::before {
+            content: 'IQD ';
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .table-actions {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .table-actions .btn {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        .table-description {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #6b7280;
+        }
+
+        /* Hide grid when table is active */
+        .tests-grid.hidden {
+            display: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-actions {
+                justify-content: stretch;
+            }
+
+            .header-actions .btn {
+                flex: 1;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-content {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .tests-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            /* Table responsive */
+            .tests-table-container {
+                overflow-x: auto;
+            }
+
+            .tests-table {
+                min-width: 700px;
+            }
+
+            .table-description {
+                max-width: 150px;
+            }
+        }
+
+        /* RTL Support */
+        [dir="rtl"] .search-box i {
+            left: auto;
+            right: 0.75rem;
+        }
+
+        [dir="rtl"] .search-box input {
+            padding-left: 1rem;
+            padding-right: 2.5rem;
+        }
+
+        [dir="rtl"] .price-input-group::before {
+            left: auto;
+            right: 1rem;
+        }
+
+        [dir="rtl"] .price-input-group input {
+            padding-left: 1rem;
+            padding-right: 3rem;
+        }
+
+        [dir="rtl"] .modal-close {
+            left: 1.5rem;
+            right: auto;
+        }
+
+        [dir="rtl"] .search-box input:focus {
+            border-color: rgb(102, 126, 234);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        [dir="rtl"] .form-input:focus,
+        [dir="rtl"] .form-select:focus,
+        [dir="rtl"] .form-textarea:focus {
+            border-color: rgb(102, 126, 234);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Lab Navbar -->
+    <%- include('../partials/lab-navbar') %>
+
+    <!-- Main Content Wrapper -->
+    <div class="lab-wrapper">
+        <main class="lab-dashboard">
+        <div class="dashboard-container">
+            <!-- Page Header -->
+            <div class="tests-page-header">
+                <div class="header-content">
+                    <div class="header-title">
+                        <h1>
+                            <i class="fas fa-flask" style="color: rgb(102, 126, 234);"></i>
+                            <%= __('tests.catalogManagement') %>
+                        </h1>
+                        <p><%= __('tests.manageTests') %></p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-outline" onclick="importTests()">
+                            <i class="fas fa-upload"></i>
+                            <%= __('tests.import') %>
+                        </button>
+                        <button class="btn btn-primary" onclick="showAddTestModal()">
+                            <i class="fas fa-plus"></i>
+                            <%= __('tests.addNewTest') %>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-vial"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number"><%= tests ? tests.length : 0 %></h3>
+                        <p class="stat-label"><%= __('tests.totalTests') %></p>
+                        <span class="stat-trend positive">
+                            <i class="fas fa-arrow-up"></i> 12% <%= __('tests.fromLastMonth') %>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stat-card" style="--card-color: #34c759;">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #34c759, #30a14e);">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number"><%= tests && tests.length > 0 ? Math.round(tests.reduce((sum, test) => sum + test.price, 0) / tests.length) : 0 %></h3>
+                        <p class="stat-label"><%= __('tests.averagePrice') %></p>
+                        <span class="stat-trend positive">
+                            <i class="fas fa-arrow-up"></i> 5% <%= __('tests.fromLastMonth') %>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stat-card" style="--card-color: #ff9500;">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #ff9500, #ff6b00);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number"><%= lab ? lab.totalPatientsServed || 0 : 0 %></h3>
+                        <p class="stat-label"><%= __('tests.totalPatients') %></p>
+                        <span class="stat-trend positive">
+                            <i class="fas fa-arrow-up"></i> 8% <%= __('tests.fromLastMonth') %>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stat-card" style="--card-color: #007aff;">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #007aff, #0051d5);">
+                        <i class="fas fa-microscope"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number"><%= lab ? lab.totalTestsPerformed || 0 : 0 %></h3>
+                        <p class="stat-label"><%= __('tests.testsPerformed') %></p>
+                        <span class="stat-trend positive">
+                            <i class="fas fa-arrow-up"></i> 15% <%= __('tests.fromLastMonth') %>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="filters-section">
+                <div class="filters-header">
+                    <div class="filters-title">
+                        <i class="fas fa-filter"></i>
+                        <%= __('tests.filtersSearch') %>
+                    </div>
+                    <div class="view-toggle">
+                        <button class="view-btn active" data-view="grid" onclick="setView('grid')" title="Grid View">
+                            <i class="fas fa-th-large"></i>
+                        </button>
+                        <button class="view-btn" data-view="table" onclick="setView('table')" title="Table View">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="filters-content">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="<%= __('tests.searchPlaceholder') %>" onkeyup="filterTests()">
+                    </div>
+                    <div class="filter-dropdown">
+                        <select id="categoryFilter" onchange="filterTests()">
+                            <option value=""><%= __('tests.allCategories') %></option>
+                            <% if (labSpecializations && labSpecializations.length > 0) { %>
+                                <% labSpecializations.forEach(spec => { %>
+                                    <option value="<%= spec %>"><%= __('tests.specializations.' + spec, spec) %></option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                    </div>
+                    <div class="filter-dropdown">
+                        <select id="sortBy" onchange="sortTests()">
+                            <option value="name"><%= __('tests.sortByName') %></option>
+                            <option value="price-low"><%= __('tests.priceLowToHigh') %></option>
+                            <option value="price-high"><%= __('tests.priceHighToLow') %></option>
+                            <option value="category"><%= __('tests.sortByCategory') %></option>
+                            <option value="recent"><%= __('tests.recentlyAdded') %></option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tests Grid -->
+            <div class="tests-grid" id="testsGrid">
+                <% if (tests && tests.length > 0) { %>
+                    <% tests.forEach(test => { %>
+                        <div class="test-card" data-category="<%= test.category %>" data-name="<%= (test.nameAr || test.name).toLowerCase() %> <%= (test.name || '').toLowerCase() %>" data-price="<%= test.price %>">
+                            <div class="test-card-header">
+                                <div class="test-title-row">
+                                    <h3 class="test-name"><%= test.nameAr || test.name %></h3>
+                                    <% if (test.nameAr && test.name && test.nameAr !== test.name) { %>
+                                        <p class="test-name-en"><%= test.name %></p>
+                                    <% } %>
+                                    <span class="test-category" data-specialization="<%= test.category %>">
+                                        <%= __('tests.specializations.' + test.category, test.category) %>
+                                    </span>
+                                </div>
+                                <% if (test.description) { %>
+                                    <div class="test-meta">
+                                        <div class="test-meta-item">
+                                            <i class="fas fa-info-circle"></i>
+                                            <%= __('tests.detailed') %>
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
+                            <div class="test-card-body">
+                                <% if (test.description) { %>
+                                    <p class="test-description"><%= test.description %></p>
+                                <% } %>
+                                <div class="test-price">
+                                    <%= Math.round(test.price) %>
+                                </div>
+                            </div>
+                            <div class="test-card-footer">
+                                <div class="test-actions">
+                                    <button class="btn btn-secondary btn-sm btn-edit" onclick="editTest('<%= test._id %>')">
+                                        <i class="fas fa-edit"></i>
+                                        <%= __('common.edit') %>
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm btn-edit" onclick="viewTestDetails('<%= test._id %>')">
+                                        <i class="fas fa-eye"></i>
+                                        <%= __('tests.view') %>
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm btn-delete" onclick="deleteTest('<%= test._id %>')">
+                                        <i class="fas fa-trash"></i>
+                                        <%= __('common.delete') %>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <% }) %>
+                <% } else { %>
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-vial"></i>
+                        </div>
+                        <h3 class="empty-state-title"><%= __('tests.noTestsAvailable') %></h3>
+                        <p class="empty-state-description"><%= __('tests.noTestsDescription') %></p>
+                        <button class="btn btn-primary" onclick="showAddTestModal()">
+                            <i class="fas fa-plus"></i>
+                            <%= __('tests.addFirstTest') %>
+                        </button>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Tests Table View -->
+            <div class="tests-table-container" id="testsTable">
+                <% if (tests && tests.length > 0) { %>
+                <table class="tests-table">
+                    <thead>
+                        <tr>
+                            <th><%= __('tests.testName') %></th>
+                            <th><%= __('tests.category') %></th>
+                            <th><%= __('tests.description') %></th>
+                            <th><%= __('tests.price') %></th>
+                            <th><%= __('tests.actions') %></th>
+                        </tr>
+                    </thead>
+                    <tbody id="testsTableBody">
+                        <% tests.forEach(test => { %>
+                        <tr class="test-row" data-category="<%= test.category %>" data-name="<%= (test.nameAr || test.name).toLowerCase() %> <%= (test.name || '').toLowerCase() %>" data-price="<%= test.price %>">
+                            <td>
+                                <div class="table-test-name">
+                                    <div class="table-test-icon">
+                                        <i class="fas fa-flask"></i>
+                                    </div>
+                                    <div>
+                                        <span><%= test.nameAr || test.name %></span>
+                                        <% if (test.nameAr && test.name && test.nameAr !== test.name) { %>
+                                            <small class="table-test-name-en"><%= test.name %></small>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="table-category" data-specialization="<%= test.category %>">
+                                    <%= __('tests.specializations.' + test.category, test.category) %>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="table-description" title="<%= test.description || '' %>">
+                                    <%= test.description ? test.description.substring(0, 50) + (test.description.length > 50 ? '...' : '') : '-' %>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="table-price"><%= Math.round(test.price).toLocaleString() %></span>
+                            </td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn btn-secondary btn-sm btn-edit" onclick="editTest('<%= test._id %>')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm btn-edit" onclick="viewTestDetails('<%= test._id %>')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm btn-delete" onclick="deleteTest('<%= test._id %>')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+                <% } else { %>
+                <div class="empty-state" style="margin: 2rem;">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-vial"></i>
+                    </div>
+                    <h3 class="empty-state-title"><%= __('tests.noTestsAvailable') %></h3>
+                    <p class="empty-state-description"><%= __('tests.noTestsDescription') %></p>
+                </div>
+                <% } %>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Test Modal -->
+    <div id="testModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-flask"></i>
+                    <span id="modalTitle"><%= __('tests.addNewTest') %></span>
+                </h2>
+            </div>
+            <form id="testForm" onsubmit="saveTest(event)">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="testNameAr"><%= __('tests.testNameAr') %> *</label>
+                            <input type="text" id="testNameAr" name="nameAr" class="form-input" required dir="rtl" placeholder="<%= __('tests.testNameArPlaceholder') %>">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="testName"><%= __('tests.testNameEn') %> *</label>
+                            <input type="text" id="testName" name="name" class="form-input" required placeholder="<%= __('tests.testNameEnPlaceholder') %>">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="testPrice"><%= __('tests.price') %> *</label>
+                            <div class="price-input-group">
+                                <input type="number" id="testPrice" name="price" class="form-input" required min="0" step="1000" placeholder="<%= __('tests.pricePlaceholder') %>">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="testCategory"><%= __('tests.category') %> *</label>
+                        <select id="testCategory" name="category" class="form-select" required>
+                            <option value=""><%= __('tests.selectCategory') %></option>
+                            <% if (labSpecializations && labSpecializations.length > 0) { %>
+                                <% labSpecializations.forEach(spec => { %>
+                                    <option value="<%= spec %>"><%= __('tests.specializations.' + spec, spec) %></option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label" for="testDescription"><%= __('tests.description') %></label>
+                        <textarea id="testDescription" name="description" class="form-textarea" placeholder="<%= __('tests.descriptionPlaceholder') %>"></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label" for="testInstructions"><%= __('tests.specialInstructions') %></label>
+                        <textarea id="testInstructions" name="instructions" class="form-textarea" placeholder="<%= __('tests.instructionsPlaceholder') %>"></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label" for="testImage">صورة الفحص (اختياري)</label>
+                        <input type="file" id="testImage" name="image" class="form-input" accept="image/*">
+                        <div class="icon-hint" style="margin-top:6px;font-size:12px;color:#6b7280;">
+                            إذا أضفت صورة ستظهر في التطبيق بدل أيقونة الأنبوب
+                        </div>
+                        <div id="testImagePreviewWrap" style="display:none;margin-top:10px;align-items:center;gap:10px;">
+                            <img id="testImagePreview" src="" alt="preview" style="width:56px;height:56px;border-radius:12px;object-fit:cover;border:1px solid #e5e7eb;">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="clearTestImage()">إزالة الصورة</button>
+                        </div>
+                        <input type="hidden" id="removeTestImage" name="removeImage" value="false">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()"><%= __('common.cancel') %></button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        <%= __('common.save') %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentEditingId = null;
+        let testsData = [];
+        let tableRowsData = [];
+        let currentView = 'grid';
+        let existingTestImage = null;
+
+        function clearTestImage() {
+            const input = document.getElementById('testImage');
+            input.value = '';
+            existingTestImage = null;
+            document.getElementById('removeTestImage').value = 'true';
+            document.getElementById('testImagePreviewWrap').style.display = 'none';
+            document.getElementById('testImagePreview').src = '';
+        }
+
+        function showTestImagePreview(url) {
+            if (!url) {
+                document.getElementById('testImagePreviewWrap').style.display = 'none';
+                return;
+            }
+            document.getElementById('testImagePreview').src = url;
+            document.getElementById('testImagePreviewWrap').style.display = 'flex';
+            document.getElementById('removeTestImage').value = 'false';
+        }
+
+        document.getElementById('testImage')?.addEventListener('change', function () {
+            const file = this.files?.[0];
+            if (!file) return;
+            document.getElementById('removeTestImage').value = 'false';
+            showTestImagePreview(URL.createObjectURL(file));
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Store test data for filtering
+            testsData = Array.from(document.querySelectorAll('.test-card'));
+            tableRowsData = Array.from(document.querySelectorAll('.test-row'));
+
+            // Load saved view preference
+            const savedView = localStorage.getItem('labTestsView');
+            if (savedView) {
+                setView(savedView);
+            }
+        });
+
+        function setView(view) {
+            currentView = view;
+            const grid = document.getElementById('testsGrid');
+            const table = document.getElementById('testsTable');
+            const viewBtns = document.querySelectorAll('.view-btn');
+
+            // Update button states
+            viewBtns.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === view);
+            });
+
+            // Toggle views
+            if (view === 'grid') {
+                grid.classList.remove('hidden');
+                table.classList.remove('active');
+            } else {
+                grid.classList.add('hidden');
+                table.classList.add('active');
+            }
+
+            // Save preference
+            localStorage.setItem('labTestsView', view);
+        }
+
+        function showAddTestModal() {
+            currentEditingId = null;
+            existingTestImage = null;
+            document.getElementById('modalTitle').textContent = '<%= __("tests.addNewTest") %>';
+            document.getElementById('testForm').reset();
+            clearTestImage();
+            document.getElementById('removeTestImage').value = 'false';
+            document.getElementById('testModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function editTest(testId) {
+            currentEditingId = testId;
+            document.getElementById('modalTitle').textContent = '<%= __("tests.editTest") %>';
+
+            // Fetch test data from backend
+            fetch(`/lab/api/tests/${testId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const test = data.test;
+
+                        // Populate form with fetched data
+                        document.getElementById('testNameAr').value = test.nameAr || '';
+                        document.getElementById('testName').value = test.name || '';
+                        document.getElementById('testPrice').value = Math.round(test.price) || '';
+                        document.getElementById('testCategory').value = test.category || '';
+                        document.getElementById('testDescription').value = test.description || '';
+                        document.getElementById('testInstructions').value = test.instructions || '';
+                        document.getElementById('testImage').value = '';
+                        existingTestImage = test.image || null;
+                        document.getElementById('removeTestImage').value = 'false';
+                        showTestImagePreview(existingTestImage);
+
+                        // Show modal
+                        document.getElementById('testModal').classList.add('active');
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        showNotification(data.message || 'Error loading test data', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching test data:', error);
+                    showNotification('Error loading test data', 'error');
+                });
+        }
+
+        function viewTestDetails(testId) {
+            // Implement view details functionality
+            window.location.href = `/lab/tests/${testId}`;
+        }
+
+        function deleteTest(testId) {
+            if (confirm('<%= __("tests.confirmDelete") %>')) {
+                // Send delete request to backend
+                fetch(`/lab/api/tests/${testId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove from UI
+                        const testCard = document.querySelector(`[onclick="deleteTest('${testId}')"]`).closest('.test-card');
+                        testCard.style.transform = 'scale(0.9)';
+                        testCard.style.opacity = '0.5';
+
+                        setTimeout(() => {
+                            testCard.remove();
+                            checkEmptyState();
+                        }, 300);
+                    } else {
+                        alert(data.message || 'Error deleting test');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting test:', error);
+                    alert('Error deleting test');
+                });
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('testModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            document.getElementById('testForm').reset();
+            clearTestImage();
+            document.getElementById('removeTestImage').value = 'false';
+            currentEditingId = null;
+            existingTestImage = null;
+        }
+
+        function saveTest(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const formData = new FormData(form);
+            // Keep removeImage flag even when no new file selected
+            formData.set('removeImage', document.getElementById('removeTestImage').value);
+
+            const url = currentEditingId ? `/lab/api/tests/${currentEditingId}` : '/lab/api/tests';
+            const method = currentEditingId ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const successMessage = currentEditingId ? '<%= __("tests.testUpdated") %>' : '<%= __("tests.testAdded") %>';
+
+                    // Show success notification
+                    showNotification(successMessage, 'success');
+
+                    // Reload page to show updated data
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+
+                    closeModal();
+                } else {
+                    showNotification(data.message || 'Error saving test', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving test:', error);
+                showNotification('Error saving test', 'error');
+            });
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                ${message}
+            `;
+            notification.style.cssText = `
+                position: fixed;
+                top: 2rem;
+                right: 2rem;
+                background: ${type === 'success' ? 'rgb(102, 126, 234)' : 'rgb(239, 68, 68)'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-weight: 600;
+                animation: slideInRight 0.3s ease;
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        function filterTests() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+
+            // Filter grid cards
+            testsData.forEach(card => {
+                const matchesSearch = card.dataset.name.includes(searchTerm) ||
+                                     card.querySelector('.test-description')?.textContent.toLowerCase().includes(searchTerm);
+                const matchesCategory = !categoryFilter || card.dataset.category === categoryFilter;
+
+                if (matchesSearch && matchesCategory) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Filter table rows
+            tableRowsData.forEach(row => {
+                const matchesSearch = row.dataset.name.includes(searchTerm) ||
+                                     row.querySelector('.table-description')?.textContent.toLowerCase().includes(searchTerm);
+                const matchesCategory = !categoryFilter || row.dataset.category === categoryFilter;
+
+                if (matchesSearch && matchesCategory) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            checkEmptyState();
+        }
+
+        function sortTests() {
+            const sortBy = document.getElementById('sortBy').value;
+            const grid = document.getElementById('testsGrid');
+            const cards = Array.from(grid.querySelectorAll('.test-card'));
+
+            cards.sort((a, b) => {
+                switch(sortBy) {
+                    case 'name':
+                        return a.dataset.name.localeCompare(b.dataset.name);
+                    case 'price-low':
+                        return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+                    case 'price-high':
+                        return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
+                    case 'category':
+                        return a.dataset.category.localeCompare(b.dataset.category);
+                    case 'recent':
+                        // For demo purposes, just reverse the order
+                        return -1;
+                    default:
+                        return 0;
+                }
+            });
+
+            // Re-append sorted cards
+            cards.forEach(card => grid.appendChild(card));
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('sortBy').value = 'name';
+
+            testsData.forEach(card => {
+                card.style.display = 'block';
+            });
+        }
+
+        function checkEmptyState() {
+            const grid = document.getElementById('testsGrid');
+            const visibleCards = grid.querySelectorAll('.test-card:not([style*="display: none"])');
+            const existingEmptyState = grid.querySelector('.empty-state');
+
+            if (visibleCards.length === 0 && !existingEmptyState) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+                emptyState.style.cssText = 'grid-column: 1 / -1;';
+                emptyState.innerHTML = `
+                    <div class="empty-state-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="empty-state-title"><%= __("tests.noTestsFound") %></h3>
+                    <p class="empty-state-description"><%= __("tests.noTestsFoundDescription") %></p>
+                    <button class="btn btn-primary" onclick="resetFilters()">
+                        <i class="fas fa-redo"></i>
+                        <%= __("tests.reset") %> <%= __("common.filter") %>
+                    </button>
+                `;
+                grid.appendChild(emptyState);
+            } else if (visibleCards.length > 0 && existingEmptyState) {
+                existingEmptyState.remove();
+            }
+        }
+
+        function exportTests() {
+            // Export tests to CSV
+            window.location.href = '/lab/api/tests/export';
+        }
+
+        function importTests() {
+            // Initialize import modal event listeners
+            initializeImportModal();
+            // Show import modal
+            document.getElementById('importModal').style.display = 'flex';
+        }
+
+        function uploadTests() {
+            const fileInput = document.getElementById('importFileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show loading state
+            const uploadBtn = document.querySelector('.upload-btn');
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+            fetch('/lab/api/tests/import', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showImportResults(data.results);
+                    // Refresh page after short delay
+                    setTimeout(() => location.reload(), 3000);
+                } else {
+                    alert('Error: ' + data.message);
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = 'Upload';
+                }
+            })
+            .catch(error => {
+                alert('Error uploading file: ' + error.message);
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = 'Upload';
+            });
+        }
+
+        function showImportResults(results) {
+            const modal = document.getElementById('importModal');
+            const content = modal.querySelector('.modal-content');
+
+            let html = `
+                <div class="import-results">
+                    <h2><i class="fas fa-check-circle" style="color: #10b981;"></i> Import Complete!</h2>
+                    <div class="results-summary">
+                        <div class="result-item success">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>${results.success.length} tests added</span>
+                        </div>
+                        <div class="result-item warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>${results.skipped.length} skipped (already exist)</span>
+                        </div>
+                        ${results.errors.length > 0 ? `
+                        <div class="result-item error">
+                            <i class="fas fa-times-circle"></i>
+                            <span>${results.errors.length} errors</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ${results.errors.length > 0 ? `
+                    <div class="errors-list">
+                        <h4>Errors:</h4>
+                        ${results.errors.slice(0, 10).map(e =>
+                            `<div>Row ${e.row}: ${e.message}</div>`
+                        ).join('')}
+                        ${results.errors.length > 10 ? `<div>...and ${results.errors.length - 10} more</div>` : ''}
+                    </div>
+                    ` : ''}
+                    <button class="btn btn-primary" onclick="location.reload()">Done</button>
+                </div>
+            `;
+
+            content.innerHTML = html;
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('testModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+
+            .notification {
+                animation: slideInRight 0.3s ease;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Import modal elements will be initialized when importTests() is called
+        let uploadArea = null;
+        let fileInput = null;
+
+        function initializeImportModal() {
+            uploadArea = document.getElementById('uploadArea');
+            fileInput = document.getElementById('importFileInput');
+
+            if (!uploadArea || !fileInput) return;
+
+            // Remove existing listeners to avoid duplicates
+            uploadArea.removeEventListener('click', handleUploadClick);
+
+            // Add click listener
+            uploadArea.addEventListener('click', handleUploadClick);
+
+            // Add drag-and-drop listeners
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('dragleave', handleDragLeave);
+            uploadArea.addEventListener('drop', handleDrop);
+
+            // Add change listener to file input
+            fileInput.addEventListener('change', handleFileSelect);
+        }
+
+        function handleUploadClick() {
+            if (fileInput) fileInput.click();
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#5568d3';
+            uploadArea.style.background = '#f8f9ff';
+        }
+
+        function handleDragLeave() {
+            uploadArea.style.borderColor = '#667eea';
+            uploadArea.style.background = '';
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#667eea';
+            uploadArea.style.background = '';
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && fileInput) {
+                fileInput.files = files;
+                document.getElementById('fileInfo').textContent = files[0].name;
+            }
+        }
+
+        function handleFileSelect() {
+            if (fileInput && fileInput.files.length > 0) {
+                document.getElementById('fileInfo').textContent = fileInput.files[0].name;
+            }
+        }
+    </script>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-excel"></i> Import Tests</h2>
+                <button class="close-btn" onclick="closeImportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Drop your Excel file here</h3>
+                    <p>or click to browse</p>
+                    <input type="file" id="importFileInput" accept=".xls,.xlsx,.csv" style="display: none;">
+                    <p class="file-info" id="fileInfo"></p>
+                </div>
+                <div class="format-info">
+                    <h4>Expected Format:</h4>
+                    <table class="format-table">
+                        <thead>
+                            <tr>
+                                <th>name</th>
+                                <th>price</th>
+                                <th>category</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Blood Test A</td>
+                                <td>15000</td>
+                                <td>Blood Tests</td>
+                            </tr>
+                            <tr>
+                                <td>X-Ray Chest</td>
+                                <td>25000</td>
+                                <td>X-Ray</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <small>Valid categories: Blood Tests, X-Ray, MRI, CT Scan, Ultrasound, Pathology, Microbiology, Biochemistry, Genetics, Allergy, Cardiology, Neurology, General</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
+                <button class="btn btn-primary upload-btn" onclick="uploadTests()">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Import Modal Styles - more specific to avoid conflicts */
+        #importModal.modal {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(0,0,0,0.5) !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 1000 !important;
+        }
+
+        #importModal.modal[style*="display: flex"] {
+            display: flex !important;
+        }
+
+        #importModal .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        #importModal .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #importModal .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1f2937;
+        }
+
+        #importModal .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        #importModal .close-btn:hover {
+            color: #1f2937;
+        }
+
+        #importModal .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        #importModal .upload-area:hover {
+            background: #f8f9ff;
+            border-color: #5568d3;
+        }
+
+        #importModal .upload-area i {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 16px;
+        }
+
+        #importModal .upload-area h3 {
+            margin: 8px 0;
+            color: #1f2937;
+        }
+
+        #importModal .upload-area p {
+            margin: 4px 0 0;
+            color: #6b7280;
+        }
+
+        #importModal .file-info {
+            margin-top: 12px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        #importModal .format-info {
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 12px;
+        }
+
+        #importModal .format-info h4 {
+            margin: 0 0 12px;
+            color: #374151;
+        }
+
+        #importModal .format-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+        }
+
+        #importModal .format-table th, #importModal .format-table td {
+            border: 1px solid #e5e7eb;
+            padding: 8px;
+            text-align: left;
+        }
+
+        #importModal .format-table th {
+            background: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        #importModal .format-table td {
+            color: #4b5563;
+        }
+
+        #importModal .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        #importModal .import-results {
+            text-align: center;
+        }
+
+        #importModal .results-summary {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        #importModal .result-item {
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #importModal .result-item.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        #importModal .result-item.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        #importModal .result-item.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        #importModal .errors-list {
+            background: #fee2e2;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            text-align: left;
+        }
+
+        #importModal .errors-list h4 {
+            margin: 0 0 8px;
+            color: #991b1b;
+        }
+
+        #importModal .errors-list div {
+            margin: 4px 0;
+            color: #7f1d1d;
+        }
+    </style>
+
+        </main>
+    </div>
+</body>
+</html>

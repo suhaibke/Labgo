@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <link rel="stylesheet" href="/css/lab-external-transfers.css">
+    <style>body { font-family: <%= font %>; }</style>
+    <!-- Used only by the sample label's "Download PDF" button -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <%- include('../partials/lab-navbar') %>
+
+    <div class="lab-wrapper">
+        <main class="external-transfers-page">
+            <div class="external-transfers-container">
+                <section class="transfer-page-header">
+                    <div>
+                        <span class="page-eyebrow"><i class="fas fa-arrow-right-arrow-left"></i> <%= __('navigation.externalTransfers') %></span>
+                        <h1><%= __('externalTransfers.title') %></h1>
+                        <p><%= __('externalTransfers.subtitle') %></p>
+                    </div>
+                    <button class="primary-action" id="openTransferModal">
+                        <i class="fas fa-plus"></i>
+                        <%= __('externalTransfers.newTransfer') %>
+                    </button>
+                </section>
+
+                <section class="transfer-stats" aria-label="<%= __('externalTransfers.title') %>">
+                    <article class="transfer-stat total">
+                        <span class="stat-icon"><i class="fas fa-book-medical"></i></span>
+                        <div><strong><%= stats.total %></strong><span><%= __('externalTransfers.total') %></span></div>
+                    </article>
+                    <article class="transfer-stat awaiting">
+                        <span class="stat-icon"><i class="fas fa-hourglass-half"></i></span>
+                        <div><strong><%= stats.awaiting %></strong><span><%= __('externalTransfers.awaiting') %></span></div>
+                    </article>
+                    <article class="transfer-stat completed">
+                        <span class="stat-icon"><i class="fas fa-file-circle-check"></i></span>
+                        <div><strong><%= stats.completed %></strong><span><%= __('externalTransfers.completed') %></span></div>
+                    </article>
+                </section>
+
+                <section class="notebook-card">
+                    <div class="notebook-toolbar">
+                        <div class="search-field">
+                            <i class="fas fa-search"></i>
+                            <input id="transferSearch" type="search" placeholder="<%= __('externalTransfers.searchPlaceholder') %>">
+                        </div>
+                        <select id="statusFilter" aria-label="<%= __('externalTransfers.status') %>">
+                            <option value="all"><%= __('externalTransfers.allStatuses') %></option>
+                            <option value="sent"><%= __('externalTransfers.statusSent') %></option>
+                            <option value="completed"><%= __('externalTransfers.statusCompleted') %></option>
+                        </select>
+                    </div>
+
+                    <div class="notebook-table-wrap">
+                        <table class="notebook-table">
+                            <thead>
+                                <tr>
+                                    <th><%= __('externalTransfers.patientInfo') %></th>
+                                    <th><%= __('externalTransfers.sampleInfo') %></th>
+                                    <th><%= __('externalTransfers.externalLabInfo') %></th>
+                                    <th><%= __('externalTransfers.sentAt') %></th>
+                                    <th><%= __('externalTransfers.status') %></th>
+                                    <th><%= __('common.actions') %></th>
+                                </tr>
+                            </thead>
+                            <tbody id="transferRows">
+                                <% transfers.forEach(transfer => {
+                                    const externalLab = transfer.externalLab || {};
+                                    const genderText = transfer.patientGender ? __('common.' + transfer.patientGender) : __('common.notAvailable');
+                                    const ageText = transfer.patientAge !== null && transfer.patientAge !== undefined
+                                        ? `${transfer.patientAge} ${__('common.years')}`
+                                        : __('common.notAvailable');
+                                    const searchText = [transfer.patientName, transfer.sampleCode, externalLab.name, externalLab.phone, transfer.referenceNumber]
+                                        .filter(Boolean).join(' ').toLowerCase();
+                                    const testsText = (transfer.tests && transfer.tests.length)
+                                        ? transfer.tests.map(test => test.testName).join(', ')
+                                        : (transfer.testsDescription || '');
+                                %>
+                                    <tr data-transfer-row data-status="<%= transfer.status %>" data-search="<%= searchText %>">
+                                        <td>
+                                            <div class="patient-cell">
+                                                <span class="patient-avatar"><%= (transfer.patientName || '?').charAt(0).toUpperCase() %></span>
+                                                <div>
+                                                    <strong><%= transfer.patientName %></strong>
+                                                    <small><%= genderText %> · <%= ageText %></small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <strong class="sample-code"><i class="fas fa-qrcode"></i> <%= transfer.sampleCode %></strong>
+                                            <small class="tests-list"><%= testsText %></small>
+                                        </td>
+                                        <td>
+                                            <strong><%= externalLab.name %></strong>
+                                            <% if (externalLab.contactName) { %><small><i class="fas fa-user-doctor"></i> <%= externalLab.contactName %></small><% } %>
+                                            <% if (externalLab.phone) { %><small><i class="fas fa-phone"></i> <%= externalLab.phone %></small><% } %>
+                                            <% if (externalLab.address) { %><small class="transfer-note" title="<%= externalLab.address %>"><i class="fas fa-location-dot"></i> <%= externalLab.address %></small><% } %>
+                                            <% if (transfer.referenceNumber) { %><small>#<%= transfer.referenceNumber %></small><% } %>
+                                            <% if (transfer.notes) { %><small class="transfer-note" title="<%= transfer.notes %>"><i class="fas fa-note-sticky"></i> <%= transfer.notes %></small><% } %>
+                                        </td>
+                                        <td>
+                                            <strong><%= new Date(transfer.sentAt).toLocaleDateString(currentLang) %></strong>
+                                            <% if (transfer.expectedResultAt) { %>
+                                                <small><%= __('externalTransfers.expectedResultDate') %>: <%= new Date(transfer.expectedResultAt).toLocaleDateString(currentLang) %></small>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <span class="status-pill <%= transfer.status %>">
+                                                <i class="fas <%= transfer.status === 'completed' ? 'fa-circle-check' : 'fa-clock' %>"></i>
+                                                <%= transfer.status === 'completed' ? __('externalTransfers.statusCompleted') : __('externalTransfers.statusSent') %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="row-actions">
+                                                <% if (transfer.orderId) { %>
+                                                    <a href="/lab/orders/<%= transfer.orderId %>" class="icon-action" title="<%= __('externalTransfers.viewOrder') %>">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                <% } %>
+                                                <% const fromLabBits = [lab.name, lab.phone].filter(Boolean).join(' - ');
+                                                   const toLabBits = [externalLab.name, externalLab.contactName, externalLab.phone, externalLab.address].filter(Boolean).join(' - ');
+                                                   const expectedText = transfer.expectedResultAt ? new Date(transfer.expectedResultAt).toLocaleDateString(currentLang) : ''; %>
+                                                <button type="button" class="icon-action" data-action="print-label"
+                                                    data-code="<%= transfer.sampleCode %>"
+                                                    data-patient="<%= transfer.patientName || '' %>"
+                                                    data-gender="<%= genderText %>"
+                                                    data-age="<%= ageText %>"
+                                                    data-tests="<%= testsText %>"
+                                                    data-from-lab="<%= fromLabBits %>"
+                                                    data-to-lab="<%= toLabBits %>"
+                                                    data-sent="<%= new Date(transfer.sentAt).toLocaleDateString(currentLang) %>"
+                                                    data-expected="<%= expectedText %>"
+                                                    data-ref="<%= transfer.referenceNumber || '' %>"
+                                                    title="<%= __('externalTransfers.printLabel') %>">
+                                                    <i class="fas fa-print"></i>
+                                                </button>
+                                                <button type="button" class="icon-action" data-action="download-label"
+                                                    data-code="<%= transfer.sampleCode %>"
+                                                    data-patient="<%= transfer.patientName || '' %>"
+                                                    data-gender="<%= genderText %>"
+                                                    data-age="<%= ageText %>"
+                                                    data-tests="<%= testsText %>"
+                                                    data-from-lab="<%= fromLabBits %>"
+                                                    data-to-lab="<%= toLabBits %>"
+                                                    data-sent="<%= new Date(transfer.sentAt).toLocaleDateString(currentLang) %>"
+                                                    data-expected="<%= expectedText %>"
+                                                    data-ref="<%= transfer.referenceNumber || '' %>"
+                                                    title="<%= __('externalTransfers.downloadPdf') %>">
+                                                    <i class="fas fa-file-arrow-down"></i>
+                                                </button>
+                                                <% if (transfer.status === 'sent') { %>
+                                                    <button type="button" class="result-action" data-action="upload-result" data-transfer-id="<%= transfer._id %>">
+                                                        <i class="fas fa-cloud-arrow-up"></i>
+                                                        <%= __('externalTransfers.uploadResult') %>
+                                                    </button>
+                                                <% } else if (transfer.resultFileUrl) { %>
+                                                    <a href="<%= transfer.resultFileUrl %>" target="_blank" rel="noopener" class="result-link">
+                                                        <i class="fas fa-file-arrow-down"></i>
+                                                        <%= __('labOrderDetails.viewResult') %>
+                                                    </a>
+                                                <% } %>
+                                                <button type="button" class="icon-action" data-action="delete-transfer" data-transfer-id="<%= transfer._id %>" title="<%= __('externalTransfers.deleteTransfer') %>">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+
+                        <div class="empty-state <%= transfers.length ? 'hidden' : '' %>" id="emptyTransfers">
+                            <span><i class="fas fa-book-open"></i></span>
+                            <h2><%= __('externalTransfers.noTransfers') %></h2>
+                            <p><%= __('externalTransfers.noTransfersDescription') %></p>
+                        </div>
+                        <div class="empty-state hidden" id="emptySearch">
+                            <span><i class="fas fa-magnifying-glass"></i></span>
+                            <h2><%= __('externalTransfers.noTransfers') %></h2>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="transfer-modal" id="newTransferModal" aria-hidden="true">
+        <div class="modal-panel large" role="dialog" aria-modal="true" aria-labelledby="newTransferTitle">
+            <div class="modal-heading">
+                <div><span><i class="fas fa-arrow-right-arrow-left"></i></span><h2 id="newTransferTitle"><%= __('externalTransfers.newTransfer') %></h2></div>
+                <button type="button" class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+            </div>
+            <form id="newTransferForm">
+                <div class="modal-scroll">
+                    <div class="custody-tabs" id="transferModeTabs">
+                        <button type="button" class="custody-tab-btn active" data-mode="order"><%= __('externalTransfers.fromOrder') %></button>
+                        <button type="button" class="custody-tab-btn" data-mode="manual"><%= __('externalTransfers.manualEntry') %></button>
+                    </div>
+
+                    <div id="orderModeSection">
+                        <div class="form-section">
+                            <label for="sampleOrderId"><%= __('externalTransfers.selectSample') %></label>
+                            <select id="sampleOrderId" name="orderId">
+                                <option value=""><%= __('externalTransfers.selectSamplePlaceholder') %></option>
+                                <% eligibleOrders.forEach(order => { %>
+                                    <option value="<%= order._id %>" <%= String(order._id) === selectedOrderId ? 'selected' : '' %>>
+                                        <%= order.qrCode %> — <%= order.patientInfo.name %> — <%= (order.tests || []).map(test => test.testName).join(', ') %>
+                                    </option>
+                                <% }); %>
+                            </select>
+                            <% if (!eligibleOrders.length) { %><p class="form-note warning"><i class="fas fa-circle-info"></i> <%= __('externalTransfers.cannotTransfer') %></p><% } %>
+                        </div>
+
+                        <div class="patient-info-card" id="patientInfoCard" hidden>
+                            <div class="patient-info-head">
+                                <i class="fas fa-user"></i>
+                                <span><%= __('externalTransfers.patientInfo') %></span>
+                            </div>
+                            <strong class="patient-info-name" id="autoPatientName">—</strong>
+                            <div class="patient-detail-grid">
+                                <div class="patient-detail-item">
+                                    <i class="fas fa-venus-mars"></i>
+                                    <span id="autoPatientGender">—</span>
+                                </div>
+                                <div class="patient-detail-item">
+                                    <i class="fas fa-cake-candles"></i>
+                                    <span id="autoPatientAge">—</span>
+                                </div>
+                                <div class="patient-detail-item">
+                                    <i class="fas fa-phone"></i>
+                                    <span id="autoPatientPhone">—</span>
+                                </div>
+                                <div class="patient-detail-item span-2">
+                                    <i class="fas fa-location-dot"></i>
+                                    <span id="autoPatientAddress">—</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="auto-fill-grid" id="autoFillPanel" hidden>
+                            <article class="span-2">
+                                <span><i class="fas fa-vial"></i> <%= __('externalTransfers.sampleInfo') %></span>
+                                <strong id="autoSampleCode">—</strong>
+                                <small id="autoSampleTests">—</small>
+                            </article>
+                        </div>
+
+                        <div class="form-section" id="testSelectPanel" hidden>
+                            <label><%= __('externalTransfers.selectTests') %></label>
+                            <div class="test-select-list" id="testSelectList"></div>
+                            <p class="form-note"><%= __('externalTransfers.selectTestsHint') %></p>
+                        </div>
+                    </div>
+
+                    <div id="manualModeSection" hidden>
+                        <fieldset>
+                            <legend><%= __('externalTransfers.patientInfo') %></legend>
+                            <div class="form-grid">
+                                <div class="form-field span-2">
+                                    <label for="manualPatientName"><%= __('externalTransfers.patientName') %> *</label>
+                                    <input id="manualPatientName" name="patientName" type="text" maxlength="200">
+                                </div>
+                                <div class="form-field">
+                                    <label for="manualPatientPhone"><%= __('externalTransfers.patientPhone') %></label>
+                                    <input id="manualPatientPhone" name="patientPhone" type="tel" maxlength="50">
+                                </div>
+                                <div class="form-field">
+                                    <label for="manualPatientGender"><%= __('externalTransfers.patientGender') %></label>
+                                    <select id="manualPatientGender" name="patientGender">
+                                        <option value="">—</option>
+                                        <option value="male"><%= __('common.male') %></option>
+                                        <option value="female"><%= __('common.female') %></option>
+                                    </select>
+                                </div>
+                                <div class="form-field">
+                                    <label for="manualPatientAge"><%= __('externalTransfers.patientAge') %></label>
+                                    <input id="manualPatientAge" name="patientAge" type="number" min="0" max="120">
+                                </div>
+                                <div class="form-field">
+                                    <label for="manualSampleCode"><%= __('externalTransfers.sampleCode') %></label>
+                                    <input id="manualSampleCode" name="sampleCode" type="text" maxlength="60" placeholder="<%= __('externalTransfers.sampleCodeAuto') %>">
+                                </div>
+                                <div class="form-field span-2">
+                                    <label for="manualTestsDescription"><%= __('externalTransfers.testsDescription') %></label>
+                                    <textarea id="manualTestsDescription" name="testsDescription" rows="2" maxlength="500"></textarea>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <fieldset>
+                        <legend><%= __('externalTransfers.externalLabInfo') %></legend>
+                        <div class="form-grid">
+                            <div class="form-field span-2">
+                                <label for="externalLabName"><%= __('externalTransfers.labName') %> *</label>
+                                <input id="externalLabName" name="labName" type="text" maxlength="160" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="contactName"><%= __('externalTransfers.contactName') %></label>
+                                <input id="contactName" name="contactName" type="text" maxlength="120">
+                            </div>
+                            <div class="form-field">
+                                <label for="externalLabPhone"><%= __('externalTransfers.phone') %></label>
+                                <input id="externalLabPhone" name="phone" type="tel" maxlength="40">
+                            </div>
+                            <div class="form-field span-2">
+                                <label for="externalLabAddress"><%= __('externalTransfers.address') %></label>
+                                <input id="externalLabAddress" name="address" type="text" maxlength="240">
+                            </div>
+                            <div class="form-field">
+                                <label for="referenceNumber"><%= __('externalTransfers.referenceNumber') %></label>
+                                <input id="referenceNumber" name="referenceNumber" type="text" maxlength="80">
+                            </div>
+                            <div class="form-field">
+                                <label for="expectedResultAt"><%= __('externalTransfers.expectedResultDate') %></label>
+                                <input id="expectedResultAt" name="expectedResultAt" type="date">
+                            </div>
+                            <div class="form-field span-2">
+                                <label for="transferNotes"><%= __('externalTransfers.notes') %></label>
+                                <textarea id="transferNotes" name="notes" rows="3" maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="secondary-action" data-close-modal><%= __('common.cancel') %></button>
+                    <button type="submit" class="primary-action" id="saveTransferButton">
+                        <i class="fas fa-floppy-disk"></i> <%= __('externalTransfers.saveTransfer') %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="transfer-modal" id="resultModal" aria-hidden="true">
+        <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="resultModalTitle">
+            <div class="modal-heading">
+                <div><span><i class="fas fa-file-medical"></i></span><h2 id="resultModalTitle"><%= __('externalTransfers.uploadResult') %></h2></div>
+                <button type="button" class="modal-close" data-close-result><i class="fas fa-times"></i></button>
+            </div>
+            <form id="resultUploadForm">
+                <div class="result-upload-area">
+                    <input id="returnedResultFile" name="resultFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp" required>
+                    <label for="returnedResultFile">
+                        <i class="fas fa-cloud-arrow-up"></i>
+                        <strong><%= __('externalTransfers.chooseFile') %></strong>
+                        <span id="selectedResultFile">PDF, JPG, PNG, HEIC, WEBP</span>
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="secondary-action" data-close-result><%= __('common.cancel') %></button>
+                    <button type="submit" class="primary-action" id="uploadResultButton">
+                        <i class="fas fa-paper-plane"></i> <%= __('externalTransfers.uploadResult') %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="transfer-toast" id="transferToast" role="status"></div>
+
+    <div id="printLabelArea">
+        <div class="print-label">
+            <div class="print-label-head">
+                <span class="print-label-brand"><i class="fas fa-flask"></i> labgo</span>
+                <span class="print-label-title"><%= __('externalTransfers.labelTitle') %></span>
+            </div>
+
+            <div class="print-label-barcode">
+                <canvas id="lblBarcode" width="720" height="120"></canvas>
+                <div class="print-label-code" id="lblCode"></div>
+            </div>
+
+            <div class="print-label-section">
+                <span class="print-label-heading"><i class="fas fa-user"></i> <%= __('externalTransfers.patientInfo') %></span>
+                <strong id="lblPatient" class="print-label-patient-name"></strong>
+                <small id="lblPatientMeta"></small>
+                <small id="lblTests"></small>
+            </div>
+
+            <div class="print-label-section">
+                <span class="print-label-heading"><i class="fas fa-calendar-days"></i> <%= __('externalTransfers.datesSection') %></span>
+                <div class="print-label-row"><span><%= __('externalTransfers.sentAt') %></span><strong id="lblSent"></strong></div>
+                <div class="print-label-row" id="lblExpectedRow"><span><%= __('externalTransfers.expectedResultDate') %></span><strong id="lblExpected"></strong></div>
+            </div>
+
+            <div class="print-label-section">
+                <span class="print-label-heading"><i class="fas fa-arrow-right-arrow-left"></i> <%= __('externalTransfers.externalLabInfo') %></span>
+                <div class="print-label-row"><span><%= __('externalTransfers.fromLab') %></span><strong id="lblFromLab"></strong></div>
+                <div class="print-label-row"><span><%= __('externalTransfers.toLab') %></span><strong id="lblToLab"></strong></div>
+                <div class="print-label-row" id="lblRefRow"><span><%= __('externalTransfers.referenceNumber') %></span><strong id="lblRef"></strong></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="application/json" id="eligibleOrdersData"><%- eligibleOrdersJson %></script>
+    <script type="application/json" id="transferData"><%- transferDataJson %></script>
+    <script>
+        const eligibleOrders = JSON.parse(document.getElementById('eligibleOrdersData').textContent || '[]');
+        const copy = <%- JSON.stringify({
+            male: __('common.male'),
+            female: __('common.female'),
+            years: __('common.years'),
+            notAvailable: __('common.notAvailable'),
+            transferSaved: __('externalTransfers.transferSaved'),
+            transferError: __('externalTransfers.transferError'),
+            uploadSuccess: __('externalTransfers.uploadSuccess'),
+            uploadError: __('externalTransfers.uploadError'),
+            patientNameRequired: __('externalTransfers.patientNameRequired'),
+            confirmDeleteTransfer: __('externalTransfers.confirmDeleteTransfer')
+        }).replace(/</g, '\\u003c') %>;
+        let resultTransferId = null;
+        let transferMode = 'order';
+
+        const newTransferModal = document.getElementById('newTransferModal');
+        const resultModal = document.getElementById('resultModal');
+        const sampleSelect = document.getElementById('sampleOrderId');
+        const orderModeSection = document.getElementById('orderModeSection');
+        const manualModeSection = document.getElementById('manualModeSection');
+        const patientInfoCard = document.getElementById('patientInfoCard');
+        const autoFillPanel = document.getElementById('autoFillPanel');
+        const testSelectPanel = document.getElementById('testSelectPanel');
+
+        function setModalState(modal, open) {
+            modal.classList.toggle('open', open);
+            modal.setAttribute('aria-hidden', String(!open));
+            document.body.classList.toggle('modal-open', open);
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById('transferToast');
+            toast.textContent = message;
+            toast.className = `transfer-toast visible ${type || ''}`;
+            window.setTimeout(() => toast.classList.remove('visible'), 3500);
+        }
+
+        function setTransferMode(mode) {
+            transferMode = mode;
+            document.querySelectorAll('#transferModeTabs .custody-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+            orderModeSection.hidden = mode !== 'order';
+            manualModeSection.hidden = mode !== 'manual';
+            if (mode === 'manual') {
+                patientInfoCard.hidden = true;
+                autoFillPanel.hidden = true;
+                testSelectPanel.hidden = true;
+            } else {
+                updateAutoFill();
+            }
+        }
+
+        document.querySelectorAll('#transferModeTabs .custody-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => setTransferMode(btn.dataset.mode));
+        });
+
+        function updateAutoFill() {
+            const order = eligibleOrders.find(item => String(item._id) === sampleSelect.value);
+            patientInfoCard.hidden = !order;
+            autoFillPanel.hidden = !order;
+            testSelectPanel.hidden = !order;
+            if (!order) return;
+
+            const info = order.patientInfo || {};
+            const gender = info.gender && copy[info.gender] ? copy[info.gender] : copy.notAvailable;
+            const age = info.age !== null && info.age !== undefined ? `${info.age} ${copy.years}` : copy.notAvailable;
+            const location = order.location || {};
+            const address = [location.address, location.landmark].filter(Boolean).join(' - ');
+
+            document.getElementById('autoPatientName').textContent = info.name || copy.notAvailable;
+            document.getElementById('autoPatientGender').textContent = gender;
+            document.getElementById('autoPatientAge').textContent = age;
+            document.getElementById('autoPatientPhone').textContent = info.phone || copy.notAvailable;
+            document.getElementById('autoPatientAddress').textContent = address || copy.notAvailable;
+            document.getElementById('autoSampleCode').textContent = order.qrCode || copy.notAvailable;
+            document.getElementById('autoSampleTests').textContent = (order.tests || []).map(test => test.testName).join(', ') || copy.notAvailable;
+
+            const testList = document.getElementById('testSelectList');
+            const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+            testList.innerHTML = (order.tests || []).map(test => `
+                <label class="test-select-item">
+                    <input type="checkbox" name="testIds" value="${escapeHtml(test.testId)}" checked>
+                    <span>${escapeHtml(test.testName)}</span>
+                </label>
+            `).join('');
+        }
+
+        document.getElementById('openTransferModal').addEventListener('click', () => {
+            setModalState(newTransferModal, true);
+            setTransferMode(eligibleOrders.length ? 'order' : 'manual');
+        });
+        document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => setModalState(newTransferModal, false)));
+        document.querySelectorAll('[data-close-result]').forEach(button => button.addEventListener('click', () => setModalState(resultModal, false)));
+        sampleSelect.addEventListener('change', updateAutoFill);
+
+        document.getElementById('newTransferForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            const button = document.getElementById('saveTransferButton');
+
+            const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+            delete values.orderId;
+            delete values.testIds;
+            delete values.patientName;
+            delete values.patientPhone;
+            delete values.patientGender;
+            delete values.patientAge;
+            delete values.sampleCode;
+            delete values.testsDescription;
+
+            if (transferMode === 'order') {
+                const orderId = sampleSelect.value;
+                if (!orderId) {
+                    showToast(copy.transferError, 'error');
+                    return;
+                }
+                values.orderId = orderId;
+                values.testIds = [...document.querySelectorAll('#testSelectList input:checked')].map(el => el.value);
+            } else {
+                const patientName = document.getElementById('manualPatientName').value.trim();
+                if (!patientName) {
+                    showToast(copy.patientNameRequired, 'error');
+                    return;
+                }
+                values.patientName = patientName;
+                values.patientPhone = document.getElementById('manualPatientPhone').value.trim();
+                values.patientGender = document.getElementById('manualPatientGender').value;
+                values.patientAge = document.getElementById('manualPatientAge').value;
+                values.sampleCode = document.getElementById('manualSampleCode').value.trim();
+                values.testsDescription = document.getElementById('manualTestsDescription').value.trim();
+            }
+
+            button.disabled = true;
+            try {
+                const response = await fetch('/lab/api/external-transfers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(values)
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || copy.transferError);
+                showToast(copy.transferSaved, 'success');
+                window.setTimeout(() => window.location.assign('/lab/external-transfers'), 700);
+            } catch (error) {
+                showToast(error.message || copy.transferError, 'error');
+                button.disabled = false;
+            }
+        });
+
+        document.querySelectorAll('[data-action="upload-result"]').forEach(button => {
+            button.addEventListener('click', () => {
+                resultTransferId = button.dataset.transferId;
+                document.getElementById('resultUploadForm').reset();
+                document.getElementById('selectedResultFile').textContent = 'PDF, JPG, PNG, HEIC, WEBP';
+                setModalState(resultModal, true);
+            });
+        });
+
+        document.querySelectorAll('[data-action="delete-transfer"]').forEach(button => {
+            button.addEventListener('click', async () => {
+                if (!window.confirm(copy.confirmDeleteTransfer)) return;
+                try {
+                    const response = await fetch(`/lab/api/external-transfers/${encodeURIComponent(button.dataset.transferId)}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.success) throw new Error(data.message || copy.transferError);
+                    window.location.reload();
+                } catch (error) {
+                    showToast(error.message || copy.transferError, 'error');
+                }
+            });
+        });
+
+        document.getElementById('returnedResultFile').addEventListener('change', event => {
+            const file = event.target.files[0];
+            document.getElementById('selectedResultFile').textContent = file ? file.name : 'PDF, JPG, PNG, HEIC, WEBP';
+        });
+
+        document.getElementById('resultUploadForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            const file = document.getElementById('returnedResultFile').files[0];
+            if (!file || !resultTransferId) return;
+            if (file.size > 5 * 1024 * 1024) {
+                showToast(copy.uploadError, 'error');
+                return;
+            }
+
+            const button = document.getElementById('uploadResultButton');
+            button.disabled = true;
+            try {
+                const uploadBody = new FormData();
+                uploadBody.append('resultFile', file);
+                const response = await fetch(`/lab/api/external-transfers/${encodeURIComponent(resultTransferId)}/result`, {
+                    method: 'POST',
+                    body: uploadBody
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || copy.uploadError);
+
+                showToast(copy.uploadSuccess, 'success');
+                window.setTimeout(() => window.location.reload(), 900);
+            } catch (error) {
+                showToast(error.message || copy.uploadError, 'error');
+                button.disabled = false;
+            }
+        });
+
+        function applyFilters() {
+            const search = document.getElementById('transferSearch').value.trim().toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            const rows = [...document.querySelectorAll('[data-transfer-row]')];
+            let visible = 0;
+            rows.forEach(row => {
+                const matchesSearch = !search || row.dataset.search.includes(search);
+                const matchesStatus = status === 'all' || row.dataset.status === status;
+                const show = matchesSearch && matchesStatus;
+                row.hidden = !show;
+                if (show) visible += 1;
+            });
+            document.getElementById('emptySearch').classList.toggle('hidden', visible !== 0 || rows.length === 0);
+        }
+
+        document.getElementById('transferSearch').addEventListener('input', applyFilters);
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        [newTransferModal, resultModal].forEach(modal => modal.addEventListener('click', event => {
+            if (event.target === modal) setModalState(modal, false);
+        }));
+
+        // --- Sample label printing -------------------------------------------------
+        // Same Code39 encoding used by the app's own barcode widget, so a label
+        // printed here scans identically to the one shown on the patient's phone.
+        const CODE39_PATTERNS = {
+            '0': 'nnnwwnwnn', '1': 'wnnwnnnnw', '2': 'nnwwnnnnw', '3': 'wnwwnnnnn',
+            '4': 'nnnwwnnnw', '5': 'wnnwwnnnn', '6': 'nnwwwnnnn', '7': 'nnnwnnwnw',
+            '8': 'wnnwnnwnn', '9': 'nnwwnnwnn', 'A': 'wnnnnwnnw', 'B': 'nnwnnwnnw',
+            'C': 'wnwnnwnnn', 'D': 'nnnnwwnnw', 'E': 'wnnnwwnnn', 'F': 'nnwnwwnnn',
+            'G': 'nnnnnwwnw', 'H': 'wnnnnwwnn', 'I': 'nnwnnwwnn', 'J': 'nnnnwwwnn',
+            'K': 'wnnnnnnww', 'L': 'nnwnnnnww', 'M': 'wnwnnnnwn', 'N': 'nnnnwnnww',
+            'O': 'wnnnwnnwn', 'P': 'nnwnwnnwn', 'Q': 'nnnnnnwww', 'R': 'wnnnnnwwn',
+            'S': 'nnwnnnwwn', 'T': 'nnnnwnwwn', 'U': 'wwnnnnnnw', 'V': 'nwwnnnnnw',
+            'W': 'wwwnnnnnn', 'X': 'nwnnwnnnw', 'Y': 'wwnnwnnnn', 'Z': 'nwwnwnnnn',
+            '-': 'nwnnnnwnw', '.': 'wwnnnnwnn', ' ': 'nwwnnnwnn', '*': 'nwnnwnwnn',
+            '$': 'nwnwnwnnn', '/': 'nwnwnnnwn', '+': 'nwnnnwnwn', '%': 'nnnwnwnwn'
+        };
+
+        function drawCode39(canvas, data) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const encoded = `*${String(data || '').toUpperCase().replace(/[^A-Z0-9\-. $/+%]/g, '')}*`;
+            const modules = [];
+            for (let i = 0; i < encoded.length; i++) {
+                const pattern = CODE39_PATTERNS[encoded[i]] || CODE39_PATTERNS['0'];
+                for (let j = 0; j < pattern.length; j++) {
+                    const isBar = j % 2 === 0;
+                    const units = pattern[j] === 'w' ? 3 : 1;
+                    for (let u = 0; u < units; u++) modules.push(isBar);
+                }
+                if (i !== encoded.length - 1) modules.push(false);
+            }
+            if (!modules.length) return;
+
+            // A blank quiet zone on both sides (~10 narrow-bar widths) is
+            // required for scanners to reliably find the start/stop
+            // markers - the old version drew bars edge-to-edge with none.
+            const quietModules = 10;
+            const totalModules = modules.length + quietModules * 2;
+            ctx.fillStyle = '#111827';
+            // Snap every bar edge to a whole canvas pixel instead of the
+            // old fractional `i * unit` / `unit + 0.4` math: fractional
+            // offsets let rounding error accumulate across the barcode,
+            // blurring edges and skewing the narrow:wide bar ratio
+            // scanners rely on to tell modules apart. The canvas's own
+            // backing resolution (its width/height attributes) is much
+            // higher than its printed CSS size, so even at that smaller
+            // printed size each bar still gets plenty of physical dots.
+            modules.forEach((isBar, i) => {
+                if (!isBar) return;
+                const x0 = Math.round(((i + quietModules) / totalModules) * canvas.width);
+                const x1 = Math.round(((i + quietModules + 1) / totalModules) * canvas.width);
+                ctx.fillRect(x0, 0, Math.max(1, x1 - x0), canvas.height);
+            });
+        }
+
+        function readLabelData(button) {
+            return {
+                code: button.dataset.code,
+                patient: button.dataset.patient,
+                gender: button.dataset.gender,
+                age: button.dataset.age,
+                tests: button.dataset.tests,
+                fromLab: button.dataset.fromLab,
+                toLab: button.dataset.toLab,
+                sent: button.dataset.sent,
+                expected: button.dataset.expected,
+                ref: button.dataset.ref
+            };
+        }
+
+        function toggleRow(rowId, valueId, value) {
+            const row = document.getElementById(rowId);
+            if (value) {
+                document.getElementById(valueId).textContent = value;
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+
+        function fillLabel(data) {
+            document.getElementById('lblPatient').textContent = data.patient || copy.notAvailable;
+            document.getElementById('lblPatientMeta').textContent = [data.gender, data.age].filter(Boolean).join(' · ');
+            document.getElementById('lblTests').textContent = data.tests || copy.notAvailable;
+            document.getElementById('lblFromLab').textContent = data.fromLab || copy.notAvailable;
+            document.getElementById('lblToLab').textContent = data.toLab || copy.notAvailable;
+            document.getElementById('lblSent').textContent = data.sent || copy.notAvailable;
+            document.getElementById('lblCode').textContent = data.code || '';
+            toggleRow('lblExpectedRow', 'lblExpected', data.expected);
+            toggleRow('lblRefRow', 'lblRef', data.ref);
+            drawCode39(document.getElementById('lblBarcode'), data.code || '');
+        }
+
+        function printSampleLabel(data) {
+            fillLabel(data);
+            window.print();
+        }
+
+        async function downloadLabelPdf(data, button) {
+            fillLabel(data);
+            const area = document.getElementById('printLabelArea');
+            const labelEl = area.querySelector('.print-label');
+            const icon = button.querySelector('i');
+            const originalIconClass = icon.className;
+            icon.className = 'fas fa-spinner fa-spin';
+            button.disabled = true;
+
+            // Render off-screen (not display:none, or html2canvas captures a blank
+            // image) so nothing flashes on screen while the PDF is built.
+            area.style.cssText = 'display:block; position:fixed; top:0; left:-9999px;';
+            try {
+                await new Promise(resolve => setTimeout(resolve, 50));
+                const canvas = await html2canvas(labelEl, { scale: 3, backgroundColor: '#ffffff' });
+                const { jsPDF } = window.jspdf;
+                const widthMm = 80;
+                const heightMm = widthMm * canvas.height / canvas.width;
+                const pdf = new jsPDF({ unit: 'mm', format: [widthMm, heightMm] });
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, widthMm, heightMm);
+                pdf.save(`label-${data.code || 'sample'}.pdf`);
+            } catch (error) {
+                showToast(copy.transferError, 'error');
+            } finally {
+                area.style.cssText = '';
+                icon.className = originalIconClass;
+                button.disabled = false;
+            }
+        }
+
+        document.querySelectorAll('[data-action="print-label"]').forEach(button => {
+            button.addEventListener('click', () => printSampleLabel(readLabelData(button)));
+        });
+
+        document.querySelectorAll('[data-action="download-label"]').forEach(button => {
+            button.addEventListener('click', () => downloadLabelPdf(readLabelData(button), button));
+        });
+
+        updateAutoFill();
+        if (<%- JSON.stringify(Boolean(selectedOrderId)) %>) {
+            setModalState(newTransferModal, true);
+            setTransferMode('order');
+        }
+    </script>
+</body>
+</html>

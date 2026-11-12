@@ -1,0 +1,8 @@
+# Key properties for signing the release APK/AAB
+# Copy this file to key.properties and fill in your values
+# DO NOT commit key.properties to version control!
+
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=labgo
+storeFile=../labgo-release-key.jks

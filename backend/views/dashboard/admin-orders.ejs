@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('orders.title') %> - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-orders.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Navbar -->
+    <%- include('../partials/admin-navbar') %>
+
+    <!-- Orders Dashboard -->
+    <main class="admin-dashboard">
+        <div class="orders-dashboard-container">
+
+            <!-- Page Header -->
+            <div class="orders-page-header">
+                <div class="header-content">
+                    <h1><%= __('orders.title') %></h1>
+                    <p class="header-subtitle"><%= __('orders.manageOrders') %></p>
+                </div>
+                <div class="header-actions">
+                    <button class="primary-btn" onclick="openCreateOrderModal()">
+                        <i class="fas fa-plus"></i>
+                        <%= __('orders.createOrder') || 'Create Order' %>
+                    </button>
+                    <button class="secondary-btn" onclick="refreshOrders()">
+                        <i class="fas fa-sync-alt"></i>
+                        <%= __('common.refresh') %>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Sections Row -->
+            <div class="status-sections-row">
+                <div class="status-section-card pending" data-section="pending" onclick="filterByStatusSection('pending')">
+                    <div class="section-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="pendingSectionCount">-</span>
+                        <span class="section-label"><%= __('orders.statusSections.pending') %></span>
+                    </div>
+                </div>
+
+                <div class="status-section-card waiting-nurse" data-section="waiting-nurse" onclick="filterByStatusSection('waiting-nurse')">
+                    <div class="section-icon">
+                        <i class="fas fa-user-clock"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="waitingNurseSectionCount">-</span>
+                        <span class="section-label"><%= __('orders.statusSections.waitingForNurse') %></span>
+                    </div>
+                </div>
+
+                <div class="status-section-card accepted" data-section="accepted" onclick="filterByStatusSection('accepted')">
+                    <div class="section-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="acceptedSectionCount">-</span>
+                        <span class="section-label"><%= __('orders.statusSections.accepted') %></span>
+                    </div>
+                </div>
+
+                <div class="status-section-card collected" data-section="collected" onclick="filterByStatusSection('collected')">
+                    <div class="section-icon">
+                        <i class="fas fa-vial"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="collectedSectionCount">-</span>
+                        <span class="section-label"><%= __('orders.statusSections.collected') %></span>
+                    </div>
+                </div>
+
+                <div class="status-section-card in-lab" data-section="in-lab" onclick="filterByStatusSection('in-lab')">
+                    <div class="section-icon">
+                        <i class="fas fa-flask"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="inLabSectionCount">-</span>
+                        <span class="section-label"><%= __('orders.statusSections.inLab') %></span>
+                    </div>
+                </div>
+
+                <div class="status-section-card done" data-section="done" onclick="filterByStatusSection('done')">
+                    <div class="section-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="doneSectionCount">-</span>
+                        <span class="section-label"><%= __('orders.statusSections.done') %></span>
+                    </div>
+                </div>
+
+                <div class="status-section-card cancelled" data-section="cancelled" onclick="filterByStatusSection('cancelled')">
+                    <div class="section-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="cancelledSectionCount">-</span>
+                        <span class="section-label"><%= __('orders.statusSections.cancelled') %></span>
+                    </div>
+                </div>
+
+                <div class="status-section-card all" data-section="all" onclick="filterByStatusSection('all')">
+                    <div class="section-icon">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="allSectionCount">-</span>
+                        <span class="section-label"><%= __('common.all') %></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and Search Bar -->
+            <div class="orders-filter-bar">
+                <div class="filter-left">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="<%= __('orders.searchOrders') %>">
+                    </div>
+                    
+                </div>
+                <div class="filter-right">
+                    <button class="icon-btn" onclick="toggleView('grid')" id="gridViewBtn" title="Grid View">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                    <button class="icon-btn active" onclick="toggleView('table')" id="tableViewBtn" title="Table View">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <div class="divider"></div>
+                    <button class="icon-btn" onclick="exportOrders()" title="Export">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="orders-loading" id="loadingState">
+                <div class="loading-spinner"></div>
+                <p><%= __('orders.loading') %></p>
+            </div>
+
+            <!-- Empty State -->
+            <div class="orders-empty" id="emptyState" style="display: none;">
+                <div class="empty-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <h3><%= __('orders.noOrders') %></h3>
+                <p><%= __('orders.noOrdersDesc') %></p>
+            </div>
+
+            <!-- Orders Table View -->
+            <div class="orders-table-wrapper" id="tableView">
+                <div class="orders-table-container">
+                    <table class="orders-modern-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="patient">
+                                    <%= __('orders.patientName') %>
+                                    <i class="fas fa-sort"></i>
+                                </th>
+                                <th class="sortable" data-sort="lab">
+                                    <%= __('orders.lab') %>
+                                    <i class="fas fa-sort"></i>
+                                </th>
+                                <th><%= __('orders.testType') %></th>
+                                <th><%= __('orders.location') %></th>
+                                <th class="sortable" data-sort="total">
+                                    <%= __('orders.total') %>
+                                    <i class="fas fa-sort"></i>
+                                </th>
+                                <th class="sortable" data-sort="status">
+                                    <%= __('orders.status') %>
+                                    <i class="fas fa-sort"></i>
+                                </th>
+                                <th class="sortable" data-sort="createdAt">
+                                    <%= __('orders.orderDate') %>
+                                    <i class="fas fa-sort"></i>
+                                </th>
+                                <th><%= __('common.actions') %></th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <!-- Orders will be loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="orders-pagination" id="pagination">
+                    <div class="pagination-info">
+                        <span id="paginationInfo">Showing 0-0 of 0 orders</span>
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="pagination-btn" id="prevPageBtn" onclick="changePage(-1)" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div class="pagination-numbers" id="paginationNumbers">
+                            <!-- Page numbers will be generated -->
+                        </div>
+                        <button class="pagination-btn" id="nextPageBtn" onclick="changePage(1)" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Grid View -->
+            <div class="orders-grid-wrapper" id="gridView" style="display: none;">
+                <div class="orders-grid" id="ordersGrid">
+                    <!-- Order cards will be loaded dynamically -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+
+    <!-- Create Order Modal -->
+    <div class="modal-overlay" id="createOrderModal">
+        <div class="modal-container create-order-modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <h2><%= __('orders.createNewOrder') || 'Create New Order' %></h2>
+                </div>
+                <button class="modal-close-btn" onclick="closeCreateOrderModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <span class="step-label"><%= __('orders.steps.patient') || 'Patient' %></span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <span class="step-label"><%= __('orders.steps.location') || 'Location' %></span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <span class="step-label"><%= __('orders.steps.lab') || 'Lab' %></span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step" data-step="4">
+                    <div class="step-number">4</div>
+                    <span class="step-label"><%= __('orders.steps.tests') || 'Tests' %></span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step" data-step="5">
+                    <div class="step-number">5</div>
+                    <span class="step-label"><%= __('orders.steps.details') || 'Details' %></span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step" data-step="6">
+                    <div class="step-number">6</div>
+                    <span class="step-label"><%= __('orders.steps.review') || 'Review' %></span>
+                </div>
+            </div>
+
+            <div class="modal-body">
+                <!-- Step 1: Patient Selection -->
+                <div class="step-content active" data-step="1">
+                    <h3><%= __('orders.selectPatient') || 'Select Patient' %></h3>
+                    <div class="patient-search-section">
+                        <div class="search-box-large">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="patientSearchInput"
+                                   placeholder="<%= __('orders.searchPatientPlaceholder') || 'Search by name or phone...' %>"
+                                   oninput="searchPatients(this.value)">
+                        </div>
+                        <div class="patient-search-results" id="patientSearchResults">
+                            <!-- Results will be populated dynamically -->
+                        </div>
+                    </div>
+                    <div class="selected-patient-display" id="selectedPatientDisplay" style="display: none;">
+                        <div class="selected-patient-card">
+                            <i class="fas fa-user-check"></i>
+                            <div class="patient-details">
+                                <span class="patient-name" id="selectedPatientName"></span>
+                                <span class="patient-phone" id="selectedPatientPhone"></span>
+                            </div>
+                            <button class="clear-btn" onclick="clearSelectedPatient()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Location -->
+                <div class="step-content" data-step="2">
+                    <h3><%= __('orders.enterLocation') || 'Enter Location' %></h3>
+
+                    <!-- Map Container -->
+                    <div class="map-section">
+                        <label><%= __('orders.selectOnMap') || 'Select Location on Map' %> *</label>
+                        <p class="map-hint"><%= __('orders.mapHint') || 'Click on the map to select the delivery location' %></p>
+                        <div id="locationMap" class="location-map"></div>
+                        <div class="map-search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="mapSearchInput" placeholder="<%= __('orders.searchAddress') || 'Search for an address...' %>" onkeypress="handleMapSearchKeypress(event)">
+                            <button type="button" class="map-search-btn" onclick="searchAddress()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Selected Address Display -->
+                    <div class="selected-location-display" id="selectedLocationDisplay" style="display: none;">
+                        <div class="selected-location-card">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div class="location-details">
+                                <span class="location-address" id="displayAddress"></span>
+                                <span class="location-coords" id="displayCoords"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><%= __('orders.address') || 'Address' %> *</label>
+                        <textarea id="orderAddress" rows="2" placeholder="<%= __('orders.addressPlaceholder') || 'Address will be filled from map...' %>" readonly></textarea>
+                    </div>
+                    <div class="form-row coordinates-row">
+                        <div class="form-group">
+                            <label><%= __('orders.latitude') || 'Latitude' %> *</label>
+                            <input type="number" id="orderLatitude" step="any" placeholder="33.3152" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label><%= __('orders.longitude') || 'Longitude' %> *</label>
+                            <input type="number" id="orderLongitude" step="any" placeholder="44.3661" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><%= __('orders.landmark') || 'Landmark' %></label>
+                            <input type="text" id="orderLandmark" placeholder="<%= __('orders.landmarkPlaceholder') || 'Near mosque, school, etc.' %>">
+                        </div>
+                        <div class="form-group">
+                            <label><%= __('orders.buildingName') || 'Building Name' %></label>
+                            <input type="text" id="orderBuildingName" placeholder="<%= __('orders.buildingNamePlaceholder') || 'Building name' %>">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><%= __('orders.floorNumber') || 'Floor' %></label>
+                            <input type="text" id="orderFloorNumber" placeholder="<%= __('orders.floorNumberPlaceholder') || 'Floor number' %>">
+                        </div>
+                        <div class="form-group">
+                            <label><%= __('orders.apartmentNumber') || 'Apartment' %></label>
+                            <input type="text" id="orderApartmentNumber" placeholder="<%= __('orders.apartmentNumberPlaceholder') || 'Apt number' %>">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><%= __('orders.instructions') || 'Instructions' %></label>
+                        <textarea id="orderInstructions" rows="2" placeholder="<%= __('orders.instructionsPlaceholder') || 'Special delivery instructions...' %>"></textarea>
+                    </div>
+                </div>
+
+                <!-- Step 3: Lab Selection -->
+                <div class="step-content" data-step="3">
+                    <h3><%= __('orders.selectLab') || 'Select Lab' %></h3>
+                    <div class="labs-grid" id="labsGrid">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Tests Selection -->
+                <div class="step-content" data-step="4">
+                    <h3><%= __('orders.selectTests') || 'Select Tests' %></h3>
+                    <div class="tests-search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="testSearchInput"
+                               placeholder="<%= __('orders.searchTestsPlaceholder') || 'Search tests...' %>"
+                               oninput="filterTests(this.value)">
+                    </div>
+                    <div class="tests-selection-grid" id="testsGrid">
+                        <!-- Tests will be loaded when lab is selected -->
+                    </div>
+                    <div class="selected-tests-summary" id="selectedTestsSummary">
+                        <div class="summary-header">
+                            <span><%= __('orders.selectedTests') || 'Selected Tests' %></span>
+                            <span id="testsTotal">0 IQD</span>
+                        </div>
+                        <div class="selected-tests-list" id="selectedTestsList">
+                            <!-- Selected tests will appear here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Optional Details -->
+                <div class="step-content" data-step="5">
+                    <h3><%= __('orders.optionalDetails') || 'Optional Details' %></h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><%= __('orders.scheduledDate') || 'Scheduled Date' %></label>
+                            <input type="date" id="orderScheduledDate" min="">
+                        </div>
+                        <div class="form-group">
+                            <label><%= __('orders.timeSlot') || 'Time Slot' %></label>
+                            <select id="orderTimeSlot">
+                                <option value=""><%= __('orders.selectTimeSlot') || 'Select time slot' %></option>
+                                <option value="08:00-10:00">08:00 - 10:00</option>
+                                <option value="10:00-12:00">10:00 - 12:00</option>
+                                <option value="12:00-14:00">12:00 - 14:00</option>
+                                <option value="14:00-16:00">14:00 - 16:00</option>
+                                <option value="16:00-18:00">16:00 - 18:00</option>
+                                <option value="18:00-20:00">18:00 - 20:00</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><%= __('orders.patientNotes') || 'Patient Notes' %></label>
+                        <textarea id="orderPatientNotes" rows="3" placeholder="<%= __('orders.patientNotesPlaceholder') || 'Any notes about the patient or order...' %>"></textarea>
+                    </div>
+                    <div class="beneficiary-section">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="orderForOther" onchange="toggleBeneficiarySection()">
+                            <span><%= __('orders.orderForSomeoneElse') || 'Order for someone else' %></span>
+                        </label>
+                        <div class="beneficiary-fields" id="beneficiaryFields" style="display: none;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label><%= __('orders.beneficiaryName') || 'Beneficiary Name' %></label>
+                                    <input type="text" id="beneficiaryName" placeholder="<%= __('common.enterName') || 'Enter name' %>">
+                                </div>
+                                <div class="form-group">
+                                    <label><%= __('orders.beneficiaryPhone') || 'Beneficiary Phone' %></label>
+                                    <input type="tel" id="beneficiaryPhone" placeholder="07xxxxxxxxx">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label><%= __('orders.relationship') || 'Relationship' %></label>
+                                    <select id="beneficiaryRelationship">
+                                        <option value=""><%= __('common.select') || 'Select' %></option>
+                                        <option value="spouse"><%= __('orders.relationships.spouse') || 'Spouse' %></option>
+                                        <option value="child"><%= __('orders.relationships.child') || 'Child' %></option>
+                                        <option value="parent"><%= __('orders.relationships.parent') || 'Parent' %></option>
+                                        <option value="sibling"><%= __('orders.relationships.sibling') || 'Sibling' %></option>
+                                        <option value="other"><%= __('orders.relationships.other') || 'Other' %></option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label><%= __('common.gender') || 'Gender' %></label>
+                                    <select id="beneficiaryGender">
+                                        <option value=""><%= __('common.selectGender') || 'Select Gender' %></option>
+                                        <option value="male"><%= __('common.male') || 'Male' %></option>
+                                        <option value="female"><%= __('common.female') || 'Female' %></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 6: Review & Submit -->
+                <div class="step-content" data-step="6">
+                    <h3><%= __('orders.reviewOrder') || 'Review Order' %></h3>
+                    <div class="review-grid">
+                        <div class="review-section">
+                            <h4><i class="fas fa-user"></i> <%= __('orders.patient') || 'Patient' %></h4>
+                            <div id="reviewPatient"></div>
+                        </div>
+                        <div class="review-section">
+                            <h4><i class="fas fa-map-marker-alt"></i> <%= __('orders.location') || 'Location' %></h4>
+                            <div id="reviewLocation"></div>
+                        </div>
+                        <div class="review-section">
+                            <h4><i class="fas fa-flask"></i> <%= __('orders.lab') || 'Lab' %></h4>
+                            <div id="reviewLab"></div>
+                        </div>
+                        <div class="review-section full-width">
+                            <h4><i class="fas fa-vial"></i> <%= __('orders.tests') || 'Tests' %></h4>
+                            <div id="reviewTests"></div>
+                        </div>
+                        <div class="review-section">
+                            <h4><i class="fas fa-calendar"></i> <%= __('orders.schedule') || 'Schedule' %></h4>
+                            <div id="reviewSchedule"></div>
+                        </div>
+                        <div class="review-section">
+                            <h4><i class="fas fa-money-bill-wave"></i> <%= __('orders.pricing') || 'Pricing' %></h4>
+                            <div id="reviewPricing"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="secondary-btn" id="prevStepBtn" onclick="prevStep()" style="display: none;">
+                    <i class="fas fa-arrow-left"></i>
+                    <%= __('common.previous') || 'Previous' %>
+                </button>
+                <button class="primary-btn" id="nextStepBtn" onclick="nextStep()">
+                    <%= __('common.next') || 'Next' %>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+                <button class="primary-btn success" id="submitOrderBtn" onclick="submitOrder()" style="display: none;">
+                    <i class="fas fa-check"></i>
+                    <%= __('orders.createOrder') || 'Create Order' %>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-notification" id="toast">
+        <div class="toast-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="toast-content">
+            <h4 class="toast-title" id="toastTitle">Success</h4>
+            <p class="toast-message" id="toastMessage">Operation completed successfully</p>
+        </div>
+        <button class="toast-close" onclick="hideToast()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <script>
+        // Global variables
+        let allOrders = [];
+        let filteredOrders = [];
+        let currentPage = 1;
+        let itemsPerPage = 10;
+        let currentSort = { field: 'createdAt', direction: 'desc' };
+        let currentView = 'table';
+        let selectedOrderId = null;
+        let selectedStatusSection = 'all';
+
+        // API endpoints
+        const API_BASE = '/api/admin/orders';
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrders();
+            setupEventListeners();
+            setupFilters();
+            // Set 'all' as default on first load
+            filterByStatusSection('all');
+        });
+
+        // Load orders from API
+        async function loadOrders() {
+            showLoading(true);
+            try {
+                const response = await fetch(`${API_BASE}/all?page=1&limit=1000`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load orders');
+
+                const data = await response.json();
+                allOrders = data.data.orders || [];
+                filteredOrders = [...allOrders];
+
+                updateStatusSections(allOrders);
+                renderOrders();
+                showLoading(false);
+
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                showToast('error', '<%= __('orders.errorLoading') %>');
+                showLoading(false);
+            }
+        }
+
+        // Update status sections counts
+        function updateStatusSections(orders) {
+            const sections = {
+                pending: orders.filter(o => o.status === 'pending' || o.status === 'quoted').length,
+                waitingNurse: orders.filter(o => o.status === 'confirmed').length,
+                accepted: orders.filter(o => o.status === 'nurse_assigned').length,
+                collected: orders.filter(o => o.status === 'sample_collected').length,
+                inLab: orders.filter(o => o.status === 'at_lab').length,
+                done: orders.filter(o => o.status === 'completed').length,
+                cancelled: orders.filter(o => o.status === 'cancelled').length,
+                all: orders.length
+            };
+
+            document.getElementById('pendingSectionCount').textContent = sections.pending;
+            document.getElementById('waitingNurseSectionCount').textContent = sections.waitingNurse;
+            document.getElementById('acceptedSectionCount').textContent = sections.accepted;
+            document.getElementById('collectedSectionCount').textContent = sections.collected;
+            document.getElementById('inLabSectionCount').textContent = sections.inLab;
+            document.getElementById('doneSectionCount').textContent = sections.done;
+            document.getElementById('cancelledSectionCount').textContent = sections.cancelled;
+            document.getElementById('allSectionCount').textContent = sections.all;
+        }
+
+        // Filter by status section
+        function filterByStatusSection(section) {
+            selectedStatusSection = section;
+
+            // Update active state on cards
+            document.querySelectorAll('.status-section-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`.status-section-card[data-section="${section}"]`).classList.add('active');
+
+            // Apply filters
+            applyFilters();
+        }
+
+        // Render orders based on current view
+        function renderOrders() {
+            if (currentView === 'table') {
+                renderTableView();
+            } else {
+                renderGridView();
+            }
+            updatePagination();
+            updateEmptyState();
+        }
+
+        // Render table view
+        function renderTableView() {
+            const tbody = document.getElementById('ordersTableBody');
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageOrders = filteredOrders.slice(start, end);
+
+            tbody.innerHTML = pageOrders.map(order => `
+                <tr class="order-row" data-status="${order.status}" onclick="openOrderModal('${order._id}')">
+                    <td>
+                        <div class="patient-cell">
+                            <div class="patient-avatar-circle">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="patient-info">
+                                <span class="patient-name">${order.patientId?.name || '-'}</span>
+                                <span class="patient-contact">${order.patientId?.phone || '-'}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="lab-name">${order.labId?.name || '-'}</span>
+                    </td>
+                    <td>
+                        <div class="tests-list">
+                            ${order.tests?.slice(0, 2).map(test => `
+                                <span class="test-tag">${test.testName}</span>
+                            `).join('') || '-'}
+                            ${order.tests?.length > 2 ? `<span class="test-tag more">+${order.tests.length - 2}</span>` : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="location-cell">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${truncateText(order.location?.address || '-', 30)}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="amount">${formatCurrency(order.pricing?.subtotal || 0)}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge ${order.status}">${getStatusText(order.status)}</span>
+                        ${order.prescriptionType === 'medicine' ? '<span class="status-badge quoted"><%= __("orders.medicineOrder") || "Medicine" %></span>' : ''}
+                    </td>
+                    <td>
+                        <span class="date">${formatDate(order.createdAt)}</span>
+                        <span class="time">${formatTime(order.createdAt)}</span>
+                    </td>
+                    <td>
+                        <div class="action-buttons" onclick="event.stopPropagation()">
+                            <button class="action-btn view" onclick="openOrderModal('${order._id}')" title="<%= __('common.view') %>">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Render grid view
+        function renderGridView() {
+            const grid = document.getElementById('ordersGrid');
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageOrders = filteredOrders.slice(start, end);
+
+            grid.innerHTML = pageOrders.map(order => `
+                <div class="order-card" data-status="${order.status}" onclick="openOrderModal('${order._id}')">
+                    <div class="order-card-header">
+                        <div class="order-qr">
+                            <span>${order.qrCode}</span>
+                            ${order.adminConfirmation?.confirmed ? '<i class="fas fa-check-circle confirmed"></i>' : ''}
+                        </div>
+                        <span class="status-badge ${order.status}">${getStatusText(order.status)}</span>
+                        ${order.prescriptionType === 'medicine' ? '<span class="status-badge quoted"><%= __("orders.medicineOrder") || "Medicine" %></span>' : ''}
+                    </div>
+                    <div class="order-card-body">
+                        <div class="order-patient">
+                            <div class="avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="info">
+                                <h4>${order.patientId?.name || '-'}</h4>
+                                <span>${order.patientId?.phone || '-'}</span>
+                            </div>
+                        </div>
+                        <div class="order-lab">
+                            <i class="fas fa-flask"></i>
+                            <span>${order.labId?.name || '-'}</span>
+                        </div>
+                        <div class="order-tests">
+                            ${order.tests?.slice(0, 3).map(test => `
+                                <span class="test-mini">${test.testName}</span>
+                            `).join('') || '-'}
+                        </div>
+                        <div class="order-location">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${truncateText(order.location?.address || '-', 40)}</span>
+                        </div>
+                    </div>
+                    <div class="order-card-footer">
+                        <div class="order-date">
+                            <i class="far fa-calendar"></i>
+                            <span>${formatDate(order.createdAt)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Navigate to order details page
+        function openOrderModal(orderId) {
+            window.location.href = `/admin/orders/${orderId}/details`;
+        }
+
+        // Toggle view
+        function toggleView(view) {
+            currentView = view;
+            document.getElementById('tableView').style.display = view === 'table' ? 'block' : 'none';
+            document.getElementById('gridView').style.display = view === 'grid' ? 'block' : 'none';
+            document.getElementById('tableViewBtn').classList.toggle('active', view === 'table');
+            document.getElementById('gridViewBtn').classList.toggle('active', view === 'grid');
+            renderOrders();
+        }
+
+        // Pagination functions
+        function changePage(direction) {
+            const maxPage = Math.ceil(filteredOrders.length / itemsPerPage);
+            currentPage = Math.max(1, Math.min(currentPage + direction, maxPage));
+            renderOrders();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+            const start = (currentPage - 1) * itemsPerPage + 1;
+            const end = Math.min(currentPage * itemsPerPage, filteredOrders.length);
+
+            document.getElementById('paginationInfo').textContent = `Showing ${start}-${end} of ${filteredOrders.length} orders`;
+
+            document.getElementById('prevPageBtn').disabled = currentPage === 1;
+            document.getElementById('nextPageBtn').disabled = currentPage === totalPages || totalPages === 0;
+
+            // Generate page numbers
+            const numbersContainer = document.getElementById('paginationNumbers');
+            let pages = [];
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    pages.push(i);
+                } else if (pages[pages.length - 1] !== '...') {
+                    pages.push('...');
+                }
+            }
+
+            numbersContainer.innerHTML = pages.map(page => {
+                if (page === '...') {
+                    return '<span class="pagination-ellipsis">...</span>';
+                }
+                return `<button class="pagination-number ${page === currentPage ? 'active' : ''}" onclick="goToPage(${page})">${page}</button>`;
+            }).join('');
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderOrders();
+        }
+
+        // Filter functions
+        function setupFilters() {
+            document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
+        }
+
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            filteredOrders = allOrders.filter(order => {
+                // Status section filter
+                if (selectedStatusSection !== 'all') {
+                    const statusMap = {
+                        'pending': ['pending', 'quoted'],
+                        'waiting-nurse': ['confirmed'],
+                        'accepted': ['nurse_assigned'],
+                        'collected': ['sample_collected'],
+                        'in-lab': ['at_lab'],
+                        'done': ['completed'],
+                        'cancelled': ['cancelled']
+                    };
+                    const allowedStatuses = statusMap[selectedStatusSection] || [];
+                    if (!allowedStatuses.includes(order.status)) return false;
+                }
+
+                // Search filter
+                if (search) {
+                    const searchableText = [
+                        order.qrCode,
+                        order.patientId?.name,
+                        order.patientId?.phone,
+                        order.labId?.name
+                    ].join(' ').toLowerCase();
+
+                    if (!searchableText.includes(search)) return false;
+                }
+
+                return true;
+            });
+
+            // Sort filtered orders
+            sortOrders();
+
+            // Reset to first page
+            currentPage = 1;
+
+            // Re-render
+            renderOrders();
+        }
+
+        // Sort functions
+        function sortOrders() {
+            filteredOrders.sort((a, b) => {
+                let aVal, bVal;
+
+                switch (currentSort.field) {
+                    case 'patient':
+                        aVal = a.patientId?.name || '';
+                        bVal = b.patientId?.name || '';
+                        break;
+                    case 'lab':
+                        aVal = a.labId?.name || '';
+                        bVal = b.labId?.name || '';
+                        break;
+                    case 'total':
+                        aVal = a.pricing?.subtotal || 0;
+                        bVal = b.pricing?.subtotal || 0;
+                        break;
+                    case 'status':
+                        const statusOrder = { pending: 1, quoted: 2, confirmed: 3, nurse_assigned: 4, sample_collected: 5, at_lab: 6, completed: 7, cancelled: 8 };
+                        aVal = statusOrder[a.status] || 0;
+                        bVal = statusOrder[b.status] || 0;
+                        break;
+                    case 'createdAt':
+                    default:
+                        aVal = new Date(a.createdAt);
+                        bVal = new Date(b.createdAt);
+                        break;
+                }
+
+                if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Table sorting
+            document.querySelectorAll('.sortable').forEach(th => {
+                th.addEventListener('click', () => {
+                    const field = th.dataset.sort;
+                    if (currentSort.field === field) {
+                        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSort.field = field;
+                        currentSort.direction = 'asc';
+                    }
+
+                    // Update sort icons
+                    document.querySelectorAll('.sortable i').forEach(icon => {
+                        icon.className = 'fas fa-sort';
+                    });
+                    th.querySelector('i').className = `fas fa-sort-${currentSort.direction === 'asc' ? 'up' : 'down'}`;
+
+                    sortOrders();
+                    renderOrders();
+                });
+            });
+
+        }
+
+        // Refresh orders
+        async function refreshOrders() {
+            await loadOrders();
+            showToast('success', '<%= __('orders.refreshSuccess') %>');
+        }
+
+        // Export orders
+        function exportOrders() {
+            // Create CSV
+            const headers = ['QR Code', 'Patient', 'Phone', 'Lab', 'Tests', 'Urgency', 'Status', 'Total', 'Date'];
+            const rows = filteredOrders.map(order => [
+                order.qrCode,
+                order.patientId?.name || '',
+                order.patientId?.phone || '',
+                order.labId?.name || '',
+                order.tests?.map(t => t.testName).join('; ') || '',
+                order.urgency,
+                getStatusText(order.status),
+                order.pricing?.subtotal || 0,
+                formatDateTime(order.createdAt)
+            ]);
+
+            const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `orders_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast('success', '<%= __('orders.exportSuccess') %>');
+        }
+
+        // Utility functions
+        function getToken() {
+            return localStorage.getItem('token') || '';
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IQ', { style: 'currency', currency: 'IQD', maximumFractionDigits: 0 }).format(amount).replace('IQD', 'IQD');
+        }
+
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        function formatTime(date) {
+            return new Date(date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function formatDateTime(date) {
+            return `${formatDate(date)} ${formatTime(date)}`;
+        }
+
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function truncateText(text, maxLength) {
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                pending: "<%= __('orders.statusValues.pending') %>",
+                quoted: "<%= __('orders.statusValues.quoted') %>",
+                confirmed: "<%= __('orders.statusValues.confirmed') %>",
+                nurse_assigned: "<%= __('orders.statusValues.nurseAssigned') %>",
+                sample_collected: "<%= __('orders.statusValues.sampleCollected') %>",
+                at_lab: "<%= __('orders.statusValues.atLab') %>",
+                completed: "<%= __('orders.statusValues.completed') %>",
+                cancelled: "<%= __('orders.statusValues.cancelled') %>"
+            };
+            return statusMap[status] || status;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingState').style.display = show ? 'flex' : 'none';
+            document.getElementById('tableView').style.display = show ? 'none' : (currentView === 'table' ? 'block' : 'none');
+            document.getElementById('gridView').style.display = show ? 'none' : (currentView === 'grid' ? 'block' : 'none');
+        }
+
+        function updateEmptyState() {
+            const isEmpty = filteredOrders.length === 0;
+            document.getElementById('emptyState').style.display = isEmpty ? 'flex' : 'none';
+            document.getElementById('tableView').style.display = isEmpty ? 'none' : (currentView === 'table' ? 'block' : 'none');
+            document.getElementById('gridView').style.display = isEmpty ? 'none' : (currentView === 'grid' ? 'block' : 'none');
+            document.getElementById('pagination').style.display = isEmpty ? 'none' : 'flex';
+        }
+
+        function showToast(type, message) {
+            const toast = document.getElementById('toast');
+            const icon = toast.querySelector('.toast-icon i');
+            const title = toast.querySelector('.toast-title');
+            const msg = toast.querySelector('.toast-message');
+
+            icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+            toast.classList.remove('success', 'error');
+            toast.classList.add(type);
+            title.textContent = type === 'success' ? "<%= __('common.success') %>" : "<%= __('common.error') %>";
+            msg.textContent = message;
+
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function hideToast() {
+            document.getElementById('toast').classList.remove('show');
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // ================== CREATE ORDER MODAL ==================
+
+        let currentStep = 1;
+        const totalSteps = 6;
+        let createOrderData = {
+            patientId: null,
+            location: null,
+            labId: null,
+            labName: null,
+            tests: [],
+            scheduledDate: null,
+            timeSlot: null,
+            patientNotes: null,
+            beneficiary: null
+        };
+        let availableLabs = [];
+        let availableTests = [];
+
+        function openCreateOrderModal() {
+            document.getElementById('createOrderModal').classList.add('show');
+            resetCreateOrderForm();
+            loadLabs();
+            // Set min date for scheduled date to today
+            document.getElementById('orderScheduledDate').min = new Date().toISOString().split('T')[0];
+        }
+
+        function closeCreateOrderModal() {
+            document.getElementById('createOrderModal').classList.remove('show');
+            resetCreateOrderForm();
+        }
+
+        function resetCreateOrderForm() {
+            currentStep = 1;
+            createOrderData = {
+                patientId: null,
+                location: null,
+                labId: null,
+                labName: null,
+                tests: [],
+                scheduledDate: null,
+                timeSlot: null,
+                patientNotes: null,
+                beneficiary: null
+            };
+
+            // Reset all form fields
+            document.getElementById('patientSearchInput').value = '';
+            document.getElementById('patientSearchResults').innerHTML = '';
+            document.getElementById('selectedPatientDisplay').style.display = 'none';
+
+            document.getElementById('orderAddress').value = '';
+            document.getElementById('orderLatitude').value = '';
+            document.getElementById('orderLongitude').value = '';
+            document.getElementById('orderLandmark').value = '';
+            document.getElementById('orderBuildingName').value = '';
+            document.getElementById('orderFloorNumber').value = '';
+            document.getElementById('orderApartmentNumber').value = '';
+            document.getElementById('orderInstructions').value = '';
+            document.getElementById('selectedLocationDisplay').style.display = 'none';
+            document.getElementById('mapSearchInput').value = '';
+
+            // Reset map
+            if (locationMarker && locationMap) {
+                locationMap.removeLayer(locationMarker);
+                locationMarker = null;
+            }
+            if (locationMap) {
+                locationMap.remove();
+                locationMap = null;
+            }
+
+            document.getElementById('orderScheduledDate').value = '';
+            document.getElementById('orderTimeSlot').value = '';
+            document.getElementById('orderPatientNotes').value = '';
+            document.getElementById('orderForOther').checked = false;
+            document.getElementById('beneficiaryFields').style.display = 'none';
+
+            document.getElementById('testSearchInput').value = '';
+
+            updateStepIndicator();
+            showStep(1);
+        }
+
+        function updateStepIndicator() {
+            document.querySelectorAll('.step-indicator .step').forEach((step, index) => {
+                const stepNum = index + 1;
+                step.classList.remove('active', 'completed');
+                if (stepNum === currentStep) {
+                    step.classList.add('active');
+                } else if (stepNum < currentStep) {
+                    step.classList.add('completed');
+                }
+            });
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelector(`.step-content[data-step="${step}"]`).classList.add('active');
+
+            // Update navigation buttons
+            document.getElementById('prevStepBtn').style.display = step > 1 ? 'inline-flex' : 'none';
+            document.getElementById('nextStepBtn').style.display = step < totalSteps ? 'inline-flex' : 'none';
+            document.getElementById('submitOrderBtn').style.display = step === totalSteps ? 'inline-flex' : 'none';
+        }
+
+        function nextStep() {
+            if (!validateCurrentStep()) return;
+
+            if (currentStep < totalSteps) {
+                saveCurrentStepData();
+                currentStep++;
+                updateStepIndicator();
+                showStep(currentStep);
+
+                // Initialize map when entering step 2
+                if (currentStep === 2) {
+                    initMapIfNeeded();
+                }
+
+                // Load data for specific steps
+                if (currentStep === 4 && createOrderData.labId) {
+                    loadLabTests(createOrderData.labId);
+                }
+                if (currentStep === 6) {
+                    populateReviewSection();
+                }
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepIndicator();
+                showStep(currentStep);
+
+                // Initialize map when entering step 2
+                if (currentStep === 2) {
+                    initMapIfNeeded();
+                }
+            }
+        }
+
+        function validateCurrentStep() {
+            switch (currentStep) {
+                case 1: // Patient
+                    if (!createOrderData.patientId) {
+                        showToast('error', '<%= __('orders.errors.patientRequired') || 'Please select a registered patient' %>');
+                        return false;
+                    }
+                    return true;
+
+                case 2: // Location
+                    const address = document.getElementById('orderAddress').value.trim();
+                    const lat = document.getElementById('orderLatitude').value;
+                    const lng = document.getElementById('orderLongitude').value;
+                    if (!address || !lat || !lng) {
+                        showToast('error', '<%= __('orders.errors.locationRequired') || 'Address and coordinates are required' %>');
+                        return false;
+                    }
+                    return true;
+
+                case 3: // Lab
+                    if (!createOrderData.labId) {
+                        showToast('error', '<%= __('orders.errors.labRequired') || 'Please select a lab' %>');
+                        return false;
+                    }
+                    return true;
+
+                case 4: // Tests
+                    if (createOrderData.tests.length === 0) {
+                        showToast('error', '<%= __('orders.errors.testsRequired') || 'Please select at least one test' %>');
+                        return false;
+                    }
+                    return true;
+
+                default:
+                    return true;
+            }
+        }
+
+        function saveCurrentStepData() {
+            switch (currentStep) {
+                case 2: // Location
+                    createOrderData.location = {
+                        address: document.getElementById('orderAddress').value.trim(),
+                        coordinates: {
+                            latitude: parseFloat(document.getElementById('orderLatitude').value),
+                            longitude: parseFloat(document.getElementById('orderLongitude').value)
+                        },
+                        landmark: document.getElementById('orderLandmark').value.trim(),
+                        buildingName: document.getElementById('orderBuildingName').value.trim(),
+                        floorNumber: document.getElementById('orderFloorNumber').value.trim(),
+                        apartmentNumber: document.getElementById('orderApartmentNumber').value.trim(),
+                        instructions: document.getElementById('orderInstructions').value.trim()
+                    };
+                    break;
+
+                case 5: // Optional details
+                    createOrderData.scheduledDate = document.getElementById('orderScheduledDate').value || null;
+                    const timeSlotValue = document.getElementById('orderTimeSlot').value;
+                    if (timeSlotValue) {
+                        const [start, end] = timeSlotValue.split('-');
+                        createOrderData.timeSlot = { start, end };
+                    } else {
+                        createOrderData.timeSlot = null;
+                    }
+                    createOrderData.patientNotes = document.getElementById('orderPatientNotes').value.trim();
+
+                    if (document.getElementById('orderForOther').checked) {
+                        createOrderData.beneficiary = {
+                            isForOtherPerson: true,
+                            name: document.getElementById('beneficiaryName').value.trim(),
+                            phone: document.getElementById('beneficiaryPhone').value.trim(),
+                            relationship: document.getElementById('beneficiaryRelationship').value,
+                            gender: document.getElementById('beneficiaryGender').value
+                        };
+                    } else {
+                        createOrderData.beneficiary = null;
+                    }
+                    break;
+            }
+        }
+
+        // Patient search with debounce
+        let patientSearchTimeout;
+        async function searchPatients(query) {
+            clearTimeout(patientSearchTimeout);
+
+            if (query.length < 2) {
+                document.getElementById('patientSearchResults').innerHTML = '';
+                return;
+            }
+
+            patientSearchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/patients/search?q=${encodeURIComponent(query)}`, {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success && data.data.patients.length > 0) {
+                        document.getElementById('patientSearchResults').innerHTML = data.data.patients.map(patient => `
+                            <div class="patient-result-item" onclick="selectPatient('${patient._id}', '${escapeHtml(patient.name)}', '${patient.phone || ''}')">
+                                <div class="patient-avatar-small"><i class="fas fa-user"></i></div>
+                                <div class="patient-result-info">
+                                    <span class="name">${escapeHtml(patient.name)}</span>
+                                    <span class="phone">${patient.phone || ''}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        document.getElementById('patientSearchResults').innerHTML = '<p class="no-results"><%= __('orders.noPatientFound') || 'No patients found' %></p>';
+                    }
+                } catch (error) {
+                    console.error('Patient search error:', error);
+                }
+            }, 300);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function selectPatient(id, name, phone) {
+            createOrderData.patientId = id;
+
+            document.getElementById('selectedPatientName').textContent = name;
+            document.getElementById('selectedPatientPhone').textContent = phone;
+            document.getElementById('selectedPatientDisplay').style.display = 'flex';
+            document.getElementById('patientSearchResults').innerHTML = '';
+            document.getElementById('patientSearchInput').value = '';
+        }
+
+        function clearSelectedPatient() {
+            createOrderData.patientId = null;
+            document.getElementById('selectedPatientDisplay').style.display = 'none';
+        }
+
+        // Load labs
+        async function loadLabs() {
+            try {
+                const response = await fetch(`${API_BASE}/labs/all`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    availableLabs = data.data.labs;
+                    renderLabsGrid();
+                }
+            } catch (error) {
+                console.error('Load labs error:', error);
+            }
+        }
+
+        function renderLabsGrid() {
+            const grid = document.getElementById('labsGrid');
+            grid.innerHTML = availableLabs.map(lab => `
+                <div class="lab-card ${createOrderData.labId === lab._id ? 'selected' : ''}"
+                     onclick="selectLab('${lab._id}', '${escapeHtml(lab.name)}')">
+                    <div class="lab-card-content">
+                        <h4>${escapeHtml(lab.name)}</h4>
+                        <p><i class="fas fa-map-marker-alt"></i> ${escapeHtml(lab.city || '-')}</p>
+                        <p><i class="fas fa-phone"></i> ${lab.phone || '-'}</p>
+                    </div>
+                    <div class="lab-check"><i class="fas fa-check-circle"></i></div>
+                </div>
+            `).join('');
+        }
+
+        function selectLab(labId, labName) {
+            createOrderData.labId = labId;
+            createOrderData.labName = labName;
+            createOrderData.tests = []; // Clear tests when lab changes
+            renderLabsGrid();
+        }
+
+        // Load lab tests
+        async function loadLabTests(labId) {
+            document.getElementById('testsGrid').innerHTML = '<div class="loading-spinner"></div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/lab/${labId}/tests`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    availableTests = data.data.tests;
+                    renderTestsGrid();
+                }
+            } catch (error) {
+                console.error('Load tests error:', error);
+                document.getElementById('testsGrid').innerHTML = '<p class="error-message"><%= __('orders.errors.loadTestsFailed') || 'Failed to load tests' %></p>';
+            }
+        }
+
+        function renderTestsGrid(filter = '') {
+            const filteredTests = filter
+                ? availableTests.filter(t =>
+                    t.name.toLowerCase().includes(filter.toLowerCase()) ||
+                    t.code.toLowerCase().includes(filter.toLowerCase())
+                  )
+                : availableTests;
+
+            document.getElementById('testsGrid').innerHTML = filteredTests.map(test => {
+                const isSelected = createOrderData.tests.some(t => t.testId === test._id);
+                return `
+                    <div class="test-card ${isSelected ? 'selected' : ''}"
+                         onclick="toggleTest('${test._id}', '${escapeHtml(test.name)}', '${escapeHtml(test.code)}', ${test.price}, '${escapeHtml(test.category || 'General')}')">
+                        <div class="test-card-content">
+                            <span class="test-name">${escapeHtml(test.name)}</span>
+                            <span class="test-code">${escapeHtml(test.code)}</span>
+                        </div>
+                        <div class="test-price">${formatCurrency(test.price)}</div>
+                        <div class="test-check"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                `;
+            }).join('');
+
+            updateSelectedTestsSummary();
+        }
+
+        function filterTests(query) {
+            renderTestsGrid(query);
+        }
+
+        function toggleTest(testId, testName, testCode, price, category) {
+            const existingIndex = createOrderData.tests.findIndex(t => t.testId === testId);
+
+            if (existingIndex > -1) {
+                createOrderData.tests.splice(existingIndex, 1);
+            } else {
+                createOrderData.tests.push({ testId, testName, testCode, price, category });
+            }
+
+            renderTestsGrid(document.getElementById('testSearchInput').value);
+        }
+
+        function updateSelectedTestsSummary() {
+            const total = createOrderData.tests.reduce((sum, t) => sum + t.price, 0);
+            document.getElementById('testsTotal').textContent = formatCurrency(total);
+
+            document.getElementById('selectedTestsList').innerHTML = createOrderData.tests.map(test => `
+                <div class="selected-test-item">
+                    <span>${escapeHtml(test.testName)}</span>
+                    <span>${formatCurrency(test.price)}</span>
+                </div>
+            `).join('') || '<p class="no-tests"><%= __('orders.noTestsSelected') || 'No tests selected' %></p>';
+        }
+
+        function toggleBeneficiarySection() {
+            const isChecked = document.getElementById('orderForOther').checked;
+            document.getElementById('beneficiaryFields').style.display = isChecked ? 'block' : 'none';
+        }
+
+        function populateReviewSection() {
+            // Save step 5 data before populating review
+            saveCurrentStepData();
+
+            // Patient
+            const patientHtml = `<p><strong>${document.getElementById('selectedPatientName').textContent}</strong><br>${document.getElementById('selectedPatientPhone').textContent}</p>`;
+            document.getElementById('reviewPatient').innerHTML = patientHtml;
+
+            // Location
+            document.getElementById('reviewLocation').innerHTML = `
+                <p>${escapeHtml(createOrderData.location?.address || '')}</p>
+                ${createOrderData.location?.landmark ? `<p><small>Landmark: ${escapeHtml(createOrderData.location.landmark)}</small></p>` : ''}
+            `;
+
+            // Lab
+            document.getElementById('reviewLab').innerHTML = `<p>${escapeHtml(createOrderData.labName || '')}</p>`;
+
+            // Tests
+            const testsTotal = createOrderData.tests.reduce((sum, t) => sum + t.price, 0);
+            document.getElementById('reviewTests').innerHTML = `
+                <div class="review-tests-list">
+                    ${createOrderData.tests.map(t => `
+                        <div class="review-test-item">
+                            <span>${escapeHtml(t.testName)}</span>
+                            <span>${formatCurrency(t.price)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // Schedule
+            document.getElementById('reviewSchedule').innerHTML = createOrderData.scheduledDate
+                ? `<p>${createOrderData.scheduledDate}${createOrderData.timeSlot ? ` (${createOrderData.timeSlot.start}-${createOrderData.timeSlot.end})` : ''}</p>`
+                : `<p><%= __('orders.asap') || 'As soon as possible' %></p>`;
+
+            // Pricing
+            document.getElementById('reviewPricing').innerHTML = `
+                <div class="pricing-breakdown">
+                    <div class="pricing-row">
+                        <span><%= __('orders.subtotal') || 'Subtotal' %></span>
+                        <span>${formatCurrency(testsTotal)}</span>
+                    </div>
+                    <div class="pricing-row total">
+                        <span><%= __('orders.total') || 'Total' %></span>
+                        <span>${formatCurrency(testsTotal)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function submitOrder() {
+            const submitBtn = document.getElementById('submitOrderBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <%= __('common.creating') || 'Creating...' %>';
+
+            try {
+                const orderPayload = {
+                    patientId: createOrderData.patientId,
+                    location: createOrderData.location,
+                    labId: createOrderData.labId,
+                    tests: createOrderData.tests,
+                    scheduledDate: createOrderData.scheduledDate,
+                    timeSlot: createOrderData.timeSlot,
+                    patientNotes: createOrderData.patientNotes,
+                    beneficiary: createOrderData.beneficiary
+                };
+
+                const response = await fetch(`${API_BASE}/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(orderPayload)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('success', '<%= __('orders.orderCreatedSuccess') || 'Order created successfully' %>');
+                    closeCreateOrderModal();
+                    loadOrders(); // Refresh the orders list
+                } else {
+                    showToast('error', data.message || '<%= __('orders.errors.createFailed') || 'Failed to create order' %>');
+                }
+            } catch (error) {
+                console.error('Submit order error:', error);
+                showToast('error', '<%= __('orders.errors.createFailed') || 'Failed to create order' %>');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> <%= __('orders.createOrder') || 'Create Order' %>';
+            }
+        }
+
+        // ================== MAP FUNCTIONALITY ==================
+
+        let locationMap = null;
+        let locationMarker = null;
+
+        function initLocationMap() {
+            if (locationMap) {
+                locationMap.remove();
+            }
+
+            // Default center: Baghdad, Iraq
+            const defaultLat = 33.3152;
+            const defaultLng = 44.3661;
+
+            locationMap = L.map('locationMap').setView([defaultLat, defaultLng], 12);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(locationMap);
+
+            // Add click event to map
+            locationMap.on('click', function(e) {
+                setLocationMarker(e.latlng.lat, e.latlng.lng);
+                reverseGeocode(e.latlng.lat, e.latlng.lng);
+            });
+
+            // Try to get user's current location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        locationMap.setView([position.coords.latitude, position.coords.longitude], 15);
+                    },
+                    function(error) {
+                        console.log('Geolocation error:', error);
+                    }
+                );
+            }
+        }
+
+        function setLocationMarker(lat, lng) {
+            if (locationMarker) {
+                locationMarker.setLatLng([lat, lng]);
+            } else {
+                locationMarker = L.marker([lat, lng], {
+                    draggable: true
+                }).addTo(locationMap);
+
+                // Handle marker drag
+                locationMarker.on('dragend', function(e) {
+                    const pos = e.target.getLatLng();
+                    reverseGeocode(pos.lat, pos.lng);
+                });
+            }
+
+            // Update coordinate fields
+            document.getElementById('orderLatitude').value = lat.toFixed(6);
+            document.getElementById('orderLongitude').value = lng.toFixed(6);
+
+            // Show coordinates display
+            document.getElementById('displayCoords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        }
+
+        async function reverseGeocode(lat, lng) {
+            try {
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+                    {
+                        headers: {
+                            'Accept-Language': '<%= currentLang %>'
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (data && data.display_name) {
+                    document.getElementById('orderAddress').value = data.display_name;
+                    document.getElementById('displayAddress').textContent = data.display_name;
+                    document.getElementById('selectedLocationDisplay').style.display = 'flex';
+
+                    // Update marker popup
+                    if (locationMarker) {
+                        locationMarker.bindPopup(data.display_name).openPopup();
+                    }
+                }
+            } catch (error) {
+                console.error('Reverse geocoding error:', error);
+                // Still show the location even if geocoding fails
+                document.getElementById('displayAddress').textContent = '<%= __('orders.locationSelected') || 'Location selected' %>';
+                document.getElementById('selectedLocationDisplay').style.display = 'flex';
+            }
+        }
+
+        async function searchAddress() {
+            const query = document.getElementById('mapSearchInput').value.trim();
+            if (!query) return;
+
+            try {
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=iq&limit=1`,
+                    {
+                        headers: {
+                            'Accept-Language': '<%= currentLang %>'
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    const result = data[0];
+                    const lat = parseFloat(result.lat);
+                    const lng = parseFloat(result.lon);
+
+                    locationMap.setView([lat, lng], 17);
+                    setLocationMarker(lat, lng);
+
+                    document.getElementById('orderAddress').value = result.display_name;
+                    document.getElementById('displayAddress').textContent = result.display_name;
+                    document.getElementById('selectedLocationDisplay').style.display = 'flex';
+
+                    if (locationMarker) {
+                        locationMarker.bindPopup(result.display_name).openPopup();
+                    }
+                } else {
+                    showToast('error', '<%= __('orders.addressNotFound') || 'Address not found' %>');
+                }
+            } catch (error) {
+                console.error('Address search error:', error);
+                showToast('error', '<%= __('orders.searchError') || 'Search failed. Please try again.' %>');
+            }
+        }
+
+        function handleMapSearchKeypress(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                searchAddress();
+            }
+        }
+
+        // Initialize map when Step 2 becomes active
+        function initMapIfNeeded() {
+            if (currentStep === 2 && !locationMap) {
+                setTimeout(initLocationMap, 100);
+            } else if (currentStep === 2 && locationMap) {
+                // Invalidate size in case modal was resized
+                setTimeout(() => locationMap.invalidateSize(), 100);
+            }
+        }
+    </script>
+</body>
+</html>

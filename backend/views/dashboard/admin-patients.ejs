@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('patientManagement.title') %> - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-patients.css">
+    <style>
+        body {
+            font-family: <%=font %>;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Admin Navbar -->
+    <%- include('../partials/admin-navbar') %>
+
+    <!-- Main Content -->
+    <main class="admin-dashboard">
+        <div class="patient-management-container">
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="header-left">
+                    <h1><%= __('patientManagement.title') %></h1>
+                    <p class="header-subtitle"><%= __('patientManagement.subtitle') %></p>
+                </div>
+                <div class="header-actions">
+                    <button class="modern-btn refresh-btn" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i>
+                        <span><%= __('common.refresh') %></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Section Cards -->
+            <div class="status-sections-row">
+                <div class="status-section-card" data-status="all" onclick="filterByStatus('all')">
+                    <div class="section-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="totalSectionCount">-</span>
+                        <span class="section-label"><%= __('patientManagement.totalPatients') %></span>
+                    </div>
+                </div>
+
+                <div class="status-section-card active-patient" data-status="active" onclick="filterByStatus('active')">
+                    <div class="section-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="activeSectionCount">-</span>
+                        <span class="section-label"><%= __('patientManagement.activePatients') %></span>
+                    </div>
+                </div>
+
+                <div class="status-section-card blocked" data-status="blocked" onclick="filterByStatus('blocked')">
+                    <div class="section-icon">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="blockedSectionCount">-</span>
+                        <span class="section-label"><%= __('patientManagement.blockedPatients') %></span>
+                    </div>
+                </div>
+
+                <div class="status-section-card suspended" data-status="suspended" onclick="filterByStatus('suspended')">
+                    <div class="section-icon">
+                        <i class="fas fa-pause-circle"></i>
+                    </div>
+                    <div class="section-content">
+                        <span class="section-count" id="suspendedSectionCount">-</span>
+                        <span class="section-label"><%= __('patientManagement.suspendedPatients') %></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filter Bar -->
+            <div class="patients-filter-bar">
+                <div class="filter-left">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="patientSearchInput" placeholder="<%= __('patientManagement.searchPatients') %>">
+                    </div>
+                </div>
+                <div class="filter-right">
+                    <button class="icon-btn active" onclick="toggleView('grid')" id="gridViewBtn" title="Grid View">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                    <button class="icon-btn" onclick="toggleView('table')" id="tableViewBtn" title="Table View">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading-state" id="loadingState">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span><%= __('patientManagement.loadingPatients') %></span>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <i class="fas fa-users"></i>
+                <span><%= __('patientManagement.noPatientsFound') %></span>
+            </div>
+
+            <!-- Patients Grid View -->
+            <div class="patients-grid" id="patientsGridView">
+                <!-- Patient cards will be loaded dynamically -->
+            </div>
+
+            <!-- Patients Table View -->
+            <div class="patients-table-wrapper" id="patientsTableView" style="display: none;">
+                <div class="patients-table-container">
+                    <table class="patients-modern-table">
+                        <thead>
+                            <tr>
+                                <th><%= __('patientManagement.name') %></th>
+                                <th><%= __('patientManagement.email') %></th>
+                                <th><%= __('patientManagement.phone') %></th>
+                                <th><%= __('patientManagement.gender') %></th>
+                                <th><%= __('patientManagement.status') %></th>
+                                <th><%= __('patientManagement.joinedDate') %></th>
+                                <th><%= __('common.actions') %></th>
+                            </tr>
+                        </thead>
+                        <tbody id="patientsTableBody">
+                            <!-- Patients will be loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" id="patientsPagination"></div>
+
+        </div>
+    </main>
+
+    <!-- Patient Details Modal -->
+    <div class="modal-overlay" id="patientModal">
+        <div class="modal-container patient-modal">
+            <div class="modal-header">
+                <h3><%= __('patientManagement.patientDetails') %></h3>
+                <button class="modal-close-btn" onclick="closePatientModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="patientModalBody">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Block Patient Modal -->
+    <div class="modal-overlay" id="blockPatientModal">
+        <div class="modal-container block-modal">
+            <div class="modal-header">
+                <h3><%= __('patientManagement.blockPatient') %></h3>
+                <button class="modal-close-btn" onclick="closeBlockModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description"><%= __('patientManagement.blockPatientDescription') %></p>
+                <div class="form-group">
+                    <label for="blockReason"><%= __('patientManagement.blockReason') %></label>
+                    <textarea id="blockReason" class="form-control" rows="4"
+                        placeholder="<%= __('patientManagement.blockReasonPlaceholder') %>"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modern-btn" onclick="closeBlockModal()">
+                    <span><%= __('common.cancel') %></span>
+                </button>
+                <button class="modern-btn danger-btn" onclick="submitBlockPatient()">
+                    <i class="fas fa-ban"></i>
+                    <span><%= __('patientManagement.confirmBlock') %></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unblock Patient Modal -->
+    <div class="modal-overlay" id="unblockPatientModal">
+        <div class="modal-container confirm-modal">
+            <div class="modal-header">
+                <h3><%= __('patientManagement.unblockPatient') %></h3>
+                <button class="modal-close-btn" onclick="closeUnblockModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description"><%= __('patientManagement.unblockPatientDescription') %></p>
+            </div>
+            <div class="modal-footer">
+                <button class="modern-btn" onclick="closeUnblockModal()">
+                    <span><%= __('common.cancel') %></span>
+                </button>
+                <button class="modern-btn success-btn" onclick="submitUnblockPatient()">
+                    <i class="fas fa-check"></i>
+                    <span><%= __('patientManagement.confirmUnblock') %></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-notification" id="toast">
+        <div class="toast-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="toast-content">
+            <h4 class="toast-title" id="toastTitle"><%= __('common.success') %></h4>
+            <p class="toast-message" id="toastMessage"></p>
+        </div>
+        <button class="toast-close" onclick="hideToast()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <script>
+        const API_BASE = '/api/admin/patients';
+        let currentPatientPage = 1;
+        let currentPatientId = null;
+        let selectedStatus = 'all';
+        let currentView = 'grid';
+        let searchQuery = '';
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            loadPatients();
+            loadStats();
+
+            document.getElementById('patientSearchInput').addEventListener('input', debounce(() => {
+                searchQuery = document.getElementById('patientSearchInput').value;
+                currentPatientPage = 1;
+                loadPatients();
+            }, 500));
+        });
+
+        // Load patients
+        async function loadPatients() {
+            showLoading(true);
+
+            const params = new URLSearchParams({
+                page: currentPatientPage,
+                limit: 12
+            });
+
+            if (selectedStatus !== 'all') {
+                params.append('status', selectedStatus);
+            }
+
+            if (searchQuery) {
+                params.append('search', searchQuery);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}?${params}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    renderPatients(data.data.patients);
+                    renderPagination('patientsPagination', data.data.page, data.data.pages, (page) => {
+                        currentPatientPage = page;
+                        loadPatients();
+                    });
+                    showLoading(false);
+                } else {
+                    showError('<%= __('common.error') %>');
+                    showLoading(false);
+                }
+            } catch (error) {
+                console.error('Error loading patients:', error);
+                showError('<%= __('common.error') %>');
+                showLoading(false);
+            }
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats/overview`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const stats = data.data.stats;
+                    document.getElementById('totalSectionCount').textContent = stats.total || 0;
+                    document.getElementById('activeSectionCount').textContent = stats.active || 0;
+                    document.getElementById('blockedSectionCount').textContent = stats.blocked || 0;
+                    document.getElementById('suspendedSectionCount').textContent = stats.suspended || 0;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Render patients
+        function renderPatients(patients) {
+            if (currentView === 'grid') {
+                renderGridView(patients);
+            } else {
+                renderTableView(patients);
+            }
+
+            // Update empty state
+            const isEmpty = patients.length === 0;
+            document.getElementById('emptyState').style.display = isEmpty ? 'flex' : 'none';
+            document.getElementById('patientsGridView').style.display = isEmpty ? 'none' : (currentView === 'grid' ? 'block' : 'none');
+            document.getElementById('patientsTableView').style.display = isEmpty ? 'none' : (currentView === 'table' ? 'block' : 'none');
+            document.getElementById('patientsPagination').style.display = isEmpty ? 'none' : 'flex';
+        }
+
+        // Render grid view
+        function renderGridView(patients) {
+            const container = document.getElementById('patientsGridView');
+
+            if (patients.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = '<div class="patients-cards">' + patients.map(patient => `
+                <div class="patient-card" onclick="event.stopPropagation(); openPatientDetail('${patient._id}')">
+                    <div class="card-header">
+                        <div class="patient-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="patient-info">
+                            <h4 class="patient-name">${patient.name}</h4>
+                            <p class="patient-email">${patient.email}</p>
+                        </div>
+                        <span class="status-badge ${patient.status}">${getStatusLabel(patient.status)}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-row">
+                            <i class="fas fa-phone"></i>
+                            <span>${patient.phone || '-'}</span>
+                        </div>
+                        <div class="info-row">
+                            <i class="fas fa-venus-mars"></i>
+                            <span>${patient.gender || '-'}</span>
+                        </div>
+                        <div class="info-row">
+                            <i class="fas fa-calendar"></i>
+                            <span><%= __('patientManagement.joinedOn') %>: ${formatDate(patient.createdAt)}</span>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="action-btn view" onclick="event.stopPropagation(); openPatientDetail('${patient._id}')" title="<%= __('common.view') %>">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        ${patient.status === 'active' ? `
+                            <button class="action-btn block" onclick="event.stopPropagation(); showBlockModal('${patient._id}')" title="<%= __('patientManagement.block') %>">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                        ` : `
+                            <button class="action-btn unblock" onclick="event.stopPropagation(); showUnblockModal('${patient._id}')" title="<%= __('patientManagement.unblock') %>">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `).join('') + '</div>';
+        }
+
+        // Render table view
+        function renderTableView(patients) {
+            const tbody = document.getElementById('patientsTableBody');
+
+            if (patients.length === 0) {
+                tbody.innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = patients.map(patient => `
+                <tr class="patient-row" data-status="${patient.status}" onclick="event.stopPropagation(); openPatientDetail('${patient._id}')">
+                    <td>
+                        <div class="patient-cell">
+                            <div class="patient-avatar-small">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span class="patient-name">${patient.name}</span>
+                        </div>
+                    </td>
+                    <td>${patient.email}</td>
+                    <td>${patient.phone || '-'}</td>
+                    <td>${patient.gender || '-'}</td>
+                    <td>
+                        <span class="status-badge ${patient.status}">${getStatusLabel(patient.status)}</span>
+                    </td>
+                    <td>${formatDate(patient.createdAt)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="event.stopPropagation(); openPatientDetail('${patient._id}')" title="<%= __('common.view') %>">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${patient.status === 'active' ? `
+                                <button class="action-btn block" onclick="event.stopPropagation(); showBlockModal('${patient._id}')" title="<%= __('patientManagement.block') %>">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            ` : `
+                                <button class="action-btn unblock" onclick="event.stopPropagation(); showUnblockModal('${patient._id}')" title="<%= __('patientManagement.unblock') %>">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            `}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Filter by status
+        function filterByStatus(status) {
+            selectedStatus = status;
+            currentPatientPage = 1;
+
+            // Update active state on cards
+            document.querySelectorAll('.status-section-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`.status-section-card[data-status="${status}"]`).classList.add('active');
+
+            loadPatients();
+        }
+
+        // Toggle view
+        function toggleView(view) {
+            currentView = view;
+            document.getElementById('gridViewBtn').classList.toggle('active', view === 'grid');
+            document.getElementById('tableViewBtn').classList.toggle('active', view === 'table');
+            loadPatients();
+        }
+
+        // Navigate to patient detail page
+        function openPatientDetail(patientId) {
+            window.location.href = `/admin/patients/${patientId}`;
+        }
+
+        // Open patient modal (kept for backward compatibility)
+        async function openPatientModal(patientId) {
+            openPatientDetail(patientId);
+        }
+
+        function renderPatientModal(data) {
+            const { patient, orders, stats } = data;
+            const modalBody = document.getElementById('patientModalBody');
+
+            modalBody.innerHTML = `
+                <div class="patient-details">
+                    <section class="detail-section">
+                        <h4><%= __('patientManagement.personalInfo') %></h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="label"><%= __('patientManagement.name') %></span>
+                                <span class="value">${patient.name}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label"><%= __('patientManagement.email') %></span>
+                                <span class="value">${patient.email}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label"><%= __('patientManagement.phone') %></span>
+                                <span class="value">${patient.phone || '-'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label"><%= __('patientManagement.gender') %></span>
+                                <span class="value">${patient.gender || '-'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label"><%= __('patientManagement.dateOfBirth') %></span>
+                                <span class="value">${patient.birthDate ? formatDate(patient.birthDate) : '-'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label"><%= __('patientManagement.status') %></span>
+                                <span class="value">
+                                    <span class="status-badge ${patient.status}">${getStatusLabel(patient.status)}</span>
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label"><%= __('patientManagement.joinedDate') %></span>
+                                <span class="value">${formatDate(patient.createdAt)}</span>
+                            </div>
+                            ${patient.blockedAt ? `
+                                <div class="detail-item">
+                                    <span class="label"><%= __('patientManagement.blockedAt') %></span>
+                                    <span class="value">${formatDate(patient.blockedAt)}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label"><%= __('patientManagement.blockReason') %></span>
+                                    <span class="value">${patient.blockReason || '-'}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </section>
+
+                    <section class="detail-section">
+                        <h4><%= __('patientManagement.orderStatistics') %></h4>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <span class="stat-value">${stats.totalOrders || 0}</span>
+                                <span class="stat-label"><%= __('patientManagement.totalOrders') %></span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-value">${stats.completedOrders || 0}</span>
+                                <span class="stat-label"><%= __('patientManagement.completedOrders') %></span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-value">${formatCurrency(stats.totalSpent || 0)}</span>
+                                <span class="stat-label"><%= __('patientManagement.totalSpent') %></span>
+                            </div>
+                        </div>
+                    </section>
+
+                    ${orders && orders.length > 0 ? `
+                        <section class="detail-section">
+                            <h4><%= __('patientManagement.recentOrders') %></h4>
+                            <div class="orders-list">
+                                ${orders.slice(0, 5).map(order => `
+                                    <div class="order-item">
+                                        <span>${order.qrCode}</span>
+                                        <span class="status-badge ${order.status}">${getStatusLabel(order.status)}</span>
+                                        <span>${formatDate(order.createdAt)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </section>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function closePatientModal() {
+            document.getElementById('patientModal').classList.remove('show');
+            currentPatientId = null;
+        }
+
+        function showBlockModal(patientId) {
+            currentPatientId = patientId;
+            document.getElementById('blockReason').value = '';
+            document.getElementById('blockPatientModal').classList.add('show');
+        }
+
+        function closeBlockModal() {
+            document.getElementById('blockPatientModal').classList.remove('show');
+            document.getElementById('blockReason').value = '';
+            currentPatientId = null;
+        }
+
+        async function submitBlockPatient() {
+            const reason = document.getElementById('blockReason').value.trim();
+
+            if (!reason) {
+                showToast('error', '<%= __('patientManagement.blockReasonRequired') %>');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/${currentPatientId}/block`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('success', '<%= __('patientManagement.patientBlocked') %>');
+                    closeBlockModal();
+                    loadPatients();
+                    loadStats();
+                } else {
+                    showToast('error', data.message);
+                }
+            } catch (error) {
+                showToast('error', '<%= __('common.error') %>');
+            }
+        }
+
+        function showUnblockModal(patientId) {
+            currentPatientId = patientId;
+            document.getElementById('unblockPatientModal').classList.add('show');
+        }
+
+        function closeUnblockModal() {
+            document.getElementById('unblockPatientModal').classList.remove('show');
+            currentPatientId = null;
+        }
+
+        async function submitUnblockPatient() {
+            try {
+                const response = await fetch(`${API_BASE}/${currentPatientId}/unblock`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('success', '<%= __('patientManagement.patientUnblocked') %>');
+                    closeUnblockModal();
+                    loadPatients();
+                    loadStats();
+                } else {
+                    showToast('error', data.message);
+                }
+            } catch (error) {
+                showToast('error', '<%= __('common.error') %>');
+            }
+        }
+
+        // Pagination
+        function renderPagination(containerId, currentPage, totalPages, onPageChange) {
+            const container = document.getElementById(containerId);
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            if (currentPage > 1) {
+                html += `<button class="pagination-btn" onclick="pageChange(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+            }
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    html += `<button class="pagination-btn active">${i}</button>`;
+                } else if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    html += `<button class="pagination-btn" onclick="pageChange(${i})">${i}</button>`;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    html += `<span class="pagination-ellipsis">...</span>`;
+                }
+            }
+
+            if (currentPage < totalPages) {
+                html += `<button class="pagination-btn" onclick="pageChange(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+            }
+
+            container.innerHTML = html;
+
+            // Store the page change function
+            container._onPageChange = onPageChange;
+        }
+
+        function pageChange(page) {
+            const container = document.querySelector('.pagination:hover') || document.getElementById('patientsPagination');
+            if (container && container._onPageChange) {
+                container._onPageChange(page);
+            }
+        }
+
+        // Utility functions
+        function getStatusLabel(status) {
+            const statusMap = {
+                'active': "<%= __('patientManagement.active') %>",
+                'blocked': "<%= __('patientManagement.blocked') %>",
+                'suspended': "<%= __('patientManagement.suspended') %>",
+                'pending': "<%= __('patientManagement.pending') %>",
+                'confirmed': "<%= __('patientManagement.confirmed') %>",
+                'completed': "<%= __('patientManagement.completed') %>",
+                'cancelled': "<%= __('patientManagement.cancelled') %>"
+            };
+            return statusMap[status] || status;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IQ', {
+                style: 'currency',
+                currency: 'IQD',
+                maximumFractionDigits: 0
+            }).format(amount).replace('IQD', 'IQD');
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function refreshData() {
+            loadPatients();
+            loadStats();
+            showToast('success', '<%= __('common.success') %>');
+        }
+
+        function getToken() {
+            return localStorage.getItem('token') || '';
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingState').style.display = show ? 'flex' : 'none';
+        }
+
+        function showToast(type, message) {
+            const toast = document.getElementById('toast');
+            const icon = toast.querySelector('.toast-icon i');
+            const title = toast.querySelector('.toast-title');
+            const msg = toast.querySelector('.toast-message');
+
+            icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+            toast.classList.remove('success', 'error');
+            toast.classList.add(type);
+            title.textContent = type === 'success' ? "<%= __('common.success') %>" : "<%= __('common.error') %>";
+            msg.textContent = message;
+
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function showError(message) {
+            showToast('error', message);
+        }
+
+        function hideToast() {
+            document.getElementById('toast').classList.remove('show');
+        }
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function (e) {
+                if (e.target === this) {
+                    this.classList.remove('show');
+                }
+            });
+        });
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay').forEach(modal => {
+                    modal.classList.remove('show');
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

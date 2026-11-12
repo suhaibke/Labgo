@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('privacy.title') %> - LabGo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <style>
+        body { font-family: <%= font %>; }
+        .privacy-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .privacy-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .privacy-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: var(--gradient-primary, linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .privacy-header p {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        .privacy-section {
+            margin-bottom: 30px;
+        }
+        .privacy-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #1e293b;
+        }
+        .privacy-section h3 {
+            font-size: 1.25rem;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #334155;
+        }
+        .privacy-section p, .privacy-section ul {
+            line-height: 1.8;
+            color: #475569;
+        }
+        .privacy-section ul {
+            padding-left: 20px;
+        }
+        [dir="rtl"] .privacy-section ul {
+            padding-right: 20px;
+            padding-left: 0;
+        }
+        .privacy-section li {
+            margin-bottom: 8px;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            color: #6366f1;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .disclaimer-box {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 10px;
+        }
+        .disclaimer-box p {
+            color: #92400e;
+            font-weight: 500;
+        }
+        .no-sale-notice {
+            background: #f0fdf4;
+            border: 1px solid #22c55e;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .no-sale-notice p {
+            color: #166534;
+            font-weight: 500;
+            margin: 0;
+        }
+        .deletion-notice {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .deletion-notice p {
+            color: #1e40af;
+            margin: 0;
+        }
+        /* Force phone numbers to always be LTR */
+        a[dir="ltr"] {
+            direction: ltr !important;
+            text-align: left !important;
+            unicode-bidi: embed;
+        }
+        [dir="rtl"] a[dir="ltr"] {
+            direction: ltr !important;
+            text-align: left !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="privacy-container">
+        <a href="/" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            <%= __('privacy.backToHome') %>
+        </a>
+
+        <div class="privacy-header">
+            <h1><%= __('privacy.title') %></h1>
+            <p><%= __('privacy.lastUpdated') %>: <%= new Date().toLocaleDateString(currentLang) %></p>
+        </div>
+
+        <!-- Introduction -->
+        <div class="privacy-section">
+            <h2><%= __('privacy.introduction.title') %></h2>
+            <p><%= __('privacy.introduction.content') %></p>
+        </div>
+
+        <!-- Data Collection -->
+        <div class="privacy-section">
+            <h2><%= __('privacy.dataCollection.title') %></h2>
+            <p><%= __('privacy.dataCollection.content') %></p>
+
+            <h3><%= __('privacy.dataCollection.personalInfo.title') %></h3>
+            <ul>
+                <%
+                const personalInfoItems = {
+                    en: ["Full Name", "Email Address", "Phone Number", "Date of Birth", "Gender", "Address", "Geographic Location"],
+                    ar: ["الاسم الكامل", "عنوان البريد الإلكتروني", "رقم الهاتف", "تاريخ الميلاد", "الجنس", "العنوان", "الموقع الجغرافي"],
+                    ku: ["ناوی تەواو", "ناونیشانی ئیمەیڵ", "ژمارە تەلەفۆن", "بەرواری لەدایک", "ڕەگ", "ناونیشان", "شوێنێجایی"],
+                    tr: ["Tam Adı", "E-posta Adresi", "Telefon Numarası", "Doğum Tarihi", "Cinsiyet", "Adres", "Coğrafi Konum"]
+                };
+                const piItems = personalInfoItems[currentLang] || personalInfoItems['en'];
+                piItems.forEach(item => { %>
+                    <li><%= item %></li>
+                <% }) %>
+            </ul>
+
+            <h3><%= __('privacy.dataCollection.healthData.title') %></h3>
+            <p><%= __('privacy.dataCollection.healthData.content') %></p>
+            <ul>
+                <%
+                const healthDataItems = {
+                    en: ["Laboratory test orders and test types selected", "Laboratory test results and medical reports", "Prescription images uploaded by the user", "Order history related to medical tests", "Beneficiary health information (when ordering tests for family members), including name, date of birth, gender, and relationship to the patient"],
+                    ar: ["طلبات التحاليل المختبرية وأنواع الفحوصات المختارة", "نتائج التحاليل المختبرية والتقارير الطبية", "صور الوصفات الطبية المرفوعة من قبل المستخدم", "سجل الطلبات المتعلقة بالفحوصات الطبية", "معلومات المستفيد الصحية (عند طلب فحوصات لأفراد العائلة)، بما في ذلك الاسم وتاريخ الميلاد والجنس وصلة القرابة بالمريض"],
+                    ku: ["داواکاری پشکنینی تاقیگە و جۆری پشکنینەکان", "ئەنجامی پشکنینی تاقیگە و ڕاپۆرتە پزیشکییەکان", "وێنەی ڕەچەتەی پزیشکی کە لەلایەن بەکارهێنەرەوە بارکراوە", "مێژووی داواکاری پەیوەندیدار بە پشکنینە پزیشکییەکان", "زانیاری تەندروستی سوودمەند (کاتێک پشکنین بۆ ئەندامانی خێزان داوا دەکرێت)، لەوانە ناو، بەرواری لەدایکبوون، ڕەگەز، و پەیوەندی لەگەڵ نەخۆش"],
+                    tr: ["Laboratuvar test siparişleri ve seçilen test türleri", "Laboratuvar test sonuçları ve tıbbi raporlar", "Kullanıcı tarafından yüklenen reçete görselleri", "Tıbbi testlerle ilgili sipariş geçmişi", "Yararlanıcı sağlık bilgileri (aile üyeleri için test siparişi verildiğinde), ad, doğum tarihi, cinsiyet ve hasta ile ilişki dahil"]
+                };
+                const hdItems = healthDataItems[currentLang] || healthDataItems['en'];
+                hdItems.forEach(item => { %>
+                    <li><%= item %></li>
+                <% }) %>
+            </ul>
+
+            <h3><%= __('privacy.dataCollection.locationData.title') %></h3>
+            <p><%= __('privacy.dataCollection.locationData.content') %></p>
+            <ul>
+                <%
+                const locationDataItems = {
+                    en: ["Enable home sample collection by dispatching nurses to your location", "Show nearby laboratories in your area", "Provide real-time updates during sample collection appointments"],
+                    ar: ["تمكين سحب العينات المنزلية عن طريق إرسال الممرضين إلى موقعك", "عرض المختبرات القريبة في منطقتك", "توفير تحديثات فورية أثناء مواعيد سحب العينات"],
+                    ku: ["چالاککردنی کۆکردنەوەی نموونە لە ماڵەوە بە ناردنی پەرستار بۆ شوێنەکەت", "پیشاندانی تاقیگە نزیکەکان لە ناوچەکەت", "دابینکردنی نوێکارییە ڕاستەوخۆکان لە کاتی مەودای کۆکردنەوەی نموونە"],
+                    tr: ["Hemşireleri konumunuza göndererek evde numune toplamayı sağlamak", "Bölgenizdeki yakın laboratuvarları göstermek", "Numune toplama randevuları sırasında gerçek zamanlı güncellemeler sağlamak"]
+                };
+                const ldItems = locationDataItems[currentLang] || locationDataItems['en'];
+                ldItems.forEach(item => { %>
+                    <li><%= item %></li>
+                <% }) %>
+            </ul>
+        </div>
+
+        <!-- Data Usage -->
+        <div class="privacy-section">
+            <h2><%= __('privacy.dataUsage.title') %></h2>
+            <p><%= __('privacy.dataUsage.content') %></p>
+            <ul>
+                <%
+                const dataUsageItems = {
+                    en: ["Processing and managing laboratory test orders and bookings", "Coordinating home sample collection between patients and certified nurses", "Delivering laboratory test results securely through the application", "Sending notifications about order status updates, test results, and service communications", "Improving the quality and reliability of our healthcare services", "Processing payments for services rendered", "Complying with applicable healthcare regulations and laws"],
+                    ar: ["معالجة وإدارة طلبات التحاليل المختبرية والحجوزات", "تنسيق سحب العينات المنزلية بين المرضى والممرضين المعتمدين", "تسليم نتائج التحاليل المختبرية بشكل آمن عبر التطبيق", "إرسال إشعارات حول تحديثات حالة الطلب ونتائج التحاليل والاتصالات الخدمية", "تحسين جودة وموثوقية خدماتنا الصحية", "معالجة المدفوعات مقابل الخدمات المقدمة", "الامتثال للوائح الرعاية الصحية والقوانين المعمول بها"],
+                    ku: ["پرۆسە و بەڕێوەبردنی داواکاری پشکنینی تاقیگە و تۆمارکردنەکان", "ھاوئاھەنگکردنی کۆکردنەوەی نموونە لە ماڵەوە نێوان نەخۆشان و پەرستارە پەسەندکراوەکان", "گەیاندنی ئەنجامی پشکنینی تاقیگە بەشێوەیەکی پارێزراو لە ڕێگەی ئەپەکەوە", "ناردنی ئاگادارکردنەوە دەربارەی نوێکاری بارودۆخی داواکاری، ئەنجامی پشکنین، و پەیوەندییە خزمەتگوزارییەکان", "باشترکردنی کوالیتی و متمانەپێکراوی خزمەتگوزارییە تەندروستییەکانمان", "پرۆسەی پارەدان بۆ خزمەتگوزارییەکان", "ڕێکخستن لەگەڵ ڕێسای تەندروستی و یاساکانی پەیوەندیدار"],
+                    tr: ["Laboratuvar test siparişlerini ve rezervasyonları işleme ve yönetme", "Hastalar ve sertifikalı hemşireler arasında evde numune toplamayı koordine etme", "Laboratuvar test sonuçlarını uygulama üzerinden güvenli bir şekilde iletme", "Sipariş durumu güncellemeleri, test sonuçları ve hizmet iletişimleri hakkında bildirim gönderme", "Sağlık hizmetlerimizin kalitesini ve güvenilirliğini iyileştirme", "Verilen hizmetler için ödemeleri işleme", "Geçerli sağlık düzenlemelerine ve yasalara uyma"]
+                };
+                const duItems = dataUsageItems[currentLang] || dataUsageItems['en'];
+                duItems.forEach(item => { %>
+                    <li><%= item %></li>
+                <% }) %>
+            </ul>
+        </div>
+
+        <!-- Data Sharing -->
+        <div class="privacy-section">
+            <h2><%= __('privacy.dataSharing.title') %></h2>
+            <p><%= __('privacy.dataSharing.content') %></p>
+            <ul>
+                <%
+                const dataSharingItems = {
+                    en: ["Partner laboratories — to process your test orders, perform laboratory analyses, and deliver results", "Certified nurses — to facilitate home sample collection, including your name, location, and order details", "Payment processors — limited financial data for payment processing only (no health data is shared with payment providers)"],
+                    ar: ["المختبرات الشريكة — لمعالجة طلبات التحاليل وإجراء الفحوصات المختبرية وتسليم النتائج", "الممرضون المعتمدون — لتسهيل سحب العينات المنزلية، بما في ذلك اسمك وموقعك وتفاصيل الطلب", "معالجات الدفع — بيانات مالية محدودة لمعالجة المدفوعات فقط (لا تتم مشاركة البيانات الصحية مع مزودي الدفع)"],
+                    ku: ["تاقیگە ھاوبەشەکان — بۆ پرۆسەی داواکاری پشکنینەکانت، ئەنجامدانی شیکاری تاقیگە، و گەیاندنی ئەنجامەکان", "پەرستارە پەسەندکراوەکان — بۆ ئاسانکردنی کۆکردنەوەی نموونە لە ماڵەوە، لەوانە ناوت، شوێنت، و وردەکاری داواکاری", "پرۆسەکەرانی پارەدان — داتای دارایی سنووردار تەنھا بۆ پرۆسەی پارەدان (ھیچ داتای تەندروستییەک لەگەڵ دابینکەرانی پارەدان ھاوبەش ناکرێت)"],
+                    tr: ["İş ortağı laboratuvarlar — test siparişlerinizi işlemek, laboratuvar analizleri yapmak ve sonuçları iletmek için", "Sertifikalı hemşireler — adınız, konumunuz ve sipariş detaylarınız dahil evde numune toplamayı kolaylaştırmak için", "Ödeme işlemcileri — yalnızca ödeme işleme için sınırlı finansal veriler (sağlık verileri ödeme sağlayıcılarıyla paylaşılmaz)"]
+                };
+                const dsItems = dataSharingItems[currentLang] || dataSharingItems['en'];
+                dsItems.forEach(item => { %>
+                    <li><%= item %></li>
+                <% }) %>
+            </ul>
+            <div class="no-sale-notice">
+                <p><%= __('privacy.dataSharing.noSale') %></p>
+            </div>
+        </div>
+
+        <!-- Data Security -->
+        <div class="privacy-section">
+            <h2><%= __('privacy.dataSecurity.title') %></h2>
+            <p><%= __('privacy.dataSecurity.content') %></p>
+            <ul>
+                <%
+                const dataSecurityItems = {
+                    en: ["SSL/TLS encryption for all data transmitted between the application and our servers", "Server-side encryption for storing sensitive health and personal data at rest", "Role-based access control ensuring only authorized personnel can access your data", "Secure authentication with OTP verification and encrypted token storage", "Regular security audits and vulnerability assessments", "Strict access controls separating patient data, nurse data, and laboratory data"],
+                    ar: ["تشفير SSL/TLS لجميع البيانات المنقولة بين التطبيق وخوادمنا", "تشفير من جانب الخادم لتخزين البيانات الصحية والشخصية الحساسة", "التحكم في الوصول المستند إلى الأدوار لضمان وصول الأشخاص المخولين فقط إلى بياناتك", "مصادقة آمنة مع التحقق عبر رمز OTP وتخزين مشفر للرموز", "عمليات تدقيق أمنية منتظمة وتقييمات الثغرات", "ضوابط وصول صارمة تفصل بين بيانات المرضى وبيانات الممرضين وبيانات المختبرات"],
+                    ku: ["شیفڕکردنی SSL/TLS بۆ ھەموو داتای گوازراوە نێوان ئەپەکە و سێرڤەرەکانمان", "شیفڕکردنی لەسەر سێرڤەر بۆ خەزنکردنی داتای تەندروستی و کەسی ھەستیار", "کۆنترۆلی دەستڕاگەیشتن بەپێی ڕۆڵ بۆ دڵنیابوون لەوەی تەنھا کەسانی مۆڵەتدار دەتوانن بگەنە داتاکەت", "ناسینەوەی پارێزراو لەگەڵ پشتڕاستکردنەوەی OTP و خەزنکردنی شیفڕکراوی تۆکن", "فەرمانی ئاسایشی بەردەوام و ھەڵسەنگاندنی لاوازی", "کۆنترۆلی دەستڕاگەیشتنی توند کە داتای نەخۆشان، داتای پەرستار، و داتای تاقیگە جیا دەکاتەوە"],
+                    tr: ["Uygulama ve sunucularımız arasında iletilen tüm veriler için SSL/TLS şifreleme", "Hassas sağlık ve kişisel verilerin saklanması için sunucu taraflı şifreleme", "Yalnızca yetkili personelin verilerinize erişmesini sağlayan rol tabanlı erişim kontrolü", "OTP doğrulama ve şifreli token saklama ile güvenli kimlik doğrulama", "Düzenli güvenlik denetimleri ve güvenlik açığı değerlendirmeleri", "Hasta verilerini, hemşire verilerini ve laboratuvar verilerini ayıran sıkı erişim kontrolleri"]
+                };
+                const secItems = dataSecurityItems[currentLang] || dataSecurityItems['en'];
+                secItems.forEach(item => { %>
+                    <li><%= item %></li>
+                <% }) %>
+            </ul>
+        </div>
+
+        <!-- Data Retention -->
+        <div class="privacy-section">
+            <h2><%= __('privacy.dataRetention.title') %></h2>
+            <p><%= __('privacy.dataRetention.content') %></p>
+            <ul>
+                <%
+                const dataRetentionItems = {
+                    en: ["Personal account information — retained as long as your account is active", "Laboratory test orders and results — retained for the duration of your account to allow you to access your medical history", "Prescription images — retained for the duration of the associated order", "Location data — used in real-time for service delivery and not stored permanently"],
+                    ar: ["معلومات الحساب الشخصي — يتم الاحتفاظ بها طوال فترة نشاط حسابك", "طلبات ونتائج التحاليل المختبرية — يتم الاحتفاظ بها طوال فترة حسابك للسماح لك بالوصول إلى سجلك الطبي", "صور الوصفات الطبية — يتم الاحتفاظ بها طوال فترة الطلب المرتبط بها", "بيانات الموقع — تُستخدم في الوقت الفعلي لتقديم الخدمة ولا يتم تخزينها بشكل دائم"],
+                    ku: ["زانیاری ھەژمار — دەپارێزرێت ھەتا ھەژمارەکەت چالاکە", "داواکاری و ئەنجامی پشکنینی تاقیگە — دەپارێزرێت بۆ ماوەی ھەژمارەکەت بۆ ڕێگەدان بە دەستڕاگەیشتن بە مێژووی پزیشکیت", "وێنەی ڕەچەتە — دەپارێزرێت بۆ ماوەی داواکاری پەیوەندیدارەکە", "داتای شوێن — لە کاتی ڕاستەوخۆ بەکاردەھێنرێت بۆ دابینکردنی خزمەت و بەشێوەیەکی ھەمیشەیی خەزن ناکرێت"],
+                    tr: ["Kişisel hesap bilgileri — hesabınız aktif olduğu sürece saklanır", "Laboratuvar test siparişleri ve sonuçları — tıbbi geçmişinize erişmeniz için hesabınız süresince saklanır", "Reçete görselleri — ilgili sipariş süresince saklanır", "Konum verileri — hizmet sunumu için gerçek zamanlı olarak kullanılır ve kalıcı olarak saklanmaz"]
+                };
+                const drItems = dataRetentionItems[currentLang] || dataRetentionItems['en'];
+                drItems.forEach(item => { %>
+                    <li><%= item %></li>
+                <% }) %>
+            </ul>
+            <div class="deletion-notice">
+                <p><%= __('privacy.dataRetention.deletion') %></p>
+            </div>
+        </div>
+
+        <!-- User Rights -->
+        <div class="privacy-section">
+            <h2><%= __('privacy.userRights.title') %></h2>
+            <p><%= __('privacy.userRights.content') %></p>
+            <ul>
+                <%
+                const userRightsItems = {
+                    en: ["Access — view and download your personal and health data at any time", "Correction — request correction of any inaccurate personal or health information", "Deletion — request permanent deletion of your account and all associated data", "Data portability — request a copy of your data in a portable format", "Withdraw consent — withdraw your consent for data processing at any time", "Complaint — file a complaint regarding data handling practices"],
+                    ar: ["الوصول — عرض وتحميل بياناتك الشخصية والصحية في أي وقت", "التصحيح — طلب تصحيح أي معلومات شخصية أو صحية غير دقيقة", "الحذف — طلب حذف حسابك نهائياً وجميع البيانات المرتبطة به", "نقل البيانات — طلب نسخة من بياناتك بتنسيق قابل للنقل", "سحب الموافقة — سحب موافقتك على معالجة البيانات في أي وقت", "الشكوى — تقديم شكوى بشأن ممارسات التعامل مع البيانات"],
+                    ku: ["دەستڕاگەیشتن — بینین و داگرتنی داتای کەسی و تەندروستیت لە ھەر کاتێکدا", "ڕاستکردنەوە — داوای ڕاستکردنەوەی ھەر زانیاری کەسی یان تەندروستی نادروست", "سڕینەوە — داوای سڕینەوەی ھەمیشەیی ھەژمارەکەت و ھەموو داتای پەیوەندیدار", "گواستنەوەی داتا — داوای کۆپییەکی داتاکەت بە فۆرماتی گواستنەوەپێکراو", "کشانەوەی ڕەزامەندی — کشانەوەی ڕەزامەندیت بۆ پرۆسەی داتا لە ھەر کاتێکدا", "ناڕەزایی — تۆمارکردنی ناڕەزایی دەربارەی ڕێوشوێنی مامەڵەکردن لەگەڵ داتا"],
+                    tr: ["Erişim — kişisel ve sağlık verilerinizi istediğiniz zaman görüntüleme ve indirme", "Düzeltme — yanlış kişisel veya sağlık bilgilerinin düzeltilmesini talep etme", "Silme — hesabınızın ve ilişkili tüm verilerin kalıcı olarak silinmesini talep etme", "Veri taşınabilirliği — verilerinizin taşınabilir bir formatta bir kopyasını talep etme", "Onayı geri çekme — veri işleme onayınızı istediğiniz zaman geri çekme", "Şikayet — veri işleme uygulamaları hakkında şikayette bulunma"]
+                };
+                const urItems = userRightsItems[currentLang] || userRightsItems['en'];
+                urItems.forEach(item => { %>
+                    <li><%= item %></li>
+                <% }) %>
+            </ul>
+        </div>
+
+        <!-- Medical Disclaimer -->
+        <div class="privacy-section">
+            <h2><%= __('privacy.medicalDisclaimer.title') %></h2>
+            <p><%= __('privacy.medicalDisclaimer.content') %></p>
+            <div class="disclaimer-box">
+                <ul>
+                    <%
+                    const disclaimerItems = {
+                        en: ["LabGo does not provide medical diagnoses, medical advice, or treatment recommendations", "LabGo is not a medical device and should not be used as a substitute for professional medical consultation", "Laboratory test results delivered through the app are provided by partner laboratories and should be interpreted by a qualified healthcare professional", "Always consult your doctor or a qualified healthcare provider for medical advice regarding your test results", "In case of a medical emergency, contact your local emergency services immediately"],
+                        ar: ["لابجو لا يقدم تشخيصات طبية أو نصائح طبية أو توصيات علاجية", "لابجو ليس جهازاً طبياً ولا ينبغي استخدامه كبديل للاستشارة الطبية المهنية", "نتائج التحاليل المختبرية المقدمة عبر التطبيق يتم توفيرها من قبل المختبرات الشريكة ويجب تفسيرها من قبل متخصص رعاية صحية مؤهل", "استشر دائماً طبيبك أو مقدم رعاية صحية مؤهل للحصول على مشورة طبية بشأن نتائج تحاليلك", "في حالة الطوارئ الطبية، اتصل بخدمات الطوارئ المحلية فوراً"],
+                        ku: ["لابگۆ دیاگنۆزی پزیشکی، ڕاوێژی پزیشکی، یان پێشنیاری چارەسەر دابین ناکات", "لابگۆ ئامێری پزیشکی نییە و نابێت وەک جێگرەوەی ڕاوێژی پزیشکی پیشەیی بەکار بھێنرێت", "ئەنجامی پشکنینی تاقیگە کە لە ڕێگەی ئەپەکەوە دەگەیەنرێت لەلایەن تاقیگە ھاوبەشەکانەوە دابین دەکرێت و دەبێت لەلایەن پسپۆڕی تەندروستی شارەزاوە شیکاری بکرێت", "ھەمیشە ڕاوێژ لەگەڵ پزیشکەکەت یان دابینکەری تەندروستی شارەزا بکە بۆ ڕاوێژی پزیشکی دەربارەی ئەنجامەکانت", "لە حاڵەتی فریاکەوتنی پزیشکی، دەستبەجێ پەیوەندی بە خزمەتگوزارییە فریاکەوتنییە ناوخۆییەکان بکە"],
+                        tr: ["LabGo tıbbi teşhis, tıbbi tavsiye veya tedavi önerileri sağlamaz", "LabGo bir tıbbi cihaz değildir ve profesyonel tıbbi danışmanlığın yerine kullanılmamalıdır", "Uygulama üzerinden iletilen laboratuvar test sonuçları iş ortağı laboratuvarlar tarafından sağlanır ve nitelikli bir sağlık profesyoneli tarafından yorumlanmalıdır", "Test sonuçlarınız hakkında tıbbi tavsiye için her zaman doktorunuza veya nitelikli bir sağlık hizmeti sağlayıcısına danışın", "Tıbbi acil durumda, derhal yerel acil servislerle iletişime geçin"]
+                    };
+                    const mdItems = disclaimerItems[currentLang] || disclaimerItems['en'];
+                    mdItems.forEach(item => { %>
+                        <li><%= item %></li>
+                    <% }) %>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Contact -->
+        <div class="privacy-section">
+            <h2><%= __('privacy.contact.title') %></h2>
+            <p><%= __('privacy.contact.content') %></p>
+            <p><%= __('privacy.contact.email') %>: <a href="mailto:info@labgo-iq.com" style="color: #6366f1;">info@labgo-iq.com</a></p>
+            <p><%= __('privacy.contact.phone') %>: <a href="tel:+9647777430067" style="color: #6366f1;" dir="ltr">0777 743 0067</a></p>
+        </div>
+    </div>
+</body>
+</html>

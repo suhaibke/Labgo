@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بانر الرئيسية - LabGo Admin</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-nurses.css">
+    <style>
+        body {
+            font-family: <%= font %>;
+        }
+
+        .duration-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 12px;
+        }
+
+        .duration-card label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .duration-card input {
+            width: 90px;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .duration-card .hint {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .banners-table-wrapper {
+            overflow-x: auto;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #eee;
+        }
+
+        .banners-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 560px;
+        }
+
+        .banners-table th,
+        .banners-table td {
+            padding: 14px 16px;
+            text-align: start;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        .banners-table th {
+            background: #fafafa;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .banners-table img {
+            width: 96px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .icon-hint {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pill.active {
+            background: #e6f7ee;
+            color: #1a8c4a;
+        }
+
+        .status-pill.inactive {
+            background: #eef0f3;
+            color: #888;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-inline-end: 4px;
+        }
+
+        .action-btn.edit {
+            background: #eef0ff;
+            color: #5856d6;
+        }
+
+        .action-btn.toggle {
+            background: #fff7e6;
+            color: #b7791f;
+        }
+
+        .action-btn.delete {
+            background: #fdeeee;
+            color: #c53030;
+        }
+    </style>
+</head>
+
+<body>
+    <%- include('../partials/admin-navbar') %>
+
+        <main class="admin-dashboard">
+            <div class="nurse-management-container">
+
+                <div class="page-header">
+                    <div class="header-left">
+                        <h1>بانر الرئيسية</h1>
+                        <p class="header-subtitle">الصور المتحركة أعلى الصفحة الرئيسية للتطبيق. رتّبها، فعّل أو عطّل
+                            أي واحدة، واضبط مدة العرض المشتركة بينها.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="modern-btn" onclick="openCreateModal()">
+                            <i class="fas fa-plus"></i>
+                            <span>إضافة بانر جديد</span>
+                        </button>
+                        <button class="modern-btn refresh-btn" onclick="loadBanners()">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>تحديث</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="duration-card">
+                    <label for="durationInput"><i class="fas fa-clock"></i> مدة عرض كل بانر</label>
+                    <input type="number" id="durationInput" min="2" max="30" value="5">
+                    <span class="hint">بالثواني (بين 2 و30) - تطبّق على كل البانرات معًا</span>
+                    <button class="modern-btn confirm-btn" onclick="saveDuration()">
+                        <i class="fas fa-check"></i> حفظ
+                    </button>
+                </div>
+
+                <section class="main-section">
+                    <div class="banners-table-wrapper">
+                        <table class="banners-table">
+                            <thead>
+                                <tr>
+                                    <th>الصورة</th>
+                                    <th>الترتيب</th>
+                                    <th>الحالة</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bannersTableBody">
+                                <tr>
+                                    <td colspan="4" style="text-align:center; padding: 30px;">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Create/Edit Modal -->
+        <div class="modal-overlay" id="bannerModal">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h3 id="modalTitle">إضافة بانر جديد</h3>
+                    <button class="modal-close-btn" onclick="closeModal()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editingId" value="" />
+                    <div class="form-group">
+                        <label>الترتيب</label>
+                        <input type="number" id="fieldOrder" class="form-control" value="0" />
+                    </div>
+                    <div class="form-group">
+                        <label>الصورة</label>
+                        <input type="file" id="fieldImage" class="form-control" accept="image/*" />
+                        <div class="icon-hint">يجب ألا يتجاوز حجم الصورة 5 ميجابايت</div>
+                    </div>
+                    <button class="modern-btn confirm-btn" style="width:100%;" onclick="submitBanner()">
+                        <i class="fas fa-check"></i> حفظ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const API_BASE = '/api/admin/banners';
+            const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+            function getToken() {
+                return localStorage.getItem('token') || document.cookie.split('; ').find(r => r.startsWith('token='))?.split('=')[1];
+            }
+
+            function showToast(message, type = 'success') {
+                const el = document.createElement('div');
+                el.textContent = message;
+                el.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${type === 'success' ? '#1a8c4a' : '#c53030'};color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.15);`;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 3000);
+            }
+
+            async function loadBanners() {
+                const tbody = document.getElementById('bannersTableBody');
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+
+                try {
+                    const res = await fetch(API_BASE, { headers: { Authorization: `Bearer ${getToken()}` } });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+
+                    document.getElementById('durationInput').value = data.data.bannerDurationSeconds;
+
+                    if (data.data.banners.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color:#888;">لا توجد بانرات بعد</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = data.data.banners.map(b => `
+                    <tr>
+                        <td><img src="${b.imageUrl}" alt="banner" /></td>
+                        <td>${b.order}</td>
+                        <td><span class="status-pill ${b.isActive ? 'active' : 'inactive'}">${b.isActive ? 'مفعّل' : 'معطّل'}</span></td>
+                        <td>
+                            <button class="action-btn edit" onclick='openEditModal(${JSON.stringify(b)})'>تعديل</button>
+                            <button class="action-btn toggle" onclick="toggleBanner('${b._id}', ${!b.isActive})">${b.isActive ? 'تعطيل' : 'تفعيل'}</button>
+                            <button class="action-btn delete" onclick="deleteBanner('${b._id}')">حذف</button>
+                        </td>
+                    </tr>
+                `).join('');
+                } catch (err) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color:#c53030;">حدث خطأ أثناء التحميل</td></tr>';
+                }
+            }
+
+            async function saveDuration() {
+                const seconds = Number(document.getElementById('durationInput').value);
+                if (!Number.isFinite(seconds) || seconds < 2 || seconds > 30) {
+                    showToast('المدة يجب أن تكون رقمًا بين 2 و30', 'error');
+                    return;
+                }
+                try {
+                    const res = await fetch(`${API_BASE}/duration`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${getToken()}`,
+                        },
+                        body: JSON.stringify({ bannerDurationSeconds: seconds }),
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    showToast('تم حفظ مدة العرض');
+                } catch (err) {
+                    showToast(err.message || 'حدث خطأ', 'error');
+                }
+            }
+
+            function openCreateModal() {
+                document.getElementById('modalTitle').textContent = 'إضافة بانر جديد';
+                document.getElementById('editingId').value = '';
+                document.getElementById('fieldOrder').value = '0';
+                document.getElementById('fieldImage').value = '';
+                document.getElementById('bannerModal').classList.add('show');
+            }
+
+            function openEditModal(banner) {
+                document.getElementById('modalTitle').textContent = 'تعديل البانر';
+                document.getElementById('editingId').value = banner._id;
+                document.getElementById('fieldOrder').value = banner.order || 0;
+                document.getElementById('fieldImage').value = '';
+                document.getElementById('bannerModal').classList.add('show');
+            }
+
+            function closeModal() {
+                document.getElementById('bannerModal').classList.remove('show');
+            }
+
+            async function submitBanner() {
+                const editingId = document.getElementById('editingId').value;
+                const imageFile = document.getElementById('fieldImage').files[0];
+
+                if (!editingId && !imageFile) { showToast('يرجى اختيار صورة', 'error'); return; }
+                if (imageFile && imageFile.size > MAX_IMAGE_BYTES) {
+                    showToast('حجم الصورة يتجاوز 5 ميجابايت', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('order', document.getElementById('fieldOrder').value || 0);
+                if (imageFile) formData.append('image', imageFile);
+
+                try {
+                    const url = editingId ? `${API_BASE}/${editingId}` : API_BASE;
+                    const res = await fetch(url, {
+                        method: editingId ? 'PUT' : 'POST',
+                        headers: { Authorization: `Bearer ${getToken()}` },
+                        body: formData,
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    showToast('تم الحفظ بنجاح');
+                    closeModal();
+                    loadBanners();
+                } catch (err) {
+                    showToast(err.message || 'حدث خطأ', 'error');
+                }
+            }
+
+            async function toggleBanner(id, nextActive) {
+                try {
+                    const formData = new FormData();
+                    formData.append('isActive', nextActive);
+                    const res = await fetch(`${API_BASE}/${id}`, {
+                        method: 'PUT',
+                        headers: { Authorization: `Bearer ${getToken()}` },
+                        body: formData,
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    loadBanners();
+                } catch (err) {
+                    showToast(err.message || 'حدث خطأ', 'error');
+                }
+            }
+
+            async function deleteBanner(id) {
+                if (!confirm('هل أنت متأكد من حذف هذا البانر؟')) return;
+                try {
+                    const res = await fetch(`${API_BASE}/${id}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${getToken()}` },
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    showToast('تم حذف البانر');
+                    loadBanners();
+                } catch (err) {
+                    showToast(err.message || 'حدث خطأ', 'error');
+                }
+            }
+
+            loadBanners();
+        </script>
+</body>
+
+</html>

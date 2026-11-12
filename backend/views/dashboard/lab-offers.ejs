@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lab-dashboard.css">
+    <style>
+        :root {
+            --primary-rgb: 102, 126, 234;
+            --secondary-rgb: 59, 130, 246;
+            --accent-rgb: 251, 146, 60;
+            --success-rgb: 34, 197, 94;
+            --warning-rgb: 251, 146, 60;
+            --danger-rgb: 239, 68, 68;
+            --info-rgb: 59, 130, 246;
+        }
+
+        body {
+            font-family: <%= font %>;
+            background: #f8fafc;
+            margin: 0;
+            padding: 0;
+        }
+
+        *, *::before, *::after {
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Page Header */
+        .page-header {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-title p {
+            color: #6b7280;
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(79, 70, 229) 100%);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px 0 rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #16a34a;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .stat-card.primary::before { background: linear-gradient(90deg, rgb(102, 126, 234), rgb(79, 70, 229)); }
+        .stat-card.success::before { background: linear-gradient(90deg, #22c55e, #16a34a); }
+        .stat-card.warning::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .stat-card.info::before { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-card.primary .stat-icon { background: linear-gradient(135deg, rgb(102, 126, 234), rgb(79, 70, 229)); }
+        .stat-card.success .stat-icon { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .stat-card.warning .stat-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .stat-card.info .stat-icon { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+        .stat-info h3 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .stat-info p {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 0.25rem 0 0 0;
+        }
+
+        /* Offers Grid */
+        .offers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .offer-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .offer-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .offer-header {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(251, 146, 60, 0.1) 100%);
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .offer-badge {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+
+        .offer-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .offer-status.active { color: #22c55e; }
+        .offer-status.inactive { color: #ef4444; }
+
+        .offer-status .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .offer-status.active .status-dot { background: #22c55e; }
+        .offer-status.inactive .status-dot { background: #ef4444; }
+
+        .offer-body {
+            padding: 1.25rem;
+        }
+
+        .offer-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .offer-description {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 0 0 1rem 0;
+        }
+
+        .offer-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .offer-detail {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+
+        .offer-detail i {
+            width: 20px;
+            color: #ef4444;
+        }
+
+        .offer-tests {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .offer-tests-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .offer-tests-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .test-discount-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            background: #f9fafb;
+            border-radius: 8px;
+            font-size: 0.8rem;
+        }
+
+        .test-discount-item .test-name {
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .test-discount-item .test-discount {
+            color: #ef4444;
+            font-weight: 700;
+        }
+
+        .test-tag {
+            background: #f3f4f6;
+            color: #4b5563;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .test-tag.all {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(251, 146, 60, 0.1));
+            color: #ef4444;
+        }
+
+        .offer-footer {
+            padding: 1rem 1.25rem;
+            background: #f9fafb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .offer-footer .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .empty-state-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(251, 146, 60, 0.1));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem auto;
+        }
+
+        .empty-state-icon i {
+            font-size: 2rem;
+            color: #ef4444;
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .empty-state p {
+            color: #6b7280;
+            margin: 0 0 1.5rem 0;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+
+        .modal-header h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #1f2937;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            position: sticky;
+            bottom: 0;
+            background: white;
+        }
+
+        /* Form Styles */
+        .form-section {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .form-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .form-section-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-section-title i {
+            color: #ef4444;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-label .optional {
+            font-weight: 400;
+            color: #9ca3af;
+            font-size: 0.75rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .form-hint {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        /* Test Selection with Discounts */
+        .tests-selection-container {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .tests-selection-header {
+            padding: 1rem;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .tests-selection-header h4 {
+            margin: 0;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .apply-all-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .apply-all-discount {
+            width: 70px;
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        .tests-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .test-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            gap: 0.75rem;
+            transition: background 0.2s;
+        }
+
+        .test-item:last-child {
+            border-bottom: none;
+        }
+
+        .test-item:hover {
+            background: #f9fafb;
+        }
+
+        .test-item.selected {
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .test-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #ef4444;
+            cursor: pointer;
+        }
+
+        .test-item-info {
+            flex: 1;
+        }
+
+        .test-item-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .test-item-price {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .test-item-discount {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .test-item-discount input {
+            width: 70px;
+            padding: 0.4rem 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        .test-item-discount input:focus {
+            outline: none;
+            border-color: #ef4444;
+        }
+
+        .test-item-discount span {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .test-item-discount .discounted-price {
+            font-size: 0.75rem;
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        /* Switch Toggle */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e5e7eb;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .switch input:checked + .switch-slider {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .switch input:checked + .switch-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .toast {
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success { border-left: 4px solid #22c55e; }
+        .toast.error { border-left: 4px solid #ef4444; }
+        .toast i { font-size: 1.25rem; }
+        .toast.success i { color: #22c55e; }
+        .toast.error i { color: #ef4444; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content { padding: 1rem; }
+            .header-content { flex-direction: column; }
+            .header-actions { width: 100%; }
+            .header-actions .btn { flex: 1; justify-content: center; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .offers-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/lab-navbar', { user: lab, activePage: 'offers' }) %>
+
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <h1>
+                        <i class="fas fa-tags"></i>
+                        <%= t ? t('offers.title') : 'Offers & Discounts' %>
+                    </h1>
+                    <p><%= t ? t('offers.subtitle') : 'Create discounts on individual tests to attract more customers' %></p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="openCreateModal()">
+                        <i class="fas fa-plus"></i>
+                        <%= t ? t('offers.createOffer') : 'Create Offer' %>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalOffers"><%= offers.length %></h3>
+                    <p><%= t ? t('offers.totalOffers') : 'Total Offers' %></p>
+                </div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="activeOffers"><%= offers.filter(o => o.isActive).length %></h3>
+                    <p><%= t ? t('offers.activeOffers') : 'Active Offers' %></p>
+                </div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="expiringOffers"><%= offers.filter(o => o.endDate && new Date(o.endDate) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)).length %></h3>
+                    <p><%= t ? t('offers.expiringSoon') : 'Expiring Soon' %></p>
+                </div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <div class="stat-info">
+                    <h3><%= tests.length %></h3>
+                    <p><%= t ? t('offers.totalTests') : 'Available Tests' %></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Offers Grid -->
+        <% if (offers.length === 0) { %>
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <h3><%= t ? t('offers.noOffers') : 'No Offers Yet' %></h3>
+                <p><%= t ? t('offers.noOffersDescription') : 'Create your first offer to attract more customers' %></p>
+                <button class="btn btn-primary" onclick="openCreateModal()">
+                    <i class="fas fa-plus"></i>
+                    <%= t ? t('offers.createFirstOffer') : 'Create First Offer' %>
+                </button>
+            </div>
+        <% } else { %>
+            <div class="offers-grid" id="offersGrid">
+                <% offers.forEach(offer => { %>
+                    <div class="offer-card" data-offer-id="<%= offer._id %>">
+                        <div class="offer-header">
+                            <div class="offer-badge">
+                                <%= offer.label || (t ? t('offers.specialOffer') : 'SPECIAL OFFER') %>
+                            </div>
+                            <div class="offer-status <%= offer.isActive ? 'active' : 'inactive' %>">
+                                <span class="status-dot"></span>
+                                <%= offer.isActive ? (t ? t('offers.active') : 'Active') : (t ? t('offers.inactive') : 'Inactive') %>
+                            </div>
+                        </div>
+                        <div class="offer-body">
+                            <% if (offer.description) { %>
+                                <p class="offer-description">
+                                    <%= currentLang === 'ar' && offer.descriptionAr ? offer.descriptionAr : (currentLang === 'ku' && offer.descriptionKu ? offer.descriptionKu : offer.description) %>
+                                </p>
+                            <% } %>
+                            <div class="offer-details">
+                                <% if (offer.startDate) { %>
+                                    <div class="offer-detail">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <span><%= t ? t('offers.startDate') : 'Start' %>: <%= new Date(offer.startDate).toLocaleDateString() %></span>
+                                    </div>
+                                <% } %>
+                                <% if (offer.endDate) { %>
+                                    <div class="offer-detail">
+                                        <i class="fas fa-calendar-times"></i>
+                                        <span><%= t ? t('offers.endDate') : 'End' %>: <%= new Date(offer.endDate).toLocaleDateString() %></span>
+                                    </div>
+                                <% } else { %>
+                                    <div class="offer-detail">
+                                        <i class="fas fa-infinity"></i>
+                                        <span><%= t ? t('offers.noExpiry') : 'No expiry date' %></span>
+                                    </div>
+                                <% } %>
+                            </div>
+                            <div class="offer-tests">
+                                <div class="offer-tests-label"><%= t ? t('offers.discountedTests') : 'Discounted Tests' %></div>
+                                <div class="offer-tests-list">
+                                    <% if (offer.applyToAllTests) { %>
+                                        <div class="test-discount-item">
+                                            <span class="test-name"><%= t ? t('offers.allTests') : 'All Tests' %></span>
+                                            <span class="test-discount"><%= offer.discountValue %><%= offer.discountType === 'percentage' ? '%' : ' IQD' %> OFF</span>
+                                        </div>
+                                    <% } else if (offer.applicableTests && offer.applicableTests.length > 0) { %>
+                                        <% offer.applicableTests.slice(0, 4).forEach(at => { 
+                                            const test = tests.find(t => t._id.toString() === (at.testId ? at.testId.toString() : '') || t.code === at.testCode);
+                                            const discountVal = at.discountValue || offer.discountValue;
+                                            const discountType = at.discountType || offer.discountType || 'percentage';
+                                        %>
+                                            <div class="test-discount-item">
+                                                <span class="test-name"><%= test ? test.name : at.testCode %></span>
+                                                <span class="test-discount"><%= discountVal %><%= discountType === 'percentage' ? '%' : ' IQD' %> OFF</span>
+                                            </div>
+                                        <% }); %>
+                                        <% if (offer.applicableTests.length > 4) { %>
+                                            <div class="test-discount-item" style="justify-content: center; color: #6b7280;">
+                                                <span>+<%= offer.applicableTests.length - 4 %> more tests</span>
+                                            </div>
+                                        <% } %>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="offer-footer">
+                            <button class="btn btn-secondary btn-sm" onclick="toggleOffer('<%= offer._id %>')">
+                                <i class="fas <%= offer.isActive ? 'fa-pause' : 'fa-play' %>"></i>
+                                <%= offer.isActive ? (t ? t('offers.deactivate') : 'Deactivate') : (t ? t('offers.activate') : 'Activate') %>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="editOffer('<%= offer._id %>')">
+                                <i class="fas fa-edit"></i>
+                                <%= t ? t('offers.edit') : 'Edit' %>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteOffer('<%= offer._id %>')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        <% } %>
+    </main>
+
+    <!-- Create/Edit Modal -->
+    <div class="modal-overlay" id="offerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle"><%= t ? t('offers.createOffer') : 'Create Offer' %></h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="offerForm" onsubmit="saveOffer(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="offerId" name="offerId">
+                    
+                    <!-- Basic Info Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fas fa-info-circle"></i>
+                            <%= t ? t('offers.basicInfo') : 'Basic Information' %>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label"><%= t ? t('offers.offerLabel') : 'Offer Label' %> *</label>
+                            <input type="text" class="form-input" id="offerLabel" name="label" required placeholder="e.g., Summer Sale, 20% OFF, Weekend Special">
+                            <p class="form-hint"><%= t ? t('offers.labelHint') : 'This appears as a badge on your lab card in the app' %></p>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><%= t ? t('offers.shortDescription') : 'Short Description' %> <span class="optional">(<%= t ? t('common.optional') : 'optional' %>)</span></label>
+                            <textarea class="form-textarea" id="offerDescription" name="description" placeholder="Brief description of your offer..." rows="2"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label"><%= t ? t('offers.labelArabic') : 'Label (Arabic)' %> <span class="optional">(<%= t ? t('common.optional') : 'optional' %>)</span></label>
+                                <input type="text" class="form-input" id="offerLabelAr" name="labelAr" dir="rtl" placeholder="مثال: تخفيضات الصيف">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><%= t ? t('offers.labelKurdish') : 'Label (Kurdish)' %> <span class="optional">(<%= t ? t('common.optional') : 'optional' %>)</span></label>
+                                <input type="text" class="form-input" id="offerLabelKu" name="labelKu" dir="rtl" placeholder="نموونە: داشکانی هاوین">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Range Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            <%= t ? t('offers.dateRange') : 'Date Range' %> <span class="optional" style="font-weight: 400; color: #9ca3af;">(<%= t ? t('offers.optionalDates') : 'leave empty for no expiry' %>)</span>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label"><%= t ? t('offers.startDate') : 'Start Date' %> <span class="optional">(<%= t ? t('common.optional') : 'optional' %>)</span></label>
+                                <input type="date" class="form-input" id="startDate" name="startDate">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><%= t ? t('offers.endDate') : 'End Date' %> <span class="optional">(<%= t ? t('common.optional') : 'optional' %>)</span></label>
+                                <input type="date" class="form-input" id="endDate" name="endDate">
+                            </div>
+                        </div>
+                        <p class="form-hint"><%= t ? t('offers.dateHint') : 'If no dates are set, the offer will remain active until you manually deactivate it' %></p>
+                    </div>
+
+                    <!-- Tests & Discounts Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fas fa-flask"></i>
+                            <%= t ? t('offers.testsAndDiscounts') : 'Tests & Discounts' %>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="switch-container" style="margin-bottom: 1rem;">
+                                <label class="switch">
+                                    <input type="checkbox" id="applyToAllTests" name="applyToAllTests" onchange="toggleTestSelection()">
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <span><%= t ? t('offers.applyToAllTests') : 'Apply same discount to all tests' %></span>
+                            </div>
+                        </div>
+
+                        <!-- All Tests Discount -->
+                        <div id="allTestsDiscount" style="display: none;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label"><%= t ? t('offers.discountType') : 'Discount Type' %></label>
+                                    <select class="form-select" id="globalDiscountType" name="globalDiscountType">
+                                        <option value="percentage"><%= t ? t('offers.percentage') : 'Percentage (%)' %></option>
+                                        <option value="fixed"><%= t ? t('offers.fixedAmount') : 'Fixed Amount (IQD)' %></option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label"><%= t ? t('offers.discountValue') : 'Discount Value' %></label>
+                                    <input type="number" class="form-input" id="globalDiscountValue" name="globalDiscountValue" min="0" placeholder="e.g., 20">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Individual Test Selection -->
+                        <div id="testSelectionContainer">
+                            <div class="tests-selection-container">
+                                <div class="tests-selection-header">
+                                    <h4><%= t ? t('offers.selectTests') : 'Select tests and set individual discounts' %></h4>
+                                    <div class="apply-all-container">
+                                        <span style="font-size: 0.75rem; color: #6b7280;"><%= t ? t('offers.quickApply') : 'Quick apply' %>:</span>
+                                        <input type="number" class="apply-all-discount" id="quickApplyDiscount" placeholder="%" min="0" max="100">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="applyDiscountToSelected()">
+                                            <%= t ? t('offers.apply') : 'Apply' %>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="tests-list" id="testsList">
+                                    <% tests.forEach(test => { %>
+                                        <div class="test-item" data-test-id="<%= test._id %>" data-test-code="<%= test.code %>" data-test-price="<%= test.price %>">
+                                            <input type="checkbox" class="test-checkbox" onchange="toggleTestItem(this)">
+                                            <div class="test-item-info">
+                                                <div class="test-item-name"><%= test.name %></div>
+                                                <div class="test-item-price"><%= test.price.toLocaleString() %> IQD</div>
+                                            </div>
+                                            <div class="test-item-discount" style="display: none;">
+                                                <input type="number" class="test-discount-input" placeholder="%" min="0" max="100" onchange="updateDiscountedPrice(this)">
+                                                <span>%</span>
+                                                <span class="discounted-price"></span>
+                                            </div>
+                                        </div>
+                                    <% }); %>
+                                </div>
+                            </div>
+                            <p class="form-hint" style="margin-top: 0.5rem;"><%= t ? t('offers.testHint') : 'Check the tests you want to include and set a discount percentage for each' %></p>
+                        </div>
+                    </div>
+
+                    <!-- Status Section -->
+                    <div class="form-section">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <div class="switch-container">
+                                <label class="switch">
+                                    <input type="checkbox" id="isActive" name="isActive" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <span><%= t ? t('offers.activeImmediately') : 'Activate offer immediately' %></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">
+                        <%= t ? t('common.cancel') : 'Cancel' %>
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="saveBtn">
+                        <i class="fas fa-save"></i>
+                        <%= t ? t('common.save') : 'Save Offer' %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Store offers data
+        const offersData = <%- JSON.stringify(offers) %>;
+        const testsData = <%- JSON.stringify(tests) %>;
+
+        // Modal functions
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = '<%= t ? t("offers.createOffer") : "Create Offer" %>';
+            document.getElementById('offerForm').reset();
+            document.getElementById('offerId').value = '';
+            document.getElementById('applyToAllTests').checked = false;
+            toggleTestSelection();
+            
+            // Reset all test items
+            document.querySelectorAll('.test-item').forEach(item => {
+                item.classList.remove('selected');
+                item.querySelector('.test-checkbox').checked = false;
+                item.querySelector('.test-item-discount').style.display = 'none';
+                item.querySelector('.test-discount-input').value = '';
+                item.querySelector('.discounted-price').textContent = '';
+            });
+            
+            document.getElementById('offerModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('offerModal').classList.remove('active');
+        }
+
+        function editOffer(offerId) {
+            const offer = offersData.find(o => o._id === offerId);
+            if (!offer) return;
+
+            document.getElementById('modalTitle').textContent = '<%= t ? t("offers.editOffer") : "Edit Offer" %>';
+            document.getElementById('offerId').value = offerId;
+            document.getElementById('offerLabel').value = offer.label || '';
+            document.getElementById('offerLabelAr').value = offer.labelAr || '';
+            document.getElementById('offerLabelKu').value = offer.labelKu || '';
+            document.getElementById('offerDescription').value = offer.description || '';
+            document.getElementById('startDate').value = offer.startDate ? new Date(offer.startDate).toISOString().split('T')[0] : '';
+            document.getElementById('endDate').value = offer.endDate ? new Date(offer.endDate).toISOString().split('T')[0] : '';
+            document.getElementById('applyToAllTests').checked = offer.applyToAllTests || false;
+            document.getElementById('isActive').checked = offer.isActive;
+
+            toggleTestSelection();
+
+            if (offer.applyToAllTests) {
+                document.getElementById('globalDiscountType').value = offer.discountType || 'percentage';
+                document.getElementById('globalDiscountValue').value = offer.discountValue || '';
+            } else {
+                // Reset all test items first
+                document.querySelectorAll('.test-item').forEach(item => {
+                    item.classList.remove('selected');
+                    item.querySelector('.test-checkbox').checked = false;
+                    item.querySelector('.test-item-discount').style.display = 'none';
+                    item.querySelector('.test-discount-input').value = '';
+                    item.querySelector('.discounted-price').textContent = '';
+                });
+
+                // Set applicable tests with their discounts
+                if (offer.applicableTests && offer.applicableTests.length > 0) {
+                    offer.applicableTests.forEach(at => {
+                        const testId = at.testId ? at.testId.toString() : '';
+                        const testItem = document.querySelector(`.test-item[data-test-id="${testId}"]`) ||
+                                        document.querySelector(`.test-item[data-test-code="${at.testCode}"]`);
+                        
+                        if (testItem) {
+                            testItem.classList.add('selected');
+                            testItem.querySelector('.test-checkbox').checked = true;
+                            testItem.querySelector('.test-item-discount').style.display = 'flex';
+                            const discountInput = testItem.querySelector('.test-discount-input');
+                            discountInput.value = at.discountValue || offer.discountValue || '';
+                            updateDiscountedPrice(discountInput);
+                        }
+                    });
+                }
+            }
+
+            document.getElementById('offerModal').classList.add('active');
+        }
+
+        function toggleTestSelection() {
+            const applyToAll = document.getElementById('applyToAllTests').checked;
+            document.getElementById('allTestsDiscount').style.display = applyToAll ? 'block' : 'none';
+            document.getElementById('testSelectionContainer').style.display = applyToAll ? 'none' : 'block';
+        }
+
+        function toggleTestItem(checkbox) {
+            const testItem = checkbox.closest('.test-item');
+            const discountDiv = testItem.querySelector('.test-item-discount');
+            
+            if (checkbox.checked) {
+                testItem.classList.add('selected');
+                discountDiv.style.display = 'flex';
+            } else {
+                testItem.classList.remove('selected');
+                discountDiv.style.display = 'none';
+                testItem.querySelector('.test-discount-input').value = '';
+                testItem.querySelector('.discounted-price').textContent = '';
+            }
+        }
+
+        function updateDiscountedPrice(input) {
+            const testItem = input.closest('.test-item');
+            const price = parseInt(testItem.dataset.testPrice);
+            const discount = parseFloat(input.value) || 0;
+            const discountedPrice = price - (price * discount / 100);
+            const priceSpan = testItem.querySelector('.discounted-price');
+            
+            if (discount > 0) {
+                priceSpan.textContent = '→ ' + Math.round(discountedPrice).toLocaleString() + ' IQD';
+            } else {
+                priceSpan.textContent = '';
+            }
+        }
+
+        function applyDiscountToSelected() {
+            const quickDiscount = document.getElementById('quickApplyDiscount').value;
+            if (!quickDiscount) {
+                showToast('<%= t ? t("offers.enterDiscount") : "Please enter a discount value" %>', 'error');
+                return;
+            }
+
+            const checkedItems = document.querySelectorAll('.test-item .test-checkbox:checked');
+            if (checkedItems.length === 0) {
+                showToast('<%= t ? t("offers.selectTestsFirst") : "Please select tests first" %>', 'error');
+                return;
+            }
+
+            checkedItems.forEach(checkbox => {
+                const testItem = checkbox.closest('.test-item');
+                const discountInput = testItem.querySelector('.test-discount-input');
+                discountInput.value = quickDiscount;
+                updateDiscountedPrice(discountInput);
+            });
+
+            showToast(`<%= t ? t("offers.discountApplied") : "Discount applied to" %> ${checkedItems.length} <%= t ? t("offers.tests") : "tests" %>`, 'success');
+        }
+
+        // Save offer
+        async function saveOffer(event) {
+            event.preventDefault();
+            const form = document.getElementById('offerForm');
+            const formData = new FormData(form);
+            const offerId = formData.get('offerId');
+            const applyToAll = document.getElementById('applyToAllTests').checked;
+
+            // Validation
+            if (!applyToAll) {
+                const checkedTests = document.querySelectorAll('.test-item .test-checkbox:checked');
+                if (checkedTests.length === 0) {
+                    showToast('<%= t ? t("offers.selectAtLeastOne") : "Please select at least one test" %>', 'error');
+                    return;
+                }
+
+                // Check if all selected tests have discounts
+                let hasEmptyDiscount = false;
+                checkedTests.forEach(checkbox => {
+                    const discountInput = checkbox.closest('.test-item').querySelector('.test-discount-input');
+                    if (!discountInput.value || parseFloat(discountInput.value) <= 0) {
+                        hasEmptyDiscount = true;
+                    }
+                });
+
+                if (hasEmptyDiscount) {
+                    showToast('<%= t ? t("offers.setDiscounts") : "Please set discount for all selected tests" %>', 'error');
+                    return;
+                }
+            } else {
+                const globalValue = document.getElementById('globalDiscountValue').value;
+                if (!globalValue || parseFloat(globalValue) <= 0) {
+                    showToast('<%= t ? t("offers.enterDiscountValue") : "Please enter a discount value" %>', 'error');
+                    return;
+                }
+            }
+
+            const data = {
+                name: formData.get('label'), // Use label as name for backward compatibility
+                label: formData.get('label'),
+                labelAr: formData.get('labelAr'),
+                labelKu: formData.get('labelKu'),
+                description: formData.get('description'),
+                startDate: formData.get('startDate') || null,
+                endDate: formData.get('endDate') || null,
+                applyToAllTests: applyToAll,
+                isActive: document.getElementById('isActive').checked
+            };
+
+            if (applyToAll) {
+                data.discountType = document.getElementById('globalDiscountType').value;
+                data.discountValue = parseFloat(document.getElementById('globalDiscountValue').value);
+                data.applicableTests = [];
+            } else {
+                data.discountType = 'percentage';
+                data.discountValue = 0;
+                
+                // Get selected tests with their individual discounts
+                const checkedTests = document.querySelectorAll('.test-item .test-checkbox:checked');
+                data.applicableTests = Array.from(checkedTests).map(checkbox => {
+                    const testItem = checkbox.closest('.test-item');
+                    const discountValue = parseFloat(testItem.querySelector('.test-discount-input').value) || 0;
+                    return {
+                        testId: testItem.dataset.testId,
+                        testCode: testItem.dataset.testCode,
+                        discountType: 'percentage',
+                        discountValue: discountValue
+                    };
+                });
+            }
+
+            try {
+                const url = offerId ? `/lab/api/offers/${offerId}` : '/lab/api/offers';
+                const method = offerId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast(offerId ? '<%= t ? t("offers.offerUpdated") : "Offer updated successfully" %>' : '<%= t ? t("offers.offerCreated") : "Offer created successfully" %>', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(result.message || '<%= t ? t("common.error") : "Error" %>', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('<%= t ? t("common.error") : "Error" %>', 'error');
+            }
+        }
+
+        // Toggle offer status
+        async function toggleOffer(offerId) {
+            try {
+                const response = await fetch(`/lab/api/offers/${offerId}/toggle`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('<%= t ? t("offers.statusUpdated") : "Offer status updated" %>', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(result.message || '<%= t ? t("common.error") : "Error" %>', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('<%= t ? t("common.error") : "Error" %>', 'error');
+            }
+        }
+
+        // Delete offer
+        async function deleteOffer(offerId) {
+            if (!confirm('<%= t ? t("offers.confirmDelete") : "Are you sure you want to delete this offer?" %>')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/lab/api/offers/${offerId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('<%= t ? t("offers.offerDeleted") : "Offer deleted successfully" %>', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(result.message || '<%= t ? t("common.error") : "Error" %>', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('<%= t ? t("common.error") : "Error" %>', 'error');
+            }
+        }
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleTestSelection();
+        });
+    </script>
+</body>
+</html>

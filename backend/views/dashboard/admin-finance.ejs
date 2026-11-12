@@ -1,0 +1,2719 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('finance.financePageTitle') %></title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Admin Dashboard CSS -->
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f1f3f5;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6c757d;
+            --border: #e9ecef;
+            --border-light: #f1f3f5;
+            --accent-blue: #0071e3;
+            --accent-green: #34c759;
+            --accent-red: #ff3b30;
+            --accent-orange: #ff9500;
+            --accent-purple: #af52de;
+            --accent-cyan: #32ade6;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        html[dir="rtl"] {
+            --font-main: "Cairo", -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        html[dir="ltr"] {
+            --font-main: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* Finance Container */
+        .finance-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px 32px;
+        }
+
+        /* Page Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+            padding: 24px 0;
+            width: 95%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .header-left {
+            flex: 1;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 4px 0;
+        }
+
+        .header-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .header-actions .btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+            width: 95%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stat-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            padding: 20px 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .stat-icon.blue { background: rgba(0, 113, 227, 0.1); color: var(--accent-blue); }
+        .stat-icon.green { background: rgba(52, 199, 89, 0.1); color: var(--accent-green); }
+        .stat-icon.purple { background: rgba(175, 82, 222, 0.1); color: var(--accent-purple); }
+        .stat-icon.red { background: rgba(255, 59, 48, 0.1); color: var(--accent-red); }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Content Container */
+        .finance-content-container {
+            width: 95%;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            font-family: var(--font-main);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .nav-tab.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tab-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: var(--accent-blue);
+            color: white;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        html[dir="rtl"] .tab-badge {
+            margin-left: 0;
+            margin-right: 6px;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* Tables - Completely Rebuilt */
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            background: var(--bg-primary);
+            table-layout: auto;
+        }
+
+        thead tr {
+            background: var(--bg-tertiary);
+        }
+
+        th {
+            padding: 14px 16px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-primary);
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Column width helpers - all centered */
+        .col-name { min-width: 200px; text-align: center; }
+        .col-status { min-width: 120px; text-align: center; }
+        .col-money { min-width: 120px; text-align: center; }
+        .col-number { min-width: 100px; text-align: center; }
+        .col-date { min-width: 120px; text-align: center; }
+        .col-actions { min-width: 140px; text-align: center; }
+
+        /* User Cell */
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .user-avatar.green {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .user-contact {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-green { background: rgba(52, 199, 89, 0.15); color: #248a3d; }
+        .badge-orange { background: rgba(255, 149, 0, 0.15); color: #c97b00; }
+        .badge-red { background: rgba(255, 59, 48, 0.15); color: #c92e25; }
+        .badge-blue { background: rgba(0, 113, 227, 0.15); color: #0056b3; }
+        .badge-purple { background: rgba(175, 82, 222, 0.15); color: #8a3eb8; }
+        .badge-gray { background: var(--bg-secondary); color: var(--text-secondary); }
+
+        /* Money */
+        .money {
+            font-weight: 600;
+            font-feature-settings: 'tnum';
+            font-variant-numeric: tabular-nums;
+            display: inline;
+            white-space: nowrap;
+        }
+
+        .money.green { color: var(--accent-green); }
+        .money.blue { color: var(--accent-blue); }
+
+        /* Search */
+        .search-box {
+            position: relative;
+            width: 280px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: var(--font-main);
+            background: var(--bg-primary);
+            outline: none;
+        }
+
+        html[dir="rtl"] .search-box input {
+            padding: 10px 40px 10px 16px;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        html[dir="rtl"] .search-box i {
+            left: auto;
+            right: 14px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 500;
+            font-family: var(--font-main);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0063ce;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        /* Summary Row */
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--border);
+            padding: 20px 0;
+        }
+
+        .summary-item {
+            background: var(--bg-primary);
+            padding: 16px 20px;
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+
+        .empty-state h3 {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin: 0 0 4px 0;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: var(--font-main);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .finance-container {
+                padding: 0 16px 24px;
+            }
+
+            .finance-content-container {
+                width: 100%;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .page-title {
+                font-size: 22px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .nav-tabs {
+                flex-wrap: nowrap;
+            }
+
+            .table-wrapper {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            table {
+                font-size: 12px;
+                min-width: 600px;
+            }
+
+            th, td {
+                padding: 10px 8px;
+            }
+        }
+
+        /* RTL */
+        html[dir="rtl"] {
+            direction: rtl;
+        }
+
+        html[dir="rtl"] .modal-footer {
+            justify-content: flex-start;
+        }
+
+        html[dir="rtl"] .money {
+            direction: ltr;
+        }
+
+        /* ==========================================
+           Admin Navbar Styles
+           ========================================== */
+
+        .admin-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 72px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            transition: all 0.2s;
+        }
+
+        .navbar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        /* RTL layout */
+        html[dir="rtl"] .navbar-container {
+            flex-direction: row;
+        }
+
+        /* LTR layout */
+        html[dir="ltr"] .navbar-container {
+            flex-direction: row-reverse;
+        }
+
+        html[dir="ltr"] .navbar-menu {
+            left: 50%;
+            right: auto;
+            transform: translateX(-50%);
+        }
+
+        html[dir="ltr"] .profile-menu {
+            order: -1;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .navbar-logo {
+            width: 120px;
+            height: auto;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .navbar-menu {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-tertiary);
+            padding: 4px;
+            border-radius: 16px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s;
+            width: 130px;
+        }
+
+        .nav-item i {
+            font-size: 16px;
+            width: 16px;
+            text-align: center;
+        }
+
+.nav-item:hover {
+  background: #fff;
+  color: #5949d4;
+  transform: scale(1.02);
+}
+
+.nav-item.active {
+  background: #fff;
+  color: #5949d4;
+  box-shadow: var(--shadow-sm);
+}
+
+        /* Profile Menu */
+        .profile-menu {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .profile-trigger {
+            background: none;
+            border: none;
+            padding: 8px;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        /* Navbar responsive */
+        @media (max-width: 768px) {
+            .admin-navbar {
+                height: 60px;
+            }
+
+            .navbar-container {
+                padding: 0 16px;
+            }
+
+            .navbar-menu {
+                display: none;
+            }
+
+            .navbar-logo {
+                width: 80px;
+            }
+        }
+
+        /* ==========================================
+           Date Range Filter - Apple Style
+           ========================================== */
+
+        .date-filter-container {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            padding: 20px 24px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+            width: 95%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .date-filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .date-filter-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .date-filter-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--accent-blue);
+        }
+
+        .date-filter-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .date-presets {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .date-preset-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            font-family: var(--font-main);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .date-preset-btn:hover {
+            background: var(--bg-tertiary);
+            transform: scale(1.02);
+        }
+
+        .date-preset-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+            box-shadow: 0 2px 8px rgba(0, 113, 227, 0.3);
+        }
+
+        .date-inputs {
+            display: none; /* Hidden by default, shown when Custom selected */
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .date-inputs.visible {
+            display: flex;
+        }
+
+        .date-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .date-input-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .date-input {
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: var(--font-main);
+            background: var(--bg-primary);
+            min-width: 150px;
+            transition: all 0.2s;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+        }
+
+        .date-separator {
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 18px;
+        }
+
+        .date-apply-btn {
+            padding: 10px 20px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 500;
+            font-family: var(--font-main);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 18px;
+        }
+
+        .date-apply-btn:hover {
+            background: #0063ce;
+            transform: scale(1.02);
+        }
+
+        .date-clear-btn {
+            padding: 10px 20px;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 500;
+            font-family: var(--font-main);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 18px;
+        }
+
+        .date-clear-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        /* RTL Adjustments */
+        html[dir="rtl"] .date-filter-header {
+            flex-direction: row;
+        }
+
+        html[dir="rtl"] .date-presets {
+            flex-direction: row;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .date-filter-container {
+                width: 100%;
+                padding: 16px;
+            }
+
+            .date-presets {
+                gap: 4px;
+            }
+
+            .date-preset-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+                flex: 1;
+                min-width: 60px;
+            }
+
+            .date-inputs {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .date-separator {
+                display: none;
+            }
+
+            .date-input {
+                width: 100%;
+                min-width: unset;
+            }
+
+            .date-apply-btn,
+            .date-clear-btn {
+                width: 100%;
+                margin-top: 8px;
+            }
+        }
+
+        /* Loading state for data refresh */
+        .date-filter-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .date-filter-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/admin-navbar') %>
+
+    <div style="height: 60px;"></div>
+
+    <div class="finance-container">
+        <!-- Page Title -->
+        <div class="page-header">
+            <div class="header-left">
+                <h1 class="page-title"><%= __('finance.financePageTitle') %></h1>
+                <p class="header-subtitle"><%= __('finance.completeFinancialOverview') %></p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="loadAll()">
+                    <i class="fas fa-sync-alt"></i>
+                    <span><%= __('common.refresh') %></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div class="date-filter-container">
+            <div class="date-filter-header">
+                <span class="date-filter-label"><%= __('finance.dateRange') %></span>
+                <span class="date-filter-value" id="dateRangeDisplay">Loading...</span>
+            </div>
+            <div class="date-filter-controls">
+                <div class="date-presets">
+                    <button class="date-preset-btn" data-preset="today"><%= __('finance.today') %></button>
+                    <button class="date-preset-btn active" data-preset="thisMonth"><%= __('finance.thisMonth') %></button>
+                    <button class="date-preset-btn" data-preset="lastMonth"><%= __('finance.lastMonth') %></button>
+                    <button class="date-preset-btn" data-preset="thisYear"><%= __('finance.thisYear') %></button>
+                    <button class="date-preset-btn" data-preset="custom"><%= __('finance.custom') %></button>
+                </div>
+                <div class="date-inputs" id="customDateInputs">
+                    <div class="date-input-group">
+                        <label><%= __('finance.fromDate') %></label>
+                        <input type="date" id="dateFrom" class="date-input">
+                    </div>
+                    <span class="date-separator">—</span>
+                    <div class="date-input-group">
+                        <label><%= __('finance.toDate') %></label>
+                        <input type="date" id="dateTo" class="date-input">
+                    </div>
+                    <button class="date-apply-btn" id="applyDateFilter"><%= __('finance.apply') %></button>
+                    <button class="date-clear-btn" id="clearDateFilter"><%= __('finance.clear') %></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon blue"><i class="fas fa-coins"></i></div>
+                    <span class="stat-label"><%= __('finance.totalRevenue') %></span>
+                </div>
+                <div class="stat-value" id="statRevenue">—</div>
+                <div class="stat-meta"><strong id="statOrders">0</strong> <%= __('finance.orderCountLabel') %></div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon green"><i class="fas fa-chart-line"></i></div>
+                    <span class="stat-label"><%= __('finance.adminEarnings') %></span>
+                </div>
+                <div class="stat-value" id="statAdmin">—</div>
+                <div class="stat-meta"><%= __('finance.adminShare') %></div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon purple"><i class="fas fa-user-nurse"></i></div>
+                    <span class="stat-label"><%= __('finance.nurseBalances') %></span>
+                </div>
+                <div class="stat-value" id="statNurse">—</div>
+                <div class="stat-meta"><strong id="statNurseCount">0</strong> <%= __('finance.nurseCount') %></div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon red"><i class="fas fa-clock"></i></div>
+                    <span class="stat-label"><%= __('finance.pendingSettlements') %></span>
+                </div>
+                <div class="stat-value" id="statPending">—</div>
+                <div class="stat-meta"><strong id="statPendingCount">0</strong> <%= __('finance.unsettled') %></div>
+            </div>
+        </div>
+
+        <!-- Content Container -->
+        <div class="finance-content-container">
+            <!-- Navigation Tabs -->
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-tab="overview">
+                    <i class="fas fa-th-large"></i> <%= __('finance.overview') %>
+                </button>
+                <button class="nav-tab" data-tab="orders">
+                    <i class="fas fa-receipt"></i> <%= __('finance.orders') %> <span class="tab-badge" id="badgeOrders">0</span>
+                </button>
+                <button class="nav-tab" data-tab="nurses">
+                    <i class="fas fa-user-nurse"></i> <%= __('finance.nurses') %> <span class="tab-badge" id="badgeNurses">0</span>
+                </button>
+                <button class="nav-tab" data-tab="patients">
+                    <i class="fas fa-users"></i> <%= __('finance.patients') %> <span class="tab-badge" id="badgePatients">0</span>
+                </button>
+                <button class="nav-tab" data-tab="labs">
+                    <i class="fas fa-flask"></i> <%= __('finance.labs') %> <span class="tab-badge" id="badgeLabs">0</span>
+                </button>
+                <button class="nav-tab" data-tab="pending">
+                    <i class="fas fa-hourglass-half"></i> <%= __('finance.pendingSettlements') %> <span class="tab-badge" id="badgePending">0</span>
+                </button>
+            </nav>
+
+            <!-- Overview Tab -->
+            <div class="tab-content active" id="tab-overview">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><%= __('finance.financialOverviewLabel') %></h2>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-item">
+                            <div class="summary-value" id="overviewRevenue">—</div>
+                            <div class="summary-label"><%= __('finance.totalRevenueLabel') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="overviewAdmin">—</div>
+                            <div class="summary-label"><%= __('finance.adminShare') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="overviewLab">—</div>
+                            <div class="summary-label"><%= __('finance.labShare') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="overviewNurse">—</div>
+                            <div class="summary-label"><%= __('finance.nurseEarningsLabel') %></div>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="col-name"><%= __('finance.category') %></th>
+                                    <th class="col-money"><%= __('finance.amount') %></th>
+                                    <th class="col-number"><%= __('finance.share') %></th>
+                                    <th class="col-name"><%= __('finance.description') %></th>
+                                </tr>
+                            </thead>
+                            <tbody id="overviewBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div class="tab-content" id="tab-orders">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><%= __('finance.allOrders') || 'All Orders' %></h2>
+                        <div class="card-actions">
+                            <select id="orderStatusFilter" onchange="filterOrders()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-right: 12px;">
+                                <option value=""><%= __('finance.allStatuses') || 'All Statuses' %></option>
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="assigned">Assigned</option>
+                                <option value="sample_collected">Sample Collected</option>
+                                <option value="at_lab">At Lab</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="searchOrders" placeholder="<%= __('finance.searchOrders') || 'Search orders...' %>" onkeyup="filterOrders()">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-item">
+                            <div class="summary-value" id="ordersTotalCount">0</div>
+                            <div class="summary-label"><%= __('finance.totalOrders') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="ordersTotalRevenue">—</div>
+                            <div class="summary-label"><%= __('finance.totalRevenueLabel') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="ordersCompleted">0</div>
+                            <div class="summary-label"><%= __('finance.completedOrders') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="ordersAvgValue">—</div>
+                            <div class="summary-label"><%= __('finance.averageOrder') %></div>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="col-status"><%= __('finance.status') || 'Status' %></th>
+                                    <th class="col-name"><%= __('finance.qrCode') || 'QR Code' %></th>
+                                    <th class="col-name"><%= __('finance.patient') %></th>
+                                    <th class="col-name"><%= __('finance.nurse') %></th>
+                                    <th class="col-name"><%= __('finance.lab') %></th>
+                                    <th class="col-money"><%= __('finance.amount') %></th>
+                                    <th class="col-date"><%= __('finance.date') %></th>
+                                    <th class="col-actions"><%= __('actions') %></th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nurses Tab -->
+            <div class="tab-content" id="tab-nurses">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><%= __('finance.nurseFinance') %></h2>
+                        <div class="card-actions">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="searchNurses" placeholder="<%= __('finance.searchNurses') %>" onkeyup="filterNurses()">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="col-name"><%= __('finance.nurseName') %></th>
+                                    <th class="col-money"><%= __('finance.balance') %></th>
+                                    <th class="col-number"><%= __('finance.orders') %></th>
+                                    <th class="col-money"><%= __('finance.collected') %></th>
+                                    <th class="col-money"><%= __('finance.paidToAdmin') %></th>
+                                    <th class="col-date"><%= __('finance.lastSettlement') %></th>
+                                    <th class="col-actions"><%= __('actions') %></th>
+                                </tr>
+                            </thead>
+                            <tbody id="nursesBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patients Tab -->
+            <div class="tab-content" id="tab-patients">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><%= __('finance.patientFinance') %></h2>
+                        <div class="card-actions">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="searchPatients" placeholder="<%= __('finance.searchPatients') %>" onkeyup="filterPatients()">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-row" id="patientsSummary">
+                        <div class="summary-item">
+                            <div class="summary-value" id="patientTotalCount">0</div>
+                            <div class="summary-label"><%= __('finance.patients') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="patientTotalSpent">—</div>
+                            <div class="summary-label"><%= __('finance.totalSpent') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="patientTotalOrders">0</div>
+                            <div class="summary-label"><%= __('finance.totalOrders') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="patientAvgOrder">—</div>
+                            <div class="summary-label"><%= __('finance.averageOrder') %></div>
+                        </div>
+                    </div>
+                    <div class="table-wrapper" id="patientsTableWrapper" style="display: none;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="col-name"><%= __('finance.patient') %></th>
+                                    <th class="col-number"><%= __('finance.totalOrders') %></th>
+                                    <th class="col-money"><%= __('finance.totalSpent') %></th>
+                                    <th class="col-number"><%= __('finance.completedOrders') %></th>
+                                    <th class="col-money"><%= __('finance.averageOrder') %></th>
+                                    <th class="col-date"><%= __('finance.lastOrder') %></th>
+                                    <th class="col-actions"><%= __('actions') %></th>
+                                </tr>
+                            </thead>
+                            <tbody id="patientsBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="patientsEmptySearch" class="empty-state" style="display: none;">
+                        <i class="fas fa-search"></i>
+                        <h3><%= __('finance.searchPatients') %></h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Labs Tab -->
+            <div class="tab-content" id="tab-labs">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><%= __('finance.labFinance') %></h2>
+                        <div class="card-actions">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="searchLabs" placeholder="<%= __('finance.searchLabs') %>" onkeyup="filterLabs()">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="col-name"><%= __('finance.labName') %></th>
+                                    <th class="col-number"><%= __('finance.commissionRate') %></th>
+                                    <th class="col-number"><%= __('finance.orders') %></th>
+                                    <th class="col-money"><%= __('finance.revenue') %></th>
+                                    <th class="col-money"><%= __('finance.labEarnings') %></th>
+                                    <th class="col-money"><%= __('finance.adminEarnings') %></th>
+                                    <th class="col-actions"><%= __('actions') %></th>
+                                </tr>
+                            </thead>
+                            <tbody id="labsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Settlements Tab -->
+            <div class="tab-content" id="tab-pending">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><%= __('finance.pendingSettlementsLabel') %></h2>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-item">
+                            <div class="summary-value" id="pendingTotal">—</div>
+                            <div class="summary-label"><%= __('finance.totalPending') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="pendingOrders">0</div>
+                            <div class="summary-label"><%= __('finance.orders') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="pendingNurses">0</div>
+                            <div class="summary-label"><%= __('finance.nurses') %></div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="pendingAvg">—</div>
+                            <div class="summary-label"><%= __('finance.average') %></div>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="col-name"><%= __('finance.nurse') %></th>
+                                    <th class="col-number"><%= __('finance.orderCount') %></th>
+                                    <th class="col-name"><%= __('finance.lab') %></th>
+                                    <th class="col-money"><%= __('finance.revenue') %></th>
+                                    <th class="col-money"><%= __('finance.adminShare') %></th>
+                                    <th class="col-number"><%= __('finance.nurseCommissionRate') %></th>
+                                    <th class="col-date"><%= __('finance.date') %></th>
+                                </tr>
+                            </thead>
+                            <tbody id="pendingBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settlement Modal -->
+    <div class="modal" id="settleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><%= __('finance.settleBalance') %></h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label"><%= __('finance.nurseLabel') %></label>
+                    <div id="modalNurseName" style="font-weight: 500;"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><%= __('finance.currentBalanceLabel') %></label>
+                    <div id="modalBalance" style="font-size: 18px; font-weight: 600; color: var(--accent-blue);"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="settleAmount"><%= __('finance.settlementAmountLabel') %></label>
+                    <input type="number" id="settleAmount" class="form-input" placeholder="<%= __('finance.enterAmount') %>">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="settleNotes"><%= __('finance.notes') %></label>
+                    <input type="text" id="settleNotes" class="form-input" placeholder="<%= __('finance.optionalNotes') %>">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()"><%= __('finance.cancel') %></button>
+                <button class="btn" style="background: var(--accent-red); color: white;" onclick="resetBalance()"><%= __('finance.resetToZeroLabel') %></button>
+                <button class="btn btn-primary" onclick="settleBalance()"><%= __('finance.settleLabel') %></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nurse Details Modal -->
+    <div class="modal" id="nurseDetailsModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="nurseDetailsTitle">Nurse Details</h3>
+                <button class="modal-close" onclick="closeNurseDetails()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div style="padding: 20px 24px; background: var(--bg-tertiary); display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: 600;" id="nurseDetailOrders">0</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);"><%= __('finance.orders') %></div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: 600;" id="nurseDetailCollected">—</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);"><%= __('finance.collected') %></div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: 600;" id="nurseDetailEarnings">—</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);"><%= __('finance.nurseEarningsLabel') %></div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: 600;" id="nurseDetailAdmin">—</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);"><%= __('finance.adminShare') %></div>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-status">Status / QR</th>
+                                <th class="col-name">Patient</th>
+                                <th class="col-name">Lab</th>
+                                <th class="col-money">Total</th>
+                                <th class="col-money">Nurse Earning</th>
+                                <th class="col-money">Admin Share</th>
+                                <th class="col-date">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="nurseOrdersBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeNurseDetails()"><%= __('finance.cancel') %></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Details Modal -->
+    <div class="modal" id="patientDetailsModal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="patientDetailsTitle"><%= __('finance.patientDetails') || 'Patient Details' %></h3>
+                <button class="modal-close" onclick="closePatientDetails()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div style="padding: 20px 24px; background: var(--bg-tertiary);">
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                        <div class="user-avatar green" style="width: 60px; height: 60px; font-size: 20px;" id="patientAvatar"></div>
+                        <div>
+                            <div style="font-size: 20px; font-weight: 600;" id="patientName">—</div>
+                            <div style="font-size: 14px; color: var(--text-secondary);" id="patientPhone">—</div>
+                            <div style="font-size: 14px; color: var(--text-secondary);" id="patientEmail">—</div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div style="text-align: center; background: var(--bg-primary); padding: 16px; border-radius: var(--radius-sm);">
+                            <div style="font-size: 24px; font-weight: 600;" id="patientDetailOrders">0</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);"><%= __('finance.totalOrders') %></div>
+                        </div>
+                        <div style="text-align: center; background: var(--bg-primary); padding: 16px; border-radius: var(--radius-sm);">
+                            <div style="font-size: 24px; font-weight: 600;" id="patientDetailSpent">—</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);"><%= __('finance.totalSpent') %></div>
+                        </div>
+                        <div style="text-align: center; background: var(--bg-primary); padding: 16px; border-radius: var(--radius-sm);">
+                            <div style="font-size: 24px; font-weight: 600;" id="patientDetailCompleted">0</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);"><%= __('finance.completedOrders') %></div>
+                        </div>
+                        <div style="text-align: center; background: var(--bg-primary); padding: 16px; border-radius: var(--radius-sm);">
+                            <div style="font-size: 24px; font-weight: 600;" id="patientDetailAvg">—</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);"><%= __('finance.averageOrder') %></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-status"><%= __('finance.status') || 'Status' %></th>
+                                <th class="col-name"><%= __('finance.qrCode') || 'QR Code' %></th>
+                                <th class="col-name"><%= __('finance.lab') %></th>
+                                <th class="col-name"><%= __('finance.nurse') %></th>
+                                <th class="col-money"><%= __('finance.amount') %></th>
+                                <th class="col-date"><%= __('finance.date') %></th>
+                                <th class="col-actions"><%= __('actions') %></th>
+                            </tr>
+                        </thead>
+                        <tbody id="patientOrdersBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePatientDetails()"><%= __('finance.close') || 'Close' %></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div class="modal" id="orderDetailsModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><%= __('finance.orderDetails') || 'Order Details' %></h3>
+                <button class="modal-close" onclick="closeOrderDetails()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div id="orderDetailsContent">
+                    <div style="text-align: center; padding: 40px;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeOrderDetails()"><%= __('finance.close') || 'Close' %></button>
+            </div>
+        </div>
+    </div>
+
+    <input type="hidden" id="selectedNurseId">
+
+    <script>
+        // Translations
+        const i18n = <%- JSON.stringify({
+            finance: {
+                noNursesFound: __('finance.noNursesFound'),
+                noPatientsFound: __('finance.noPatientsFound'),
+                noLabsFound: __('finance.noLabsFound'),
+                allSettled: __('finance.allSettled'),
+                noPendingSettlements: __('finance.noPendingSettlements'),
+                noTransactionsFound: __('finance.noTransactionsFound'),
+                view: __('finance.view'),
+                commissionFromNurse: __('finance.commissionFromNurse'),
+                directPaymentsLab: __('finance.directPaymentsLab'),
+                netEarningsAfterCommission: __('finance.netEarningsAfterCommission'),
+                labShare: __('finance.labShare'),
+                adminShare: __('finance.adminShare'),
+                nurseEarningsLabel: __('finance.nurseEarningsLabel'),
+                enterCommissionRate: __('finance.enterCommissionRate'),
+                validRateRange: __('finance.validRateRange'),
+                errorUpdatingRate: __('finance.errorUpdatingRate'),
+                commissionUpdated: __('finance.commissionUpdated'),
+                resetBalanceToZero: __('finance.resetBalanceToZero'),
+                settle: __('finance.settle'),
+                editRate: __('finance.editRate'),
+                error: __('finance.settlementError'),
+                labPayments: __('finance.labPayments'),
+                nurseEarnings: __('finance.nurseEarnings'),
+                commissionEarned: __('finance.commissionEarned'),
+                adminSettlement: __('finance.adminSettlement'),
+                labSettlementLabel: __('finance.labSettlementLabel'),
+                balanceAdjustment: __('finance.balanceAdjustment'),
+                orderPayment: __('finance.orderPayment'),
+                selectDateRange: __('finance.selectDateRange'),
+                invalidDateRange: __('finance.invalidDateRange'),
+                allTime: __('finance.allTime')
+            }
+        }) %>;
+
+        // State
+        const state = {
+            filter: { start: null, end: null },
+            nurses: [],
+            patients: [],
+            labs: [],
+            pending: [],
+            transactions: [],
+            orders: [],
+            dateFilter: {
+                mode: 'thisMonth', // today, thisMonth, lastMonth, thisYear, custom
+                startDate: null,
+                endDate: null
+            }
+        };
+
+        // Token helper
+        function getToken() {
+            return localStorage.getItem('token') || '';
+        }
+
+        // Money formatter
+        function formatMoney(amount) {
+            if (!amount && amount !== 0) return '—';
+            return new Intl.NumberFormat('<%= currentLang %>', {
+                style: 'currency',
+                currency: 'IQD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        // Date formatter
+        function formatDate(date) {
+            if (!date) return '—';
+            return new Date(date).toLocaleDateString('<%= currentLang %>');
+        }
+
+        // ==================== DATE FILTER FUNCTIONS ====================
+
+        // Get date range for preset
+        function getDateRangeForPreset(preset) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            switch (preset) {
+                case 'today':
+                    return {
+                        start: new Date(today.setHours(0, 0, 0, 0)),
+                        end: new Date(new Date(today).setHours(23, 59, 59, 999))
+                    };
+
+                case 'thisMonth':
+                    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                    return { start: firstDayOfMonth, end: lastDayOfMonth };
+
+                case 'lastMonth':
+                    const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                    const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+                    return { start: firstDayOfLastMonth, end: lastDayOfLastMonth };
+
+                case 'thisYear':
+                    const firstDayOfYear = new Date(now.getFullYear(), 0, 1);
+                    const lastDayOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                    return { start: firstDayOfYear, end: lastDayOfYear };
+
+                case 'custom':
+                    return {
+                        start: state.dateFilter.startDate ? new Date(state.dateFilter.startDate) : null,
+                        end: state.dateFilter.endDate ? new Date(state.dateFilter.endDate) : null
+                    };
+
+                default:
+                    return { start: null, end: null };
+            }
+        }
+
+        // Format date for input value (YYYY-MM-DD)
+        function formatDateForInput(date) {
+            if (!date) return '';
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Format date range for display
+        function formatDateRangeDisplay(start, end) {
+            if (!start && !end) return i18n.finance.allTime || 'All Time';
+
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            const startStr = start ? start.toLocaleDateString('<%= currentLang %>', options) : '...';
+            const endStr = end ? end.toLocaleDateString('<%= currentLang %>', options) : '...';
+
+            if (start && end && start.getTime() === end.getTime()) {
+                return startStr;
+            }
+
+            return `${startStr} → ${endStr}`;
+        }
+
+        // Apply date filter
+        async function applyDateFilter(mode, customStart = null, customEnd = null) {
+            state.dateFilter.mode = mode;
+
+            if (mode === 'custom' && customStart && customEnd) {
+                state.dateFilter.startDate = customStart;
+                state.dateFilter.endDate = customEnd;
+
+                // Set end date to end of day
+                const endDate = new Date(customEnd);
+                endDate.setHours(23, 59, 59, 999);
+                state.dateFilter.endDate = endDate;
+            } else {
+                const range = getDateRangeForPreset(mode);
+                state.dateFilter.startDate = range.start;
+                state.dateFilter.endDate = range.end;
+            }
+
+            // Update filter state for API calls
+            state.filter.start = state.dateFilter.startDate ? state.dateFilter.startDate.toISOString() : null;
+            state.filter.end = state.dateFilter.endDate ? state.dateFilter.endDate.toISOString() : null;
+
+            // Update UI
+            updateDateFilterUI();
+
+            // Reload data with new filter
+            await loadDataWithFilter();
+        }
+
+        // Update date filter UI
+        function updateDateFilterUI() {
+            // Update display
+            const displayEl = document.getElementById('dateRangeDisplay');
+            displayEl.textContent = formatDateRangeDisplay(state.dateFilter.startDate, state.dateFilter.endDate);
+
+            // Update preset buttons
+            document.querySelectorAll('.date-preset-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.preset === state.dateFilter.mode);
+            });
+
+            // Show/hide custom inputs
+            const customInputs = document.getElementById('customDateInputs');
+            customInputs.classList.toggle('visible', state.dateFilter.mode === 'custom');
+
+            // Update custom input values
+            if (state.dateFilter.mode === 'custom') {
+                document.getElementById('dateFrom').value = formatDateForInput(state.dateFilter.startDate);
+                document.getElementById('dateTo').value = formatDateForInput(state.dateFilter.endDate);
+            }
+        }
+
+        // Load all data with current filter
+        async function loadDataWithFilter() {
+            // Show loading state
+            document.querySelector('.date-filter-container').classList.add('date-filter-loading');
+
+            try {
+                await Promise.all([
+                    loadOverview(),
+                    loadOrders(),
+                    // Note: Other tabs (nurses, patients, labs, pending) could also be filtered
+                    // but typically show all-time data while overview shows filtered data
+                ]);
+            } finally {
+                // Remove loading state
+                document.querySelector('.date-filter-container').classList.remove('date-filter-loading');
+            }
+        }
+
+        // Get initials
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        }
+
+        // Get balance class
+        function getBalanceClass(balance) {
+            if (balance > 0) return 'badge-red';
+            if (balance < 0) return 'badge-green';
+            return 'badge-gray';
+        }
+
+        // Load Overview
+        async function loadOverview() {
+            try {
+                const params = new URLSearchParams();
+                if (state.filter.start) params.append('startDate', state.filter.start);
+                if (state.filter.end) params.append('endDate', state.filter.end);
+
+                const res = await fetch(`/api/admin/finance/overview?${params}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    const overview = result.data.overview || {};
+                    const nurseStats = result.data.nurseStats || {};
+                    const pending = result.data.pendingSettlements || {};
+
+                    const revenue = overview.totalRevenue || 0;
+                    document.getElementById('statRevenue').textContent = formatMoney(revenue);
+                    document.getElementById('statOrders').textContent = overview.orderCount || 0;
+                    document.getElementById('statAdmin').textContent = formatMoney(overview.totalAdminAmount || 0);
+                    document.getElementById('statNurse').textContent = formatMoney(nurseStats.totalNurseBalance || 0);
+                    document.getElementById('statNurseCount').textContent = nurseStats.nurseCount || 0;
+                    document.getElementById('statPending').textContent = formatMoney(pending.adminAmount || 0);
+                    document.getElementById('statPendingCount').textContent = pending.adminOrderCount || 0;
+
+                    document.getElementById('overviewRevenue').textContent = formatMoney(revenue);
+                    document.getElementById('overviewAdmin').textContent = formatMoney(overview.totalAdminAmount || 0);
+                    document.getElementById('overviewLab').textContent = formatMoney(overview.totalLabAmount || 0);
+                    document.getElementById('overviewNurse').textContent = formatMoney(overview.totalNurseNetEarning || 0);
+
+                    const total = revenue || 1;
+                    const data = [
+                        { type: i18n.finance.adminShare, amount: overview.totalAdminAmount || 0, desc: i18n.finance.commissionFromNurse, color: 'blue', icon: 'fa-chart-line' },
+                        { type: i18n.finance.labPayments, amount: overview.totalLabAmount || 0, desc: i18n.finance.directPaymentsLab, color: 'purple', icon: 'fa-flask' },
+                        { type: i18n.finance.nurseEarningsLabel, amount: overview.totalNurseNetEarning || 0, desc: i18n.finance.netEarningsAfterCommission, color: 'green', icon: 'fa-user-nurse' },
+                    ];
+
+                    document.getElementById('overviewBody').innerHTML = data.map(item => `
+                        <tr>
+                            <td>
+                                <div class="user-cell">
+                                    <div class="user-avatar" style="width: 32px; height: 32px; font-size: 12px;">
+                                        <i class="fas ${item.icon}"></i>
+                                    </div>
+                                    <strong>${item.type}</strong>
+                                </div>
+                            </td>
+                            <td>${formatMoney(item.amount)}</td>
+                            <td><span class="badge badge-${item.color}">${((item.amount / total) * 100).toFixed(1)}%</span></td>
+                            <td style="color: var(--text-secondary);">${item.desc}</td>
+                        </tr>
+                    `).join('');
+
+                    document.getElementById('badgeNurses').textContent = nurseStats.nurseCount || 0;
+                    document.getElementById('badgePending').textContent = pending.adminOrderCount || 0;
+                }
+            } catch (e) {
+                console.error('Overview error:', e);
+            }
+        }
+
+        // Load Nurses
+        async function loadNurses() {
+            try {
+                const res = await fetch('/api/admin/finance/nurses', {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    state.nurses = result.data.nurses || [];
+                    document.getElementById('badgeNurses').textContent = state.nurses.length;
+                    renderNurses(state.nurses);
+                }
+            } catch (e) {
+                console.error('Nurses error:', e);
+            }
+        }
+
+        // Render Nurses
+        function renderNurses(nurses) {
+            const tbody = document.getElementById('nursesBody');
+
+            if (!nurses.length) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><i class="fas fa-user-nurse"></i><h3>${i18n.finance.noNursesFound}</h3></td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = nurses.map(n => `
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar">${getInitials(n.name)}</div>
+                            <div class="user-info">
+                                <div class="user-name">${n.name || 'Unknown'}</div>
+                                <div class="user-contact">${n.phone || ''}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge ${getBalanceClass(n.nurseBalance)}">${formatMoney(n.nurseBalance)}</span></td>
+                    <td>${n.stats?.totalOrders || 0}</td>
+                    <td>${formatMoney(n.stats?.totalCollected)}</td>
+                    <td>${formatMoney(n.totalPaidToAdmin)}</td>
+                    <td>${formatDate(n.lastSettlementDate)}</td>
+                    <td>
+                        <div style="display: flex; gap: 6px; justify-content: center;">
+                            <button class="btn btn-secondary btn-sm" onclick='viewNurseDetails("${n._id}", "${n.name}")'>
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick='openSettle(${JSON.stringify({ id: n._id, name: n.name, balance: n.nurseBalance })})'>
+                                ${i18n.finance.settle}
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Filter Nurses
+        function filterNurses() {
+            const query = document.getElementById('searchNurses').value.toLowerCase();
+            const filtered = state.nurses.filter(n =>
+                (n.name || '').toLowerCase().includes(query) ||
+                (n.phone || '').includes(query)
+            );
+            renderNurses(filtered);
+        }
+
+        // Load Patients
+        async function loadPatients() {
+            try {
+                const res = await fetch('/api/admin/finance/patients?limit=1000&sortBy=totalSpent&sortOrder=desc', {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    state.patients = result.data.patients || [];
+                    document.getElementById('badgePatients').textContent = state.patients.length;
+
+                    const totalCount = state.patients.length;
+                    const totalSpent = state.patients.reduce((sum, p) => sum + (p.stats?.totalSpent || 0), 0);
+                    const totalOrders = state.patients.reduce((sum, p) => sum + (p.stats?.totalOrders || 0), 0);
+                    const avgOrder = totalOrders > 0 ? totalSpent / totalOrders : 0;
+
+                    document.getElementById('patientTotalCount').textContent = totalCount;
+                    document.getElementById('patientTotalSpent').textContent = formatMoney(totalSpent);
+                    document.getElementById('patientTotalOrders').textContent = totalOrders;
+                    document.getElementById('patientAvgOrder').textContent = totalOrders > 0 ? formatMoney(avgOrder) : '—';
+
+                    document.getElementById('patientsTableWrapper').style.display = 'none';
+                    document.getElementById('patientsEmptySearch').style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Patients error:', e);
+            }
+        }
+
+        // Render Patients
+        function renderPatients(patients) {
+            const tbody = document.getElementById('patientsBody');
+
+            if (!patients.length) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><i class="fas fa-users"></i><h3>${i18n.finance.noPatientsFound}</h3></td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = patients.map(p => {
+                const stats = p.stats || {};
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar green">${getInitials(p.name)}</div>
+                                <div class="user-info">
+                                    <div class="user-name">${p.name || 'Unknown'}</div>
+                                    <div class="user-contact">${p.phone || ''}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${stats.totalOrders || 0}</td>
+                        <td>${formatMoney(stats.totalSpent)}</td>
+                        <td>${stats.completedOrders || 0}</td>
+                        <td>${formatMoney(stats.averageOrderValue)}</td>
+                        <td>${formatDate(p.recentOrders?.[0]?.createdAt)}</td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm" onclick="viewPatient('${p._id}')">
+                                ${i18n.finance.view}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Filter Patients
+        function filterPatients() {
+            const query = document.getElementById('searchPatients').value.toLowerCase().trim();
+            const tableWrapper = document.getElementById('patientsTableWrapper');
+            const emptySearch = document.getElementById('patientsEmptySearch');
+
+            if (!query) {
+                tableWrapper.style.display = 'none';
+                emptySearch.style.display = 'none';
+                return;
+            }
+
+            tableWrapper.style.display = 'block';
+            emptySearch.style.display = 'none';
+
+            const filtered = state.patients.filter(p =>
+                (p.name || '').toLowerCase().includes(query) ||
+                (p.phone || '').includes(query)
+            );
+            renderPatients(filtered);
+        }
+
+        // Load Labs
+        async function loadLabs() {
+            try {
+                const res = await fetch('/api/admin/finance/labs', {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    state.labs = result.data.labs || [];
+                    document.getElementById('badgeLabs').textContent = state.labs.length;
+                    renderLabs(state.labs);
+                }
+            } catch (e) {
+                console.error('Labs error:', e);
+            }
+        }
+
+        // Render Labs
+        function renderLabs(labs) {
+            const tbody = document.getElementById('labsBody');
+
+            if (!labs.length) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><i class="fas fa-flask"></i><h3>${i18n.finance.noLabsFound}</h3></td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = labs.map(l => {
+                const stats = l.stats || {};
+                return `
+                    <tr>
+                        <td><strong>${l.name || 'Unknown'}</strong></td>
+                        <td><span class="badge badge-purple">${l.commissionRate || 0}%</span></td>
+                        <td>${stats.totalOrders || 0}</td>
+                        <td>${formatMoney(stats.totalRevenue)}</td>
+                        <td>${formatMoney(stats.labAmount)}</td>
+                        <td>${formatMoney(stats.adminAmount)}</td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm" onclick="editCommission('${l._id}', ${l.commissionRate})">
+                                ${i18n.finance.editRate}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Filter Labs
+        function filterLabs() {
+            const query = document.getElementById('searchLabs').value.toLowerCase();
+            const filtered = state.labs.filter(l =>
+                (l.name || '').toLowerCase().includes(query)
+            );
+            renderLabs(filtered);
+        }
+
+        // Load Pending Settlements
+        async function loadPending() {
+            try {
+                const res = await fetch('/api/admin/finance/pending-admin-settlements', {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    state.pending = result.data.settlements || [];
+                    renderPending(state.pending);
+
+                    const totalAmount = state.pending.reduce((sum, p) => sum + (p.adminAmount || 0), 0);
+                    const totalOrders = state.pending.reduce((sum, p) => sum + (p.orderCount || 0), 0);
+                    const nurseCount = new Set(state.pending.filter(p => p.nurseId?._id).map(p => p.nurseId._id)).size;
+
+                    document.getElementById('pendingTotal').textContent = formatMoney(totalAmount);
+                    document.getElementById('pendingOrders').textContent = totalOrders || 0;
+                    document.getElementById('pendingNurses').textContent = nurseCount || 0;
+                    document.getElementById('pendingAvg').textContent = totalOrders > 0 ? formatMoney(totalAmount / totalOrders) : '—';
+                    document.getElementById('badgePending').textContent = state.pending.length || 0;
+                }
+            } catch (e) {
+                console.error('Pending error:', e);
+            }
+        }
+
+        // Render Pending
+        function renderPending(pending) {
+            const tbody = document.getElementById('pendingBody');
+
+            if (!pending || !pending.length) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><i class="fas fa-check-circle" style="color: var(--accent-green);"></i><h3>${i18n.finance.allSettled}</h3></td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = pending.map(p => `
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar">${getInitials(p.nurseId?.name)}</div>
+                            <div class="user-info">
+                                <div class="user-name">${p.nurseId?.name || 'Unknown'}</div>
+                                <div class="user-contact">${p.nurseId?.phone || ''}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${p.orderCount || 0}</td>
+                    <td>${p.labId?.name || '—'}</td>
+                    <td>${formatMoney(p.totalAmount || 0)}</td>
+                    <td>${formatMoney(p.adminAmount || 0)}</td>
+                    <td><span class="badge badge-purple">${p.nurseCommissionRate || 0}%</span></td>
+                    <td>${formatDate(p.latestOrderDate)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // View Nurse Details
+        async function viewNurseDetails(nurseId, nurseName) {
+            document.getElementById('nurseDetailsTitle').textContent = nurseName;
+            document.getElementById('nurseOrdersBody').innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+            document.getElementById('nurseDetailsModal').classList.add('show');
+
+            try {
+                const res = await fetch(`/api/admin/finance/nurses/${nurseId}/orders`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    const orders = result.data.orders || [];
+
+                    const totalOrders = orders.length;
+                    const totalCollected = orders.reduce((sum, o) => sum + (o.pricing?.total || 0), 0);
+                    const totalNurseEarnings = orders.reduce((sum, o) => sum + (o.financials?.nurseNetEarning || 0), 0);
+                    const totalAdminAmount = orders.reduce((sum, o) => sum + (o.financials?.adminAmount || 0), 0);
+
+                    document.getElementById('nurseDetailOrders').textContent = totalOrders;
+                    document.getElementById('nurseDetailCollected').textContent = formatMoney(totalCollected);
+                    document.getElementById('nurseDetailEarnings').textContent = formatMoney(totalNurseEarnings);
+                    document.getElementById('nurseDetailAdmin').textContent = formatMoney(totalAdminAmount);
+
+                    const tbody = document.getElementById('nurseOrdersBody');
+
+                    if (!orders.length) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><i class="fas fa-clipboard-list"></i><h3>No orders found</h3></td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = orders.map(o => {
+                        const statusBadges = {
+                            'sample_collected': 'badge-orange',
+                            'at_lab': 'badge-blue',
+                            'completed': 'badge-green',
+                            'cancelled': 'badge-red'
+                        };
+                        const statusClass = statusBadges[o.status] || 'badge-gray';
+
+                        return `
+                            <tr>
+                                <td>
+                                    <span class="badge ${statusClass}">${o.status}</span>
+                                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">${o.qrCode || ''}</div>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 500;">${o.patientId?.name || 'Unknown'}</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);">${o.patientId?.phone || ''}</div>
+                                </td>
+                                <td>${o.labId?.name || 'Unknown'}</td>
+                                <td>${formatMoney(o.pricing?.total)}</td>
+                                <td>${formatMoney(o.financials?.nurseNetEarning)}</td>
+                                <td>${formatMoney(o.financials?.adminAmount)}</td>
+                                <td>${formatDate(o.createdAt)}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                console.error('Nurse details error:', e);
+                document.getElementById('nurseOrdersBody').innerHTML = `<tr><td colspan="7" class="empty-state"><i class="fas fa-exclamation-circle" style="color: var(--accent-red);"></i><h3>Error loading details</h3></td></tr>`;
+            }
+        }
+
+        function closeNurseDetails() {
+            document.getElementById('nurseDetailsModal').classList.remove('show');
+        }
+
+        function openSettle(data) {
+            document.getElementById('selectedNurseId').value = data.id;
+            document.getElementById('modalNurseName').textContent = data.name;
+            document.getElementById('modalBalance').textContent = formatMoney(data.balance);
+            document.getElementById('settleAmount').value = data.balance;
+            document.getElementById('settleModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('settleModal').classList.remove('show');
+        }
+
+        async function settleBalance() {
+            const id = document.getElementById('selectedNurseId').value;
+            const amount = document.getElementById('settleAmount').value;
+            const notes = document.getElementById('settleNotes').value;
+
+            try {
+                const res = await fetch(`/api/admin/finance/nurses/${id}/settle`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ amount: parseFloat(amount), notes })
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    closeModal();
+                    await loadAll();
+                } else {
+                    alert(i18n.finance.error + ': ' + result.message);
+                }
+            } catch (e) {
+                console.error('Settle error:', e);
+                alert(i18n.finance.error);
+            }
+        }
+
+        async function resetBalance() {
+            if (!confirm(i18n.finance.resetBalanceToZero)) return;
+
+            const id = document.getElementById('selectedNurseId').value;
+            const notes = document.getElementById('settleNotes').value;
+
+            try {
+                const res = await fetch(`/api/admin/finance/nurses/${id}/reset`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ notes })
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    closeModal();
+                    await loadAll();
+                } else {
+                    alert(i18n.finance.error + ': ' + result.message);
+                }
+            } catch (e) {
+                console.error('Reset error:', e);
+                alert(i18n.finance.error);
+            }
+        }
+
+        async function editCommission(labId, currentRate) {
+            const newRate = prompt(i18n.finance.enterCommissionRate, currentRate);
+            if (newRate === null) return;
+
+            const rate = parseFloat(newRate);
+            if (isNaN(rate) || rate < 0 || rate > 100) {
+                alert(i18n.finance.validRateRange);
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/finance/labs/${labId}/commission`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ commissionRate: rate })
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    alert(i18n.finance.commissionUpdated);
+                    await loadLabs();
+                } else {
+                    alert(i18n.finance.errorUpdatingRate + ': ' + result.message);
+                }
+            } catch (e) {
+                console.error('Update error:', e);
+                alert(i18n.finance.errorUpdatingRate);
+            }
+        }
+
+        // ==================== ORDERS FUNCTIONS ====================
+
+        // Load Orders
+        async function loadOrders() {
+            try {
+                const params = new URLSearchParams();
+                if (state.filter.start) params.append('startDate', state.filter.start);
+                if (state.filter.end) params.append('endDate', state.filter.end);
+                params.append('limit', '500');
+
+                const res = await fetch(`/api/admin/orders/all?${params}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    state.orders = result.data.orders || [];
+                    document.getElementById('badgeOrders').textContent = state.orders.length;
+                    
+                    const totalCount = state.orders.length;
+                    const totalRevenue = state.orders.reduce((sum, o) => sum + (o.pricing?.total || 0), 0);
+                    const completedCount = state.orders.filter(o => o.status === 'completed').length;
+                    const avgValue = totalCount > 0 ? totalRevenue / totalCount : 0;
+
+                    document.getElementById('ordersTotalCount').textContent = totalCount;
+                    document.getElementById('ordersTotalRevenue').textContent = formatMoney(totalRevenue);
+                    document.getElementById('ordersCompleted').textContent = completedCount;
+                    document.getElementById('ordersAvgValue').textContent = totalCount > 0 ? formatMoney(avgValue) : '—';
+
+                    renderOrders(state.orders);
+                }
+            } catch (e) {
+                console.error('Orders error:', e);
+            }
+        }
+
+        // Render Orders
+        function renderOrders(orders) {
+            const tbody = document.getElementById('ordersBody');
+
+            if (!orders || !orders.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><i class="fas fa-receipt"></i><h3>No orders found</h3></td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = orders.map(o => `
+                <tr onclick="viewOrderDetails('${o._id}')" style="cursor: pointer;">
+                    <td><span class="badge ${getStatusBadgeClass(o.status)}">${o.status || 'Unknown'}</span></td>
+                    <td><code style="font-size: 11px;">${o.qrCode || '—'}</code></td>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar green">${getInitials(o.patientId?.name)}</div>
+                            <div class="user-info">
+                                <div class="user-name">${o.patientId?.name || 'Unknown'}</div>
+                                <div class="user-contact">${o.patientId?.phone || ''}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${o.nurseId?.name || '—'}</td>
+                    <td>${o.labId?.name || '—'}</td>
+                    <td>${formatMoney(o.pricing?.total || 0)}</td>
+                    <td>${formatDate(o.createdAt)}</td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); viewOrderDetails('${o._id}')">
+                            ${i18n.finance.view}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Filter Orders
+        function filterOrders() {
+            const query = document.getElementById('searchOrders').value.toLowerCase().trim();
+            const statusFilter = document.getElementById('orderStatusFilter').value;
+
+            let filtered = state.orders;
+
+            if (statusFilter) {
+                filtered = filtered.filter(o => o.status === statusFilter);
+            }
+
+            if (query) {
+                filtered = filtered.filter(o =>
+                    (o.patientId?.name || '').toLowerCase().includes(query) ||
+                    (o.patientId?.phone || '').includes(query) ||
+                    (o.nurseId?.name || '').toLowerCase().includes(query) ||
+                    (o.labId?.name || '').toLowerCase().includes(query) ||
+                    (o.qrCode || '').toLowerCase().includes(query)
+                );
+            }
+
+            renderOrders(filtered);
+        }
+
+        // Get status badge class
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'completed': return 'badge-green';
+                case 'pending': return 'badge-orange';
+                case 'confirmed': return 'badge-blue';
+                case 'assigned': return 'badge-purple';
+                case 'sample_collected': return 'badge-cyan';
+                case 'at_lab': return 'badge-blue';
+                case 'cancelled': return 'badge-red';
+                default: return 'badge-gray';
+            }
+        }
+
+        // ==================== VIEW ORDER DETAILS ====================
+
+        async function viewOrderDetails(orderId) {
+            document.getElementById('orderDetailsContent').innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i>
+                </div>
+            `;
+            document.getElementById('orderDetailsModal').classList.add('show');
+
+            try {
+                const res = await fetch(`/api/admin/orders/${orderId}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    const order = result.data.order;
+                    renderOrderDetails(order);
+                } else {
+                    document.getElementById('orderDetailsContent').innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: var(--accent-red);">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <p>Failed to load order details</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('Order details error:', e);
+                document.getElementById('orderDetailsContent').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--accent-red);">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Error loading order details</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderOrderDetails(order) {
+            const tests = order.tests || [];
+            const financials = order.financials || {};
+            const pricing = order.pricing || {};
+            const location = order.location || {};
+            
+            document.getElementById('orderDetailsContent').innerHTML = `
+                <div style="padding: 20px 24px; background: var(--bg-tertiary);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                        <div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">QR Code</div>
+                            <div style="font-size: 18px; font-weight: 600; font-family: monospace;">${order.qrCode || '—'}</div>
+                        </div>
+                        <span class="badge ${getStatusBadgeClass(order.status)}" style="font-size: 14px; padding: 8px 16px;">${order.status || 'Unknown'}</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                        <div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-sm);">
+                            <div style="font-size: 12px; color: var(--text-secondary);">Patient</div>
+                            <div style="font-weight: 600;">${order.patientId?.name || 'Unknown'}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">${order.patientId?.phone || ''}</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-sm);">
+                            <div style="font-size: 12px; color: var(--text-secondary);">Nurse</div>
+                            <div style="font-weight: 600;">${order.nurseId?.name || 'Not Assigned'}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">${order.nurseId?.phone || ''}</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-sm);">
+                            <div style="font-size: 12px; color: var(--text-secondary);">Lab</div>
+                            <div style="font-weight: 600;">${order.labId?.name || 'Unknown'}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">${order.labId?.city || ''}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="padding: 20px 24px;">
+                    <h4 style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">Tests (${tests.length})</h4>
+                    <div style="background: var(--bg-tertiary); border-radius: var(--radius-sm); overflow: hidden;">
+                        ${tests.map(test => `
+                            <div style="display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border-light);">
+                                <div>
+                                    <div style="font-weight: 500;">${test.testName || 'Unknown Test'}</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">${test.testCode || ''}</div>
+                                </div>
+                                <div style="font-weight: 600;">${formatMoney(test.price || 0)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div style="padding: 0 24px 20px;">
+                    <h4 style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">Financial Breakdown</h4>
+                    <div style="background: var(--bg-tertiary); border-radius: var(--radius-sm); padding: 16px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Subtotal</span>
+                            <span>${formatMoney(pricing.subtotal || 0)}</span>
+                        </div>
+                        ${pricing.discount ? `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--accent-green);">
+                                <span>Discount</span>
+                                <span>-${formatMoney(pricing.discount)}</span>
+                            </div>
+                        ` : ''}
+                        <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--border); font-weight: 600; font-size: 16px;">
+                            <span>Total</span>
+                            <span>${formatMoney(pricing.total || 0)}</span>
+                        </div>
+                        <hr style="margin: 16px 0; border: none; border-top: 1px dashed var(--border);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--accent-purple);">
+                            <span>Lab Share</span>
+                            <span>${formatMoney(financials.labAmount || 0)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--accent-green);">
+                            <span>Nurse Net Earning</span>
+                            <span>${formatMoney(financials.nurseNetEarning || 0)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; color: var(--accent-blue);">
+                            <span>Admin Commission (${financials.nurseCommissionRate || 0}%)</span>
+                            <span>${formatMoney(financials.adminAmount || 0)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${location.address ? `
+                    <div style="padding: 0 24px 20px;">
+                        <h4 style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">Location</h4>
+                        <div style="background: var(--bg-tertiary); border-radius: var(--radius-sm); padding: 16px;">
+                            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                <i class="fas fa-map-marker-alt" style="color: var(--accent-red); margin-top: 4px;"></i>
+                                <div>
+                                    <div style="font-weight: 500;">${location.address}</div>
+                                    ${location.city ? `<div style="font-size: 12px; color: var(--text-secondary);">${location.city}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div style="padding: 0 24px 20px;">
+                    <h4 style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">Timeline</h4>
+                    <div style="background: var(--bg-tertiary); border-radius: var(--radius-sm); padding: 16px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Created</span>
+                            <span>${formatDate(order.createdAt)}</span>
+                        </div>
+                        ${order.paymentCollected?.collected ? `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--accent-green);">
+                                <span>Payment Collected</span>
+                                <span>${formatDate(order.paymentCollected.collectedAt)}</span>
+                            </div>
+                        ` : ''}
+                        ${order.qrScanned?.scanned ? `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>QR Scanned</span>
+                                <span>${formatDate(order.qrScanned.scannedAt)}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function closeOrderDetails() {
+            document.getElementById('orderDetailsModal').classList.remove('show');
+        }
+
+        // ==================== VIEW PATIENT DETAILS ====================
+
+        async function viewPatient(patientId) {
+            document.getElementById('patientOrdersBody').innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+            document.getElementById('patientDetailsModal').classList.add('show');
+
+            try {
+                const res = await fetch(`/api/admin/finance/patients/${patientId}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    const data = result.data;
+                    const patient = data.patient;
+                    const orders = data.orders || [];
+                    const totals = data.totals || {};
+
+                    // Update patient info
+                    document.getElementById('patientAvatar').textContent = getInitials(patient.name);
+                    document.getElementById('patientName').textContent = patient.name || 'Unknown';
+                    document.getElementById('patientPhone').textContent = patient.phone || '—';
+                    document.getElementById('patientEmail').textContent = patient.email || '—';
+                    document.getElementById('patientDetailsTitle').textContent = patient.name || 'Patient Details';
+
+                    // Update stats
+                    document.getElementById('patientDetailOrders').textContent = totals.totalOrders || 0;
+                    document.getElementById('patientDetailSpent').textContent = formatMoney(totals.totalSpent || 0);
+                    const completedOrders = orders.filter(o => o.status === 'completed').length;
+                    document.getElementById('patientDetailCompleted').textContent = completedOrders;
+                    const avgOrder = totals.totalOrders > 0 ? (totals.totalSpent / totals.totalOrders) : 0;
+                    document.getElementById('patientDetailAvg').textContent = totals.totalOrders > 0 ? formatMoney(avgOrder) : '—';
+
+                    // Render orders
+                    renderPatientOrders(orders);
+                }
+            } catch (e) {
+                console.error('Patient details error:', e);
+                document.getElementById('patientOrdersBody').innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--accent-red);">Error loading patient details</td></tr>';
+            }
+        }
+
+        function renderPatientOrders(orders) {
+            const tbody = document.getElementById('patientOrdersBody');
+
+            if (!orders || !orders.length) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><i class="fas fa-receipt"></i><h3>No orders found</h3></td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = orders.map(o => `
+                <tr onclick="viewOrderDetails('${o._id}')" style="cursor: pointer;">
+                    <td><span class="badge ${getStatusBadgeClass(o.status)}">${o.status || 'Unknown'}</span></td>
+                    <td><code style="font-size: 11px;">${o.qrCode || '—'}</code></td>
+                    <td>${o.labId?.name || '—'}</td>
+                    <td>${o.nurseId?.name || '—'}</td>
+                    <td>${formatMoney(o.pricing?.total || 0)}</td>
+                    <td>${formatDate(o.createdAt)}</td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); viewOrderDetails('${o._id}')">
+                            ${i18n.finance.view}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function closePatientDetails() {
+            document.getElementById('patientDetailsModal').classList.remove('show');
+        }
+
+        // Load all data
+        async function loadAll() {
+            await Promise.all([
+                loadOverview(),
+                loadOrders(),
+                loadNurses(),
+                loadPatients(),
+                loadLabs(),
+                loadPending()
+            ]);
+        }
+
+        // Tab switching
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Date filter preset buttons
+        document.querySelectorAll('.date-preset-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const preset = this.dataset.preset;
+                applyDateFilter(preset);
+            });
+        });
+
+        // Custom date inputs
+        document.getElementById('applyDateFilter')?.addEventListener('click', function() {
+            const fromVal = document.getElementById('dateFrom').value;
+            const toVal = document.getElementById('dateTo').value;
+
+            if (!fromVal || !toVal) {
+                alert(i18n.finance.selectDateRange || 'Please select both from and to dates');
+                return;
+            }
+
+            const fromDate = new Date(fromVal);
+            const toDate = new Date(toVal);
+
+            if (fromDate > toDate) {
+                alert(i18n.finance.invalidDateRange || 'From date cannot be after to date');
+                return;
+            }
+
+            applyDateFilter('custom', fromDate, toDate);
+        });
+
+        document.getElementById('clearDateFilter')?.addEventListener('click', function() {
+            applyDateFilter('thisMonth'); // Reset to default
+        });
+
+        // Initial load - apply default date filter first
+        (async function() {
+            // Set default to current month
+            await applyDateFilter('thisMonth');
+            // Load all other data
+            await Promise.all([
+                loadNurses(),
+                loadPatients(),
+                loadLabs(),
+                loadPending()
+            ]);
+        })();
+    </script>
+</body>
+</html>

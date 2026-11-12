@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Dropdown Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <style>
+        body {
+            font-family: Cairo, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 80px 20px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
+            min-height: 500px;
+        }
+        .test-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <!-- Include proper language switcher component -->
+        <%- include('../partials/language-switcher') %>
+
+        <!-- Modern Navigation -->
+        <nav class="admin-navbar">
+            <div class="navbar-container">
+                <div class="navbar-brand">
+                    <img src="/images/logo.png" alt="LabGo" class="navbar-logo">
+                </div>
+
+                <div class="navbar-menu">
+                    <a href="/admin/dashboard" class="nav-item active">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="/admin/labs" class="nav-item">
+                        <i class="fas fa-flask"></i>
+                        <span>Labs</span>
+                    </a>
+                </div>
+
+                <!-- Profile Menu -->
+                <div class="profile-menu">
+                    <button class="profile-trigger" id="profileTrigger">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <div class="dropdown-header">
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="user-details">
+                                    <div class="user-name">Admin User</div>
+                                    <div class="user-role">Administrator</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-content">
+                            <div class="dropdown-section">
+                                <div class="section-title">Language</div>
+                                <div class="language-options">
+                                    <button class="lang-option" onclick="changeLanguage('en')">
+                                        <span class="lang-icon">Aa</span>
+                                        <span class="lang-name">English</span>
+                                        <i class="fas fa-check check-icon"></i>
+                                    </button>
+                                    <button class="lang-option active" onclick="changeLanguage('ar')">
+                                        <span class="lang-icon">أب</span>
+                                        <span class="lang-name">العربية</span>
+                                        <i class="fas fa-check check-icon"></i>
+                                    </button>
+                                    <button class="lang-option" onclick="changeLanguage('ku')">
+                                        <span class="lang-icon">ک</span>
+                                        <span class="lang-name">کوردی</span>
+                                        <i class="fas fa-check check-icon"></i>
+                                    </button>
+                                    <button class="lang-option" onclick="changeLanguage('tr')">
+                                        <span class="lang-icon">TR</span>
+                                        <span class="lang-name">Türkçe</span>
+                                        <i class="fas fa-check check-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="dropdown-section">
+                                <button class="dropdown-item logout-btn" onclick="handleLogout()">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="test-info">
+            <h3>Profile Dropdown Test</h3>
+            <p>Click the settings icon (⚙️) in the top-right corner to test the profile dropdown functionality.</p>
+            <p><strong>Expected behavior:</strong></p>
+            <ul>
+                <li>Dropdown should appear when clicking the settings icon</li>
+                <li>Should show user info, language options, and logout button</li>
+                <li>Should close when clicking outside</li>
+                <li>Should not overflow viewport edges</li>
+                <li>Should work with RTL layout</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+    // Admin Navigation JavaScript
+    document.addEventListener('DOMContentLoaded', function() {
+        // Profile dropdown functionality
+        const profileTrigger = document.getElementById('profileTrigger');
+        const profileDropdown = document.getElementById('profileDropdown');
+
+        if (profileTrigger && profileDropdown) {
+            profileTrigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Close any other dropdowns first
+                const allDropdowns = document.querySelectorAll('.language-menu.show, .profile-dropdown.show');
+                allDropdowns.forEach(dropdown => {
+                    if (dropdown !== profileDropdown) {
+                        dropdown.classList.remove('show');
+                    }
+                });
+
+                // Reset other triggers
+                const allTriggers = document.querySelectorAll('.language-trigger[aria-expanded="true"]');
+                allTriggers.forEach(trigger => {
+                    trigger.setAttribute('aria-expanded', 'false');
+                });
+
+                // Toggle profile dropdown
+                profileDropdown.classList.toggle('show');
+
+                // Check viewport and adjust position if needed
+                if (profileDropdown.classList.contains('show')) {
+                    setTimeout(() => {
+                        const dropdownRect = profileDropdown.getBoundingClientRect();
+                        const triggerRect = profileTrigger.getBoundingClientRect();
+
+                        // Check if dropdown goes beyond right edge
+                        if (dropdownRect.right > window.innerWidth) {
+                            profileDropdown.style.right = 'auto';
+                            profileDropdown.style.left = '0';
+                        }
+                        // Check if dropdown goes beyond left edge
+                        else if (dropdownRect.left < 0) {
+                            profileDropdown.style.left = 'auto';
+                            profileDropdown.style.right = '0';
+                        }
+
+                        // Check bottom edge
+                        if (dropdownRect.bottom > window.innerHeight) {
+                            // Show above trigger
+                            profileDropdown.style.top = 'auto';
+                            profileDropdown.style.bottom = 'calc(100% + 8px)';
+                        }
+                    }, 10);
+                } else {
+                    // Reset styles when hiding
+                    profileDropdown.style.top = '';
+                    profileDropdown.style.bottom = '';
+                    profileDropdown.style.left = '';
+                    profileDropdown.style.right = '';
+                }
+            });
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!profileTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
+                    profileDropdown.classList.remove('show');
+                    profileDropdown.style.top = '';
+                    profileDropdown.style.bottom = '';
+                    profileDropdown.style.left = '';
+                    profileDropdown.style.right = '';
+                }
+            });
+
+            // Close dropdown on scroll
+            window.addEventListener('scroll', function() {
+                if (profileDropdown.classList.contains('show')) {
+                    profileDropdown.classList.remove('show');
+                    profileDropdown.style.top = '';
+                    profileDropdown.style.bottom = '';
+                    profileDropdown.style.left = '';
+                    profileDropdown.style.right = '';
+                }
+            });
+
+            // Close dropdown on resize
+            window.addEventListener('resize', function() {
+                if (profileDropdown.classList.contains('show')) {
+                    profileDropdown.classList.remove('show');
+                    profileDropdown.style.top = '';
+                    profileDropdown.style.bottom = '';
+                    profileDropdown.style.left = '';
+                    profileDropdown.style.right = '';
+                }
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && profileDropdown.classList.contains('show')) {
+                    profileDropdown.classList.remove('show');
+                    profileDropdown.style.top = '';
+                    profileDropdown.style.bottom = '';
+                    profileDropdown.style.left = '';
+                    profileDropdown.style.right = '';
+                    profileTrigger.focus();
+                    return;
+                }
+
+                if (profileDropdown.classList.contains('show')) {
+                    const items = profileDropdown.querySelectorAll('.lang-option, .dropdown-item');
+                    const currentIndex = Array.from(items).findIndex(item => item === document.activeElement);
+
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+                        items[nextIndex].focus();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+                        items[prevIndex].focus();
+                    } else if (e.key === 'Home') {
+                        e.preventDefault();
+                        items[0].focus();
+                    } else if (e.key === 'End') {
+                        e.preventDefault();
+                        items[items.length - 1].focus();
+                    }
+                }
+            });
+        }
+
+        // Language change function for profile dropdown
+        window.changeLanguage = function(lang) {
+            console.log('Changing language to:', lang);
+            alert('Language change clicked: ' + lang);
+        };
+
+        // Logout function
+        window.handleLogout = function() {
+            console.log('Logout clicked');
+            alert('Logout clicked');
+        };
+    });
+    </script>
+</body>
+</html>
