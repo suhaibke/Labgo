@@ -12,10 +12,16 @@ Done:
 - Results: list, result entry with low / normal / high indicator, save
 - Print results: printer animation and the lab report paper
 - Send result sheet, notifications sheet, logout dialog
+- Add Patient (B2B, tests and packages, sample, urgency) with a printed payment receipt
+- Send to Other Labs: referrals, tracking, shipping label; Receive B2B samples
+- Settings: profile edit, delete account (OTP), general settings, users and roles,
+  financial, manage tests (normal ranges by age), create order, packages, about,
+  report header/footer and templates, lab data, accent colour; waste management page
 - Light / dark mode, RTL for Arabic and Kurdish
+- Fonts: SF on iPhone (system font); Inter + IBM Plex Sans Arabic elsewhere
 
-Next: Add Patient, Send to other labs, Settings (and its sub-pages), Store,
-then connecting to the backend.
+Next: Store (marketplace and auctions, My Orders), then connecting to the backend
+so the app and the web dashboard share the same data.
 
 ## Run
 

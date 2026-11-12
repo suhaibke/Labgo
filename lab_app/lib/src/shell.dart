@@ -10,6 +10,7 @@ import 'screens/placeholder_screen.dart';
 import 'screens/print_screen.dart';
 import 'screens/results_screen.dart';
 import 'screens/send_screen.dart';
+import 'screens/settings_screen.dart';
 import 'sheets.dart';
 import 'splash.dart';
 import 'theme.dart';
@@ -30,7 +31,9 @@ class Shell extends StatelessWidget {
       body = const AuthBody();
     } else {
       body = _AppBody(
-        key: ValueKey('${app.lang}-${app.tab}-${app.selectedPatient?.id}'),
+        key: ValueKey(
+          '${app.lang}-${app.tab}-${app.selectedPatient?.id}-${app.wastePage}',
+        ),
       );
     }
 
@@ -80,6 +83,8 @@ class _AppBodyState extends State<_AppBody> {
         screen = const AddScreen();
       case 'send':
         screen = const SendScreen();
+      case 'profile':
+        screen = const SettingsScreen();
       case 'results':
         screen = app.selectedPatient == null
             ? const ResultsScreen()

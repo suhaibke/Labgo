@@ -35,6 +35,14 @@ class AppState extends ChangeNotifier {
   String d(String key) => kDStrings[lang]?[key] ?? kDStrings['en']?[key] ?? key;
   String w(String key) => kWStrings[lang]?[key] ?? kWStrings['en']?[key] ?? key;
   String p(String key) => kPStrings[lang]?[key] ?? kPStrings['en']?[key] ?? key;
+  String t(String key) => kTStrings[lang]?[key] ?? kTStrings['en']?[key] ?? key;
+
+  /// Pick from an (en, ar, ku) triple.
+  String pick((String, String, String) v) => lang == 'ar'
+      ? v.$2
+      : lang == 'ku'
+      ? v.$3
+      : v.$1;
 
   String get langBadge => lang == 'en'
       ? 'EN'
@@ -150,6 +158,7 @@ class AppState extends ChangeNotifier {
 
   void selectTab(String id) {
     selectedPatient = null;
+    wastePage = false;
     tab = id;
     notifyListeners();
   }
@@ -158,6 +167,11 @@ class AppState extends ChangeNotifier {
   String doctorName = 'Dr. Ahmed';
   String labDisplayName = 'LabGo Mosul';
   String profileInitial = 'A';
+  String userPhone = '+964 770 000 0000';
+  String userRole = 'Lab Manager';
+  String userAddress = 'Mosul, Al-Majmoua St.';
+  String licenseOwners = 'Dr. Ahmed Al-Mosuli, Dr. Sara Ali';
+  int logoBumps = 0;
   String labName = 'LabGo';
   String labPhone = '+964 770 123 4567';
   String labAddress = 'Mosul, Al-Majmoua St.';
@@ -642,6 +656,138 @@ class AppState extends ChangeNotifier {
               e.lab.toLowerCase().contains(q),
         )
         .toList();
+  }
+
+  // settings (design: lr, k0, t0, e0, bl, gi, pz, zm, Fr)
+  String? openSection;
+  bool wastePage = false;
+  bool notificationsOn = true;
+  bool profileEditOpen = false;
+  List<ManagedUser> users = List.of(kUsersSeed);
+  List<LabRole> roles = List.of(kRolesSeed);
+  String usersTab = 'users';
+  List<(String, bool)> templates = [
+    ('standard', true),
+    ('hormonePanel', true),
+    ('urgentReport', false),
+  ];
+  List<WasteTransfer> wasteTransfers = List.of(kWasteSeed);
+  List<ProductOrder> productOrders = [];
+  bool deleteAccountOpen = false;
+
+  void updateSettings(void Function() change) {
+    change();
+    notifyListeners();
+  }
+
+  void toggleSection(String id) {
+    openSection = openSection == id ? null : id;
+    notifyListeners();
+  }
+
+  String roleName(LabRole r) {
+    final t = kRoleText[r.id];
+    return t == null ? r.name : pick(t.$1);
+  }
+
+  String roleDesc(LabRole r) {
+    final t = kRoleText[r.id];
+    return t == null ? r.description : pick(t.$2);
+  }
+
+  void saveUser(ManagedUser u) {
+    final i = users.indexWhere((x) => x.id == u.id);
+    users = i >= 0
+        ? [for (final x in users) x.id == u.id ? u : x]
+        : [...users, u];
+    toast(t('userSaved'));
+  }
+
+  void deleteUser(ManagedUser u) {
+    users = users.where((x) => x.id != u.id).toList();
+    toast(t('userDeleted'));
+  }
+
+  void toggleUserActive(ManagedUser u) {
+    users = [
+      for (final x in users) x.id == u.id ? x.copyWith(active: !x.active) : x,
+    ];
+    notifyListeners();
+  }
+
+  void saveRole(LabRole r) {
+    final i = roles.indexWhere((x) => x.id == r.id);
+    roles = i >= 0
+        ? [for (final x in roles) x.id == r.id ? r : x]
+        : [...roles, r];
+    toast(t('roleSaved'));
+  }
+
+  /// Returns false when the role is still assigned to a user.
+  bool deleteRole(LabRole r) {
+    if (users.any((u) => u.roleId == r.id)) {
+      toast(t('roleInUse'));
+      return false;
+    }
+    roles = roles.where((x) => x.id != r.id).toList();
+    toast(t('roleDeleted'));
+    return true;
+  }
+
+  void toggleRolePermission(LabRole r, String key) {
+    final perms = r.permissions.contains(key)
+        ? r.permissions.where((p) => p != key).toList()
+        : [...r.permissions, key];
+    roles = [
+      for (final x in roles) x.id == r.id ? x.copyWith(permissions: perms) : x,
+    ];
+    notifyListeners();
+  }
+
+  void replaceTest(CatalogTest updated) {
+    final i = kCatalog.indexWhere((c) => c.name == updated.name);
+    if (i >= 0) kCatalog[i] = updated;
+    notifyListeners();
+  }
+
+  void addTest(CatalogTest test) {
+    kCatalog.add(test);
+    toast(w('saved'));
+  }
+
+  void savePackage(LabPackage p) {
+    final i = kPackages.indexWhere((x) => x.id == p.id);
+    if (i >= 0) {
+      kPackages[i] = p;
+    } else {
+      kPackages.add(p);
+    }
+    toast(w('saved'));
+  }
+
+  void togglePackageActive(LabPackage p) {
+    final i = kPackages.indexWhere((x) => x.id == p.id);
+    if (i >= 0) kPackages[i] = p.copyWith(active: !p.active);
+    notifyListeners();
+  }
+
+  void addWasteTransfer(WasteTransfer t) {
+    wasteTransfers = [t, ...wasteTransfers];
+    toast(d('transferCreated'));
+  }
+
+  void addProductOrder(ProductOrder o) {
+    productOrders = [o, ...productOrders];
+    toast(tr('تم إنشاء الطلبية', 'داواکاری دروستکرا', 'Order created'));
+  }
+
+  /// Delete account → OTP 123456 → back to Register (design `om`).
+  void accountDeleted() {
+    deleteAccountOpen = false;
+    users = List.of(kUsersSeed);
+    auth = 'register';
+    authBanner = d('accountDeleted');
+    notifyListeners();
   }
 
   // send-result sheet

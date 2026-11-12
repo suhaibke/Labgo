@@ -25,6 +25,14 @@ class Overlays extends StatelessWidget {
             _Backdrop(opacity: .5, onTap: () => app.showLabel(null)),
             const _ShippingLabel(),
           ],
+          if (app.deleteAccountOpen) ...[
+            _Backdrop(
+              opacity: .4,
+              onTap: () =>
+                  app.updateSettings(() => app.deleteAccountOpen = false),
+            ),
+            const _DeleteAccountDialog(),
+          ],
           if (app.logoutOpen) ...[
             _Backdrop(opacity: .4, onTap: () => app.showLogout(false)),
             const _LogoutDialog(),
@@ -922,4 +930,234 @@ class _DashedRRect extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DashedRRect old) => old.color != color;
+}
+
+/// Delete account: confirm, then a 6-digit code (123456 in the demo).
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog();
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  bool otpStage = false;
+  String status = 'idle'; // idle | wrong | correct
+  final _ctrls = List.generate(6, (_) => TextEditingController());
+  final _nodes = List.generate(6, (_) => FocusNode());
+
+  @override
+  void dispose() {
+    for (final c in _ctrls) {
+      c.dispose();
+    }
+    for (final n in _nodes) {
+      n.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    void close() => app.updateSettings(() => app.deleteAccountOpen = false);
+
+    Widget btn(String label, Color bg, Color fg, VoidCallback onTap) =>
+        Expanded(
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                label,
+                style: ts(context, 16, weight: w700, color: fg),
+              ),
+            ),
+          ),
+        );
+
+    List<Widget> body;
+    if (!otpStage) {
+      body = [
+        Text(
+          app.d('deleteConfirmTitle'),
+          textAlign: TextAlign.center,
+          style: ts(context, 19, weight: w700),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          app.d('deleteConfirmDesc'),
+          textAlign: TextAlign.center,
+          style: ts(context, 13, color: pal.muted),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            btn(app.d('cancelDelete'), pal.segmented, pal.ink, close),
+            const SizedBox(width: 8),
+            btn(
+              app.d('confirmDelete'),
+              Fixed.red,
+              Colors.white,
+              () => setState(() => otpStage = true),
+            ),
+          ],
+        ),
+      ];
+    } else {
+      Color border = pal.cardBorder, fill = pal.inputBg, text = pal.ink;
+      if (status == 'wrong') {
+        border = Fixed.red;
+        fill = const Color(0xFFFFF0EF);
+        text = Fixed.red;
+      } else if (status == 'correct') {
+        border = Fixed.green;
+        fill = const Color(0xFFEAF9EE);
+        text = const Color(0xFF0E7A3E);
+      }
+      body = [
+        Text(
+          app.p('otpTitle'),
+          textAlign: TextAlign.center,
+          style: ts(context, 19, weight: w700),
+        ),
+        const SizedBox(height: 4),
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(text: '${app.p('otpSub')} '),
+              TextSpan(
+                text: app.userPhone,
+                style: const TextStyle(fontWeight: w700),
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+          style: ts(context, 13, color: pal.muted),
+        ),
+        const SizedBox(height: 16),
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 0; i < 6; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Container(
+                  width: 44,
+                  height: 52,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: fill,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: border),
+                  ),
+                  child: TextField(
+                    controller: _ctrls[i],
+                    focusNode: _nodes[i],
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: ts(context, 20, weight: w900, color: text),
+                    cursorColor: pal.accent,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    onChanged: (v) {
+                      final digit = v.replaceAll(RegExp(r'\D'), '');
+                      _ctrls[i].text = digit.isEmpty
+                          ? ''
+                          : digit.substring(digit.length - 1);
+                      if (digit.isNotEmpty && i < 5)
+                        _nodes[i + 1].requestFocus();
+                      setState(() => status = 'idle');
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (status == 'correct')
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              '✓ ${app.lang == 'ar' ? 'رمز صحيح' : 'Correct code'}',
+              textAlign: TextAlign.center,
+              style: ts(context, 14, weight: w900, color: Fixed.green),
+            ),
+          ),
+        if (status == 'wrong')
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              app.lang == 'ar' ? 'رمز خاطئ' : 'Wrong code',
+              textAlign: TextAlign.center,
+              style: ts(context, 13, weight: w700, color: Fixed.red),
+            ),
+          ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            btn(
+              app.w('cancel'),
+              pal.segmented,
+              pal.ink,
+              () => setState(() => otpStage = false),
+            ),
+            const SizedBox(width: 8),
+            btn(app.p('confirmBtn'), Fixed.red, Colors.white, () {
+              if (_ctrls.map((c) => c.text).join() == '123456') {
+                setState(() => status = 'correct');
+                Future.delayed(
+                  const Duration(milliseconds: 650),
+                  app.accountDeleted,
+                );
+              } else {
+                setState(() => status = 'wrong');
+              }
+            }),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          app.p('tryHint'),
+          textAlign: TextAlign.center,
+          style: ts(context, 12, color: pal.muted),
+        ),
+      ];
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Entrance.pop(
+          key: ValueKey(otpStage),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: pal.card,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: Shadows.xxl,
+            ),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: body,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

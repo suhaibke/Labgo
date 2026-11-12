@@ -676,3 +676,120 @@ class BoxField extends StatelessWidget {
     );
   }
 }
+
+/// CSS `flex flex-wrap items-center gap-*` row where one child may be a
+/// `flex-1` spacer: items wrap like the browser does, and the spacer takes
+/// the leftover width of its line (pushing later items to the line end).
+class CssFlexWrap extends MultiChildRenderObjectWidget {
+  final double gap;
+  final double runGap;
+  final int? growIndex;
+  const CssFlexWrap({
+    super.key,
+    required super.children,
+    this.gap = 8,
+    this.runGap = 8,
+    this.growIndex,
+  });
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderCssFlexWrap(gap, runGap, growIndex, Directionality.of(context));
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant _RenderCssFlexWrap r,
+  ) {
+    r
+      ..gap = gap
+      ..runGap = runGap
+      ..growIndex = growIndex
+      ..dir = Directionality.of(context)
+      ..markNeedsLayout();
+  }
+}
+
+class _FlexWrapData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderCssFlexWrap extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _FlexWrapData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _FlexWrapData> {
+  double gap, runGap;
+  int? growIndex;
+  TextDirection dir;
+  _RenderCssFlexWrap(this.gap, this.runGap, this.growIndex, this.dir);
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _FlexWrapData) child.parentData = _FlexWrapData();
+  }
+
+  @override
+  void performLayout() {
+    final maxW = constraints.maxWidth;
+    final kids = <RenderBox>[];
+    var c = firstChild;
+    while (c != null) {
+      kids.add(c);
+      c = (c.parentData as _FlexWrapData).nextSibling;
+    }
+    for (final k in kids) {
+      k.layout(BoxConstraints(maxWidth: maxW), parentUsesSize: true);
+    }
+    // break into lines
+    final lines = <List<int>>[];
+    var cur = <int>[];
+    double x = 0;
+    for (var i = 0; i < kids.length; i++) {
+      final w = kids[i].size.width;
+      final needed = cur.isEmpty ? w : x + gap + w;
+      if (cur.isNotEmpty && needed > maxW + .01) {
+        lines.add(cur);
+        cur = [i];
+        x = w;
+      } else {
+        cur.add(i);
+        x = needed;
+      }
+    }
+    if (cur.isNotEmpty) lines.add(cur);
+
+    double y = 0;
+    for (final line in lines) {
+      final h = line
+          .map((i) => kids[i].size.height)
+          .fold<double>(0, (a, b) => a > b ? a : b);
+      final used =
+          line.map((i) => kids[i].size.width).fold<double>(0, (a, b) => a + b) +
+          gap * (line.length - 1);
+      final extra = line.contains(growIndex)
+          ? (maxW - used).clamp(0.0, double.infinity)
+          : 0.0;
+      double px = 0;
+      for (final i in line) {
+        final k = kids[i];
+        final w = k.size.width + (i == growIndex ? extra : 0);
+        final left = dir == TextDirection.rtl
+            ? maxW - px - k.size.width - (i == growIndex ? extra : 0)
+            : px;
+        (k.parentData as _FlexWrapData).offset = Offset(
+          left,
+          y + (h - k.size.height) / 2,
+        );
+        px += w + gap;
+      }
+      y += h + runGap;
+    }
+    size = constraints.constrain(Size(maxW, lines.isEmpty ? 0 : y - runGap));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) =>
+      defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
+}

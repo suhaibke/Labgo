@@ -1,7 +1,8 @@
 import 'models.dart';
 
 // Generated from the design data (sH = catalog, _6 = packages).
-const kCatalog = <CatalogTest>[
+/// Mutable so Settings → Manage Tests can edit it (phase 1, in memory).
+final kCatalog = <CatalogTest>[
   CatalogTest(
     name: 'CBC',
     price: 15000,
@@ -88,7 +89,8 @@ const kCatalog = <CatalogTest>[
   ),
 ];
 
-const kPackages = <LabPackage>[
+/// Mutable so Settings → Packages can edit it (phase 1, in memory).
+final kPackages = <LabPackage>[
   LabPackage(
     id: 'pkg-hair',
     code: 'HAIR-01',
