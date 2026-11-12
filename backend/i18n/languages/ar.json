@@ -2306,5 +2306,30 @@
     "permStore": "المتجر",
     "permUsers": "المستخدمين والصلاحيات",
     "permSettings": "إعدادات المختبر"
+  },
+  "waste": {
+    "title": "النفايات الطبية",
+    "subtitle": "سجّل طلبات نقل النفايات وتابع ما تم استلامه",
+    "newRequest": "طلب نقل نفايات",
+    "pending": "بانتظار الاستلام",
+    "collected": "تم الاستلام",
+    "collectedThisMonth": "تم نقله هذا الشهر",
+    "noneThisMonth": "لم يُنقل شيء هذا الشهر",
+    "log": "سجل النقل",
+    "all": "الكل",
+    "type": "نوع النفايات",
+    "type_biohazard": "خطرة بيولوجياً",
+    "type_sharps": "أدوات حادة",
+    "type_chemical": "كيميائية",
+    "type_general": "عامة",
+    "weight": "الوزن",
+    "kg": "كغم",
+    "pickupDate": "تاريخ الاستلام",
+    "company": "شركة النقل / السائق",
+    "submit": "حفظ الطلب",
+    "markCollected": "تم الاستلام",
+    "empty": "لا توجد طلبات بعد",
+    "needWeight": "أدخل الوزن",
+    "confirmRemove": "حذف هذا الطلب؟"
   }
 }

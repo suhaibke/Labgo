@@ -1675,5 +1675,30 @@
     "permStore": "Mağaza",
     "permUsers": "Kullanıcılar ve roller",
     "permSettings": "Laboratuvar ayarları"
+  },
+  "waste": {
+    "title": "Tıbbi atık",
+    "subtitle": "Atık teslimlerini kaydedin ve takip edin",
+    "newRequest": "Atık alım talebi",
+    "pending": "Alım bekliyor",
+    "collected": "Toplandı",
+    "collectedThisMonth": "Bu ay toplanan",
+    "noneThisMonth": "Bu ay henüz toplanan yok",
+    "log": "Alım kaydı",
+    "all": "Tümü",
+    "type": "Atık türü",
+    "type_biohazard": "Biyolojik tehlikeli",
+    "type_sharps": "Kesici-delici",
+    "type_chemical": "Kimyasal",
+    "type_general": "Genel",
+    "weight": "Ağırlık",
+    "kg": "kg",
+    "pickupDate": "Alım tarihi",
+    "company": "Firma / sürücü",
+    "submit": "Talebi kaydet",
+    "markCollected": "Toplandı",
+    "empty": "Henüz talep yok",
+    "needWeight": "Ağırlığı girin",
+    "confirmRemove": "Bu talep silinsin mi?"
   }
 }

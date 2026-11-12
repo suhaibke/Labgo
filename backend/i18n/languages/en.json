@@ -1945,5 +1945,30 @@
     "permStore": "Store",
     "permUsers": "Users & roles",
     "permSettings": "Lab settings"
+  },
+  "waste": {
+    "title": "Medical waste",
+    "subtitle": "Log waste pickups and track what was collected",
+    "newRequest": "Waste pickup request",
+    "pending": "Waiting for pickup",
+    "collected": "Collected",
+    "collectedThisMonth": "Collected this month",
+    "noneThisMonth": "Nothing collected this month yet",
+    "log": "Pickup log",
+    "all": "All",
+    "type": "Waste type",
+    "type_biohazard": "Biohazard",
+    "type_sharps": "Sharps",
+    "type_chemical": "Chemical",
+    "type_general": "General",
+    "weight": "Weight",
+    "kg": "kg",
+    "pickupDate": "Pickup date",
+    "company": "Company / driver",
+    "submit": "Save request",
+    "markCollected": "Mark collected",
+    "empty": "No requests yet",
+    "needWeight": "Enter the weight",
+    "confirmRemove": "Delete this request?"
   }
 }
