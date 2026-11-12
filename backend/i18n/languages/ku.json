@@ -37,7 +37,14 @@
     "description": "وصف",
     "active": "چالاکی",
     "inactive": "غیرچالاکی",
-    "confirmDelete": "دڵنیای کە دەتەوێت ئەم یەمە بسڕیتەوە؟"
+    "confirmDelete": "دڵنیای کە دەتەوێت ئەم یەمە بسڕیتەوە؟",
+    "male": "نێر",
+    "female": "مێ",
+    "gender": "ڕەگەز",
+    "status": "دۆخ",
+    "tests": "پشکنینەکان",
+    "total": "کۆی گشتی",
+    "reset": "ڕێکخستنەوە"
   },
   "auth": {
     "login": {

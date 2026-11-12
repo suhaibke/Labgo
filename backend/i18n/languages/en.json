@@ -61,7 +61,8 @@
     "enterName": "Enter name",
     "select": "Select",
     "previous": "Previous",
-    "creating": "Creating..."
+    "creating": "Creating...",
+    "reset": "Reset"
   },
   "auth": {
     "login": {
@@ -247,7 +248,8 @@
     "lowRatings": "Low Ratings",
     "lastUpdated": "Last Updated",
     "totalRevenue": "Total Revenue",
-    "pendingSettlements": "Pending Settlements"
+    "pendingSettlements": "Pending Settlements",
+    "viewAll": "View all"
   },
   "labManagement": {
     "title": "Lab Management",
@@ -553,7 +555,12 @@
       "testsRequired": "Please select at least one test",
       "loadTestsFailed": "Failed to load tests",
       "createFailed": "Failed to create order"
-    }
+    },
+    "name": "Name",
+    "gender": "Gender",
+    "assignedAt": "Assigned at",
+    "paymentStatus": "Payment status",
+    "relationship": "Relationship"
   },
   "labOrderDetails": {
     "title": "Lab Order Details",

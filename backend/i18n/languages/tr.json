@@ -37,7 +37,14 @@
     "description": "Açıklama",
     "active": "Aktif",
     "inactive": "İnaktif",
-    "confirmDelete": "Bu öğeyi silmek istediğinizden emin misiniz?"
+    "confirmDelete": "Bu öğeyi silmek istediğinizden emin misiniz?",
+    "male": "Erkek",
+    "female": "Kadın",
+    "gender": "Cinsiyet",
+    "status": "Durum",
+    "tests": "Testler",
+    "total": "Toplam",
+    "reset": "Sıfırla"
   },
   "auth": {
     "login": {
@@ -413,7 +420,8 @@
       "inProgress": "Devam Ediyor",
       "completed": "Tamamlandı",
       "cancelled": "İptal Edildi",
-      "collected": "Hemşire Tarafından Toplandı"
+      "collected": "Hemşire Tarafından Toplandı",
+      "sampleCollected": "Numune Alındı"
     },
     "orderType": "Sipariş Türü",
     "scheduledDate": "Planlanan Tarih",

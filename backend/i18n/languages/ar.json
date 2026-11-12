@@ -64,7 +64,9 @@
     "enterName": "أدخل الاسم",
     "select": "اختر",
     "previous": "السابق",
-    "creating": "جاري الإنشاء..."
+    "creating": "جاري الإنشاء...",
+    "tests": "التحاليل",
+    "reset": "إعادة تعيين"
   },
   "auth": {
     "login": {
