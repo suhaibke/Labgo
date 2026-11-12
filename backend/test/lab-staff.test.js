@@ -114,3 +114,10 @@ test('creating staff hashes the password, links the lab and refuses taken phones
     res = await post({ name: 'Tech', phone: '0770 222 3333', password: 'secret1', roleKey: 'technician' });
     assert.equal(res.status, 409);
 });
+
+test('lab staff can be saved without an email, a lab owner still needs one', async () => {
+    const staff = new User({ name: 'Tech', phone: '07703334444', password: 'x', role: 'lab', labStaff: { labId: new mongoose.Types.ObjectId(), roleKey: 'technician' } });
+    await staff.validate();
+    const owner = new User({ name: 'Owner', phone: '07705556666', password: 'x', role: 'lab' });
+    await assert.rejects(() => owner.validate(), /Email is required/);
+});

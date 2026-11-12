@@ -12,7 +12,7 @@ const { r2SingleUpload } = require('../../middleware/r2Upload');
 const r2Service = require('../../services/r2Service');
 
 const router = express.Router();
-const patientFields = 'name phone gender birthDate';
+const patientFields = 'name phone gender birthDate patientNo';
 
 const uploadTransferResult = r2SingleUpload('results', 'resultFile', 'ext-result-');
 

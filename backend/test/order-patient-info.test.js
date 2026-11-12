@@ -33,6 +33,7 @@ test('self orders use populated account demographics', () => {
 
     assert.deepEqual(patientInfo, {
         id: 'patient-1',
+        patientNo: null,
         name: 'Self Patient',
         phone: '07700000000',
         gender: 'female',
@@ -76,6 +77,7 @@ test('decorating an order preserves its fields and adds one stable patientInfo c
     assert.equal(decorated.qrCode, 'LAB-001');
     assert.deepEqual(decorated.patientInfo, {
         id: 'patient-1',
+        patientNo: null,
         name: 'Patient',
         phone: null,
         gender: null,

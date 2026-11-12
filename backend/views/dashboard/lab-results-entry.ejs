@@ -29,7 +29,7 @@
         <section class="la-card rs-patient pop-in">
             <div class="rs-avatar"><%= initials %></div>
             <div class="rs-patient-text">
-                <h1><%= p.name %></h1>
+                <h1><%= p.name %><% if (p.patientNo) { %> <span class="rs-pno" dir="ltr">#<%= p.patientNo %></span><% } %></h1>
                 <p class="la-sub">
                     <% if (genderLabel) { %><%= genderLabel %><% } %>
                     <% if (p.age !== null && p.age !== undefined) { %> · <%= p.age %> <%= __('common.years') %><% } %>
@@ -116,6 +116,7 @@
             <h2 class="rp-title"><%= __('results.reportTitle') %></h2>
             <dl class="rp-info">
                 <div><dt><%= __('results.patient') %></dt><dd><%= p.name %></dd></div>
+                <% if (p.patientNo) { %><div><dt><%= __('walkIn.patientNo') %></dt><dd dir="ltr">#<%= p.patientNo %></dd></div><% } %>
                 <div><dt><%= __('results.genderAge') %></dt><dd><%= genderLabel %><% if (p.age !== null && p.age !== undefined) { %> / <%= p.age %> <%= __('common.years') %><% } %></dd></div>
                 <div><dt><%= __('results.orderNo') %></dt><dd dir="ltr"><%= order.qrCode %></dd></div>
                 <div><dt><%= __('results.sampleDate') %></dt><dd><%= fmtDate(order.createdAt) %></dd></div>

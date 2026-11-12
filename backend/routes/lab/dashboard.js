@@ -179,7 +179,7 @@ router.get('/dashboard', async (req, res) => {
 
         // Get recent orders (last 10)
         const recentOrders = await Order.find({ labId: lab._id })
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .sort({ createdAt: -1 })
             .limit(10)
             .lean();
@@ -544,7 +544,7 @@ router.get('/orders/:orderId', async (req, res) => {
         const font = ['ar'].includes(currentLang) ? 'Cairo, sans-serif' : 'Inter, sans-serif';
 
         const order = await Order.findById(orderId)
-            .populate('patientId', 'name phone email gender birthDate')
+            .populate('patientId', 'name phone email gender birthDate patientNo')
             .populate('nurseId', 'name phone email');
 
         if (!order) {
@@ -1806,7 +1806,7 @@ router.post('/api/orders/scan-qr', async (req, res) => {
 
         // Find order by QR code
         const order = await Order.findOne({ qrCode: qrCode })
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .populate('nurseId', 'name phone');
 
         if (!order) {
@@ -1837,7 +1837,7 @@ router.post('/api/orders/scan-qr', async (req, res) => {
 
         // Return updated order
         const updatedOrder = await Order.findById(order._id)
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .populate('labId', 'name address phone city')
             .populate('nurseId', 'name phone');
 
@@ -1883,7 +1883,7 @@ router.get('/api/orders', async (req, res) => {
         }
 
         const orders = await Order.find(query)
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .populate('nurseId', 'name phone')
             .sort({ createdAt: -1 })
             .limit(parseInt(limit))
@@ -1919,7 +1919,7 @@ router.get('/api/orders/:orderId', async (req, res) => {
         const { orderId } = req.params;
 
         const order = await Order.findById(orderId)
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .populate('nurseId', 'name phone')
             .lean();
 
@@ -2009,7 +2009,7 @@ router.post('/api/orders/:orderId/complete', async (req, res) => {
 
         // Return updated order
         const updatedOrder = await Order.findById(order._id)
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .populate('labId', 'name address phone city')
             .populate('nurseId', 'name phone');
 

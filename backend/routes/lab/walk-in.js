@@ -45,7 +45,7 @@ router.get('/patients/new', async (req, res) => {
 
 router.get('/api/patients/lookup', async (req, res) => {
     try {
-        const patient = await lookupPatient(req.lab, req.query.phone);
+        const patient = await lookupPatient(req.lab, req.query.q || req.query.phone);
         res.json({ success: true, data: patient });
     } catch (error) {
         console.error('Patient lookup error:', error);
@@ -56,7 +56,7 @@ router.get('/api/patients/lookup', async (req, res) => {
 router.post('/api/walk-in-orders', async (req, res) => {
     try {
         const order = await createWalkInOrder(req.lab, req.user._id, req.body || {});
-        res.status(201).json({ success: true, data: { orderId: order._id, qrCode: order.qrCode, total: order.pricing.total } });
+        res.status(201).json({ success: true, data: { orderId: order._id, qrCode: order.qrCode, total: order.pricing.total, patientNo: order.$locals.patientNo ?? null } });
     } catch (error) {
         if (error instanceof WalkInError) {
             return res.status(error.status).json({ success: false, message: error.message });

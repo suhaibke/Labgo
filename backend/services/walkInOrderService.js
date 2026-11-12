@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Order = require('../models/Order');
 const Package = require('../models/Package');
+const Counter = require('../models/Counter');
 const { getPhoneLoginCandidates, findByPhone } = require('../helpers/phone');
 
 class WalkInError extends Error {
@@ -81,6 +82,16 @@ async function resolveTests(lab, testIds = [], packageIds = []) {
         lines.push({ testId: t._id, testName: t.name, testCode: t.code, category: t.category || 'General', price: t.price || 0 });
     }
     return lines;
+}
+
+// Older patients may not have an ID number yet; give them one without
+// re-validating the whole account.
+async function ensurePatientNo(user) {
+    if (user.patientNo !== undefined && user.patientNo !== null) return user.patientNo;
+    const no = await Counter.next('patientNo', 100000);
+    await User.updateOne({ _id: user._id, patientNo: { $exists: false } }, { $set: { patientNo: no } });
+    user.patientNo = no;
+    return no;
 }
 
 // Finds the account for this phone, or creates a placeholder the patient can
@@ -166,19 +177,29 @@ async function createWalkInOrder(lab, staffUserId, body = {}) {
         financials: { labCommissionRate: 0, labAmount: total },
     });
     await order.save();
+    // The ID belongs to the account holder; someone else using their phone has none.
+    order.$locals.patientNo = beneficiary ? null : await ensurePatientNo(user);
     return order;
 }
 
 // Autofill for the reception form: only patients this lab already knows.
-async function lookupPatient(lab, phone) {
-    const p = cleanPhone(phone);
-    if (!p) return null;
-    const user = await findByPhone(User, p.candidates, { role: 'patient' });
+// Accepts a phone number or a patient ID number (6-8 digits).
+async function lookupPatient(lab, query) {
+    const raw = String(query || '').trim();
+    const digits = raw.replace(/\D/g, '');
+    let user = null;
+    if (digits.length >= 6 && digits.length <= 8 && digits === raw.replace(/^#/, '')) {
+        user = await User.findOne({ patientNo: Number(digits), role: 'patient' });
+    } else {
+        const p = cleanPhone(raw);
+        if (!p) return null;
+        user = await findByPhone(User, p.candidates, { role: 'patient' });
+    }
     if (!user) return null;
     const known = String(user.createdByLabId || '') === String(lab._id)
         || await Order.exists({ labId: lab._id, patientId: user._id });
     if (!known) return null;
-    return { name: user.name, gender: user.gender || null, birthDate: user.birthDate || null };
+    return { name: user.name, phone: user.phone || '', patientNo: user.patientNo ?? null, gender: user.gender || null, birthDate: user.birthDate || null };
 }
 
 module.exports = { createWalkInOrder, lookupPatient, birthDateFromAge, packageLines, WalkInError };

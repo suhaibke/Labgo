@@ -46,12 +46,16 @@
   $('apPhone').addEventListener('input', function () {
     clearTimeout(lookupTimer);
     $('apFound').hidden = true;
-    var phone = this.value;
-    if (phone.replace(/\D/g, '').length < 10) return;
+    var phone = this.value, n = phone.replace(/\D/g, '').length;
+    // A phone (10+ digits) or a patient ID number (6-8 digits).
+    var isId = n >= 6 && n <= 8 && /^#?\d+$/.test(phone.trim());
+    if (n < 10 && !isId) return;
     lookupTimer = setTimeout(function () {
-      fetch('/lab/api/patients/lookup?phone=' + encodeURIComponent(phone)).then(function (r) { return r.json(); }).then(function (res) {
+      fetch('/lab/api/patients/lookup?q=' + encodeURIComponent(phone)).then(function (r) { return r.json(); }).then(function (res) {
         var p = res && res.data;
         if (!p) return;
+        if (isId && p.phone) $('apPhone').value = p.phone;
+        $('apFoundNo').textContent = p.patientNo ? ' · #' + p.patientNo : '';
         $('apFound').hidden = false;
         if (!$('apName').value) $('apName').value = p.name || '';
         if (p.gender) $('apGender').querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === p.gender); });
@@ -179,6 +183,9 @@
       var id = res.body.data.orderId;
       $('apDoneName').textContent = name;
       $('apDoneCode').textContent = res.body.data.qrCode;
+      var no = res.body.data.patientNo;
+      $('apDoneNo').textContent = no ? '#' + no : '';
+      $('apDoneNoWrap').hidden = !no;
       $('apGoResults').href = '/lab/orders/' + id + '/results';
       $('apGoOrder').href = '/lab/orders/' + id;
       $('apForm').hidden = true;

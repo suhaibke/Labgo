@@ -33,6 +33,8 @@ function getOrderPatientInfo(order, asOf = new Date()) {
 
     return {
         id: isBeneficiary ? null : idToString(source?._id ?? source?.id),
+        // Patient ID number of the account (not shown for someone else on that account).
+        patientNo: isBeneficiary ? null : (source?.patientNo ?? null),
         name: source?.name || 'Unknown',
         phone: source?.phone || null,
         gender: source?.gender || null,

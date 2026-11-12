@@ -158,6 +158,12 @@
                                         <%= patientInfo.name || '-' %>
                                     </span>
                                 </div>
+                                <% if (patientInfo.patientNo) { %>
+                                <div class="info-row">
+                                    <span class="label"><%= __('walkIn.patientNo') %></span>
+                                    <span class="value" dir="ltr" style="color:var(--accent);font-weight:800">#<%= patientInfo.patientNo %></span>
+                                </div>
+                                <% } %>
                                 <div class="info-row">
                                     <span class="label"><%= __('common.gender') %></span>
                                     <span class="value">

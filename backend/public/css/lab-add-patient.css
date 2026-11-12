@@ -82,3 +82,10 @@ html.la .ap-done-actions .la-btn { height: 50px; justify-content: center; }
   html.la .ap-tests { grid-template-columns: 1fr; max-height: none; }
 }
 @media (max-height: 1000px) { html.la .ap-side { position: static; } }
+
+html.la .ap-hint { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); }
+html.la .ap-found:not([hidden]) + .ap-hint, html.la .ap-hint:has(+ .ap-found:not([hidden])) { display: none; }
+html.la .ap-done-no { margin: 14px auto 10px; padding: 14px 18px; border-radius: 20px; background: var(--chip-bg); display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
+html.la .ap-done-no span { font-size: 12px; font-weight: 700; color: var(--muted); }
+html.la .ap-done-no b { font-size: 34px; font-weight: 900; letter-spacing: 1px; color: var(--accent); font-variant-numeric: tabular-nums; }
+html.la .ap-done-no small { font-size: 12px; color: var(--muted); max-width: 300px; }

@@ -1899,7 +1899,10 @@
     "needPhone": "Enter a valid phone number",
     "needName": "Enter the patient name",
     "needTests": "Choose at least one test",
-    "saveError": "Could not save, try again"
+    "saveError": "Could not save, try again",
+    "patientNo": "Patient ID",
+    "patientNoHint": "Permanent patient number — type it in the phone field next visit to bring up their details",
+    "phoneOrId": "Or type the patient ID of a returning patient"
   },
   "staff": {
     "title": "Users & roles",

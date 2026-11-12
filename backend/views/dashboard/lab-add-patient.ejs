@@ -27,9 +27,10 @@
                         <span class="la-label"><%= __('walkIn.phone') %> <b class="ap-req">*</b></span>
                         <span class="ap-input-wrap">
                             <svg class="ic"><use href="#i-phone"/></svg>
-                            <input class="la-input" id="apPhone" type="tel" inputmode="tel" dir="ltr" placeholder="07XX XXX XXXX" required>
+                            <input class="la-input" id="apPhone" type="tel" inputmode="tel" dir="ltr" placeholder="07XX XXX XXXX" required aria-describedby="apPhoneHint">
                         </span>
-                        <small class="ap-found" id="apFound" hidden><svg class="ic"><use href="#i-circle-check"/></svg><%= __('walkIn.knownPatient') %></small>
+                        <small class="ap-hint" id="apPhoneHint"><%= __('walkIn.phoneOrId') %></small>
+                        <small class="ap-found" id="apFound" hidden><svg class="ic"><use href="#i-circle-check"/></svg><%= __('walkIn.knownPatient') %><b id="apFoundNo" dir="ltr"></b></small>
                     </label>
 
                     <label class="ap-field">
@@ -133,6 +134,11 @@
         <section class="la-card ap-done pop-in" id="apDone" hidden>
             <div class="ap-done-icon"><svg class="ic"><use href="#i-circle-check"/></svg></div>
             <h2 class="la-h2"><%= __('walkIn.added') %></h2>
+            <div class="ap-done-no" id="apDoneNoWrap" hidden>
+                <span><%= __('walkIn.patientNo') %></span>
+                <b id="apDoneNo" dir="ltr"></b>
+                <small><%= __('walkIn.patientNoHint') %></small>
+            </div>
             <p class="la-sub"><span id="apDoneName"></span> · <span dir="ltr" id="apDoneCode"></span></p>
             <div class="ap-done-actions">
                 <a class="la-btn press-95" id="apGoResults"><svg class="ic"><use href="#i-file-text"/></svg><%= __('results.enterResults') %></a>

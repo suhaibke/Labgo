@@ -9,6 +9,7 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const Package = require('../models/Package');
 const otpService = require('../services/otpService');
+const Counter = require('../models/Counter');
 const { createWalkInOrder, packageLines, birthDateFromAge } = require('../services/walkInOrderService');
 
 const t1 = new mongoose.Types.ObjectId();
@@ -33,6 +34,9 @@ function stubDb(t, existingUser = null) {
     t.mock.method(Order.prototype, 'save', async function save() { await this.validate(); saved.orders.push(this); return this; });
     t.mock.method(Package, 'find', () => ({ lean: async () => [] }));
     t.mock.method(bcrypt, 'hash', async () => 'hashed');
+    let seq = 100000;
+    t.mock.method(Counter, 'next', async () => ++seq);
+    t.mock.method(User, 'updateOne', async () => ({}));
     return saved;
 }
 
@@ -54,6 +58,7 @@ test('a new phone creates a placeholder patient and an at-lab walk-in order', as
     assert.equal(order.financials.labAmount, 55000);
     assert.equal(order.walkIn.doctor, 'Dr. Noor');
     assert.equal(String(order.patientId), String(saved.users[0]._id));
+    assert.equal(order.$locals.patientNo, 100001, 'the patient gets an ID number');
 });
 
 test('a known phone with another name is saved as a beneficiary of that account', async (t) => {
@@ -67,6 +72,7 @@ test('a known phone with another name is saved as a beneficiary of that account'
     assert.equal(order.beneficiary.isForOtherPerson, true);
     assert.equal(order.beneficiary.name, 'Baby Sara');
     assert.equal(order.payment.status, 'pending');
+    assert.equal(order.$locals.patientNo, null, 'no ID for someone else on the account');
 });
 
 test('staff phones and empty orders are refused', async (t) => {
@@ -134,4 +140,20 @@ test('a real account with the same phone still blocks registration', async (t) =
         body: JSON.stringify({ name: 'Other', phone: '07701234567', city: 'بغداد', gender: 'female', birthDate: '1990-01-02', password: 'Password123!', code: '123456' }),
     });
     assert.equal(res.status, 409);
+});
+
+test('the receptionist can find a known patient by ID number', async (t) => {
+    const { lookupPatient } = require('../services/walkInOrderService');
+    const patient = new User({ name: 'Ali', phone: '07701234567', password: 'x', role: 'patient', patientNo: 100245, createdByLabId: lab._id });
+    let query = null;
+    t.mock.method(User, 'findOne', async (q) => { query = q; return patient; });
+    const found = await lookupPatient(lab, '100245');
+    assert.deepEqual(query, { patientNo: 100245, role: 'patient' });
+    assert.equal(found.phone, '07701234567');
+    assert.equal(found.patientNo, 100245);
+});
+
+test('a placeholder patient passes validation without a city or email', async () => {
+    const u = new User({ name: 'Walk-in', phone: '07701230000', password: 'x', role: 'patient', labPlaceholder: true });
+    await u.validate();
 });

@@ -130,3 +130,4 @@ html.la .rs-report-holder { position: fixed; left: -10000px; top: 0; }
   html.la .rs-report-holder { position: static; }
   html.la body { background: #fff !important; }
 }
+html.la .rs-pno { font-size: 14px; font-weight: 800; color: var(--accent); background: var(--soft-accent); padding: 3px 10px; border-radius: 999px; vertical-align: middle; }

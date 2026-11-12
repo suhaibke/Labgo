@@ -8,7 +8,7 @@ const { decorateOrderWithPatientInfo } = require('../../helpers/order-patient-in
 const { pickRange, classify } = require('../../helpers/result-ranges');
 
 const router = express.Router();
-const patientFields = 'name phone gender birthDate';
+const patientFields = 'name phone gender birthDate patientNo';
 const EDITABLE = ['at_lab', 'completed'];
 
 function langOf(req) {
