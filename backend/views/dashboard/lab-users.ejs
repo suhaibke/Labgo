@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/lab-users.css">
+</head>
+
+<body>
+    <%- include('../partials/lab-navbar') %>
+    <%- include('../partials/lab-page-tabs', { group: 'settings', current: 'users' }) %>
+
+    <main class="la-main us-page">
+        <header class="la-between us-head">
+            <div>
+                <h1 class="la-h1"><%= __('staff.title') %></h1>
+                <p class="la-sub"><%= __('staff.subtitle') %></p>
+            </div>
+            <button type="button" class="la-btn press-95" id="usAdd"><svg class="ic"><use href="#i-user-plus"/></svg><%= __('staff.addUser') %></button>
+        </header>
+
+        <div class="la-seg us-seg" id="usTabs" role="tablist">
+            <button type="button" class="on" data-tab="users" role="tab"><%= __('staff.users') %> <span id="usUserCount"></span></button>
+            <button type="button" data-tab="roles" role="tab"><%= __('staff.roles') %></button>
+        </div>
+
+        <section id="usUsers" class="us-list"></section>
+        <section id="usRoles" class="us-roles" hidden>
+            <div id="usRoleList" class="us-role-list"></div>
+            <div class="us-roles-foot">
+                <button type="button" class="la-btn chip press-95" id="usAddRole"><svg class="ic"><use href="#i-plus"/></svg><%= __('staff.addRole') %></button>
+                <button type="button" class="la-btn press-95" id="usSaveRoles"><svg class="ic"><use href="#i-save"/></svg><%= __('common.save') %></button>
+            </div>
+        </section>
+    </main>
+
+    <!-- add / edit user -->
+    <div id="usModal" class="la-modal" role="dialog" aria-modal="true" aria-labelledby="usModalTitle">
+        <div class="la-modal-bg" data-close></div>
+        <form class="la-modal-card" id="usForm" novalidate autocomplete="off">
+            <div class="la-between">
+                <h2 class="la-h2" id="usModalTitle"></h2>
+                <button type="button" class="la-circle press-90" data-close aria-label="<%= __('common.close') %>"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <label class="us-field"><span class="la-label"><%= __('walkIn.fullName') %></span><input class="la-input" id="usName" required></label>
+            <div class="us-two">
+                <label class="us-field"><span class="la-label"><%= __('walkIn.phone') %></span><input class="la-input" id="usPhone" type="tel" dir="ltr" placeholder="07XX XXX XXXX"></label>
+                <label class="us-field"><span class="la-label"><%= __('staff.email') %></span><input class="la-input" id="usEmail" type="email" dir="ltr" placeholder="<%= __('walkIn.companyPlaceholder') %>"></label>
+            </div>
+            <label class="us-field"><span class="la-label" id="usPassLabel"><%= __('staff.password') %></span>
+                <input class="la-input" id="usPassword" type="text" dir="ltr" minlength="6" autocomplete="new-password"></label>
+            <span class="la-label"><%= __('staff.role') %></span>
+            <div class="us-role-pick" id="usRolePick"></div>
+            <p class="us-error" id="usError" role="alert" hidden></p>
+            <button type="submit" class="la-btn block press-95" id="usSubmit"><%= __('common.save') %></button>
+            <p class="la-sub us-login-hint"><svg class="ic"><use href="#i-info"/></svg><%= __('staff.loginHint') %></p>
+        </form>
+    </div>
+
+    <script id="usData" type="application/json"><%- dataJson %></script>
+    <script id="usStrings" type="application/json"><%- JSON.stringify({
+        addUser: __('staff.addUser'), editUser: __('staff.editUser'), password: __('staff.password'), newPassword: __('staff.newPasswordOptional'),
+        active: __('staff.active'), inactive: __('staff.inactive'), owner: __('staff.owner'), you: __('staff.you'),
+        noUsers: __('staff.noUsers'), remove: __('common.delete'), confirmRemove: __('staff.confirmRemove'), saved: __('staff.saved'),
+        error: __('walkIn.saveError'), permissionsCount: __('staff.permissionsCount'), newRole: __('staff.newRole'),
+        roleName: __('staff.roleName'), allPermissions: __('staff.allPermissions'),
+        errors: { name: __('walkIn.needName'), phone: __('walkIn.needPhone'), password: __('staff.passwordShort'), role: __('staff.chooseRole'),
+                  phoneTaken: __('staff.phoneTaken'), emailTaken: __('staff.emailTaken'), self: __('staff.selfChange'), roleInUse: __('staff.roleInUse') },
+        roleNames: { admin: __('staff.roleAdmin'), technician: __('staff.roleTechnician'), receptionist: __('staff.roleReceptionist'), accountant: __('staff.roleAccountant'), guest: __('staff.roleGuest') },
+        perm: { patients: __('staff.permPatients'), results: __('staff.permResults'), tests: __('staff.permTests'), packages: __('staff.permPackages'),
+                finance: __('staff.permFinance'), waste: __('staff.permWaste'), store: __('staff.permStore'), users: __('staff.permUsers'), settings: __('staff.permSettings') }
+    }).replace(/</g, '\\u003c') %></script>
+    <script src="/js/lab-users.js"></script>
+</body>
+
+</html>

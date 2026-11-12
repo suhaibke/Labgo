@@ -1,6 +1,16 @@
 const jwt = require('jsonwebtoken');
 const User = require('../../models/User');
 const Lab = require('../../models/Lab');
+const { PERMISSIONS, canAccess, labRoles, homeFor } = require('../../helpers/lab-permissions');
+
+function isApiRequest(req) {
+    return req.path.startsWith('/api/') || req.xhr || req.headers.accept?.includes('application/json');
+}
+
+function deny(req, res, status, message) {
+    if (isApiRequest(req)) return res.status(status).json({ success: false, message });
+    return res.status(status).render('auth/login', { error: message, direction: 'ltr', font: 'Inter, sans-serif' });
+}
 
 const auth = async (req, res, next) => {
     try {
@@ -55,8 +65,18 @@ const auth = async (req, res, next) => {
             }
         }
 
-        // Find the lab associated with this user
-        const lab = await Lab.findOne({ ownerId: user._id });
+        // Find the lab: owned by this user, or the lab this staff member works at.
+        let lab = await Lab.findOne({ ownerId: user._id });
+        const isOwner = Boolean(lab);
+        let permissions = PERMISSIONS;
+        if (!lab && user.labStaff?.labId) {
+            if (user.labStaff.active === false) {
+                return deny(req, res, 403, 'This account has been disabled by the lab.');
+            }
+            lab = await Lab.findById(user.labStaff.labId);
+            const role = lab ? labRoles(lab).find((r) => r.key === user.labStaff.roleKey) : null;
+            permissions = role ? role.permissions : [];
+        }
         if (!lab) {
             if (req.path.startsWith('/api/') || req.xhr || req.headers.accept?.includes('application/json')) {
                 return res.status(404).json({ success: false, message: 'Lab not found for this user.' });
@@ -70,6 +90,18 @@ const auth = async (req, res, next) => {
 
         req.user = user;
         req.lab = lab;
+        req.isLabOwner = isOwner;
+        req.labPermissions = permissions;
+        res.locals.labPermissions = permissions;
+        res.locals.isLabOwner = isOwner;
+        res.locals.labCan = (path) => canAccess(String(path).replace(/^\/lab/, ''), permissions, isOwner);
+
+        if (!canAccess(req.path, permissions, isOwner)) {
+            if (isApiRequest(req)) {
+                return res.status(403).json({ success: false, message: 'You do not have permission for this action.' });
+            }
+            return res.redirect(homeFor(permissions, isOwner));
+        }
         next();
     } catch (error) {
         console.error('Lab auth middleware error:', error);

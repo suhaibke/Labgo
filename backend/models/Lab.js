@@ -183,6 +183,15 @@ const LabSchema = new mongoose.Schema({
         },
     }],
 
+    // Staff roles: overrides of the built-in roles plus the lab's own roles.
+    staffRoles: [{
+        _id: false,
+        key: { type: String, trim: true, required: true },
+        name: { type: String, trim: true, default: '' },
+        color: { type: String, trim: true, default: '' },
+        permissions: [{ type: String, trim: true }],
+    }],
+
     status: {
         type: String,
         enum: ['Active', 'Inactive', 'Pending', 'Suspended'],

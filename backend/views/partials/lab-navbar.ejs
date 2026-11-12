@@ -10,7 +10,7 @@
   const _u = (typeof user !== 'undefined' && user) || {};
   const _labName = (typeof lab !== 'undefined' && lab && lab.name) || 'LabGo';
   const _initial = (_u.name || _labName || 'L').trim().charAt(0).toUpperCase();
-  const _nav = [
+  let _nav = [
     { id: 'overview', href: '/lab/dashboard', icon: 'house', label: __('navigation.dashboard') },
     { id: 'orders', href: '/lab/orders', icon: 'clipboard-list', label: __('navigation.orders') },
     { id: 'add-patient', href: '/lab/patients/new', icon: 'user-plus', label: __('labApp.addPatient') },
@@ -22,9 +22,15 @@
     { id: 'reports', href: '/lab/reports', icon: 'chart-line', label: __('navigation.reports') },
   ];
   const _navEnd = [
-    { id: 'settings', also: ['profile'], href: '/lab/settings', icon: 'settings', label: __('navigation.settings') },
+    { id: 'settings', also: ['profile', 'users'], href: '/lab/settings', icon: 'settings', label: __('navigation.settings') },
   ];
   const _bottom = ['overview', 'orders', 'add-patient', 'patient-tests', 'settings'];
+  // Only pages this account may open (staff permissions). Settings opens the first allowed tab.
+  const _can = typeof labCan === 'function' ? labCan : function () { return true; };
+  _navEnd.forEach(function (n) {
+    if (n.id === 'settings') n.href = ['/lab/settings', '/lab/users', '/lab/profile'].filter(_can)[0];
+  });
+  _nav = _nav.filter(function (n) { return _can(n.href); });
   const _isActive = function (n) { return _active === n.id || (n.also || []).indexOf(_active) !== -1; };
 %>
 <link rel="preconnect" href="https://fonts.googleapis.com">

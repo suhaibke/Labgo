@@ -5,12 +5,14 @@
 <%
   const _groups = {
     offers: [['offers', '/lab/offers', __('navigation.offers')], ['packages', '/lab/packages', __('navigation.packages')]],
-    settings: [['settings', '/lab/settings', __('navigation.settings')], ['profile', '/lab/profile', __('navigation.profile')]],
+    settings: [['settings', '/lab/settings', __('navigation.settings')], ['users', '/lab/users', __('staff.title')], ['profile', '/lab/profile', __('navigation.profile')]],
+    reports: [['reports', '/lab/reports', __('navigation.reports')], ['finance', '/lab/finance', __('finance.title')]],
   };
+  const _canTab = typeof labCan === 'function' ? labCan : function () { return true; };
 %>
 <div class="la-main" style="padding-bottom:0">
   <nav class="la-page-tabs" aria-label="<%= group %>">
-    <% _groups[group].forEach(function (t) { %>
+    <% _groups[group].filter(function (t) { return _canTab(t[1]); }).forEach(function (t) { %>
       <a href="<%= t[1] %>" class="press-95 <%= current === t[0] ? 'on' : '' %>"><%= t[2] %></a>
     <% }); %>
   </nav>

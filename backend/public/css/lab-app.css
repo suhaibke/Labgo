@@ -479,3 +479,9 @@ html.la .la-seg button.on { background: var(--ink); color: var(--app-bg); }
 /* pages that are not in the phone bottom bar are listed in the avatar menu */
 html.la .la-menu a.la-only-phone { display: none; }
 @media (max-width: 900px) { html.la .la-menu a.la-only-phone { display: flex; } }
+
+/* page tabs used to merge pages with the same purpose (offers + packages, settings + profile) */
+html.la .la-page-tabs { display: inline-flex; background: var(--segmented); border-radius: 999px; padding: 4px; margin-top: 12px; }
+html.la .la-page-tabs a { padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--muted-2); }
+html.la .la-page-tabs a.on { background: var(--ink); color: var(--app-bg); }
+html.la[data-theme="dark"] .la-page-tabs a.on { color: #0B0B0D; }

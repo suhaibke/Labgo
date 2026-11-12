@@ -123,11 +123,6 @@ html.la[data-theme="dark"] body [style*="color: #1f2937"], html.la[data-theme="d
 html.la[data-theme="dark"] body [style*="background: #f"], html.la[data-theme="dark"] body [style*="background:#f"],
 html.la[data-theme="dark"] body [style*="background: white"], html.la[data-theme="dark"] body [style*="background: #fff"] { background: var(--chip-bg) !important; }
 
-/* page tabs used to merge pages with the same purpose (offers + packages, settings + profile) */
-html.la .la-page-tabs { display: inline-flex; background: var(--segmented); border-radius: 999px; padding: 4px; margin-top: 12px; }
-html.la .la-page-tabs a { padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--muted-2); }
-html.la .la-page-tabs a.on { background: var(--ink); color: var(--app-bg); }
-html.la[data-theme="dark"] .la-page-tabs a.on { color: #0B0B0D; }
 
 /* settings form: two columns on wide screens instead of one narrow centred card */
 html.la .settings-container { display: grid !important; gap: 16px !important; max-width: none !important; }

@@ -170,6 +170,15 @@ const UserSchema = new mongoose.Schema({
         default: null,
     },
 
+    // Lab staff member (role 'lab', not the owner). Permissions come from
+    // the role on the lab (Lab.staffRoles / built-in roles).
+    labStaff: {
+        labId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lab', default: null },
+        roleKey: { type: String, trim: true, default: '' },
+        active: { type: Boolean, default: true },
+        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        addedAt: Date,
+    },
     // Account created by a lab for a walk-in patient (no password the patient knows).
     // Registering with the same phone through OTP claims it.
     labPlaceholder: {

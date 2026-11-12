@@ -30,6 +30,7 @@ router.use(auth);
 router.use(require('./external-transfers'));
 router.use(require('./results'));
 router.use(require('./walk-in'));
+router.use(require('./staff'));
 
 // Get lab dashboard data
 router.get('/dashboard', async (req, res) => {

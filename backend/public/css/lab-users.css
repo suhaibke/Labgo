@@ -1,0 +1,58 @@
+/* Users & roles — app look */
+html.la .us-page { max-width: 980px; margin: 0 auto; padding-bottom: 48px; }
+html.la .us-page [hidden] { display: none !important; }
+html.la .us-head { margin: 4px 0 14px; align-items: flex-end; flex-wrap: wrap; }
+html.la .us-head .la-btn { height: 46px; padding: 0 20px; }
+html.la .us-seg { max-width: 360px; margin-bottom: 14px; }
+html.la .us-seg span { opacity: .7; }
+
+html.la .us-list { display: flex; flex-direction: column; gap: 8px; }
+html.la .us-user {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 22px; background: var(--card);
+  border: 1px solid var(--card-border); box-shadow: var(--shadow-sm); animation: popIn .28s ease both;
+}
+html.la .us-user.off { opacity: .55; }
+html.la .us-avatar { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; flex-shrink: 0; }
+html.la .us-text { flex: 1; min-width: 0; }
+html.la .us-text b { display: block; font-size: 15px; }
+html.la .us-text small { display: block; font-size: 12px; color: var(--muted); direction: ltr; text-align: start; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.la .us-pill { padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+html.la .us-actions { display: flex; align-items: center; gap: 6px; }
+html.la .us-icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--muted-2); }
+html.la .us-icon:hover { background: var(--segmented); color: var(--ink); }
+html.la .us-icon.danger:hover { color: var(--red); }
+html.la .us-icon .ic { width: 17px; height: 17px; }
+html.la .us-empty { text-align: center; color: var(--muted); padding: 32px 12px; }
+html.la .us-empty .ic { width: 34px; height: 34px; display: block; margin: 0 auto 8px; opacity: .5; }
+
+/* roles */
+html.la .us-role-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+html.la .us-role { background: var(--card); border: 1px solid var(--card-border); border-radius: 24px; padding: 14px; box-shadow: var(--shadow-sm); animation: popIn .28s ease both; }
+html.la .us-role-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+html.la .us-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+html.la .us-role-name { flex: 1; min-width: 0; font-weight: 800; font-size: 15px; border: 0; background: transparent; color: var(--ink); padding: 4px 0; outline: none; border-bottom: 1px dashed transparent; }
+html.la .us-role-name:not([readonly]):focus { border-bottom-color: var(--accent); }
+html.la .us-perms { display: flex; flex-direction: column; gap: 2px; }
+html.la .us-perm { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 4px; font-size: 13px; }
+html.la .us-perm + .us-perm { border-top: 1px solid var(--line); }
+html.la .us-perm .la-switch[disabled] { opacity: .5; }
+html.la .us-roles-foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 14px; position: sticky; bottom: 16px; }
+html.la .us-roles-foot .la-btn { height: 46px; padding: 0 20px; box-shadow: var(--shadow-lg); }
+
+/* modal */
+html.la .us-field { display: block; margin-top: 12px; }
+html.la .us-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+html.la .us-role-pick { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+html.la .us-role-pick button { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 999px; background: var(--chip-bg); border: 2px solid transparent; font-size: 13px; font-weight: 700; color: var(--ink); }
+html.la .us-role-pick button.on { border-color: var(--accent); background: var(--soft-accent); }
+html.la .us-error { color: var(--red); font-size: 13px; font-weight: 700; margin: 10px 0 0; }
+html.la #usSubmit { margin-top: 14px; height: 50px; }
+html.la .us-login-hint { display: flex; gap: 6px; align-items: flex-start; margin-top: 10px; }
+html.la .us-login-hint .ic { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
+
+@media (max-width: 600px) {
+  html.la .us-two { grid-template-columns: 1fr; }
+  html.la .us-user { flex-wrap: wrap; }
+  html.la .us-actions { width: 100%; justify-content: flex-end; }
+  html.la .us-head .la-btn { width: 100%; margin-top: 10px; }
+}
