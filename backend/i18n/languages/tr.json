@@ -1110,7 +1110,8 @@
     "monthlyOrders": "Aylık Siparişler",
     "selectMonth": "Raporu görüntülemek için bir ay seçin",
     "resetToZero": "Sıfırla",
-    "notes": "Notlar"
+    "notes": "Notlar",
+    "labShare": "Laboratuvar payı"
   },
   "reports": {
     "title": "Raporlar",

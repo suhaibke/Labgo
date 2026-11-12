@@ -1644,5 +1644,48 @@
     "viewTests": "Patient tests",
     "reports": "Reports",
     "settings": "Settings"
+  },
+  "ordersHistory": {
+    "title": "Patient History",
+    "subtitle": "Completed orders and their results",
+    "stats": {
+      "totalCompleted": "Completed orders",
+      "thisMonth": "This month",
+      "totalRevenue": "Total revenue"
+    },
+    "filters": {
+      "fromDate": "From",
+      "toDate": "To",
+      "searchPlaceholder": "Search patient or order ID...",
+      "clear": "Clear"
+    },
+    "table": {
+      "orderId": "Order",
+      "patient": "Patient",
+      "tests": "Tests",
+      "testsCount": "tests",
+      "completionDate": "Completed",
+      "amount": "Amount",
+      "results": "Results",
+      "actions": "Actions",
+      "downloadResult": "Download",
+      "noResults": "No result",
+      "viewDetails": "Details"
+    },
+    "empty": {
+      "title": "No completed orders yet",
+      "description": "Completed orders will appear here."
+    },
+    "loading": "Loading...",
+    "error": "Failed to load orders",
+    "modal": {
+      "title": "Order details",
+      "patientInfo": "Patient",
+      "testsInfo": "Tests",
+      "paymentInfo": "Payment",
+      "resultsInfo": "Result",
+      "downloadResult": "Download result",
+      "noResultFile": "No result file"
+    }
   }
 }
