@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'catalog_data.dart';
 import 'models.dart';
 import 'strings_data.dart';
 import 'theme.dart';
@@ -295,15 +296,17 @@ class AppState extends ChangeNotifier {
     toast(w('resultsSaved'));
   }
 
-  // print (results report)
+  // print (results report or receipt)
+  String printMode = 'results'; // 'results' | 'receipt'
   Patient? printPatient;
   Map<String, String> printDraft = {};
+  Patient? receiptPatient;
+  bool receiptPayLater = false;
+  String printReturnTab = 'results';
   String printStage = 'processing'; // processing | printing | complete
   final List<Timer> _printTimers = [];
 
-  void openPrint(Patient p, Map<String, String> draftResults) {
-    printPatient = p;
-    printDraft = draftResults;
+  void _startPrinting() {
     tab = 'print';
     printStage = 'processing';
     for (final t in _printTimers) {
@@ -326,12 +329,319 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void openPrint(Patient p, Map<String, String> draftResults) {
+    printMode = 'results';
+    printPatient = p;
+    printDraft = draftResults;
+    printReturnTab = 'results';
+    _startPrinting();
+  }
+
+  void openReceipt(
+    Patient p, {
+    required bool payLater,
+    required String returnTab,
+  }) {
+    printMode = 'receipt';
+    receiptPatient = p;
+    receiptPayLater = payLater;
+    printReturnTab = returnTab;
+    _startPrinting();
+  }
+
   void closePrint() {
     for (final t in _printTimers) {
       t.cancel();
     }
-    tab = 'results';
+    tab = printReturnTab;
     notifyListeners();
+  }
+
+  void confirmReceipt() {
+    for (final t in _printTimers) {
+      t.cancel();
+    }
+    tab = 'home';
+    toast(d('receiptSent'));
+  }
+
+  // add patient form (design: ir, _f, Ju, lt, Hl, wh, tt, nu, Jf, Wh, E1, Xh, Yh, Vf)
+  String addMode = 'B2C';
+  String addName = '';
+  String addAge = '';
+  String addAgeUnit = 'Y';
+  String addGender = 'Male';
+  String addPhone = '';
+  List<String> addTests = [];
+  String addSearch = '';
+  String addDoctor = '';
+  bool addDoctorOpen = false;
+  String addCompany = '';
+  String addSample = 'Blood';
+  String addUrgency = 'Normal';
+  String addNotes = '';
+  List<String> addPackages = [];
+  bool addSaving = false;
+  int addFormVersion = 0; // bumps when the form is cleared so inputs reset
+
+  void updateAdd(void Function() change) {
+    change();
+    notifyListeners();
+  }
+
+  List<LabPackage> get addSelectedPackages =>
+      kPackages.where((p) => addPackages.contains(p.id)).toList();
+
+  Set<String> get addPackageTests => {
+    for (final p in addSelectedPackages) ...p.tests,
+  };
+
+  List<String> get addLooseTests =>
+      addTests.where((t) => !addPackageTests.contains(t)).toList();
+
+  int get addTotal =>
+      addSelectedPackages.fold(0, (a, p) => a + packagePrice(p, addMode)) +
+      addLooseTests.fold(0, (a, t) => a + testPrice(t, addMode));
+
+  List<LabPackage> get addPackageMatches {
+    final q = addSearch.trim().toLowerCase();
+    if (q.isEmpty) return [];
+    return kPackages
+        .where(
+          (p) =>
+              p.active &&
+              !addPackages.contains(p.id) &&
+              (p.name.toLowerCase().contains(q) ||
+                  p.code.toLowerCase().contains(q) ||
+                  p.aliases.any((a) => a.toLowerCase().contains(q)) ||
+                  p.tests.any((t) => t.toLowerCase().contains(q))),
+        )
+        .toList();
+  }
+
+  List<CatalogTest> get addTestMatches {
+    final q = addSearch.trim().toLowerCase();
+    if (q.isEmpty) return [];
+    return kCatalog
+        .where(
+          (c) =>
+              c.on &&
+              !addTests.contains(c.name) &&
+              c.name.toLowerCase().contains(q),
+        )
+        .toList();
+  }
+
+  List<String> get addDoctorMatches => kDoctors
+      .where(
+        (d) =>
+            addDoctor.trim().isEmpty ||
+            d.toLowerCase().contains(addDoctor.toLowerCase()),
+      )
+      .toList();
+
+  void togglePackage(LabPackage p) {
+    if (addPackages.contains(p.id)) {
+      final others = addSelectedPackages.where((o) => o.id != p.id);
+      addPackages = addPackages.where((id) => id != p.id).toList();
+      addTests = addTests
+          .where(
+            (t) =>
+                !p.tests.contains(t) || others.any((o) => o.tests.contains(t)),
+          )
+          .toList();
+    } else {
+      addPackages = [...addPackages, p.id];
+      addTests = {...addTests, ...p.tests}.toList();
+    }
+    notifyListeners();
+  }
+
+  void submitPatient({required bool payLater}) {
+    if (addName.trim().isEmpty) {
+      toast(w('fillName'));
+      return;
+    }
+    if (addSaving) return;
+    final now = DateTime.now();
+    final time =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final permanent =
+        'P-2026-${(842 + patients.length + 1).toString().padLeft(4, '0')}';
+    final pkgs = addSelectedPackages;
+    final patient = Patient(
+      id: '${now.millisecondsSinceEpoch}',
+      name: addName.trim(),
+      age: addAge.isNotEmpty ? '$addAge$addAgeUnit' : '—',
+      gender: addGender,
+      phone: addPhone.isNotEmpty ? addPhone : '+964 770 000 0000',
+      tests: addTests.isNotEmpty ? List.of(addTests) : ['CBC'],
+      sample: addSample,
+      urgency: addUrgency,
+      notes: addNotes,
+      status: payLater ? 'Payment Pending' : 'Pending',
+      time: time,
+      price: addTotal,
+      doctor: addDoctor,
+      mode: addMode,
+      company: addMode == 'B2B' ? addCompany : null,
+      results: const {},
+      permanent: permanent,
+      packages: List.of(addPackages),
+      packageCategory: pkgs.isNotEmpty ? pkgs.first.category : null,
+    );
+    patients = [patient, ...patients];
+    addName = '';
+    addAge = '';
+    addPhone = '';
+    addTests = [];
+    addNotes = '';
+    addDoctor = '';
+    addCompany = '';
+    addSearch = '';
+    addPackages = [];
+    addFormVersion++;
+    openReceipt(
+      patient,
+      payLater: payLater,
+      returnTab: tab == 'print' ? printReturnTab : tab,
+    );
+  }
+
+  // send to other labs (design: V1, ve, qf, N1, Mu, _1, x2, Kf, dz, ru, Df, wl)
+  String sendTab = 'send';
+  String refPatient = 'Sara Ali';
+  bool refPatientOpen = false;
+  String refTest = 'Vitamin D';
+  String refTestSearch = '';
+  bool refTestOpen = false;
+  String refLabSearch = '';
+  bool refLabOpen = false;
+  String refLab = 'Al-Noor Lab';
+  List<Referral> referrals = List.of(kReferralsSeed);
+  List<PartnerLab> partnerLabs = List.of(kPartnerLabsSeed);
+  String barcode = '';
+  ReceivedSample? foundSample;
+  List<ReceivedSample> receivedSamples = [];
+  Referral? labelReferral;
+
+  void updateSend(void Function() change) {
+    change();
+    notifyListeners();
+  }
+
+  List<Patient> get refPatientMatches => patients
+      .where(
+        (p) =>
+            refPatient.trim().isEmpty ||
+            p.name.toLowerCase().contains(refPatient.toLowerCase()),
+      )
+      .toList();
+
+  List<CatalogTest> get refTestMatches => kCatalog
+      .where(
+        (c) =>
+            c.on &&
+            (refTestSearch.trim().isEmpty ||
+                c.name.toLowerCase().contains(refTestSearch.toLowerCase())),
+      )
+      .toList();
+
+  List<PartnerLab> get refLabMatches => partnerLabs
+      .where(
+        (l) =>
+            refLabSearch.trim().isEmpty ||
+            l.name.toLowerCase().contains(refLabSearch.trim().toLowerCase()),
+      )
+      .toList();
+
+  void useTypedLab() {
+    final name = refLabSearch.trim();
+    if (name.isEmpty) return;
+    final existing = partnerLabs.where(
+      (l) => l.name.toLowerCase() == name.toLowerCase(),
+    );
+    if (existing.isNotEmpty) {
+      refLab = existing.first.name;
+    } else {
+      partnerLabs = [PartnerLab(name, '—', '—', '—', '—'), ...partnerLabs];
+      refLab = name;
+    }
+    refLabOpen = false;
+    toast(name);
+  }
+
+  void sendReferral() {
+    if (refPatient.trim().isEmpty || refTest.isEmpty) return;
+    referrals = [
+      Referral(
+        id: '${DateTime.now().millisecondsSinceEpoch}',
+        patient: refPatient.trim(),
+        test: refTest,
+        lab: refLab,
+        status: 'Sent',
+        eta: 'Tomorrow 2pm',
+        tracking: 'LG-2026-${120 + referrals.length + 5}',
+        step: 0,
+      ),
+      ...referrals,
+    ];
+    toast(w('sentToast'));
+  }
+
+  void setBarcode(String v) {
+    barcode = v;
+    if (v.trim().isNotEmpty) {
+      foundSample = ReceivedSample(
+        id: '${DateTime.now().microsecondsSinceEpoch}',
+        code: v.trim(),
+        patient: 'Ali Ahmed',
+        test: 'CBC',
+        lab: 'Al-Noor Clinic',
+        status: 'Received',
+      );
+    }
+    notifyListeners();
+  }
+
+  void simulateScan() {
+    barcode = 'B2B-8842';
+    foundSample = ReceivedSample(
+      id: '${DateTime.now().microsecondsSinceEpoch}',
+      code: 'B2B-8842',
+      patient: 'Ali Ahmed',
+      test: 'CBC',
+      lab: 'Al-Noor Clinic',
+      status: 'Received',
+    );
+    notifyListeners();
+  }
+
+  void confirmReceive() {
+    final s = foundSample;
+    if (s == null) return;
+    receivedSamples = [s, ...receivedSamples];
+    foundSample = null;
+    barcode = '';
+    toast(d('receivedToast'));
+  }
+
+  void showLabel(Referral? r) {
+    labelReferral = r;
+    notifyListeners();
+  }
+
+  List<ReceivedSample> get receivedFiltered {
+    final q = resultsSearch.toLowerCase();
+    return receivedSamples
+        .where(
+          (e) =>
+              q.isEmpty ||
+              e.patient.toLowerCase().contains(q) ||
+              e.test.toLowerCase().contains(q) ||
+              e.lab.toLowerCase().contains(q),
+        )
+        .toList();
   }
 
   // send-result sheet

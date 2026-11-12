@@ -38,6 +38,7 @@ class LabPackage {
   final List<String> aliases, tests;
   final int price, priceB2B;
   final bool active;
+  final bool isOffer;
   const LabPackage({
     required this.id,
     required this.code,
@@ -48,6 +49,7 @@ class LabPackage {
     required this.price,
     required this.priceB2B,
     required this.active,
+    this.isOffer = false,
   });
 }
 
@@ -66,6 +68,7 @@ class Patient {
       mode,
       permanent;
   final String? company;
+  final String? packageCategory;
   final List<String> tests;
   final List<String> packages;
   final int price;
@@ -89,6 +92,7 @@ class Patient {
     required this.permanent,
     this.company,
     this.packages = const [],
+    this.packageCategory,
   });
 
   Patient copyWith({Map<String, String>? results, String? status}) => Patient(
@@ -197,3 +201,67 @@ String initials(String name) => name
     .take(2)
     .join()
     .toUpperCase();
+
+/// External lab referral (design `lw`).
+class Referral {
+  final String id, patient, test, lab, status, eta, tracking;
+  final int step;
+  const Referral({
+    required this.id,
+    required this.patient,
+    required this.test,
+    required this.lab,
+    required this.status,
+    required this.eta,
+    required this.tracking,
+    required this.step,
+  });
+}
+
+/// Destination lab card (design `hw`).
+class PartnerLab {
+  final String name, city, rating, dist, price;
+  const PartnerLab(this.name, this.city, this.rating, this.dist, this.price);
+}
+
+/// Sample received from another lab (design `Df`).
+class ReceivedSample {
+  final String id, code, patient, test, lab, status;
+  const ReceivedSample({
+    required this.id,
+    required this.code,
+    required this.patient,
+    required this.test,
+    required this.lab,
+    required this.status,
+  });
+}
+
+const kReferralsSeed = <Referral>[
+  Referral(
+    id: 'ref-1',
+    patient: 'Sara Ali',
+    test: 'Vitamin D',
+    lab: 'Al-Noor Lab',
+    status: 'In Transit',
+    eta: 'Tomorrow 2pm',
+    tracking: 'LG-2026-124',
+    step: 1,
+  ),
+  Referral(
+    id: 'ref-2',
+    patient: 'Omar Yousef',
+    test: 'Hormone',
+    lab: 'Al-Noor Lab',
+    status: 'Sent',
+    eta: 'Tomorrow 2pm',
+    tracking: 'LG-2026-123',
+    step: 0,
+  ),
+];
+
+const kPartnerLabsSeed = <PartnerLab>[
+  PartnerLab('Al-Noor Lab', 'Mosul', '4.9', '2.1 km', 'From 20,000 IQD'),
+  PartnerLab('Al-Salam Lab', 'Erbil', '4.8', '68 km', 'From 25,000 IQD'),
+  PartnerLab('City Lab', 'Baghdad', '4.7', '310 km', 'From 18,000 IQD'),
+];

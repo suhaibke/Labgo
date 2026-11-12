@@ -3,11 +3,13 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import 'screens/add_screen.dart';
 import 'screens/auth_screens.dart';
 import 'screens/home_screen.dart';
 import 'screens/placeholder_screen.dart';
 import 'screens/print_screen.dart';
 import 'screens/results_screen.dart';
+import 'screens/send_screen.dart';
 import 'sheets.dart';
 import 'splash.dart';
 import 'theme.dart';
@@ -74,6 +76,10 @@ class _AppBodyState extends State<_AppBody> {
     switch (app.tab) {
       case 'home':
         screen = const HomeScreen();
+      case 'add':
+        screen = const AddScreen();
+      case 'send':
+        screen = const SendScreen();
       case 'results':
         screen = app.selectedPatient == null
             ? const ResultsScreen()

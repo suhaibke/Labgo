@@ -56,6 +56,7 @@ String? classify(String value, RangeRow? row) {
 }
 
 String _categoryFor(Patient p, String test) {
+  if (p.packageCategory != null) return p.packageCategory!;
   if (p.packages.isNotEmpty) {
     for (final pk in kPackages) {
       if (p.packages.contains(pk.id) || p.packages.contains(pk.name))

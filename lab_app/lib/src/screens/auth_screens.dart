@@ -188,6 +188,7 @@ class AuthInput extends StatelessWidget {
       inputFormatters: formatters,
       textDirection: forceLtr ? TextDirection.ltr : null,
       textAlign: forceLtr && rtl ? TextAlign.left : TextAlign.start,
+      textAlignVertical: TextAlignVertical.center,
       style: ts(context, fontSize, height: 1.5),
       strutStyle: StrutStyle(
         fontSize: fontSize,
@@ -197,31 +198,32 @@ class AuthInput extends StatelessWidget {
       cursorColor: pal.accent,
       decoration: InputDecoration(
         isDense: true,
-        filled: true,
-        fillColor: pal.inputBg,
+        border: InputBorder.none,
         hintText: hint,
         hintTextDirection: forceLtr ? TextDirection.ltr : null,
         hintStyle: ts(context, fontSize, color: pal.placeholder, height: 1.5),
         contentPadding: EdgeInsetsDirectional.only(
           start: startPad,
           end: endPad,
-          top: vPad,
-          bottom: vPad,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: pal.cardBorder),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: pal.cardBorder),
         ),
       ),
     );
+    // CSS box: line-height (1.5) + vertical padding + 1px border top and bottom.
+    final height = fontSize * 1.5 + vPad * 2 + 2;
     return Stack(
       alignment: Alignment.centerLeft,
       children: [
-        field,
+        // The box is drawn here so its size never depends on font metrics.
+        Container(
+          height: height,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: pal.inputBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: pal.cardBorder),
+          ),
+          child: field,
+        ),
         if (start != null)
           PositionedDirectional(
             start: 0,
@@ -588,7 +590,8 @@ class _LoginState extends State<_Login> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const _LogoHeader(),
-        const SizedBox(height: 16),
+        // header mb-2 and card mt-4 collapse into one 16px gap in CSS
+        const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -1328,7 +1331,7 @@ class _OtpState extends State<_Otp> with SingleTickerProviderStateMixin {
       child: Column(
         children: [
           const _LogoHeader(titleSize: 24),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8), // collapsed CSS margins (8 + 16 → 16)
           Text(
             app.p('otpTitle'),
             textAlign: TextAlign.center,
@@ -1532,7 +1535,7 @@ class _ForgotState extends State<_Forgot> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const _LogoHeader(titleSize: 24),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8), // collapsed CSS margins (8 + 16 → 16)
           Text(
             app.p('forgotTitle'),
             style: ts(context, 26, weight: w900, height: 1.25),

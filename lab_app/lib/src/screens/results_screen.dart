@@ -53,11 +53,84 @@ class ResultsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          for (final r in app.receivedFiltered) ...[
+            Tap(
+              onTap: () {
+                final match = app.patients.where(
+                  (m) => m.name.toLowerCase() == r.patient.toLowerCase(),
+                );
+                if (match.isNotEmpty) {
+                  app.openPatient(match.first);
+                } else {
+                  app.toast(
+                    '${app.d('receivedSample')}: ${r.patient} • ${r.test}',
+                  );
+                }
+              },
+              child: CardBox(
+                child: Row(
+                  children: [
+                    InitialsAvatar(initials(r.patient)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            r.patient,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: ts(context, 15, weight: w700),
+                          ),
+                          Text(
+                            '${r.test} • ${r.lab}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: ts(context, 12, color: pal.muted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(r.code, style: ts(context, 12, color: pal.muted)),
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: pal.chipBg,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: pal.line),
+                          ),
+                          child: Text(
+                            app.d('receivedSample'),
+                            style: ts(
+                              context,
+                              11,
+                              weight: w700,
+                              color: pal.muted2,
+                              height: 1.45,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           for (final p in list) ...[
             _ResultRow(patient: p),
             const SizedBox(height: 12),
           ],
-          if (list.isEmpty)
+          if (list.isEmpty && app.receivedFiltered.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Text(
@@ -443,43 +516,16 @@ class _ResultEntryState extends State<_ResultEntry> {
           Row(
             children: [
               Expanded(
-                child: TextField(
+                child: BoxField(
                   controller: _c,
                   onChanged: (v) => app.setDraft(r.test, v),
-                  keyboardType: const TextInputType.numberWithOptions(
+                  keyboard: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  style: ts(context, 14, height: 1.5),
-                  strutStyle: const StrutStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    forceStrutHeight: true,
-                  ),
-                  cursorColor: pal.accent,
-                  decoration: InputDecoration(
-                    isDense: true,
-                    filled: true,
-                    fillColor: pal.inputBg,
-                    hintText: app.w('enterResult'),
-                    hintStyle: ts(
-                      context,
-                      14,
-                      color: pal.placeholder,
-                      height: 1.5,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: pal.cardBorder),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: pal.cardBorder),
-                    ),
-                  ),
+                  hint: app.w('enterResult'),
+                  fontSize: 14,
+                  vPad: 10,
+                  radius: 12,
                 ),
               ),
               const SizedBox(width: 8),

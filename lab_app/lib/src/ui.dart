@@ -211,6 +211,9 @@ class SearchBarBox extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final double iconSize;
   final TextEditingController? controller;
+  final VoidCallback? onTap;
+  final ValueChanged<String>? onSubmitted;
+  final String icon;
 
   const SearchBarBox({
     super.key,
@@ -218,25 +221,32 @@ class SearchBarBox extends StatelessWidget {
     required this.onChanged,
     this.iconSize = 16,
     this.controller,
+    this.onTap,
+    this.onSubmitted,
+    this.icon = 'Search',
   });
 
   @override
   Widget build(BuildContext context) {
     final pal = context.pal;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      height: 45, // 14px × 1.5 line + 12px padding top and bottom
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: pal.searchBg,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          LIcon('Search', size: iconSize, color: pal.muted),
+          LIcon(icon, size: iconSize, color: pal.muted),
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
               controller: controller,
               onChanged: onChanged,
+              onTap: onTap,
+              textAlignVertical: TextAlignVertical.center,
+              onSubmitted: onSubmitted,
               style: ts(context, 14, height: 1.5),
               strutStyle: const StrutStyle(
                 fontSize: 14,
@@ -475,6 +485,194 @@ class _RenderNegTop extends RenderProxyBox {
       offset: Offset(0, -_amount),
       position: position,
       hitTest: (r, p) => child!.hitTest(r, position: p),
+    );
+  }
+}
+
+/// Absolutely-positioned dropdown under a field (`absolute top-full mt-1 z-20`),
+/// floating over the content below it like the design.
+class FloatingDropdown extends StatefulWidget {
+  final Widget child;
+  final bool open;
+  final List<Widget> items;
+
+  const FloatingDropdown({
+    super.key,
+    required this.child,
+    required this.open,
+    required this.items,
+  });
+
+  @override
+  State<FloatingDropdown> createState() => _FloatingDropdownState();
+}
+
+class _FloatingDropdownState extends State<FloatingDropdown> {
+  final _link = LayerLink();
+  final _portal = OverlayPortalController();
+
+  void _sync() {
+    final show = widget.open && widget.items.isNotEmpty;
+    if (show && !_portal.isShowing) _portal.show();
+    if (!show && _portal.isShowing) _portal.hide();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => mounted ? _sync() : null,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant FloatingDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => mounted ? _sync() : null,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(
+      link: _link,
+      child: OverlayPortal(
+        controller: _portal,
+        overlayChildBuilder: (overlayContext) {
+          final box = context.findRenderObject() as RenderBox?;
+          final width = box?.size.width ?? 300;
+          final pal = context.pal;
+          return Positioned(
+            width: width,
+            child: CompositedTransformFollower(
+              link: _link,
+              targetAnchor: Alignment.bottomLeft,
+              offset: const Offset(0, 4),
+              child: Directionality(
+                textDirection: Directionality.of(context),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Container(
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: pal.card,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: pal.cardBorder),
+                      boxShadow: Shadows.xl,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: widget.items,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Row inside a [FloatingDropdown] (`px-3 py-2.5 text-[14px] font-semibold`).
+class DropdownRow extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+  final FontWeight weight;
+  const DropdownRow({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.color,
+    this.weight = w600,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: onTap,
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Text(
+        label,
+        style: ts(context, 14, weight: weight, color: color),
+      ),
+    ),
+  );
+}
+
+/// Input drawn like the design's `<input>`: fixed CSS height, input-bg fill,
+/// 1px card-border, rounded corners; the TextField inside is borderless.
+class BoxField extends StatelessWidget {
+  final TextEditingController? controller;
+  final FocusNode? focusNode;
+  final String? hint;
+  final ValueChanged<String>? onChanged;
+  final VoidCallback? onTap;
+  final double fontSize;
+  final double vPad;
+  final double radius;
+  final int lines;
+  final bool ltr;
+  final TextInputType? keyboard;
+
+  const BoxField({
+    super.key,
+    this.controller,
+    this.focusNode,
+    this.hint,
+    this.onChanged,
+    this.onTap,
+    this.fontSize = 15,
+    this.vPad = 12,
+    this.radius = 16,
+    this.lines = 1,
+    this.ltr = false,
+    this.keyboard,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    final height = fontSize * 1.5 * lines + vPad * 2 + 2;
+    return Container(
+      height: height,
+      alignment: lines > 1 ? Alignment.topCenter : Alignment.center,
+      padding: lines > 1 ? EdgeInsets.only(top: vPad) : null,
+      decoration: BoxDecoration(
+        color: pal.inputBg,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: pal.cardBorder),
+      ),
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        onChanged: onChanged,
+        onTap: onTap,
+        minLines: lines,
+        maxLines: lines,
+        keyboardType: keyboard,
+        textDirection: ltr ? TextDirection.ltr : null,
+        style: ts(context, fontSize),
+        strutStyle: StrutStyle(
+          fontSize: fontSize,
+          height: 1.5,
+          forceStrutHeight: true,
+        ),
+        cursorColor: pal.accent,
+        decoration: InputDecoration(
+          isDense: true,
+          border: InputBorder.none,
+          hintText: hint,
+          hintStyle: ts(context, fontSize, color: pal.placeholder),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        ),
+      ),
     );
   }
 }

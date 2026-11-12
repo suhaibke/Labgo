@@ -137,6 +137,7 @@ const kPackages = <LabPackage>[
     id: 'pkg-offer',
     code: 'OFFER-05',
     name: 'Offer Package',
+    isOffer: true,
     category: 'Offer',
     aliases: ['باقة العروض', 'پاکێجی ئۆفەر'],
     tests: ['CBC', 'Sugar', 'Vitamin D'],
@@ -145,3 +146,30 @@ const kPackages = <LabPackage>[
     active: true,
   ),
 ];
+
+/// Fallback prices when a test is not in the catalog (design `nw`).
+const kFallbackPrices = {
+  'CBC': 15000,
+  'Sugar': 10000,
+  'Vitamin D': 40000,
+  'Hormone': 60000,
+  'Lipid': 35000,
+  'Thyroid': 45000,
+};
+
+/// Treating doctors suggested in Add Patient (design `rw`).
+const kDoctors = ['Dr. Ahmed', 'Dr. Sara', 'Dr. Omar'];
+
+int testPrice(String name, String mode) {
+  for (final c in kCatalog) {
+    if (c.name == name)
+      return mode == 'B2B' ? (c.priceB2B != 0 ? c.priceB2B : c.price) : c.price;
+  }
+  return kFallbackPrices[name] ?? 0;
+}
+
+int packagePrice(LabPackage p, String mode) {
+  if (mode != 'B2B') return p.price;
+  if (p.priceB2B != 0) return p.priceB2B;
+  return p.tests.fold(0, (a, t) => a + testPrice(t, 'B2B'));
+}

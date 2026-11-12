@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../catalog_data.dart';
 import '../models.dart';
 import '../results_logic.dart';
 import '../theme.dart';
 import '../ui.dart';
+import 'add_screen.dart' show formatNumber;
 
 /// "Print Results": receipt-printer animation that feeds the lab report.
 class PrintScreen extends StatelessWidget {
@@ -13,51 +15,134 @@ class PrintScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = context.app;
     final pal = app.palette;
-    final patient = app.printPatient;
-    if (patient == null) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: _PillButton(
-          label: app.tr(
-            'العودة للنتائج',
-            'گەڕانەوە بۆ ئەنجامەکان',
-            'Back to Results',
-          ),
-          color: pal.accent,
-          textColor: Colors.white,
-          onTap: app.closePrint,
-        ),
-      );
-    }
-    final merged = patient.copyWith(
-      results: {...patient.results, ...app.printDraft},
-    );
-    final rows = resultRows(merged);
     final lang = app.lang;
     String t3(String ar, String ku, String en) => lang == 'ar'
         ? ar
         : lang == 'ku'
         ? ku
         : en;
-    final backLabel = t3(
-      'العودة للنتائج',
-      'گەڕانەوە بۆ ئەنجامەکان',
-      'Back to Results',
-    );
     final stage = app.printStage;
-    final status = stage == 'complete'
-        ? t3(
-            'اكتملت طباعة النتائج',
-            'چاپی ئەنجامەکان تەواوبوو',
-            'Results printed',
-          )
-        : stage == 'printing'
-        ? t3(
-            'جارٍ طباعة النتائج',
-            'ئەنجامەکان چاپ دەکرێن',
-            'Printing your results',
-          )
-        : 'Processing your order';
+    final receipt = app.printMode == 'receipt';
+    final patient = receipt ? app.receiptPatient : app.printPatient;
+
+    if (patient == null) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: _PillButton(
+          label: receipt
+              ? t3('العودة', 'گەڕانەوە', 'Back')
+              : t3(
+                  'العودة للنتائج',
+                  'گەڕانەوە بۆ ئەنجامەکان',
+                  'Back to Results',
+                ),
+          color: pal.accent,
+          textColor: Colors.white,
+          onTap: app.closePrint,
+        ),
+      );
+    }
+
+    late final String backLabel, status, title, trailing, sub;
+    late final Widget paper;
+    late final List<Widget> buttons;
+
+    if (receipt) {
+      final items = _receiptItems(patient);
+      final orderId = 'ORD-${_tail(patient.id, 6).toUpperCase()}';
+      backLabel = t3('رجوع', 'گەڕانەوە', 'Back');
+      status = stage == 'complete'
+          ? 'Order complete'
+          : stage == 'printing'
+          ? 'Printing your receipt'
+          : 'Processing your order';
+      title = patient.name;
+      trailing = '${formatNumber(patient.price)} IQD';
+      sub = '$orderId • ${items.length} ${t3('عنصر', 'دانە', 'items')}';
+      paper = _ReceiptPaper(
+        patient: patient,
+        items: items,
+        orderId: orderId,
+        payLater: app.receiptPayLater,
+      );
+      buttons = [
+        Expanded(
+          child: _PillButton(
+            label: t3('تأكيد', 'پشتڕاستکردنەوە', 'Confirm'),
+            color: pal.accent,
+            textColor: Colors.white,
+            onTap: app.confirmReceipt,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _PillButton(
+            label: t3('العودة للرئيسية', 'گەڕانەوە بۆ سەرەتا', 'Back to Home'),
+            color: pal.segmented,
+            onTap: app.confirmReceipt,
+          ),
+        ),
+      ];
+    } else {
+      final merged = patient.copyWith(
+        results: {...patient.results, ...app.printDraft},
+      );
+      final rows = resultRows(merged);
+      backLabel = t3(
+        'العودة للنتائج',
+        'گەڕانەوە بۆ ئەنجامەکان',
+        'Back to Results',
+      );
+      status = stage == 'complete'
+          ? t3(
+              'اكتملت طباعة النتائج',
+              'چاپی ئەنجامەکان تەواوبوو',
+              'Results printed',
+            )
+          : stage == 'printing'
+          ? t3(
+              'جارٍ طباعة النتائج',
+              'ئەنجامەکان چاپ دەکرێن',
+              'Printing your results',
+            )
+          : 'Processing your order';
+      title = patient.name;
+      trailing = '${rows.length} ${t3('نتيجة', 'ئەنجام', 'results')}';
+      sub =
+          '${patient.permanent} • ${t3('تقرير النتائج', 'ڕاپۆرتی ئەنجامەکان', 'Lab Results Report')}';
+      paper = _ResultsPaper(patient: merged, rows: rows);
+      buttons = [
+        Expanded(
+          child: _PillButton(
+            label: t3('تأكيد', 'پشتڕاستکردنەوە', 'Confirm'),
+            color: pal.accent,
+            textColor: Colors.white,
+            fontSize: 13,
+            onTap: app.closePrint,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _PillButton(
+            label: t3('إرسال', 'ناردن', 'Send'),
+            gradient: Fixed.sendGradient,
+            textColor: Colors.white,
+            icon: 'Send',
+            fontSize: 13,
+            onTap: () => app.openSendSheet(patient),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _PillButton(
+            label: backLabel,
+            color: pal.segmented,
+            fontSize: 13,
+            onTap: app.closePrint,
+          ),
+        ),
+      ];
+    }
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -122,23 +207,15 @@ class PrintScreen extends StatelessWidget {
                               _Machine(
                                 stage: stage,
                                 status: status,
-                                title: patient.name,
-                                trailing:
-                                    '${rows.length} ${t3('نتيجة', 'ئەنجام', 'results')}',
-                                sub:
-                                    '${patient.permanent} • ${t3('تقرير النتائج', 'ڕاپۆرتی ئەنجامەکان', 'Lab Results Report')}',
+                                title: title,
+                                trailing: trailing,
+                                sub: sub,
                               ),
                               NegativeTopMargin(
                                 amount: 16,
                                 child: SizedBox(
                                   width: outW,
-                                  child: _Output(
-                                    stage: stage,
-                                    child: _ResultsPaper(
-                                      patient: merged,
-                                      rows: rows,
-                                    ),
-                                  ),
+                                  child: _Output(stage: stage, child: paper),
                                 ),
                               ),
                             ],
@@ -146,39 +223,7 @@ class PrintScreen extends StatelessWidget {
                         },
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _PillButton(
-                              label: t3('تأكيد', 'پشتڕاستکردنەوە', 'Confirm'),
-                              color: pal.accent,
-                              textColor: Colors.white,
-                              fontSize: 13,
-                              onTap: app.closePrint,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _PillButton(
-                              label: t3('إرسال', 'ناردن', 'Send'),
-                              gradient: Fixed.sendGradient,
-                              textColor: Colors.white,
-                              icon: 'Send',
-                              fontSize: 13,
-                              onTap: () => app.openSendSheet(patient),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _PillButton(
-                              label: backLabel,
-                              color: pal.segmented,
-                              fontSize: 13,
-                              onTap: app.closePrint,
-                            ),
-                          ),
-                        ],
-                      ),
+                      Row(children: buttons),
                     ],
                   ),
                 ),
@@ -189,6 +234,321 @@ class PrintScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+String _tail(String s, int n) => s.length > n ? s.substring(s.length - n) : s;
+
+class _ReceiptItem {
+  final String label;
+  final int? price;
+  final bool indent;
+  const _ReceiptItem(this.label, this.price, {this.indent = false});
+}
+
+List<_ReceiptItem> _receiptItems(Patient p) {
+  final mode = p.mode;
+  final pkgs = kPackages
+      .where((k) => p.packages.contains(k.id) || p.packages.contains(k.name))
+      .toList();
+  final covered = {for (final k in pkgs) ...k.tests};
+  return [
+    for (final k in pkgs) ...[
+      _ReceiptItem(k.name, packagePrice(k, mode)),
+      for (final t in k.tests) _ReceiptItem(t, null, indent: true),
+    ],
+    for (final t in p.tests.where((t) => !covered.contains(t)))
+      _ReceiptItem(t, testPrice(t, mode)),
+  ];
+}
+
+/// Payment receipt printed after adding a patient (design `_w`).
+class _ReceiptPaper extends StatelessWidget {
+  final Patient patient;
+  final List<_ReceiptItem> items;
+  final String orderId;
+  final bool payLater;
+  const _ReceiptPaper({
+    required this.patient,
+    required this.items,
+    required this.orderId,
+    required this.payLater,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final lang = app.lang;
+    final ar = lang == 'ar';
+    String t3(String a, String k, String e) => ar
+        ? a
+        : lang == 'ku'
+        ? k
+        : e;
+    TextStyle m(
+      double size, {
+      FontWeight weight = w400,
+      Color? color,
+      double height = 1.5,
+      double? tracking,
+    }) => _monoStyle(
+      context,
+      size,
+      weight: weight,
+      color: color,
+      height: height,
+      tracking: tracking,
+    );
+    const faint = Color.fromRGBO(17, 17, 17, .6);
+    final b2b = patient.mode == 'B2B';
+
+    Widget line(String a, Widget b) => Row(
+      children: [
+        Text(a, style: m(10, height: 1.45)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Align(alignment: AlignmentDirectional.centerEnd, child: b),
+        ),
+      ],
+    );
+    Widget dashed() => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: CustomPaint(
+        size: const Size(double.infinity, 1),
+        painter: _DashPainter(),
+      ),
+    );
+
+    final payText = payLater
+        ? t3(
+            'الدفع لاحقاً — معلق',
+            'دواتر پارەبدە — چاوەڕوانە',
+            'Pay Later — Pending',
+          )
+        : t3('تم الدفع', 'پارەدراوە', 'Paid');
+
+    return _Paper(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              clipBehavior: Clip.antiAlias,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Image.asset(
+                'assets/images/logo.jpg',
+                width: 32,
+                height: 32,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'LabGo',
+            textAlign: TextAlign.center,
+            style: m(16, weight: w900, height: 1.25, tracking: -0.025 * 16),
+          ),
+          Text(
+            app.labName,
+            textAlign: TextAlign.center,
+            style: m(10, height: 1.25),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            app.labPhone,
+            textAlign: TextAlign.center,
+            textDirection: TextDirection.ltr,
+            style: m(9, height: 1.25),
+          ),
+          Text(
+            app.labAddress,
+            textAlign: TextAlign.center,
+            style: m(9, height: 1.25),
+          ),
+          dashed(),
+          line(
+            t3('المريض', 'نەخۆش', 'Patient'),
+            Text(
+              patient.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: m(10, weight: w700, height: 1.45),
+            ),
+          ),
+          line(
+            ar ? 'العمر / الجنس' : 'Age / Gender',
+            Text(
+              '${patient.age} • ${patient.gender}',
+              textDirection: TextDirection.ltr,
+              style: m(10, height: 1.45),
+            ),
+          ),
+          if (patient.doctor.isNotEmpty)
+            line(
+              t3('الطبيب', 'پزیشک', 'Doctor'),
+              Text(
+                patient.doctor,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: m(10, height: 1.45),
+              ),
+            ),
+          line(
+            t3('رقم المريض الدائم', 'ژمارەی هەمیشەیی نەخۆش', 'Permanent No.'),
+            Text(
+              patient.permanent,
+              textDirection: TextDirection.ltr,
+              style: m(10, weight: w700, height: 1.45),
+            ),
+          ),
+          line(
+            ar ? 'رقم الطلب' : 'Order',
+            Text(
+              orderId,
+              textDirection: TextDirection.ltr,
+              style: m(10, weight: w700, height: 1.45),
+            ),
+          ),
+          line(
+            ar ? 'التاريخ / الوقت' : 'Date / Time',
+            Text(
+              '${formatToday(lang)} • ${patient.time}',
+              textDirection: TextDirection.ltr,
+              style: m(10, height: 1.45),
+            ),
+          ),
+          dashed(),
+          for (final it in items)
+            Padding(
+              padding: EdgeInsetsDirectional.only(start: it.indent ? 12 : 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      it.indent ? '↳ ${it.label}' : it.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: m(
+                        10,
+                        weight: it.indent ? w400 : w700,
+                        color: it.indent ? faint : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    it.price == null
+                        ? t3('مشمول', 'لەخۆگرتووە', 'Included')
+                        : formatNumber(it.price!),
+                    textDirection: TextDirection.ltr,
+                    style: m(
+                      10,
+                      weight: it.indent ? w400 : w700,
+                      color: it.indent ? faint : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          dashed(),
+          if (b2b)
+            Text(
+              'B2B Price',
+              textAlign: TextAlign.center,
+              style: m(10, weight: w700),
+            ),
+          Row(
+            children: [
+              Text(
+                t3('الإجمالي', 'کۆی گشتی', 'TOTAL'),
+                style: m(12, weight: w900),
+              ),
+              const Spacer(),
+              Text(
+                '${formatNumber(patient.price)} IQD',
+                textDirection: TextDirection.ltr,
+                style: m(12, weight: w900),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color.fromRGBO(0, 0, 0, .6)),
+              ),
+              child: Text(
+                '$payText${b2b ? ' • B2B' : ''}',
+                style: m(9, weight: w700),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                children: [
+                  const _QrBox(size: 56),
+                  const SizedBox(height: 4),
+                  Text(
+                    t3(
+                      'امسح لعرض النتيجة',
+                      'سکان بکە بۆ بینینی ئەنجام',
+                      'Scan for result',
+                    ),
+                    style: m(8, color: faint),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  _Barcode(height: (i) => 18 + (i * 7) % 20),
+                  const SizedBox(height: 4),
+                  Text(
+                    patient.permanent,
+                    style: m(8, color: faint, tracking: .14 * 8),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'THANK YOU • LabGo',
+            textAlign: TextAlign.center,
+            style: m(10, weight: w900, tracking: .1 * 10),
+          ),
+          Text(
+            app.labFooter,
+            textAlign: TextAlign.center,
+            style: m(8, color: faint),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()..color = const Color.fromRGBO(0, 0, 0, .4);
+    for (double x = 0; x < size.width; x += 6) {
+      canvas.drawRect(Rect.fromLTWH(x, 0, 3, 1), p);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _PillButton extends StatelessWidget {
@@ -812,6 +1172,32 @@ String formatToday(String lang) {
   }
   return '$dd ${en[now.month - 1]} ${now.year}';
 }
+
+TextStyle _monoStyle(
+  BuildContext context,
+  double size, {
+  FontWeight weight = w400,
+  Color? color,
+  double height = 1.5,
+  double? tracking,
+}) =>
+    ts(
+      context,
+      size,
+      weight: weight,
+      color: color ?? const Color(0xFF111111),
+      height: height,
+      tracking: tracking,
+    ).copyWith(
+      fontFamily: 'Menlo',
+      fontFamilyFallback: const [
+        'SF Mono',
+        'monospace',
+        'Courier New',
+        'Courier',
+        'IBMPlexSansArabic',
+      ],
+    );
 
 class _ResultsPaper extends StatelessWidget {
   final Patient patient;

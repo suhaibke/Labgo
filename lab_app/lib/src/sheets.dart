@@ -21,6 +21,10 @@ class Overlays extends StatelessWidget {
             _Backdrop(opacity: .4, onTap: app.closeSendSheet),
             const _SendSheet(),
           ],
+          if (app.labelReferral != null) ...[
+            _Backdrop(opacity: .5, onTap: () => app.showLabel(null)),
+            const _ShippingLabel(),
+          ],
           if (app.logoutOpen) ...[
             _Backdrop(opacity: .4, onTap: () => app.showLogout(false)),
             const _LogoutDialog(),
@@ -322,35 +326,11 @@ class _SendSheetState extends State<_SendSheet> {
             style: ts(context, 12, weight: w700, color: pal.muted),
           ),
           const SizedBox(height: 4),
-          TextField(
+          BoxField(
             controller: _phone,
             onChanged: app.setSendPhone,
-            textDirection: TextDirection.ltr,
-            keyboardType: TextInputType.phone,
-            style: ts(context, 15),
-            strutStyle: const StrutStyle(
-              fontSize: 15,
-              height: 1.5,
-              forceStrutHeight: true,
-            ),
-            cursorColor: pal.accent,
-            decoration: InputDecoration(
-              isDense: true,
-              filled: true,
-              fillColor: pal.inputBg,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: pal.cardBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: pal.cardBorder),
-              ),
-            ),
+            ltr: true,
+            keyboard: TextInputType.phone,
           ),
           const SizedBox(height: 12),
           Row(
@@ -558,4 +538,388 @@ class _LogoutDialog extends StatelessWidget {
       ),
     );
   }
+}
+
+const _qrBits = [
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  0,
+  1,
+  0,
+  1,
+  0,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  0,
+  0,
+  1,
+  0,
+  1,
+  0,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  0,
+  1,
+  1,
+  0,
+  1,
+  0,
+  1,
+  0,
+  0,
+  1,
+  1,
+  0,
+  1,
+  1,
+  1,
+  0,
+  1,
+  1,
+  1,
+  1,
+  1,
+  0,
+  0,
+  1,
+  0,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  0,
+];
+const _barWidths = [
+  3,
+  1,
+  2,
+  1,
+  3,
+  2,
+  1,
+  2,
+  3,
+  1,
+  2,
+  1,
+  3,
+  2,
+  1,
+  2,
+  3,
+  1,
+  2,
+  3,
+  1,
+  2,
+  1,
+  3,
+];
+
+/// Shipping label popup for a referral (design `wl`).
+class _ShippingLabel extends StatelessWidget {
+  const _ShippingLabel();
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    final r = app.labelReferral!;
+    final ink = pal.dark ? Colors.white : const Color(0xFF111111);
+    final grey = pal.dark ? const Color(0xFFA1A1AA) : const Color(0xFF666666);
+    return Positioned(
+      left: 12,
+      right: 12,
+      top: 70,
+      child: Entrance.pop(
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * .72,
+          ),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: pal.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                CustomPaint(
+                  painter: _DashedRRect(color: Fixed.orange, radius: 20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                app.d('labelTitle'),
+                                style: ts(
+                                  context,
+                                  18,
+                                  weight: w900,
+                                  color: ink,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: pal.softAccent,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                r.tracking,
+                                style: ts(
+                                  context,
+                                  11,
+                                  weight: w700,
+                                  color: Fixed.orange,
+                                  height: 1.45,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: r.patient,
+                                style: const TextStyle(fontWeight: w700),
+                              ),
+                              TextSpan(text: ' • ${r.test}'),
+                            ],
+                          ),
+                          style: ts(context, 13, color: ink),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${app.d('sendingLab')}: LabGo Mosul → ${app.d('receivingLab')}: ${r.lab}',
+                          style: ts(context, 13, color: grey),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${app.w('dateCol')}: 27 Sep 2026 • ${app.w('eta')}: ${r.eta}',
+                          style: ts(context, 13, color: grey),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Column(
+                              children: [
+                                Container(
+                                  width: 76,
+                                  height: 76,
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: pal.inputBg,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: pal.cardBorder),
+                                  ),
+                                  child: LayoutBuilder(
+                                    builder: (context, c) {
+                                      final cell = (c.maxWidth - 7) / 8;
+                                      return Wrap(
+                                        spacing: 1,
+                                        runSpacing: 1,
+                                        children: [
+                                          for (var i = 0; i < 64; i++)
+                                            Container(
+                                              width: cell,
+                                              height: cell,
+                                              color: _qrBits[i] == 1
+                                                  ? pal.ink
+                                                  : pal.inputBg,
+                                            ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'QR',
+                                  style: ts(context, 10, color: pal.muted),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                Container(
+                                  height: 42,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: pal.inputBg,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: pal.cardBorder),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      for (
+                                        var i = 0;
+                                        i < _barWidths.length;
+                                        i++
+                                      ) ...[
+                                        if (i > 0) const SizedBox(width: 2),
+                                        Container(
+                                          width: _barWidths[i].toDouble(),
+                                          height: (18 + (i * 7) % 20)
+                                              .toDouble(),
+                                          color: pal.ink,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  r.tracking,
+                                  style: ts(
+                                    context,
+                                    10,
+                                    color: pal.muted,
+                                    tracking: .18 * 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          app.d('labelNote'),
+                          style: ts(context, 11, color: grey, height: 1.625),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => app.showLabel(null),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: pal.dark
+                                ? const Color(0xFF2C2C2E)
+                                : const Color(0xFFF7F7F7),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            app.w('close'),
+                            style: ts(context, 16, weight: w700, color: ink),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          app.showLabel(null);
+                          app.toast(app.d('labelPrinted'));
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Fixed.orange,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const LIcon(
+                                'Printer',
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                app.d('printLabel'),
+                                style: ts(
+                                  context,
+                                  16,
+                                  weight: w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedRRect extends CustomPainter {
+  final Color color;
+  final double radius;
+  _DashedRRect({required this.color, required this.radius});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          (Offset.zero & size).deflate(1),
+          Radius.circular(radius),
+        ),
+      );
+    for (final m in path.computeMetrics()) {
+      for (double d = 0; d < m.length; d += 12) {
+        canvas.drawPath(m.extractPath(d, (d + 6).clamp(0, m.length)), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRRect old) => old.color != color;
 }
