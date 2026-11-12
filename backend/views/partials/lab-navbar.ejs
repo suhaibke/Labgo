@@ -13,6 +13,7 @@
   const _nav = [
     { id: 'overview', href: '/lab/dashboard', icon: 'house', label: __('navigation.dashboard') },
     { id: 'orders', href: '/lab/orders', icon: 'clipboard-list', label: __('navigation.orders') },
+    { id: 'add-patient', href: '/lab/patients/new', icon: 'user-plus', label: __('labApp.addPatient') },
     { id: 'patient-tests', href: '/lab/patient-tests', icon: 'test-tube', label: __('navigation.patientTests') },
     { id: 'external-transfers', href: '/lab/external-transfers', icon: 'arrow-left-right', label: __('navigation.externalTransfers') },
     { id: 'tests', href: '/lab/tests', icon: 'flask-conical', label: __('navigation.tests') },
@@ -23,7 +24,7 @@
   const _navEnd = [
     { id: 'settings', also: ['profile'], href: '/lab/settings', icon: 'settings', label: __('navigation.settings') },
   ];
-  const _bottom = ['overview', 'orders', 'patient-tests', 'reports', 'settings'];
+  const _bottom = ['overview', 'orders', 'add-patient', 'patient-tests', 'settings'];
   const _isActive = function (n) { return _active === n.id || (n.also || []).indexOf(_active) !== -1; };
 %>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -90,6 +91,9 @@
           <b style="display:block;font-size:14px"><%= _u.name || _labName %></b>
           <span style="font-size:12px;color:var(--muted)"><%= _u.email || '' %></span>
         </div>
+        <% _nav.concat(_navEnd).filter(function (n) { return _bottom.indexOf(n.id) === -1; }).forEach(function (n) { %>
+          <a href="<%= n.href %>" class="la-only-phone"><svg class="ic"><use href="#i-<%= n.icon %>"/></svg><%= n.label %></a>
+        <% }); %>
         <a href="/lab/profile"><svg class="ic"><use href="#i-user"/></svg><%= __('navigation.profile') %></a>
         <a href="/lab/settings"><svg class="ic"><use href="#i-settings"/></svg><%= __('navigation.settings') %></a>
         <a href="/auth/logout" style="color:var(--red)"><svg class="ic flip-rtl"><use href="#i-log-out"/></svg><%= __('navigation.logout') %></a>

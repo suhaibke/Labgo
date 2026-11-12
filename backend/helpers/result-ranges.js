@@ -10,8 +10,12 @@ function toDays(n, unit) {
 
 function pickRange(ranges, patient = {}) {
     if (!Array.isArray(ranges) || ranges.length === 0) return null;
+    // Prefer the exact birth date (babies' ranges are in months/days).
+    const birth = patient.birthDate ? new Date(patient.birthDate) : null;
     const hasAge = patient.age !== null && patient.age !== undefined && patient.age !== '';
-    const ageDays = hasAge ? toDays(patient.age, patient.ageUnit || 'Y') : null;
+    let ageDays = null;
+    if (birth && !Number.isNaN(birth.getTime())) ageDays = Math.max(0, (Date.now() - birth.getTime()) / 86400000);
+    else if (hasAge) ageDays = toDays(patient.age, patient.ageUnit || 'Y');
     const gender = String(patient.gender || '').toLowerCase() === 'female' ? 'Female' : 'Male';
     const inAge = (r) => ageDays === null || (ageDays >= toDays(r.ageFrom, r.ageUnit) && ageDays <= toDays(r.ageTo, r.ageUnit));
     return ranges.find((r) => (r.gender === 'Both' || r.gender === gender) && inAge(r))

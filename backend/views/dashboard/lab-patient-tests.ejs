@@ -15,9 +15,12 @@
                 <h1 class="la-h1"><%= __('ordersHistory.title') %></h1>
                 <p class="la-sub"><%= __('ordersHistory.subtitle') %></p>
             </div>
+            <div style="display:flex;gap:8px;align-items:center">
+            <a class="la-btn md press-95" href="/lab/patients/new"><svg class="ic"><use href="#i-user-plus"/></svg><%= __('labApp.addPatient') %></a>
             <button class="la-circle press-90" onclick="loadOrders()" aria-label="refresh" style="width:44px;height:44px">
                 <svg class="ic" style="width:18px;height:18px"><use href="#i-refresh-cw"/></svg>
             </button>
+            </div>
         </section>
 
         <section class="la-grid c3" style="margin-top:16px">

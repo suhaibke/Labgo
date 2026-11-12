@@ -163,8 +163,15 @@ const OrderSchema = new mongoose.Schema({
     // Order type - always home collection for this workflow
     orderType: {
         type: String,
-        enum: ['home_collection'],
+        enum: ['home_collection', 'walk_in'],
         default: 'home_collection',
+    },
+    // Registered at the lab reception (orderType 'walk_in').
+    walkIn: {
+        doctor: { type: String, trim: true, default: '' },
+        company: { type: String, trim: true, default: '' },
+        sampleType: { type: String, enum: ['', 'blood', 'urine', 'stool', 'swab', 'csf'], default: '' },
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     },
 
     // Urgency level

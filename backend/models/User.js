@@ -170,6 +170,17 @@ const UserSchema = new mongoose.Schema({
         default: null,
     },
 
+    // Account created by a lab for a walk-in patient (no password the patient knows).
+    // Registering with the same phone through OTP claims it.
+    labPlaceholder: {
+        type: Boolean,
+        default: false,
+    },
+    createdByLabId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Lab',
+        default: null,
+    },
     phoneVerified: {
         type: Boolean,
         default: false,

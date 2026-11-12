@@ -475,3 +475,7 @@ html.la .la-toasts .la-toast.warning .dot { background: var(--accent); }
 html.la[dir="ltr"] .flip-ltr { transform: scaleX(-1); }
 html.la .ic.la-spin { animation: laSpin 1s linear infinite; }
 html.la .la-seg button.on { background: var(--ink); color: var(--app-bg); }
+
+/* pages that are not in the phone bottom bar are listed in the avatar menu */
+html.la .la-menu a.la-only-phone { display: none; }
+@media (max-width: 900px) { html.la .la-menu a.la-only-phone { display: flex; } }

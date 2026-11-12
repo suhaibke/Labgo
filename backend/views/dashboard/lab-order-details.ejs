@@ -214,6 +214,24 @@
                             </div>
                             <% } %>
 
+                        <!-- Registered at the lab reception -->
+                        <% if (order.orderType === 'walk_in') { %>
+                            <div class="detail-card">
+                                <div class="card-header">
+                                    <div class="header-icon purple"><svg class="ic"><use href="#i-hospital"/></svg></div>
+                                    <h3><%= __('walkIn.visit') %></h3>
+                                </div>
+                                <div class="card-body">
+                                    <% [['walkIn.doctor', order.walkIn && order.walkIn.doctor], ['walkIn.company', order.walkIn && order.walkIn.company],
+                                        ['walkIn.sampleType', order.walkIn && order.walkIn.sampleType ? __('walkIn.' + order.walkIn.sampleType) : ''],
+                                        ['walkIn.notes', order.notes && order.notes.labNotes]].forEach(function (r) { if (!r[1]) return; %>
+                                        <div class="info-row"><span class="label"><%= __(r[0]) %></span><span class="value"><%= r[1] %></span></div>
+                                    <% }); %>
+                                    <div class="info-row"><span class="label"><%= __('walkIn.total') %></span><span class="value"><%= Number((order.pricing && order.pricing.total) || 0).toLocaleString('en-US') %> <%= __('walkIn.iqd') %></span></div>
+                                </div>
+                            </div>
+                        <% } %>
+
                                 <!-- Beneficiary Info -->
                                 <% if (order.beneficiary?.isForOtherPerson) { %>
                                     <div class="detail-card">

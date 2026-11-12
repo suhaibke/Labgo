@@ -29,6 +29,7 @@ const uploadLabCoverImage = r2SingleUpload('labs', 'coverImage', 'lab-cover-');
 router.use(auth);
 router.use(require('./external-transfers'));
 router.use(require('./results'));
+router.use(require('./walk-in'));
 
 // Get lab dashboard data
 router.get('/dashboard', async (req, res) => {
