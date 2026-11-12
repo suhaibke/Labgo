@@ -1,0 +1,173 @@
+/* Shared app look for the remaining lab pages (transfers, offers, packages,
+   services, profile, settings, test catalogue details). Each page keeps its
+   own layout CSS; this file only re-skins it with the app's tokens. */
+
+/* page frame */
+html.la .lab-wrapper { background: transparent !important; }
+html.la .dashboard-container, html.la .main-content, html.la .profile-container,
+html.la .external-transfers-container, html.la .test-catalog-details-wrapper {
+  max-width: 1240px; margin: 0 auto; padding: 8px 24px 48px !important; background: transparent !important;
+  animation: screenIn .22s ease-out both;
+}
+@media (max-width: 900px) {
+  html.la .dashboard-container, html.la .main-content, html.la .profile-container,
+  html.la .external-transfers-container, html.la .test-catalog-details-wrapper { padding: 4px 16px 32px !important; }
+}
+html.la body h1, html.la body h2, html.la body h3, html.la body h4,
+html.la .modal h2, html.la .modal h3, html.la .modal-panel h2 { color: var(--ink) !important; letter-spacing: inherit; }
+html.la body h1 { font-size: 26px !important; font-weight: 700 !important; line-height: 1.25; }
+html.la body h2 { font-size: 18px !important; font-weight: 700 !important; }
+html.la body h3 { font-size: 15px !important; font-weight: 700 !important; }
+html.la .page-header, html.la .settings-header, html.la .profile-header, html.la .transfer-page-header { background: transparent !important; box-shadow: none !important; border: 0 !important; padding: 12px 0 0 !important; }
+html.la .page-header p, html.la .settings-subtitle, html.la .section-description, html.la .page-eyebrow, html.la .form-hint, html.la .form-note { color: var(--muted) !important; }
+
+/* cards */
+html.la .info-card, html.la .stat-card, html.la .stats-card, html.la .offer-card, html.la .package-card, html.la .service-card,
+html.la .settings-section, html.la .form-section, html.la .lab-card, html.la .requests-card, html.la .description-card,
+html.la .instructions-card, html.la .category-card, html.la .test-info-card, html.la .patient-info-card, html.la .notebook-card,
+html.la .quick-actions-card, html.la .transfer-stat, html.la .print-label-section, html.la .password-section, html.la .save-section {
+  background: var(--card) !important; background-image: none !important; border: 1px solid var(--card-border) !important;
+  border-radius: 28px !important; box-shadow: var(--shadow-sm) !important; color: var(--ink);
+  animation: fadeUp .38s var(--ease-out-soft) both;
+}
+html.la .offer-card:hover, html.la .package-card:hover, html.la .service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm) !important; }
+html.la .card-header, html.la .section-header, html.la .offer-header, html.la .package-header, html.la .password-header {
+  background: transparent !important; border-bottom: 0 !important; color: var(--ink);
+}
+html.la .card-footer, html.la .offer-footer, html.la .package-footer { background: transparent !important; border-top: 1px solid var(--line) !important; }
+
+/* icon circles */
+html.la .stat-icon, html.la .section-icon, html.la .stat-icon-small {
+  background: var(--soft-accent) !important; background-image: none !important; color: var(--accent) !important;
+  border-radius: 16px !important; box-shadow: none !important;
+}
+html.la .stat-number { color: var(--ink) !important; font-weight: 900 !important; }
+html.la .stat-label, html.la .info-label { color: var(--muted) !important; }
+html.la .info-value { color: var(--ink) !important; font-weight: 700; }
+html.la .info-row, html.la .test-item, html.la .request-item, html.la .action-item, html.la .patient-detail-item, html.la .test-select-item, html.la .day-schedule {
+  background: var(--chip-bg) !important; border: 0 !important; border-radius: 16px !important;
+}
+
+/* buttons */
+html.la .btn, html.la .service-adopt-btn, html.la .logo-upload-btn {
+  border-radius: 999px !important; font-weight: 700 !important; box-shadow: none !important; background-image: none;
+  transition: transform .15s var(--ease-ui), opacity .15s ease !important;
+}
+html.la .btn:active, html.la .service-adopt-btn:active { transform: scale(.97); }
+html.la .btn-primary, html.la .primary-action, html.la .service-adopt-btn, html.la .logo-upload-btn { background: var(--accent) !important; color: #fff !important; border: 0 !important; }
+html.la .btn-secondary, html.la .secondary-action { background: var(--segmented) !important; color: var(--ink) !important; border: 0 !important; }
+html.la .btn-danger { background: var(--red) !important; color: #fff !important; border: 0 !important; }
+html.la .icon-action { border-radius: 50% !important; background: var(--chip-bg) !important; color: var(--ink) !important; border: 1px solid var(--line) !important; }
+html.la .view-all-link, html.la .back-link { color: var(--accent) !important; font-weight: 700; }
+
+/* inputs */
+html.la .form-input, html.la .form-select, html.la .form-textarea, html.la .time-input, html.la .test-discount-input,
+html.la .service-test-select, html.la .search-field input, html.la body input[type="text"], html.la body input[type="number"],
+html.la body input[type="email"], html.la body input[type="tel"], html.la body input[type="password"],
+html.la body input[type="date"], html.la body select, html.la body textarea,
+html.la .modal input[type="text"], html.la .modal input[type="number"], html.la .modal input[type="date"], html.la .modal select, html.la .modal textarea {
+  background: var(--input-bg) !important; border: 1px solid var(--card-border) !important; border-radius: 16px !important;
+  color: var(--ink) !important; box-shadow: none !important; font-family: inherit;
+}
+html.la body input:focus, html.la body select:focus, html.la body textarea:focus,
+html.la .modal input:focus, html.la .modal select:focus, html.la .modal textarea:focus { border-color: var(--accent) !important; outline: none !important; }
+html.la .form-label, html.la .form-section-title { color: var(--muted) !important; font-size: 12px !important; font-weight: 700 !important; }
+html.la .form-section-title { font-size: 13px !important; color: var(--ink) !important; }
+html.la .required { color: var(--red) !important; }
+
+/* toggles: same as the app switch */
+html.la .switch-slider { background: #D9D9DD !important; border-radius: 999px !important; }
+html.la .switch input:checked + .switch-slider { background: var(--accent) !important; }
+html.la .switch-slider::before { background: #fff !important; box-shadow: 0 1px 3px rgba(0,0,0,.1) !important; }
+
+/* pills */
+html.la .offer-badge, html.la .package-category-badge, html.la .adopted-badge, html.la .role-badge, html.la .most-requested-badge,
+html.la .code-tag, html.la .price-tag, html.la .request-status, html.la .package-test-count {
+  background: var(--soft-accent) !important; background-image: none !important; color: var(--accent) !important;
+  border: 0 !important; border-radius: 999px !important; font-weight: 700 !important;
+}
+html.la .package-price, html.la .price-value, html.la .discounted-price, html.la .price { color: var(--accent) !important; }
+
+/* segmented tabs (custody tabs etc.) */
+html.la .custody-tabs { background: var(--segmented) !important; border-radius: 999px !important; padding: 4px !important; border: 0 !important; }
+html.la .custody-tab-btn { border-radius: 999px !important; color: var(--muted-2) !important; background: transparent !important; border: 0 !important; }
+html.la .custody-tab-btn.active { background: var(--ink) !important; color: var(--app-bg) !important; }
+
+/* modals */
+html.la .modal-overlay, html.la .modal { background: rgba(0, 0, 0, .4); }
+html.la .modal-content, html.la .modal-panel {
+  background: var(--card) !important; border-radius: 28px !important; box-shadow: var(--shadow-2xl) !important; border: 0 !important; color: var(--ink);
+  animation: popIn .28s ease both;
+}
+html.la .modal-header, html.la .modal-heading, html.la .modal-footer { background: transparent !important; border-color: var(--line) !important; }
+html.la .modal-close { border-radius: 50% !important; background: var(--segmented) !important; color: var(--ink) !important; border: 0 !important; }
+
+/* tables */
+html.la body table th { color: var(--muted) !important; background: transparent !important; font-size: 12px; }
+html.la body table td { border-color: var(--line) !important; color: var(--ink); }
+html.la .notebook-table-wrap { border-radius: 16px; }
+
+/* empty states */
+html.la .empty-state { color: var(--muted) !important; background: transparent !important; }
+html.la .empty-state-icon { background: var(--chip-bg) !important; color: var(--accent) !important; border-radius: 50% !important; }
+
+/* toasts */
+html.la .transfer-toast, html.la .toast-container .toast {
+  background: var(--toast-bg) !important; color: var(--toast-text) !important; border-radius: 999px !important; border: 0 !important;
+  box-shadow: var(--shadow-xl) !important; font-weight: 700;
+}
+
+/* dark mode: old pages hard-code light greys / dark text */
+html.la[data-theme="dark"] body [style*="color: #111"], html.la[data-theme="dark"] body [style*="color:#111"],
+html.la[data-theme="dark"] body [style*="color: #1f2937"], html.la[data-theme="dark"] body [style*="color: #374151"] { color: var(--ink) !important; }
+html.la[data-theme="dark"] body [style*="background: #f"], html.la[data-theme="dark"] body [style*="background:#f"],
+html.la[data-theme="dark"] body [style*="background: white"], html.la[data-theme="dark"] body [style*="background: #fff"] { background: var(--chip-bg) !important; }
+
+/* page tabs used to merge pages with the same purpose (offers + packages, settings + profile) */
+html.la .la-page-tabs { display: inline-flex; background: var(--segmented); border-radius: 999px; padding: 4px; margin-top: 12px; }
+html.la .la-page-tabs a { padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--muted-2); }
+html.la .la-page-tabs a.on { background: var(--ink); color: var(--app-bg); }
+html.la[data-theme="dark"] .la-page-tabs a.on { color: #0B0B0D; }
+
+/* settings form: two columns on wide screens instead of one narrow centred card */
+html.la .settings-container { display: grid !important; gap: 16px !important; max-width: none !important; }
+@media (min-width: 1100px) { html.la .settings-container { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } html.la .settings-container .save-section { grid-column: 1 / -1; } }
+html.la .settings-section { max-width: none !important; width: 100% !important; margin: 0 !important; }
+
+/* button sizes (the shell's button reset strips the old padding) */
+html.la .btn { display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; height: 44px; padding: 0 20px !important; font-size: 14px !important; white-space: nowrap; }
+html.la .btn-sm { height: 36px; padding: 0 14px !important; font-size: 13px !important; }
+html.la .btn .ic { width: 18px; height: 18px; }
+html.la .btn-sm .ic { width: 16px; height: 16px; }
+
+/* transfers page: drop the old grey page panel so the app background shows */
+html.la .external-transfers-page { background: transparent !important; padding: 8px 24px 48px !important; min-height: 0 !important; }
+html.la .primary-action, html.la .secondary-action { border-radius: 999px !important; min-height: 44px; padding: 0 20px !important; white-space: nowrap; box-shadow: none !important; }
+@media (max-width: 900px) { html.la .external-transfers-page { padding: 4px 16px 32px !important; } }
+html.la .service-adopt-btn { height: 42px; padding: 0 16px !important; font-size: 14px !important; width: 100%; }
+html.la .service-adopt-btn.remove { background: var(--segmented) !important; color: var(--red) !important; }
+html.la .result-action, html.la .result-link { border-radius: 999px !important; min-height: 36px; padding: 0 14px !important; background: var(--soft-accent) !important; color: var(--accent) !important; font-size: 13px !important; font-weight: 700; }
+
+/* test catalogue details */
+html.la .test-header { background: var(--card) !important; background-image: none !important; border: 1px solid var(--card-border) !important; border-radius: 28px !important; box-shadow: var(--shadow-sm) !important; }
+html.la .test-badge, html.la .category-badge { background: var(--soft-accent) !important; background-image: none !important; color: var(--accent) !important; box-shadow: none !important; }
+html.la .test-header .btn-primary, html.la .header-actions .btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 20px !important; border-radius: 999px !important; white-space: nowrap; }
+html.la .action-item { display: flex !important; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px !important; margin-bottom: 8px; color: var(--ink) !important; font-weight: 600; }
+html.la .action-item.danger { color: var(--red) !important; }
+html.la .instructions-content { background: var(--chip-bg) !important; border: 0 !important; border-radius: 16px !important; color: var(--ink) !important; }
+html.la .category-badge { border-radius: 999px !important; padding: 8px 18px !important; }
+
+/* stat numbers on offers/packages are h3s: keep them large */
+html.la .stat-info h3 { font-size: 28px !important; font-weight: 800 !important; color: var(--ink) !important; }
+html.la .stat-info p { color: var(--muted) !important; }
+html.la .test-discount-item, html.la .offer-tests-list > * { background: var(--chip-bg) !important; border: 0 !important; border-radius: 12px !important; color: var(--ink) !important; }
+html.la .offer-header h3, html.la .package-card h3, html.la .offer-card h3 { color: var(--ink) !important; }
+
+/* offers/packages: their inline styles hard-code grey text and borders */
+html.la .offer-title, html.la .package-title, html.la .test-discount-item .test-name, html.la .test-item-name, html.la .price-hint-box .value,
+html.la .tests-selection-header h4, html.la .empty-state h3, html.la .test-tag, html.la .apply-all-discount { color: var(--ink) !important; }
+html.la .offer-detail, html.la .offer-detail span { color: var(--muted) !important; }
+html.la .offer-tests, html.la .form-section, html.la .tests-selection-container, html.la .tests-selection-header, html.la .test-item { border-color: var(--line) !important; }
+html.la .tests-selection-header, html.la .test-tag { background: var(--chip-bg) !important; }
+html.la .settings-section { min-width: 0; box-sizing: border-box; }
+html.la .settings-header { padding-inline: 0 !important; margin-bottom: 8px !important; }

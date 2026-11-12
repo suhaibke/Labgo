@@ -16,16 +16,15 @@
     { id: 'patient-tests', href: '/lab/patient-tests', icon: 'test-tube', label: __('navigation.patientTests') },
     { id: 'external-transfers', href: '/lab/external-transfers', icon: 'arrow-left-right', label: __('navigation.externalTransfers') },
     { id: 'tests', href: '/lab/tests', icon: 'flask-conical', label: __('navigation.tests') },
-    { id: 'offers', href: '/lab/offers', icon: 'tag', label: __('navigation.offers') },
-    { id: 'packages', href: '/lab/packages', icon: 'package', label: __('navigation.packages') },
+    { id: 'offers', also: ['packages'], href: '/lab/offers', icon: 'tag', label: __('labApp.offersPackages') },
     { id: 'services', href: '/lab/services', icon: 'zap', label: __('navigation.quickServices') },
     { id: 'reports', href: '/lab/reports', icon: 'chart-line', label: __('navigation.reports') },
   ];
   const _navEnd = [
-    { id: 'profile', href: '/lab/profile', icon: 'user', label: __('navigation.profile') },
-    { id: 'settings', href: '/lab/settings', icon: 'settings', label: __('navigation.settings') },
+    { id: 'settings', also: ['profile'], href: '/lab/settings', icon: 'settings', label: __('navigation.settings') },
   ];
   const _bottom = ['overview', 'orders', 'patient-tests', 'reports', 'settings'];
+  const _isActive = function (n) { return _active === n.id || (n.also || []).indexOf(_active) !== -1; };
 %>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -52,14 +51,14 @@
   </a>
   <nav class="la-nav">
     <% _nav.forEach(function (n) { %>
-      <a href="<%= n.href %>" class="la-nav-item press <%= _active === n.id ? 'active' : '' %>">
+      <a href="<%= n.href %>" class="la-nav-item press <%= _isActive(n) ? 'active' : '' %>">
         <span class="la-nav-ic"><svg class="ic"><use href="#i-<%= n.icon %>"/></svg></span>
         <span><%= n.label %></span>
       </a>
     <% }); %>
     <div class="la-nav-sep"></div>
     <% _navEnd.forEach(function (n) { %>
-      <a href="<%= n.href %>" class="la-nav-item press <%= _active === n.id ? 'active' : '' %>">
+      <a href="<%= n.href %>" class="la-nav-item press <%= _isActive(n) ? 'active' : '' %>">
         <span class="la-nav-ic"><svg class="ic"><use href="#i-<%= n.icon %>"/></svg></span>
         <span><%= n.label %></span>
       </a>
@@ -74,7 +73,7 @@
 
 <nav class="la-bottom" aria-label="<%= __('navigation.dashboard') %>">
   <% _nav.concat(_navEnd).filter(function (n) { return _bottom.indexOf(n.id) !== -1; }).forEach(function (n) { %>
-    <a href="<%= n.href %>" class="press-90 <%= _active === n.id ? 'active' : '' %>" aria-label="<%= n.label %>">
+    <a href="<%= n.href %>" class="press-90 <%= _isActive(n) ? 'active' : '' %>" aria-label="<%= n.label %>">
       <svg class="ic"><use href="#i-<%= n.icon %>"/></svg>
     </a>
   <% }); %>

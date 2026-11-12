@@ -632,7 +632,35 @@
       "Cardiology": "نەخۆشیەکانی دڵ",
       "Neurology": "دەمار",
       "General": "گشتی"
-    }
+    },
+    "details": {
+      "backToCatalog": "گەڕانەوە بۆ لیستی پشکنینەکان",
+      "testDescription": "وەسفی پشکنین",
+      "noDescription": "هیچ وەسفێک بۆ ئەم پشکنینە نییە.",
+      "noInstructions": "هیچ ڕێنماییەکی تایبەت بۆ ئەم پشکنینە نییە.",
+      "testStatistics": "ئاماری پشکنین",
+      "totalRequests": "کۆی داواکاریەکان",
+      "completedRequests": "تەواوبوو",
+      "pendingRequests": "چاوەڕوان",
+      "inProgressRequests": "لە کارکردندایە",
+      "recentPatientRequests": "دوایین داواکاری نەخۆشەکان",
+      "quickActions": "کردارە خێراکان",
+      "editTestBtn": "دەستکاری پشکنین",
+      "duplicateTest": "لەبەرگرتنەوەی پشکنین",
+      "exportData": "هەناردەکردنی داتا",
+      "deleteTestBtn": "سڕینەوەی پشکنین",
+      "categoryInfo": "پۆل",
+      "testInformation": "زانیاری پشکنین",
+      "testCodeLabel": "کۆدی پشکنین",
+      "testPriceLabel": "نرخ",
+      "testCategoryLabel": "پۆل",
+      "laboratory": "تاقیگە",
+      "editTestTitle": "دەستکاری پشکنین",
+      "cancelBtn": "هەڵوەشاندنەوە",
+      "saveChanges": "پاشەکەوتکردنی گۆڕانکاری"
+    },
+    "specialInstructions": "ڕێنمایی تایبەت",
+    "testCode": "کۆدی پشکنین"
   },
   "patientTests": {
     "management": "بەڕێوەبردنی تاقیکردنەوەکانی نەخۆش",
@@ -1624,6 +1652,14 @@
     "addTest": "زیادکردنی پشکنین",
     "viewTests": "پشکنینی نەخۆشەکان",
     "reports": "ڕاپۆرتەکان",
-    "settings": "ڕێکخستنەکان"
+    "settings": "ڕێکخستنەکان",
+    "offersPackages": "پێشکەش و پاکێجەکان",
+    "appearance": "ڕووکار",
+    "theme": "دۆخ",
+    "light": "ڕووناک",
+    "dark": "تاریک",
+    "accent": "ڕەنگی ئەپ",
+    "language": "زمان",
+    "sameAsApp": "هەمان ڕێکخستنی ئەپی تاقیگە"
   }
 }

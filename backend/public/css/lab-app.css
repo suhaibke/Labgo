@@ -474,3 +474,4 @@ html.la .la-toasts .la-toast.warning .dot { background: var(--accent); }
 /* icon that should point "forward" in the reading direction */
 html.la[dir="ltr"] .flip-ltr { transform: scaleX(-1); }
 html.la .ic.la-spin { animation: laSpin 1s linear infinite; }
+html.la .la-seg button.on { background: var(--ink); color: var(--app-bg); }

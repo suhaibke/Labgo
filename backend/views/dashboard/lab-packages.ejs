@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/lab-dashboard.css">
     <style>
         body {
@@ -303,20 +302,22 @@
             .form-row { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="stylesheet" href="/css/lab-pages.css">
 </head>
 <body>
     <%- include('../partials/lab-navbar', { user: lab, activePage: 'packages' }) %>
+    <%- include('../partials/lab-page-tabs', { group: 'offers', current: 'packages' }) %>
 
     <main class="main-content">
         <div class="page-header">
             <div class="header-content">
                 <div class="header-title">
-                    <h1><i class="fas fa-box-open"></i> <%= t ? t('packages.title') : 'Packages' %></h1>
+                    <h1><svg class="ic"><use href="#i-package"/></svg> <%= t ? t('packages.title') : 'Packages' %></h1>
                     <p><%= t ? t('packages.subtitle') : 'Bundle several of your tests into one package sold at a combined price' %></p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="openCreateModal()">
-                        <i class="fas fa-plus"></i> <%= t ? t('packages.createPackage') : 'Create Package' %>
+                        <svg class="ic"><use href="#i-plus"/></svg> <%= t ? t('packages.createPackage') : 'Create Package' %>
                     </button>
                 </div>
             </div>
@@ -324,21 +325,21 @@
 
         <div class="stats-grid">
             <div class="stat-card primary">
-                <div class="stat-icon"><i class="fas fa-box-open"></i></div>
+                <div class="stat-icon"><svg class="ic"><use href="#i-package"/></svg></div>
                 <div class="stat-info">
                     <h3><%= packages.length %></h3>
                     <p><%= t ? t('packages.totalPackages') : 'Total Packages' %></p>
                 </div>
             </div>
             <div class="stat-card success">
-                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-icon"><svg class="ic"><use href="#i-circle-check"/></svg></div>
                 <div class="stat-info">
                     <h3><%= packages.filter(p => p.isActive).length %></h3>
                     <p><%= t ? t('packages.activePackages') : 'Active Packages' %></p>
                 </div>
             </div>
             <div class="stat-card warning">
-                <div class="stat-icon"><i class="fas fa-flask"></i></div>
+                <div class="stat-icon"><svg class="ic"><use href="#i-flask-conical"/></svg></div>
                 <div class="stat-info">
                     <h3><%= tests.length %></h3>
                     <p><%= t ? t('packages.availableTests') : 'Available Tests' %></p>
@@ -348,11 +349,11 @@
 
         <% if (packages.length === 0) { %>
             <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-box-open"></i></div>
+                <div class="empty-state-icon"><svg class="ic"><use href="#i-package"/></svg></div>
                 <h3><%= t ? t('packages.noPackages') : 'No Packages Yet' %></h3>
                 <p><%= t ? t('packages.noPackagesDescription') : 'Bundle tests together to offer patients a combined checkup package' %></p>
                 <button class="btn btn-primary" onclick="openCreateModal()">
-                    <i class="fas fa-plus"></i> <%= t ? t('packages.createFirstPackage') : 'Create First Package' %>
+                    <svg class="ic"><use href="#i-plus"/></svg> <%= t ? t('packages.createFirstPackage') : 'Create First Package' %>
                 </button>
             </div>
         <% } else { %>
@@ -379,14 +380,14 @@
                         </div>
                         <div class="package-footer">
                             <button class="btn btn-secondary btn-sm" onclick="togglePackage('<%= pkg._id %>')">
-                                <i class="fas <%= pkg.isActive ? 'fa-pause' : 'fa-play' %>"></i>
+                                <svg class="ic"><use href="#i-<%= pkg.isActive ? 'pause' : 'play' %>"/></svg>
                                 <%= pkg.isActive ? (t ? t('offers.deactivate') : 'Deactivate') : (t ? t('offers.activate') : 'Activate') %>
                             </button>
                             <button class="btn btn-secondary btn-sm" onclick="editPackage('<%= pkg._id %>')">
-                                <i class="fas fa-edit"></i> <%= t ? t('offers.edit') : 'Edit' %>
+                                <svg class="ic"><use href="#i-pencil"/></svg> <%= t ? t('offers.edit') : 'Edit' %>
                             </button>
                             <button class="btn btn-danger btn-sm" onclick="deletePackage('<%= pkg._id %>')">
-                                <i class="fas fa-trash"></i>
+                                <svg class="ic"><use href="#i-trash-2"/></svg>
                             </button>
                         </div>
                     </div>
@@ -480,7 +481,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()"><%= t ? t('common.cancel') : 'Cancel' %></button>
                     <button type="submit" class="btn btn-primary" id="saveBtn">
-                        <i class="fas fa-save"></i> <%= t ? t('common.save') : 'Save Package' %>
+                        <svg class="ic"><use href="#i-save"/></svg> <%= t ? t('common.save') : 'Save Package' %>
                     </button>
                 </div>
             </form>
@@ -634,7 +635,7 @@
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
-            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span>`;
+            toast.innerHTML = `<svg class="ic"><use href="#i-${type === 'success' ? 'circle-check' : 'circle-alert'}"/></svg><span>${message}</span>`;
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }

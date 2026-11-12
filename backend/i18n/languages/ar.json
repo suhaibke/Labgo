@@ -2130,6 +2130,14 @@
     "addTest": "إضافة تحليل",
     "viewTests": "عرض تحاليل المرضى",
     "reports": "التقارير",
-    "settings": "الإعدادات"
+    "settings": "الإعدادات",
+    "offersPackages": "العروض والباقات",
+    "appearance": "المظهر",
+    "theme": "الوضع",
+    "light": "نهاري",
+    "dark": "ليلي",
+    "accent": "لون التطبيق",
+    "language": "اللغة",
+    "sameAsApp": "نفس إعدادات تطبيق المختبر"
   }
 }

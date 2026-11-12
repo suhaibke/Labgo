@@ -1614,7 +1614,33 @@
     "testDuplicated": "Test duplicated successfully!",
     "exportFunctionality": "Export functionality will export all tests to CSV/Excel format",
     "importFunctionality": "Import functionality will allow bulk import from CSV/Excel files",
-    "detailsFunctionality": "View test details will be implemented with patient history and ratings"
+    "detailsFunctionality": "View test details will be implemented with patient history and ratings",
+    "details": {
+      "backToCatalog": "Back to test catalogue",
+      "testDescription": "Test description",
+      "noDescription": "No description is available for this test.",
+      "noInstructions": "No special instructions for this test.",
+      "testStatistics": "Test statistics",
+      "totalRequests": "Total requests",
+      "completedRequests": "Completed",
+      "pendingRequests": "Pending",
+      "inProgressRequests": "In progress",
+      "recentPatientRequests": "Recent patient requests",
+      "quickActions": "Quick actions",
+      "editTestBtn": "Edit test",
+      "duplicateTest": "Duplicate test",
+      "exportData": "Export data",
+      "deleteTestBtn": "Delete test",
+      "categoryInfo": "Category",
+      "testInformation": "Test information",
+      "testCodeLabel": "Test code",
+      "testPriceLabel": "Price",
+      "testCategoryLabel": "Category",
+      "laboratory": "Laboratory",
+      "editTestTitle": "Edit test",
+      "cancelBtn": "Cancel",
+      "saveChanges": "Save changes"
+    }
   },
   "labApp": {
     "greetingMorning": "Good Morning",
@@ -1644,7 +1670,15 @@
     "addTest": "Add test",
     "viewTests": "Patient tests",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "offersPackages": "Offers & Packages",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "accent": "App colour",
+    "language": "Language",
+    "sameAsApp": "Same options as the lab app"
   },
   "ordersHistory": {
     "title": "Patient History",
@@ -1688,5 +1722,62 @@
       "downloadResult": "Download result",
       "noResultFile": "No result file"
     }
+  },
+  "userProfile": {
+    "personalInfo": "Personal information",
+    "fullName": "Full name",
+    "emailAddress": "Email address",
+    "phoneNumber": "Phone number",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "birthDate": "Date of birth",
+    "security": "Security",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "cancel": "Cancel",
+    "saveChanges": "Save changes"
+  },
+  "settings": {
+    "title": "Lab settings"
+  },
+  "profile": {
+    "manageLabInfo": "Manage lab information and settings",
+    "basicInfo": "Basic information",
+    "basicInfoDesc": "Update the lab's basic and business details",
+    "labName": "Lab name",
+    "emailAddress": "Email address",
+    "phoneNumber": "Phone number",
+    "website": "Website",
+    "description": "Description",
+    "descriptionPlaceholder": "Tell patients about your lab, services and what makes you different...",
+    "images": "Logo and cover image",
+    "imagesDesc": "These images appear in the app when patients browse your lab",
+    "logo": "Logo",
+    "chooseImage": "Choose image",
+    "coverImage": "Cover image",
+    "coverImageDesc": "A wide image shown behind the logo at the top of your lab page in the app",
+    "addressInfo": "Address information",
+    "addressInfoDesc": "Update the lab's physical location",
+    "streetAddress": "Address",
+    "city": "City",
+    "country": "Country",
+    "specializations": "Specializations",
+    "specializationsDesc": "Choose the medical specializations and services your lab offers",
+    "operatingHours": "Working hours",
+    "operatingHoursDesc": "Set the lab's weekly schedule",
+    "closed": "Closed",
+    "lastUpdated": "Last updated",
+    "changes": "Changes",
+    "uploadingImage": "Uploading...",
+    "imageUploadError": "Could not upload the image",
+    "imageUploadSuccess": "Image uploaded"
+  },
+  "patientTests": {
+    "pending": "Pending",
+    "inProgress": "In progress",
+    "completed": "Completed"
   }
 }

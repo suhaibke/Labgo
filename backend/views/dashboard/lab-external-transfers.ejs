@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/lab-dashboard.css">
     <link rel="stylesheet" href="/css/lab-external-transfers.css">
     <style>body { font-family: <%= font %>; }</style>
     <!-- Used only by the sample label's "Download PDF" button -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="/css/lab-pages.css">
 </head>
 <body>
     <%- include('../partials/lab-navbar') %>
@@ -21,27 +21,27 @@
             <div class="external-transfers-container">
                 <section class="transfer-page-header">
                     <div>
-                        <span class="page-eyebrow"><i class="fas fa-arrow-right-arrow-left"></i> <%= __('navigation.externalTransfers') %></span>
+                        <span class="page-eyebrow"><svg class="ic"><use href="#i-arrow-left-right"/></svg> <%= __('navigation.externalTransfers') %></span>
                         <h1><%= __('externalTransfers.title') %></h1>
                         <p><%= __('externalTransfers.subtitle') %></p>
                     </div>
                     <button class="primary-action" id="openTransferModal">
-                        <i class="fas fa-plus"></i>
+                        <svg class="ic"><use href="#i-plus"/></svg>
                         <%= __('externalTransfers.newTransfer') %>
                     </button>
                 </section>
 
                 <section class="transfer-stats" aria-label="<%= __('externalTransfers.title') %>">
                     <article class="transfer-stat total">
-                        <span class="stat-icon"><i class="fas fa-book-medical"></i></span>
+                        <span class="stat-icon"><svg class="ic"><use href="#i-book-open"/></svg></span>
                         <div><strong><%= stats.total %></strong><span><%= __('externalTransfers.total') %></span></div>
                     </article>
                     <article class="transfer-stat awaiting">
-                        <span class="stat-icon"><i class="fas fa-hourglass-half"></i></span>
+                        <span class="stat-icon"><svg class="ic"><use href="#i-hourglass"/></svg></span>
                         <div><strong><%= stats.awaiting %></strong><span><%= __('externalTransfers.awaiting') %></span></div>
                     </article>
                     <article class="transfer-stat completed">
-                        <span class="stat-icon"><i class="fas fa-file-circle-check"></i></span>
+                        <span class="stat-icon"><svg class="ic"><use href="#i-file-check"/></svg></span>
                         <div><strong><%= stats.completed %></strong><span><%= __('externalTransfers.completed') %></span></div>
                     </article>
                 </section>
@@ -49,7 +49,7 @@
                 <section class="notebook-card">
                     <div class="notebook-toolbar">
                         <div class="search-field">
-                            <i class="fas fa-search"></i>
+                            <svg class="ic"><use href="#i-search"/></svg>
                             <input id="transferSearch" type="search" placeholder="<%= __('externalTransfers.searchPlaceholder') %>">
                         </div>
                         <select id="statusFilter" aria-label="<%= __('externalTransfers.status') %>">
@@ -95,16 +95,16 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <strong class="sample-code"><i class="fas fa-qrcode"></i> <%= transfer.sampleCode %></strong>
+                                            <strong class="sample-code"><svg class="ic"><use href="#i-qr-code"/></svg> <%= transfer.sampleCode %></strong>
                                             <small class="tests-list"><%= testsText %></small>
                                         </td>
                                         <td>
                                             <strong><%= externalLab.name %></strong>
-                                            <% if (externalLab.contactName) { %><small><i class="fas fa-user-doctor"></i> <%= externalLab.contactName %></small><% } %>
-                                            <% if (externalLab.phone) { %><small><i class="fas fa-phone"></i> <%= externalLab.phone %></small><% } %>
-                                            <% if (externalLab.address) { %><small class="transfer-note" title="<%= externalLab.address %>"><i class="fas fa-location-dot"></i> <%= externalLab.address %></small><% } %>
+                                            <% if (externalLab.contactName) { %><small><svg class="ic"><use href="#i-stethoscope"/></svg> <%= externalLab.contactName %></small><% } %>
+                                            <% if (externalLab.phone) { %><small><svg class="ic"><use href="#i-phone"/></svg> <%= externalLab.phone %></small><% } %>
+                                            <% if (externalLab.address) { %><small class="transfer-note" title="<%= externalLab.address %>"><svg class="ic"><use href="#i-map-pin"/></svg> <%= externalLab.address %></small><% } %>
                                             <% if (transfer.referenceNumber) { %><small>#<%= transfer.referenceNumber %></small><% } %>
-                                            <% if (transfer.notes) { %><small class="transfer-note" title="<%= transfer.notes %>"><i class="fas fa-note-sticky"></i> <%= transfer.notes %></small><% } %>
+                                            <% if (transfer.notes) { %><small class="transfer-note" title="<%= transfer.notes %>"><svg class="ic"><use href="#i-sticky-note"/></svg> <%= transfer.notes %></small><% } %>
                                         </td>
                                         <td>
                                             <strong><%= new Date(transfer.sentAt).toLocaleDateString(currentLang) %></strong>
@@ -114,7 +114,7 @@
                                         </td>
                                         <td>
                                             <span class="status-pill <%= transfer.status %>">
-                                                <i class="fas <%= transfer.status === 'completed' ? 'fa-circle-check' : 'fa-clock' %>"></i>
+                                                <svg class="ic"><use href="#i-<%= transfer.status === 'completed' ? 'circle-check' : 'clock' %>"/></svg>
                                                 <%= transfer.status === 'completed' ? __('externalTransfers.statusCompleted') : __('externalTransfers.statusSent') %>
                                             </span>
                                         </td>
@@ -122,7 +122,7 @@
                                             <div class="row-actions">
                                                 <% if (transfer.orderId) { %>
                                                     <a href="/lab/orders/<%= transfer.orderId %>" class="icon-action" title="<%= __('externalTransfers.viewOrder') %>">
-                                                        <i class="fas fa-eye"></i>
+                                                        <svg class="ic"><use href="#i-eye"/></svg>
                                                     </a>
                                                 <% } %>
                                                 <% const fromLabBits = [lab.name, lab.phone].filter(Boolean).join(' - ');
@@ -140,7 +140,7 @@
                                                     data-expected="<%= expectedText %>"
                                                     data-ref="<%= transfer.referenceNumber || '' %>"
                                                     title="<%= __('externalTransfers.printLabel') %>">
-                                                    <i class="fas fa-print"></i>
+                                                    <svg class="ic"><use href="#i-printer"/></svg>
                                                 </button>
                                                 <button type="button" class="icon-action" data-action="download-label"
                                                     data-code="<%= transfer.sampleCode %>"
@@ -154,21 +154,21 @@
                                                     data-expected="<%= expectedText %>"
                                                     data-ref="<%= transfer.referenceNumber || '' %>"
                                                     title="<%= __('externalTransfers.downloadPdf') %>">
-                                                    <i class="fas fa-file-arrow-down"></i>
+                                                    <svg class="ic"><use href="#i-file-down"/></svg>
                                                 </button>
                                                 <% if (transfer.status === 'sent') { %>
                                                     <button type="button" class="result-action" data-action="upload-result" data-transfer-id="<%= transfer._id %>">
-                                                        <i class="fas fa-cloud-arrow-up"></i>
+                                                        <svg class="ic"><use href="#i-upload"/></svg>
                                                         <%= __('externalTransfers.uploadResult') %>
                                                     </button>
                                                 <% } else if (transfer.resultFileUrl) { %>
                                                     <a href="<%= transfer.resultFileUrl %>" target="_blank" rel="noopener" class="result-link">
-                                                        <i class="fas fa-file-arrow-down"></i>
+                                                        <svg class="ic"><use href="#i-file-down"/></svg>
                                                         <%= __('labOrderDetails.viewResult') %>
                                                     </a>
                                                 <% } %>
                                                 <button type="button" class="icon-action" data-action="delete-transfer" data-transfer-id="<%= transfer._id %>" title="<%= __('externalTransfers.deleteTransfer') %>">
-                                                    <i class="fas fa-trash"></i>
+                                                    <svg class="ic"><use href="#i-trash-2"/></svg>
                                                 </button>
                                             </div>
                                         </td>
@@ -178,12 +178,12 @@
                         </table>
 
                         <div class="empty-state <%= transfers.length ? 'hidden' : '' %>" id="emptyTransfers">
-                            <span><i class="fas fa-book-open"></i></span>
+                            <span><svg class="ic"><use href="#i-book-open"/></svg></span>
                             <h2><%= __('externalTransfers.noTransfers') %></h2>
                             <p><%= __('externalTransfers.noTransfersDescription') %></p>
                         </div>
                         <div class="empty-state hidden" id="emptySearch">
-                            <span><i class="fas fa-magnifying-glass"></i></span>
+                            <span><svg class="ic"><use href="#i-search"/></svg></span>
                             <h2><%= __('externalTransfers.noTransfers') %></h2>
                         </div>
                     </div>
@@ -195,8 +195,8 @@
     <div class="transfer-modal" id="newTransferModal" aria-hidden="true">
         <div class="modal-panel large" role="dialog" aria-modal="true" aria-labelledby="newTransferTitle">
             <div class="modal-heading">
-                <div><span><i class="fas fa-arrow-right-arrow-left"></i></span><h2 id="newTransferTitle"><%= __('externalTransfers.newTransfer') %></h2></div>
-                <button type="button" class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+                <div><span><svg class="ic"><use href="#i-arrow-left-right"/></svg></span><h2 id="newTransferTitle"><%= __('externalTransfers.newTransfer') %></h2></div>
+                <button type="button" class="modal-close" data-close-modal><svg class="ic"><use href="#i-x"/></svg></button>
             </div>
             <form id="newTransferForm">
                 <div class="modal-scroll">
@@ -216,30 +216,30 @@
                                     </option>
                                 <% }); %>
                             </select>
-                            <% if (!eligibleOrders.length) { %><p class="form-note warning"><i class="fas fa-circle-info"></i> <%= __('externalTransfers.cannotTransfer') %></p><% } %>
+                            <% if (!eligibleOrders.length) { %><p class="form-note warning"><svg class="ic"><use href="#i-info"/></svg> <%= __('externalTransfers.cannotTransfer') %></p><% } %>
                         </div>
 
                         <div class="patient-info-card" id="patientInfoCard" hidden>
                             <div class="patient-info-head">
-                                <i class="fas fa-user"></i>
+                                <svg class="ic"><use href="#i-user"/></svg>
                                 <span><%= __('externalTransfers.patientInfo') %></span>
                             </div>
                             <strong class="patient-info-name" id="autoPatientName">—</strong>
                             <div class="patient-detail-grid">
                                 <div class="patient-detail-item">
-                                    <i class="fas fa-venus-mars"></i>
+                                    <svg class="ic"><use href="#i-users"/></svg>
                                     <span id="autoPatientGender">—</span>
                                 </div>
                                 <div class="patient-detail-item">
-                                    <i class="fas fa-cake-candles"></i>
+                                    <svg class="ic"><use href="#i-cake"/></svg>
                                     <span id="autoPatientAge">—</span>
                                 </div>
                                 <div class="patient-detail-item">
-                                    <i class="fas fa-phone"></i>
+                                    <svg class="ic"><use href="#i-phone"/></svg>
                                     <span id="autoPatientPhone">—</span>
                                 </div>
                                 <div class="patient-detail-item span-2">
-                                    <i class="fas fa-location-dot"></i>
+                                    <svg class="ic"><use href="#i-map-pin"/></svg>
                                     <span id="autoPatientAddress">—</span>
                                 </div>
                             </div>
@@ -247,7 +247,7 @@
 
                         <div class="auto-fill-grid" id="autoFillPanel" hidden>
                             <article class="span-2">
-                                <span><i class="fas fa-vial"></i> <%= __('externalTransfers.sampleInfo') %></span>
+                                <span><svg class="ic"><use href="#i-test-tube"/></svg> <%= __('externalTransfers.sampleInfo') %></span>
                                 <strong id="autoSampleCode">—</strong>
                                 <small id="autoSampleTests">—</small>
                             </article>
@@ -333,7 +333,7 @@
                 <div class="modal-footer">
                     <button type="button" class="secondary-action" data-close-modal><%= __('common.cancel') %></button>
                     <button type="submit" class="primary-action" id="saveTransferButton">
-                        <i class="fas fa-floppy-disk"></i> <%= __('externalTransfers.saveTransfer') %>
+                        <svg class="ic"><use href="#i-save"/></svg> <%= __('externalTransfers.saveTransfer') %>
                     </button>
                 </div>
             </form>
@@ -343,14 +343,14 @@
     <div class="transfer-modal" id="resultModal" aria-hidden="true">
         <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="resultModalTitle">
             <div class="modal-heading">
-                <div><span><i class="fas fa-file-medical"></i></span><h2 id="resultModalTitle"><%= __('externalTransfers.uploadResult') %></h2></div>
-                <button type="button" class="modal-close" data-close-result><i class="fas fa-times"></i></button>
+                <div><span><svg class="ic"><use href="#i-file-plus"/></svg></span><h2 id="resultModalTitle"><%= __('externalTransfers.uploadResult') %></h2></div>
+                <button type="button" class="modal-close" data-close-result><svg class="ic"><use href="#i-x"/></svg></button>
             </div>
             <form id="resultUploadForm">
                 <div class="result-upload-area">
                     <input id="returnedResultFile" name="resultFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp" required>
                     <label for="returnedResultFile">
-                        <i class="fas fa-cloud-arrow-up"></i>
+                        <svg class="ic"><use href="#i-upload"/></svg>
                         <strong><%= __('externalTransfers.chooseFile') %></strong>
                         <span id="selectedResultFile">PDF, JPG, PNG, HEIC, WEBP</span>
                     </label>
@@ -358,7 +358,7 @@
                 <div class="modal-footer">
                     <button type="button" class="secondary-action" data-close-result><%= __('common.cancel') %></button>
                     <button type="submit" class="primary-action" id="uploadResultButton">
-                        <i class="fas fa-paper-plane"></i> <%= __('externalTransfers.uploadResult') %>
+                        <svg class="ic"><use href="#i-send"/></svg> <%= __('externalTransfers.uploadResult') %>
                     </button>
                 </div>
             </form>
@@ -370,7 +370,7 @@
     <div id="printLabelArea">
         <div class="print-label">
             <div class="print-label-head">
-                <span class="print-label-brand"><i class="fas fa-flask"></i> labgo</span>
+                <span class="print-label-brand"><svg class="ic"><use href="#i-flask-conical"/></svg> labgo</span>
                 <span class="print-label-title"><%= __('externalTransfers.labelTitle') %></span>
             </div>
 
@@ -380,20 +380,20 @@
             </div>
 
             <div class="print-label-section">
-                <span class="print-label-heading"><i class="fas fa-user"></i> <%= __('externalTransfers.patientInfo') %></span>
+                <span class="print-label-heading"><svg class="ic"><use href="#i-user"/></svg> <%= __('externalTransfers.patientInfo') %></span>
                 <strong id="lblPatient" class="print-label-patient-name"></strong>
                 <small id="lblPatientMeta"></small>
                 <small id="lblTests"></small>
             </div>
 
             <div class="print-label-section">
-                <span class="print-label-heading"><i class="fas fa-calendar-days"></i> <%= __('externalTransfers.datesSection') %></span>
+                <span class="print-label-heading"><svg class="ic"><use href="#i-calendar-days"/></svg> <%= __('externalTransfers.datesSection') %></span>
                 <div class="print-label-row"><span><%= __('externalTransfers.sentAt') %></span><strong id="lblSent"></strong></div>
                 <div class="print-label-row" id="lblExpectedRow"><span><%= __('externalTransfers.expectedResultDate') %></span><strong id="lblExpected"></strong></div>
             </div>
 
             <div class="print-label-section">
-                <span class="print-label-heading"><i class="fas fa-arrow-right-arrow-left"></i> <%= __('externalTransfers.externalLabInfo') %></span>
+                <span class="print-label-heading"><svg class="ic"><use href="#i-arrow-left-right"/></svg> <%= __('externalTransfers.externalLabInfo') %></span>
                 <div class="print-label-row"><span><%= __('externalTransfers.fromLab') %></span><strong id="lblFromLab"></strong></div>
                 <div class="print-label-row"><span><%= __('externalTransfers.toLab') %></span><strong id="lblToLab"></strong></div>
                 <div class="print-label-row" id="lblRefRow"><span><%= __('externalTransfers.referenceNumber') %></span><strong id="lblRef"></strong></div>
@@ -738,9 +738,11 @@
             fillLabel(data);
             const area = document.getElementById('printLabelArea');
             const labelEl = area.querySelector('.print-label');
-            const icon = button.querySelector('i');
-            const originalIconClass = icon.className;
-            icon.className = 'fas fa-spinner fa-spin';
+            // Swap the button icon to a spinner while the PDF is built
+            const icon = button.querySelector('svg.ic');
+            const iconUse = icon ? icon.querySelector('use') : null;
+            const originalIconHref = iconUse ? iconUse.getAttribute('href') : null;
+            if (iconUse) { iconUse.setAttribute('href', '#i-loader-circle'); icon.classList.add('la-spin'); }
             button.disabled = true;
 
             // Render off-screen (not display:none, or html2canvas captures a blank
@@ -759,7 +761,7 @@
                 showToast(copy.transferError, 'error');
             } finally {
                 area.style.cssText = '';
-                icon.className = originalIconClass;
+                if (iconUse) { iconUse.setAttribute('href', originalIconHref); icon.classList.remove('la-spin'); }
                 button.disabled = false;
             }
         }

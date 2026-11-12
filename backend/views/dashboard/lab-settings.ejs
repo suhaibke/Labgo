@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/lab-dashboard.css">
     <style>
         :root {
@@ -419,10 +418,12 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/css/lab-pages.css">
 </head>
 <body>
     <!-- Lab Navbar -->
     <%- include('../partials/lab-navbar') %>
+    <%- include('../partials/lab-page-tabs', { group: 'settings', current: 'settings' }) %>
 
     <!-- Main Content Wrapper -->
     <div class="lab-wrapper">
@@ -431,7 +432,7 @@
                 <!-- Page Header -->
                 <div class="settings-header">
                     <div class="settings-title">
-                        <i class="fas fa-cog"></i>
+                        <svg class="ic"><use href="#i-settings"/></svg>
                         <div>
                             <h1><%= __('settings.title') %></h1>
                             <p class="settings-subtitle"><%= __('profile.manageLabInfo') %></p>
@@ -439,12 +440,14 @@
                     </div>
                 </div>
 
+                <%- include('../partials/lab-appearance') %>
+
                 <form id="settingsForm" class="settings-container">
                     <!-- Basic Information Section -->
                     <div class="settings-section">
                         <div class="section-header">
                             <div class="section-icon">
-                                <i class="fas fa-info-circle"></i>
+                                <svg class="ic"><use href="#i-info"/></svg>
                             </div>
                             <div>
                                 <h2 class="section-title"><%= __('profile.basicInfo') %></h2>
@@ -484,7 +487,7 @@
                     <div class="settings-section">
                         <div class="section-header">
                             <div class="section-icon" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">
-                                <i class="fas fa-image"></i>
+                                <svg class="ic"><use href="#i-image"/></svg>
                             </div>
                             <div>
                                 <h2 class="section-title"><%= __('profile.images') %></h2>
@@ -500,13 +503,13 @@
                                         <% if (lab.logo) { %>
                                             <img src="<%= lab.logo %>" alt="logo">
                                         <% } else { %>
-                                            <i class="fas fa-flask" style="font-size: 32px; color: #9ca3af;"></i>
+                                            <svg class="ic" style="font-size: 32px; color: #9ca3af;"><use href="#i-flask-conical"/></svg>
                                         <% } %>
                                     </div>
                                     <div class="logo-upload-btn">
                                         <input type="file" id="logoInput" accept="image/*" style="display: none;">
                                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('logoInput').click()">
-                                            <i class="fas fa-upload"></i> <span id="logoUploadLabel"><%= __('profile.chooseImage') %></span>
+                                            <svg class="ic"><use href="#i-upload"/></svg> <span id="logoUploadLabel"><%= __('profile.chooseImage') %></span>
                                         </button>
                                     </div>
                                 </div>
@@ -520,13 +523,13 @@
                                         <% if (lab.coverImage) { %>
                                             <img src="<%= lab.coverImage %>" alt="cover">
                                         <% } else { %>
-                                            <i class="fas fa-panorama" style="font-size: 28px; color: #9ca3af;"></i>
+                                            <svg class="ic" style="font-size: 28px; color: #9ca3af;"><use href="#i-image"/></svg>
                                         <% } %>
                                     </div>
                                     <div class="logo-upload-btn">
                                         <input type="file" id="coverInput" accept="image/*" style="display: none;">
                                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('coverInput').click()">
-                                            <i class="fas fa-upload"></i> <span id="coverUploadLabel"><%= __('profile.chooseImage') %></span>
+                                            <svg class="ic"><use href="#i-upload"/></svg> <span id="coverUploadLabel"><%= __('profile.chooseImage') %></span>
                                         </button>
                                     </div>
                                 </div>
@@ -538,7 +541,7 @@
                     <div class="settings-section">
                         <div class="section-header">
                             <div class="section-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                                <i class="fas fa-map-marker-alt"></i>
+                                <svg class="ic"><use href="#i-map-pin"/></svg>
                             </div>
                             <div>
                                 <h2 class="section-title"><%= __('profile.addressInfo') %></h2>
@@ -588,7 +591,7 @@
                     <div class="settings-section">
                         <div class="section-header">
                             <div class="section-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-                                <i class="fas fa-stethoscope"></i>
+                                <svg class="ic"><use href="#i-stethoscope"/></svg>
                             </div>
                             <div>
                                 <h2 class="section-title"><%= __('profile.specializations') %></h2>
@@ -610,7 +613,7 @@
                     <div class="settings-section">
                         <div class="section-header">
                             <div class="section-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
-                                <i class="fas fa-clock"></i>
+                                <svg class="ic"><use href="#i-clock"/></svg>
                             </div>
                             <div>
                                 <h2 class="section-title"><%= __('profile.operatingHours') %></h2>
@@ -644,7 +647,7 @@
                         </div>
                         <div class="save-buttons">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i>
+                                <svg class="ic"><use href="#i-save"/></svg>
                                 <%= __('common.save') %> <%= __('profile.changes') %>
                             </button>
                         </div>
@@ -804,7 +807,7 @@
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <svg class="ic"><use href="#i-${type === 'success' ? 'circle-check' : 'circle-alert'}"/></svg>
                 ${message}
             `;
 
