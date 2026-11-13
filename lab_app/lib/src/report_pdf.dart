@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import 'app_state.dart';
+import 'catalog_data.dart';
 import 'models.dart';
 import 'results_logic.dart';
 
@@ -84,7 +85,8 @@ Future<Uint8List> buildResultReportPdf(AppState app, Patient p, {bool approved =
   final t = _T(fonts);
   final accent = _pdfColor(app.palette.accent.toARGB32());
   final rows = resultRows(p);
-  final code = p.permanent.isNotEmpty ? p.permanent : 'LG-${p.id.length > 6 ? p.id.substring(p.id.length - 6) : p.id}'.toUpperCase();
+  final code = p.code;
+  final qr = p.resultUrl.isNotEmpty ? p.resultUrl : code;
   final now = DateTime.now();
   final collected = p.createdAt ?? now;
   final holders = app.holderLines.isNotEmpty ? app.holderLines.take(6).toList() : _holders(app.licenseOwners);
@@ -330,7 +332,7 @@ Future<Uint8List> buildResultReportPdf(AppState app, Patient p, {bool approved =
               t('Scan to verify this report', size: 7, color: _muted),
               t('امسح للتحقق من صحة التقرير', size: 7, color: _muted),
               pw.SizedBox(height: 3),
-              pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: code, width: 58, height: 58),
+              pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: qr, width: 58, height: 58),
             ]),
           ],
         ),
@@ -689,5 +691,127 @@ Future<Uint8List> buildStatsPdf(AppState app, String title) async {
 Future<Uint8List> imageAsPdf(Uint8List img) async {
   final doc = pw.Document();
   doc.addPage(pw.Page(pageFormat: PdfPageFormat.a4, build: (_) => pw.Center(child: pw.Image(pw.MemoryImage(img), fit: pw.BoxFit.contain))));
+  return doc.save();
+}
+
+/// One line of the payment receipt: a package, a test inside it, or a test.
+class ReceiptItem {
+  final String label;
+  final int? price;
+  final bool indent;
+  const ReceiptItem(this.label, this.price, {this.indent = false});
+}
+
+List<ReceiptItem> receiptItems(Patient p) {
+  final mode = p.mode;
+  final pkgs = kPackages.where((k) => p.packages.contains(k.id) || p.packages.contains(k.name)).toList();
+  final covered = {for (final k in pkgs) ...k.tests};
+  return [
+    for (final k in pkgs) ...[
+      ReceiptItem(k.name, packagePrice(k, mode)),
+      for (final t in k.tests) ReceiptItem(t, null, indent: true),
+    ],
+    for (final t in p.tests.where((t) => !covered.contains(t))) ReceiptItem(t, testPrice(t, mode)),
+  ];
+}
+
+String _money(int v) => v.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+
+/// The payment receipt on an 80 mm thermal roll: order number as a Code 128
+/// barcode, a QR that opens the result once approved, and an URGENT band.
+Future<Uint8List> buildReceiptPdf(AppState app, Patient p, {required bool payLater}) async {
+  final fonts = await _fonts();
+  final t = _T(fonts);
+  final ar = app.lang != 'en';
+  String tr3(String a, String k, String e) => app.tr(a, k, e);
+  final items = receiptItems(p);
+  final code = p.code;
+  final qr = p.resultUrl.isNotEmpty ? p.resultUrl : code;
+  final when = p.createdAt ?? DateTime.now();
+  final dir = ar ? pw.TextDirection.rtl : pw.TextDirection.ltr;
+
+  pw.Widget dashed() => pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(vertical: 5),
+        child: pw.Container(
+          height: 0,
+          decoration: const pw.BoxDecoration(
+            border: pw.Border(top: pw.BorderSide(color: _ink, width: .6, style: pw.BorderStyle.dashed)),
+          ),
+        ),
+      );
+  pw.Widget row(String a, String b, {bool bold = false, double size = 8.5}) => pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(vertical: 1),
+        child: pw.Row(children: [
+          t(a, size: size, bold: bold),
+          pw.SizedBox(width: 6),
+          pw.Expanded(child: pw.Align(alignment: ar ? pw.Alignment.centerLeft : pw.Alignment.centerRight, child: t(b, size: size, bold: bold))),
+        ]),
+      );
+
+  final doc = pw.Document(title: 'Receipt $code', author: app.labDisplayName);
+  doc.addPage(
+    pw.Page(
+      pageFormat: PdfPageFormat.roll80.copyWith(marginLeft: 4 * PdfPageFormat.mm, marginRight: 4 * PdfPageFormat.mm, marginTop: 4 * PdfPageFormat.mm, marginBottom: 6 * PdfPageFormat.mm),
+      textDirection: dir,
+      build: (ctx) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          if (_labgoLogo != null) pw.Center(child: pw.Image(pw.MemoryImage(_labgoLogo!), height: 26)),
+          pw.SizedBox(height: 2),
+          pw.Center(child: t(app.labDisplayName, size: 12, bold: true)),
+          if (app.labPhone.trim().isNotEmpty) pw.Center(child: t(app.labPhone, size: 7.5)),
+          if (app.labAddress.trim().isNotEmpty) pw.Center(child: t(app.labAddress, size: 7.5, align: pw.TextAlign.center)),
+          if (p.urgency == 'Urgent') ...[
+            pw.SizedBox(height: 5),
+            pw.Container(
+              color: _ink,
+              padding: const pw.EdgeInsets.symmetric(vertical: 4),
+              child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.center, children: [
+                t('عاجل', size: 14, bold: true, color: PdfColors.white),
+                t('  •  URGENT', size: 13, bold: true, color: PdfColors.white, spacing: 1),
+              ]),
+            ),
+          ],
+          dashed(),
+          row(tr3('رقم الطلب', 'ژمارەی داواکاری', 'Order No.'), code, bold: true, size: 11),
+          row(tr3('المريض', 'نەخۆش', 'Patient'), p.name, bold: true),
+          row(tr3('العمر / الجنس', 'تەمەن / ڕەگەز', 'Age / Gender'), '${p.age} • ${p.gender}'),
+          if (p.doctor.isNotEmpty) row(tr3('الطبيب', 'پزیشک', 'Doctor'), p.doctor),
+          if (p.mode == 'B2B' && (p.company ?? '').isNotEmpty) row(tr3('الجهة', 'لایەن', 'Company'), p.company!),
+          row(tr3('التاريخ', 'بەروار', 'Date'), _fmtDate(when)),
+          dashed(),
+          for (final it in items)
+            pw.Padding(
+              padding: pw.EdgeInsets.only(left: !ar && it.indent ? 8 : 0, right: ar && it.indent ? 8 : 0, top: 1, bottom: 1),
+              child: pw.Row(children: [
+                pw.Expanded(child: t(it.indent ? '- ${it.label}' : it.label, size: it.indent ? 7.5 : 8.5, bold: !it.indent, color: it.indent ? _muted : _ink, maxLines: 1)),
+                t(it.price == null ? tr3('مشمول', 'لەخۆگرتووە', 'Included') : _money(it.price!), size: it.indent ? 7.5 : 8.5, bold: !it.indent, color: it.indent ? _muted : _ink),
+              ]),
+            ),
+          dashed(),
+          row(tr3('الإجمالي', 'کۆی گشتی', 'TOTAL'), '${_money(p.price)} IQD', bold: true, size: 11),
+          pw.SizedBox(height: 3),
+          pw.Center(
+            child: pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: pw.BoxDecoration(border: pw.Border.all(color: _ink, width: .6)),
+              child: t(payLater ? tr3('الدفع لاحقاً — معلق', 'دواتر پارەبدە — چاوەڕوانە', 'Pay later — pending') : tr3('تم الدفع', 'پارەدراوە', 'Paid'), size: 8, bold: true),
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Center(child: pw.BarcodeWidget(barcode: pw.Barcode.code128(), data: code, width: 150, height: 38, drawText: false)),
+          pw.SizedBox(height: 2),
+          pw.Center(child: t(code, size: 10, bold: true, spacing: 2)),
+          pw.SizedBox(height: 8),
+          pw.Center(child: pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: qr, width: 72, height: 72)),
+          pw.SizedBox(height: 2),
+          pw.Center(child: t(tr3('امسح لعرض النتيجة عند جاهزيتها', 'سکان بکە بۆ بینینی ئەنجام کاتێک ئامادەبوو', 'Scan to view the result when ready'), size: 7.5, color: _muted)),
+          dashed(),
+          pw.Center(child: t('THANK YOU • LabGo', size: 9, bold: true, spacing: 1)),
+          if (app.labFooter.trim().isNotEmpty) pw.Center(child: t(app.labFooter, size: 7, color: _muted, align: pw.TextAlign.center)),
+        ],
+      ),
+    ),
+  );
   return doc.save();
 }

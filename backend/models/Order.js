@@ -90,6 +90,9 @@ const OrderSchema = new mongoose.Schema({
         default: null,
     },
 
+    // Lab's own sequential order number (shown as V0001 on the receipt).
+    receiptNo: { type: Number, default: null },
+
     // QR Code for nurse to scan at patient location
     qrCode: {
         type: String,

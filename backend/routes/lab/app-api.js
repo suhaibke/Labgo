@@ -13,6 +13,8 @@ const labTransfers = require('../../services/labTransferService');
 const TEST_CATEGORIES = Lab.schema.path('tests').schema.path('category').enumValues;
 const PACKAGE_CATEGORIES = Package.schema.path('category').enumValues;
 const { decorateOrderWithPatientInfo } = require('../../helpers/order-patient-info');
+const receipt = require('../../services/receiptLinkService');
+const { baseUrl } = require('../../helpers/base-url');
 
 const router = express.Router();
 const patientFields = 'name phone gender birthDate patientNo';
@@ -36,7 +38,7 @@ function appStatus(order) {
     return 'Pending';
 }
 
-function toAppPatient(order) {
+function toAppPatient(order, base = '') {
     const o = decorateOrderWithPatientInfo(order);
     const info = o.patientInfo || {};
     const created = new Date(o.createdAt);
@@ -64,6 +66,8 @@ function toAppPatient(order) {
         resultStatus: o.results?.entryStatus || 'none',
         permanent: info.patientNo ? `#${info.patientNo}` : (o.qrCode || ''),
         orderCode: o.qrCode || '',
+        orderNo: receipt.receiptCode(o),
+        resultUrl: base ? receipt.resultLink(base, String(o._id)) : '',
     };
 }
 
@@ -90,12 +94,12 @@ function toCatalog(tests) {
     return out;
 }
 
-async function patientsFor(lab) {
+async function patientsFor(lab, base = '') {
     const orders = await Order.find({ labId: lab._id, status: { $in: ['at_lab', 'completed'] } })
         .populate('patientId', patientFields)
         .sort({ createdAt: -1 })
         .limit(200);
-    return orders.map(toAppPatient);
+    return orders.map((o) => toAppPatient(o, base));
 }
 
 router.get('/api/app/bootstrap', async (req, res) => {
@@ -114,7 +118,7 @@ router.get('/api/app/bootstrap', async (req, res) => {
                     tests: (p.testIds || []).map((id) => nameById.get(String(id))).filter(Boolean),
                     price: p.price || 0, priceB2B: p.price || 0, active: p.isActive !== false,
                 })),
-                patients: await patientsFor(lab),
+                patients: await patientsFor(lab, baseUrl(req)),
             },
         });
     } catch (error) {
@@ -380,7 +384,7 @@ router.put('/api/app/packages', async (req, res) => {
 
 router.get('/api/app/patients', async (req, res) => {
     try {
-        res.json({ success: true, data: { patients: await patientsFor(req.lab) } });
+        res.json({ success: true, data: { patients: await patientsFor(req.lab, baseUrl(req)) } });
     } catch (error) {
         console.error('App patients error:', error);
         res.status(500).json({ success: false, message: 'Error loading patients' });

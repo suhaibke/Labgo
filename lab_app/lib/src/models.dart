@@ -133,6 +133,10 @@ class Patient {
   final Map<String, String> results;
   /// When the order was made (server mode); null for the sample data.
   final DateTime? createdAt;
+  /// Order (receipt) number, e.g. V0001 — the code on the barcode.
+  final String orderNo;
+  /// Signed public link that opens the result once it is approved.
+  final String resultUrl;
   const Patient({
     required this.id,
     required this.name,
@@ -154,9 +158,14 @@ class Patient {
     this.packages = const [],
     this.packageCategory,
     this.createdAt,
+    this.orderNo = '',
+    this.resultUrl = '',
   });
 
-  Patient copyWith({Map<String, String>? results, String? status}) => Patient(
+  /// The order number shown on the receipt, label and report.
+  String get code => orderNo.isNotEmpty ? orderNo : (permanent.isNotEmpty ? permanent : id.toUpperCase());
+
+  Patient copyWith({Map<String, String>? results, String? status, String? orderNo}) => Patient(
     id: id,
     name: name,
     age: age,
@@ -177,6 +186,8 @@ class Patient {
     packages: packages,
     packageCategory: packageCategory,
     createdAt: createdAt,
+    orderNo: orderNo ?? this.orderNo,
+    resultUrl: resultUrl,
   );
 }
 
@@ -198,6 +209,7 @@ const kPatientsSeed = <Patient>[
     mode: 'B2C',
     results: {'CBC': '13.2', 'Sugar': '110'},
     permanent: 'P-2026-0842',
+    orderNo: 'V0004',
   ),
   Patient(
     id: 'seed-2',
@@ -216,6 +228,7 @@ const kPatientsSeed = <Patient>[
     mode: 'B2C',
     results: {'Vitamin D': '18'},
     permanent: 'P-2026-0843',
+    orderNo: 'V0003',
   ),
   Patient(
     id: 'seed-3',
@@ -235,6 +248,7 @@ const kPatientsSeed = <Patient>[
     company: 'Al-Noor Clinic',
     results: {'Hormone': '520'},
     permanent: 'P-2026-0844',
+    orderNo: 'V0002',
   ),
   Patient(
     id: 'seed-4',
@@ -253,6 +267,7 @@ const kPatientsSeed = <Patient>[
     mode: 'B2C',
     results: {'Sugar': '95'},
     permanent: 'P-2026-0845',
+    orderNo: 'V0001',
   ),
 ];
 

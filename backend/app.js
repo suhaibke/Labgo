@@ -222,6 +222,7 @@ app.use(require('./routes/report-verify'));
 
 // Public result upload / label pages opened from the QR code on shipping labels
 app.use(require('./routes/transfer-upload'));
+app.use(require('./routes/receipt-result'));
 
 // Lab management routes (will be mounted after page routes)
 const labRoutes = require('./routes/admin/labs');

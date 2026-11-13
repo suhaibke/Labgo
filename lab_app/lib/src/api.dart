@@ -363,4 +363,6 @@ Patient patientFromJson(Map<String, dynamic> j) => Patient(
   },
   permanent: (j['permanent'] ?? '') as String,
   createdAt: DateTime.tryParse('${j['createdAt'] ?? ''}')?.toLocal(),
+  orderNo: (j['orderNo'] ?? '') as String,
+  resultUrl: (j['resultUrl'] ?? '') as String,
 );

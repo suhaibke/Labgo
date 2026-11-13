@@ -1495,6 +1495,19 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// "Print" on the receipt: the 80 mm receipt in the device's print preview.
+  Future<void> printReceipt() async {
+    final p = receiptPatient;
+    if (p == null) return;
+    HapticFeedback.mediumImpact();
+    try {
+      final bytes = await buildReceiptPdf(this, p, payLater: receiptPayLater);
+      await Printing.layoutPdf(name: 'receipt-${p.code}', format: PdfPageFormat.roll80, onLayout: (_) async => bytes);
+    } catch (_) {
+      toast(tr('تعذر فتح الطباعة', 'نەتوانرا چاپ بکرێت', 'Could not open printing'));
+    }
+  }
+
   void confirmReceipt() {
     for (final t in _printTimers) {
       t.cancel();
@@ -1644,6 +1657,16 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Next demo order number (V0001, V0002, …) after the highest one in use.
+  String _nextOrderNo() {
+    var top = 0;
+    for (final p in patients) {
+      final n = int.tryParse(p.orderNo.replaceFirst(RegExp(r'^V'), '')) ?? 0;
+      if (n > top) top = n;
+    }
+    return 'V${(top + 1).toString().padLeft(4, '0')}';
+  }
+
   void submitPatient({required bool payLater}) {
     if (addName.trim().isEmpty) {
       toast(w('fillName'));
@@ -1662,6 +1685,7 @@ class AppState extends ChangeNotifier {
     final pkgs = addSelectedPackages;
     final patient = Patient(
       id: '${now.millisecondsSinceEpoch}',
+      orderNo: _nextOrderNo(),
       name: addName.trim(),
       age: addAge.isNotEmpty ? '$addAge$addAgeUnit' : '—',
       gender: addGender,

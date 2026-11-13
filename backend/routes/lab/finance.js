@@ -90,7 +90,7 @@ router.get('/transactions', verifyToken, async (req, res) => {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(parseInt(limit))
-            .populate('orderId', 'qrCode pricing')
+            .populate('orderId', 'qrCode receiptNo pricing')
             .populate('nurseId', 'name');
 
         const total = await Transaction.countDocuments({ labId: req.user.labId });
@@ -158,7 +158,7 @@ router.get('/orders', verifyToken, async (req, res) => {
             data: {
                 orders: orders.map(o => ({
                     _id: o._id,
-                    orderNumber: o.qrCode,
+                    orderNumber: require('../../services/receiptLinkService').receiptCode(o),
                     patient: o.patientId?.name || 'Unknown',
                     nurse: o.nurseId?.name || 'Unassigned',
                     nursePhone: o.nurseId?.phone,

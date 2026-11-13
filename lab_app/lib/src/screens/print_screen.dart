@@ -1,7 +1,9 @@
+import 'package:barcode/barcode.dart' as bc;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-import '../catalog_data.dart';
 import '../models.dart';
+import '../report_pdf.dart' show ReceiptItem, receiptItems;
 import '../results_logic.dart';
 import '../theme.dart';
 import '../ui.dart';
@@ -48,8 +50,8 @@ class PrintScreen extends StatelessWidget {
     late final List<Widget> buttons;
 
     if (receipt) {
-      final items = _receiptItems(patient);
-      final orderId = 'ORD-${_tail(patient.id, 6).toUpperCase()}';
+      final items = receiptItems(patient);
+      final orderId = patient.code;
       backLabel = t3('رجوع', 'گەڕانەوە', 'Back');
       status = stage == 'complete'
           ? 'Order complete'
@@ -68,9 +70,17 @@ class PrintScreen extends StatelessWidget {
       buttons = [
         Expanded(
           child: _PillButton(
-            label: t3('تأكيد', 'پشتڕاستکردنەوە', 'Confirm'),
+            label: t3('طباعة', 'چاپکردن', 'Print'),
             color: pal.accent,
             textColor: Colors.white,
+            onTap: app.printReceipt,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _PillButton(
+            label: t3('تأكيد', 'پشتڕاستکردنەوە', 'Confirm'),
+            color: pal.segmented,
             onTap: app.confirmReceipt,
           ),
         ),
@@ -244,35 +254,12 @@ class PrintScreen extends StatelessWidget {
   }
 }
 
-String _tail(String s, int n) => s.length > n ? s.substring(s.length - n) : s;
 
-class _ReceiptItem {
-  final String label;
-  final int? price;
-  final bool indent;
-  const _ReceiptItem(this.label, this.price, {this.indent = false});
-}
-
-List<_ReceiptItem> _receiptItems(Patient p) {
-  final mode = p.mode;
-  final pkgs = kPackages
-      .where((k) => p.packages.contains(k.id) || p.packages.contains(k.name))
-      .toList();
-  final covered = {for (final k in pkgs) ...k.tests};
-  return [
-    for (final k in pkgs) ...[
-      _ReceiptItem(k.name, packagePrice(k, mode)),
-      for (final t in k.tests) _ReceiptItem(t, null, indent: true),
-    ],
-    for (final t in p.tests.where((t) => !covered.contains(t)))
-      _ReceiptItem(t, testPrice(t, mode)),
-  ];
-}
 
 /// Payment receipt printed after adding a patient (design `_w`).
 class _ReceiptPaper extends StatelessWidget {
   final Patient patient;
-  final List<_ReceiptItem> items;
+  final List<ReceiptItem> items;
   final String orderId;
   final bool payLater;
   const _ReceiptPaper({
@@ -379,6 +366,18 @@ class _ReceiptPaper extends StatelessWidget {
             textAlign: TextAlign.center,
             style: m(9, height: 1.25),
           ),
+          if (patient.urgency == 'Urgent') ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              color: const Color(0xFF111111),
+              child: Text(
+                t3('⚡ عاجل • URGENT', '⚡ بەپەلە • URGENT', '⚡ URGENT'),
+                textAlign: TextAlign.center,
+                style: m(14, weight: w900, color: Colors.white, height: 1.2, tracking: 1),
+              ),
+            ),
+          ],
           dashed(),
           line(
             t3('المريض', 'نەخۆش', 'Patient'),
@@ -416,11 +415,11 @@ class _ReceiptPaper extends StatelessWidget {
             ),
           ),
           line(
-            ar ? 'رقم الطلب' : 'Order',
+            t3('رقم الطلب', 'ژمارەی داواکاری', 'Order No.'),
             Text(
               orderId,
               textDirection: TextDirection.ltr,
-              style: m(10, weight: w700, height: 1.45),
+              style: m(13, weight: w900, height: 1.3),
             ),
           ),
           line(
@@ -505,7 +504,7 @@ class _ReceiptPaper extends StatelessWidget {
             children: [
               Column(
                 children: [
-                  const _QrBox(size: 56),
+                  _QrBox(data: patient.resultUrl.isNotEmpty ? patient.resultUrl : patient.code, size: 56),
                   const SizedBox(height: 4),
                   Text(
                     t3(
@@ -519,11 +518,11 @@ class _ReceiptPaper extends StatelessWidget {
               ),
               Column(
                 children: [
-                  _Barcode(height: (i) => 18 + (i * 7) % 20),
+                  _Barcode(data: patient.code),
                   const SizedBox(height: 4),
                   Text(
-                    patient.permanent,
-                    style: m(8, color: faint, tracking: .14 * 8),
+                    patient.code,
+                    style: m(11, weight: w900, tracking: .2 * 11),
                   ),
                 ],
               ),
@@ -1049,98 +1048,6 @@ class _ZigZagClipper extends CustomClipper<Path> {
 // ---------------------------------------------------------------------------
 // report content
 
-const _qr = [
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  0,
-  1,
-  0,
-  1,
-  0,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  0,
-  0,
-  1,
-  0,
-  1,
-  0,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  0,
-  1,
-  1,
-  0,
-  1,
-  0,
-  1,
-  0,
-  0,
-  1,
-  1,
-  0,
-  1,
-  1,
-  1,
-  0,
-  1,
-  1,
-  1,
-  1,
-  1,
-  0,
-  0,
-  1,
-  0,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  0,
-];
-const _bars = [
-  3,
-  1,
-  2,
-  1,
-  3,
-  2,
-  1,
-  2,
-  3,
-  1,
-  2,
-  1,
-  3,
-  2,
-  1,
-  2,
-  3,
-  1,
-  2,
-  3,
-  1,
-  2,
-  1,
-  3,
-];
 
 String formatToday(String lang) {
   final now = DateTime.now();
@@ -1565,10 +1472,10 @@ class _ResultsPaper extends StatelessWidget {
               const SizedBox(width: 16),
               Column(
                 children: [
-                  _Barcode(height: (i) => 15 + (i * 7) % 16),
+                  _Barcode(data: patient.code, height: 28),
                   const SizedBox(height: 4),
                   Text(
-                    patient.permanent,
+                    patient.code,
                     style: _m(context, 7, color: faint, tracking: .12 * 7),
                   ),
                 ],
@@ -1576,7 +1483,7 @@ class _ResultsPaper extends StatelessWidget {
               const SizedBox(width: 16),
               Column(
                 children: [
-                  const _QrBox(size: 48),
+                  _QrBox(data: patient.resultUrl.isNotEmpty ? patient.resultUrl : patient.code, size: 48),
                   const SizedBox(height: 4),
                   SizedBox(
                     width: 48,
@@ -1612,63 +1519,42 @@ class _ResultsPaper extends StatelessWidget {
 }
 
 class _Barcode extends StatelessWidget {
-  final double Function(int i) height;
-  const _Barcode({required this.height});
+  /// The order number (e.g. V0001) encoded as Code 128.
+  final String data;
+  final double height;
+  const _Barcode({required this.data, this.height = 34});
 
   @override
-  Widget build(BuildContext context) => Container(
-    height: 42,
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
+  Widget build(BuildContext context) {
+    final svg = bc.Barcode.code128().toSvg(
+      data.isEmpty ? '-' : data,
+      width: 130,
+      height: height,
+      drawText: false,
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       color: Colors.white,
-      border: Border.all(color: const Color(0xFF111111)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        for (var i = 0; i < _bars.length; i++) ...[
-          if (i > 0) const SizedBox(width: 2),
-          Container(
-            width: _bars[i].toDouble(),
-            height: height(i),
-            color: const Color(0xFF111111),
-          ),
-        ],
-      ],
-    ),
-  );
+      child: SvgPicture.string(svg, width: 130, height: height),
+    );
+  }
 }
 
 class _QrBox extends StatelessWidget {
+  /// The result link (or the order number when there is no server).
+  final String data;
   final double size;
-  const _QrBox({required this.size});
+  const _QrBox({required this.data, required this.size});
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    padding: const EdgeInsets.all(4),
-    decoration: BoxDecoration(
+  Widget build(BuildContext context) {
+    final svg = bc.Barcode.qrCode().toSvg(data.isEmpty ? '-' : data, width: size, height: size);
+    return Container(
+      width: size + 6,
+      height: size + 6,
+      padding: const EdgeInsets.all(3),
       color: Colors.white,
-      border: Border.all(color: const Color(0xFF111111)),
-    ),
-    child: LayoutBuilder(
-      builder: (context, c) {
-        final cell = (c.maxWidth - 7) / 8;
-        return Wrap(
-          spacing: 1,
-          runSpacing: 1,
-          children: [
-            for (var i = 0; i < 64; i++)
-              Container(
-                width: cell,
-                height: cell,
-                color: _qr[i] == 1 ? const Color(0xFF111111) : Colors.white,
-              ),
-          ],
-        );
-      },
-    ),
-  );
+      child: SvgPicture.string(svg, width: size, height: size),
+    );
+  }
 }

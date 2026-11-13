@@ -35,7 +35,9 @@ function stubDb(t, existingUser = null) {
     t.mock.method(Package, 'find', () => ({ lean: async () => [] }));
     t.mock.method(bcrypt, 'hash', async () => 'hashed');
     let seq = 100000;
-    t.mock.method(Counter, 'next', async () => ++seq);
+    // Patient IDs count from 100000; receipt numbers (receipt:<lab>) from 1.
+    let receipts = 0;
+    t.mock.method(Counter, 'next', async (name) => (String(name).startsWith('receipt:') ? ++receipts : ++seq));
     t.mock.method(User, 'updateOne', async () => ({}));
     return saved;
 }
@@ -59,6 +61,7 @@ test('a new phone creates a placeholder patient and an at-lab walk-in order', as
     assert.equal(order.walkIn.doctor, 'Dr. Noor');
     assert.equal(String(order.patientId), String(saved.users[0]._id));
     assert.equal(order.$locals.patientNo, 100001, 'the patient gets an ID number');
+    assert.equal(order.receiptNo, 1, 'the order gets the lab\'s next receipt number (V0001)');
 });
 
 test('a known phone with another name is saved as a beneficiary of that account', async (t) => {

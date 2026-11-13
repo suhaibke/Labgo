@@ -12,6 +12,7 @@ const crypto = require('crypto');
 const ejs = require('ejs');
 const QRCode = require('qrcode');
 const bwipjs = require('bwip-js');
+const { receiptCode } = require('./receiptLinkService');
 
 const TEMPLATE = path.join(__dirname, '../views/reports/lab-result-report.ejs');
 const FONT_DIR = path.join(__dirname, '../assets/fonts');
@@ -186,7 +187,7 @@ async function buildHtml({ order, lab, rows, approvedBy, baseUrl }) {
                 .slice(0, 6)
                 .map((h) => ({ title: h.title || '', name: h.name, specialty: h.specialty || '' })),
         },
-        barcode: barcodeDataUrl(order.qrCode),
+        barcode: barcodeDataUrl(receiptCode(order)),
         logo: await logoDataUrl(lab.logo),
         patient: {
             name: info.name || '', no: info.patientNo || null, phone: info.phone || '',
@@ -194,7 +195,7 @@ async function buildHtml({ order, lab, rows, approvedBy, baseUrl }) {
             age: Number.isInteger(info.age) ? `${info.age} y` : '',
         },
         order: {
-            code: order.qrCode || '', doctor: order.walkIn?.doctor || '', sample: SAMPLE[order.walkIn?.sampleType] || '',
+            code: receiptCode(order) || '', doctor: order.walkIn?.doctor || '', sample: SAMPLE[order.walkIn?.sampleType] || '',
             collectedAt: fmtDate(order.createdAt), reportedAt: fmtDate(approvedAt || new Date()),
         },
         groups,
@@ -302,7 +303,7 @@ async function closeBrowser() {
 
 async function buildReportPdf(args) {
     const html = await buildHtml(args);
-    const footer = [args.lab?.name, args.order?.qrCode].filter(Boolean).join(' · ');
+    const footer = [args.lab?.name, args.order ? receiptCode(args.order) : ''].filter(Boolean).join(' · ');
     const showPlatform = !args.lab?.reportBranding?.hidePlatformFooter;
     return renderPdf(html, { footerLeft: footer, showPlatform });
 }
