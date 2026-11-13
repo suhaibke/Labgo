@@ -1,551 +1,233 @@
-<!-- Lab Navigation Bar -->
-<nav class="lab-navbar">
-    <div class="navbar-container">
-        <div class="navbar-brand">
-            <a href="/lab/dashboard" class="brand-link">
-                <div class="brand-logo">
-                    <img src="/images/logo.png" alt="">
-                </div>
-            </a>
-        </div>
+<%#
+  Lab dashboard shell — side bar (desktop), floating bottom bar (mobile) and top bar.
+  Same look and motion as the LabGo Lab mobile app. Styles: /css/lab-app.css.
+%>
+<%
+  const _active = (typeof activeSection !== 'undefined' && activeSection) ||
+                  (typeof activePage !== 'undefined' && activePage) || '';
+  const _lang = (typeof currentLang !== 'undefined' && currentLang) || 'ar';
+  const _langBadge = { ar: 'AR', en: 'EN', ku: 'KU', tr: 'TR' }[_lang] || 'AR';
+  const _u = (typeof user !== 'undefined' && user) || {};
+  const _labName = (typeof lab !== 'undefined' && lab && lab.name) || 'LabGo';
+  const _initial = (_u.name || _labName || 'L').trim().charAt(0).toUpperCase();
+  let _nav = [
+    { id: 'overview', href: '/lab/dashboard', icon: 'house', label: __('navigation.dashboard') },
+    { id: 'orders', href: '/lab/orders', icon: 'clipboard-list', label: __('navigation.orders') },
+    { id: 'add-patient', href: '/lab/patients/new', icon: 'user-plus', label: __('labApp.addPatient') },
+    { id: 'patient-tests', href: '/lab/patient-tests', icon: 'test-tube', label: __('navigation.patientTests') },
+    { id: 'external-transfers', href: '/lab/external-transfers', icon: 'arrow-left-right', label: __('navigation.externalTransfers') },
+    { id: 'tests', href: '/lab/tests', icon: 'flask-conical', label: __('navigation.tests') },
+    { id: 'offers', also: ['packages'], href: '/lab/offers', icon: 'tag', label: __('labApp.offersPackages') },
+    { id: 'services', href: '/lab/services', icon: 'zap', label: __('navigation.quickServices') },
+    { id: 'reports', href: '/lab/reports', icon: 'chart-line', label: __('navigation.reports') },
+    { id: 'waste', href: '/lab/waste', icon: 'trash-2', label: __('waste.title') },
+  ];
+  const _navEnd = [
+    { id: 'settings', also: ['profile', 'users'], href: '/lab/settings', icon: 'settings', label: __('navigation.settings') },
+  ];
+  const _bottom = ['overview', 'orders', 'add-patient', 'patient-tests', 'settings'];
+  // Only pages this account may open (staff permissions). Settings opens the first allowed tab.
+  const _can = typeof labCan === 'function' ? labCan : function () { return true; };
+  _navEnd.forEach(function (n) {
+    if (n.id === 'settings') n.href = ['/lab/settings', '/lab/users', '/lab/profile'].filter(_can)[0];
+  });
+  _nav = _nav.filter(function (n) { return _can(n.href); });
+  const _isActive = function (n) { return _active === n.id || (n.also || []).indexOf(_active) !== -1; };
+%>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/lab-app.css">
+<script>
+  // Apply the app look before paint: theme + accent are kept per browser.
+  (function () {
+    var d = document.documentElement;
+    d.classList.add('la');
+    try {
+      var t = localStorage.getItem('la-theme');
+      if (t === 'dark') d.setAttribute('data-theme', 'dark');
+      var a = localStorage.getItem('la-accent');
+      if (a) d.style.setProperty('--accent', a);
+    } catch (e) {}
+  })();
+</script>
+<%- include('lab-icons') %>
 
-        <div class="navbar-menu">
-            <a href="/lab/dashboard" class="nav-item <%= (typeof activeSection !== 'undefined' && activeSection === 'overview') ? 'active' : '' %>" data-section="overview">
-                <i class="fas fa-tachometer-alt"></i>
-                <span><%= __('navigation.dashboard') %></span>
-            </a>
-            <a href="/lab/orders" class="nav-item <%= (typeof activeSection !== 'undefined' && activeSection === 'orders') ? 'active' : '' %>" data-section="orders">
-                <i class="fas fa-clipboard-list"></i>
-                <span><%= __('navigation.orders') %></span>
-            </a>
-            <a href="/lab/external-transfers" class="nav-item <%= (typeof activeSection !== 'undefined' && activeSection === 'external-transfers') ? 'active' : '' %>" data-section="external-transfers">
-                <i class="fas fa-arrow-right-arrow-left"></i>
-                <span><%= __('navigation.externalTransfers') %></span>
-            </a>
-            <a href="/lab/patient-tests" class="nav-item <%= (typeof activeSection !== 'undefined' && activeSection === 'patient-tests') ? 'active' : '' %>" data-section="patient-tests">
-                <i class="fas fa-vial"></i>
-                <span><%= __('navigation.patientTests') %></span>
-            </a>
-            <a href="/lab/tests" class="nav-item <%= (typeof activeSection !== 'undefined' && activeSection === 'tests') ? 'active' : '' %>" data-section="tests">
-                <i class="fas fa-flask"></i>
-                <span><%= __('navigation.tests') %></span>
-            </a>
-            <a href="/lab/offers" class="nav-item <%= (typeof activeSection !== 'undefined' && activeSection === 'offers') || (typeof activePage !== 'undefined' && activePage === 'offers') ? 'active' : '' %>" data-section="offers">
-                <i class="fas fa-tags"></i>
-                <span><%= __('navigation.offers') %></span>
-            </a>
-            <a href="/lab/packages" class="nav-item <%= (typeof activeSection !== 'undefined' && activeSection === 'packages') || (typeof activePage !== 'undefined' && activePage === 'packages') ? 'active' : '' %>" data-section="packages">
-                <i class="fas fa-box-open"></i>
-                <span><%= __('navigation.packages') || 'الباقات' %></span>
-            </a>
-            <a href="/lab/services" class="nav-item <%= (typeof activeSection !== 'undefined' && activeSection === 'services') ? 'active' : '' %>" data-section="services">
-                <i class="fas fa-bolt"></i>
-                <span><%= __('navigation.quickServices') || 'الخدمات السريعة' %></span>
-            </a>
-            <a href="/lab/reports" class="nav-item <%= (typeof activeSection !== 'undefined' && activeSection === 'reports') ? 'active' : '' %>" data-section="reports">
-                <i class="fas fa-chart-line"></i>
-                <span><%= __('navigation.reports') %></span>
-            </a>
-            <a href="/lab/profile" class="nav-item <%= (typeof activeSection !== 'undefined' && activeSection === 'profile') ? 'active' : '' %>" data-section="profile">
-                <i class="fas fa-user-edit"></i>
-                <span><%= __('navigation.profile') %></span>
-            </a>
-            <a href="/lab/settings" class="nav-item <%= (typeof activeSection !== 'undefined' && activeSection === 'settings') ? 'active' : '' %>" data-section="settings">
-                <i class="fas fa-cog"></i>
-                <span><%= __('navigation.settings') %></span>
-            </a>
-        </div>
+<aside class="la-side" aria-label="<%= __('navigation.dashboard') %>">
+  <a href="/lab/dashboard" class="la-brand">
+    <span class="la-brand-logo"><img src="/images/logo.png" alt="LabGo"></span>
+    <span><b>LabGo</b><span><%= _labName %></span></span>
+  </a>
+  <nav class="la-nav">
+    <% _nav.forEach(function (n) { %>
+      <a href="<%= n.href %>" class="la-nav-item press <%= _isActive(n) ? 'active' : '' %>">
+        <span class="la-nav-ic"><svg class="ic"><use href="#i-<%= n.icon %>"/></svg></span>
+        <span><%= n.label %></span>
+      </a>
+    <% }); %>
+    <div class="la-nav-sep"></div>
+    <% _navEnd.forEach(function (n) { %>
+      <a href="<%= n.href %>" class="la-nav-item press <%= _isActive(n) ? 'active' : '' %>">
+        <span class="la-nav-ic"><svg class="ic"><use href="#i-<%= n.icon %>"/></svg></span>
+        <span><%= n.label %></span>
+      </a>
+    <% }); %>
+  </nav>
+  <div class="la-side-foot">
+    <a href="/auth/logout" class="la-btn gradient block press" style="border-radius:16px;height:52px">
+      <svg class="ic flip-rtl"><use href="#i-log-out"/></svg><span><%= __('navigation.logout') %></span>
+    </a>
+  </div>
+</aside>
 
-        <div class="navbar-actions">
-            <!-- Language Selector -->
-            <div class="navbar-item language-dropdown">
-                <button class="navbar-btn" id="languageBtn">
-                    <i class="fas fa-globe"></i>
-                    <span class="language-text">العربية</span>
-                </button>
-                <div class="dropdown-menu" id="languageDropdown">
-                    <div class="dropdown-content">
-                        <a href="#" class="dropdown-item language-option" data-lang="ar">
-                            <i class="fas fa-globe"></i>
-                            <span>العربية</span>
-                        </a>
-                        <a href="#" class="dropdown-item language-option" data-lang="en">
-                            <i class="fas fa-globe"></i>
-                            <span>English</span>
-                        </a>
-                        <a href="#" class="dropdown-item language-option" data-lang="ku">
-                            <i class="fas fa-globe"></i>
-                            <span>کوردی</span>
-                        </a>
-                        <a href="#" class="dropdown-item language-option" data-lang="tr">
-                            <i class="fas fa-globe"></i>
-                            <span>Türkçe</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- User Menu -->
-            <div class="navbar-item user-dropdown">
-                <button class="navbar-btn user-btn" id="userMenuBtn">
-                    <div class="user-avatar">
-                        <% if (user.profileImage) { %>
-                            <img src="<%= user.profileImage %>" alt="<%= user.name %>">
-                        <% } else { %>
-                            <i class="fas fa-user-circle"></i>
-                        <% } %>
-                    </div>
-  
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-                <div class="dropdown-menu" id="userDropdown">
-                    <div class="dropdown-header">
-                        <p class="user-email"><%= user.email %></p>
-                        <p class="user-role">Lab Owner</p>
-                    </div>
-                    <div class="dropdown-content">
-                        <a href="/lab/profile" class="dropdown-item">
-                            <i class="fas fa-user-edit"></i>
-                            <span><%= __('navigation.profile') %></span>
-                        </a>
-                        <a href="/lab/settings" class="dropdown-item">
-                            <i class="fas fa-cog"></i>
-                            <span><%= __('navigation.settings') %></span>
-                        </a>
-                        <a href="/lab/help" class="dropdown-item">
-                            <i class="fas fa-question-circle"></i>
-                            <span><%= __('navigation.help') %></span>
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a href="/auth/logout" class="dropdown-item logout">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span><%= __('navigation.logout') %></span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<nav class="la-bottom" aria-label="<%= __('navigation.dashboard') %>">
+  <% _nav.concat(_navEnd).filter(function (n) { return _bottom.indexOf(n.id) !== -1; }).forEach(function (n) { %>
+    <a href="<%= n.href %>" class="press-90 <%= _isActive(n) ? 'active' : '' %>" aria-label="<%= n.label %>">
+      <svg class="ic"><use href="#i-<%= n.icon %>"/></svg>
+    </a>
+  <% }); %>
 </nav>
 
-<!-- Navigation Styles -->
-<style>
-.lab-navbar {
-    background: var(--white);
-    border-bottom: 1px solid var(--gray-200);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    box-shadow: var(--shadow-sm);
-    width: 100%;
-}
-
-.navbar-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-xl);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 70px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.navbar-brand {
-    flex-shrink: 0;
-}
-
-.brand-link {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    text-decoration: none;
-    color: var(--gray-900);
-}
-
-.brand-logo img {
-    width: 120px;
-}
-
-.brand-name {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
-    color: var(--gray-900);
-}
-
-.navbar-menu {
-    display: flex;
-    flex: 1;
-    min-width: 0;
-    align-items: center;
-    gap: var(--spacing-sm);
-    margin: 0 var(--spacing-md);
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-
-.navbar-menu::-webkit-scrollbar {
-    display: none;
-}
-
-.nav-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-lg);
-    text-decoration: none;
-    color: var(--gray-600);
-    font-weight: 500;
-    transition: all 0.2s ease;
-    position: relative;
-}
-
-.nav-item:hover {
-    background: var(--gray-50);
-    color: var(--primary-600);
-}
-
-.nav-item.active {
-    background: var(--primary-50);
-    color: var(--primary-600);
-}
-
-.nav-item.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 30px;
-    height: 3px;
-    background: var(--primary-500);
-    border-radius: var(--radius-sm);
-}
-
-.nav-item i {
-    
-    font-size: var(--font-size-md);
-}
-
-.navbar-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-}
-
-.navbar-btn {
-    background: none;
-    border: none;
-    padding: var(--spacing-sm);
-    border-radius: var(--radius-lg);
-    color: var(--gray-600);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-}
-
-.navbar-btn:hover {
-    background: var(--gray-50);
-    color: var(--primary-600);
-}
-
-.language-text {
-    font-size: var(--font-size-sm);
-    margin-left: var(--spacing-xs);
-}
-
-.user-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-xs) var(--spacing-sm);
-}
-
-.user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--gray-100);
-    color: var(--gray-600);
-}
-
-.user-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.user-avatar i {
-    font-size: var(--font-size-lg);
-}
-
-.user-name {
-    font-weight: 500;
-    color: var(--gray-700);
-    margin-right: var(--spacing-xs);
-}
-
-/* Dropdown Styles */
-.language-dropdown,
-.user-dropdown {
-    position: relative;
-}
-
-.dropdown-menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    min-width: 300px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.2s ease;
-    margin-top: var(--spacing-xs);
-    z-index: 9999;
-    margin-right: -200px;
-}
-
-.language-dropdown:hover .dropdown-menu,
-.user-dropdown:hover .dropdown-menu,
-.language-dropdown:focus-within .dropdown-menu,
-.user-dropdown:focus-within .dropdown-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.dropdown-header {
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-bottom: 1px solid var(--gray-100);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.dropdown-header h4 {
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    color: var(--gray-900);
-    margin: 0;
-}
-
-.mark-all-read {
-    background: none;
-    border: none;
-    color: var(--primary-500);
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    cursor: pointer;
-}
-
-.mark-all-read:hover {
-    color: var(--primary-600);
-}
-
-.dropdown-content {
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-.notification-item {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-bottom: 1px solid var(--gray-50);
-    transition: background 0.2s ease;
-    cursor: pointer;
-}
-
-.notification-item:hover {
-    background: var(--gray-50);
-}
-
-.notification-item.unread {
-    background: var(--primary-50);
-}
-
-.notification-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-sm);
-    flex-shrink: 0;
-}
-
-.notification-icon.urgent {
-    background: var(--error);
-    color: var(--white);
-}
-
-.notification-icon.info {
-    background: var(--info);
-    color: var(--white);
-}
-
-.notification-icon.success {
-    background: var(--success);
-    color: var(--white);
-}
-
-.notification-details {
-    flex: 1;
-    min-width: 0;
-}
-
-.notification-title {
-    font-weight: 600;
-    color: var(--gray-900);
-    font-size: var(--font-size-sm);
-    margin: 0 0 var(--spacing-xs) 0;
-}
-
-.notification-text {
-    color: var(--gray-600);
-    font-size: var(--font-size-sm);
-    margin: 0 0 var(--spacing-xs) 0;
-}
-
-.notification-time {
-    color: var(--gray-400);
-    font-size: var(--font-size-xs);
-    margin: 0;
-}
-
-.dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md) var(--spacing-lg);
-    color: var(--gray-700);
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
-
-.dropdown-item:hover {
-    background: var(--gray-50);
-    color: var(--primary-600);
-}
-
-.dropdown-item.logout {
-    color: var(--error);
-}
-
-.dropdown-item.logout:hover {
-    background: #fef2f2;
-    color: #dc2626;
-}
-
-.dropdown-divider {
-    height: 1px;
-    background: var(--gray-200);
-    margin: var(--spacing-xs) 0;
-}
-
-.dropdown-footer {
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-top: 1px solid var(--gray-100);
-}
-
-.view-all-link {
-    color: var(--primary-500);
-    text-decoration: none;
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-}
-
-.view-all-link:hover {
-    color: var(--primary-600);
-}
-
-.user-email {
-    color: var(--gray-600);
-    font-size: var(--font-size-sm);
-    margin: 0 0 var(--spacing-xs) 0;
-}
-
-.user-role {
-    color: var(--gray-400);
-    font-size: var(--font-size-xs);
-    margin: 0;
-    text-transform: uppercase;
-    font-weight: 500;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .navbar-container {
-        padding: 0 var(--spacing-md);
-    }
-
-    .navbar-menu {
-        display: none;
-    }
-
-    .user-name {
-        display: none;
-    }
-
-    .dropdown-menu {
-        right: var(--spacing-md);
-        left: var(--spacing-md);
-        min-width: auto;
-    }
-}
-</style>
+<header class="la-top">
+  <div class="la-top-group">
+    <div style="position:relative">
+      <button class="la-circle avatar press-90" id="laUserBtn" aria-label="<%= __('navigation.profile') %>">
+        <% if (_u.profileImage) { %><img src="<%= _u.profileImage %>" alt=""><% } else { %><%= _initial %><% } %>
+      </button>
+      <div class="la-menu" id="laUserMenu" style="left:0;right:auto">
+        <div style="padding:8px 12px 10px">
+          <b style="display:block;font-size:14px"><%= _u.name || _labName %></b>
+          <span style="font-size:12px;color:var(--muted)"><%= _u.email || '' %></span>
+        </div>
+        <% _nav.concat(_navEnd).filter(function (n) { return _bottom.indexOf(n.id) === -1; }).forEach(function (n) { %>
+          <a href="<%= n.href %>" class="la-only-phone"><svg class="ic"><use href="#i-<%= n.icon %>"/></svg><%= n.label %></a>
+        <% }); %>
+        <a href="/lab/profile"><svg class="ic"><use href="#i-user"/></svg><%= __('navigation.profile') %></a>
+        <a href="/lab/settings"><svg class="ic"><use href="#i-settings"/></svg><%= __('navigation.settings') %></a>
+        <a href="/auth/logout" style="color:var(--red)"><svg class="ic flip-rtl"><use href="#i-log-out"/></svg><%= __('navigation.logout') %></a>
+      </div>
+    </div>
+    <div style="position:relative">
+      <button class="la-circle press-90 la-bell" id="laBellBtn" aria-label="<%= __('labNotifications.title') %>">
+        <svg class="ic"><use href="#i-bell"/></svg><span class="la-bell-dot" id="laBellDot" hidden></span>
+      </button>
+      <div class="la-menu la-notif" id="laNotifMenu" style="left:0;right:auto">
+        <div class="la-notif-head"><b><%= __('labNotifications.title') %></b><button type="button" id="laNotifAll"><%= __('labNotifications.markAll') %></button></div>
+        <div id="laNotifList"><p class="la-notif-empty"><%= __('labNotifications.empty') %></p></div>
+      </div>
+    </div>
+    <button class="la-theme" id="laThemeBtn" aria-label="Theme">
+      <svg class="ic sun"><use href="#i-sun"/></svg>
+      <svg class="ic moon"><use href="#i-moon"/></svg>
+      <span class="knob"></span>
+    </button>
+  </div>
+  <div class="la-top-group">
+    <a class="la-circle press-90" href="/shop" aria-label="Store"><svg class="ic" style="width:19px;height:19px;stroke-width:1.8"><use href="#i-store"/></svg></a>
+    <div style="position:relative">
+      <button class="la-circle la-lang press-90" id="laLangBtn" aria-label="Language">
+        <svg class="ic"><use href="#i-globe"/></svg><span><%= _langBadge %></span>
+      </button>
+      <div class="la-menu" id="laLangMenu">
+        <% [['ar','العربية'],['en','English'],['ku','کوردی'],['tr','Türkçe']].forEach(function (l) { %>
+          <button class="la-lang-opt <%= _lang === l[0] ? 'on' : '' %>" data-lang="<%= l[0] %>"><svg class="ic"><use href="#i-globe"/></svg><%= l[1] %></button>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+</header>
 
 <script>
-// Navbar dropdown functionality
-document.addEventListener('DOMContentLoaded', function() {
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.language-dropdown') && !e.target.closest('.user-dropdown')) {
-            document.querySelectorAll('.dropdown-menu').forEach(dropdown => {
-                dropdown.style.opacity = '0';
-                dropdown.style.visibility = 'hidden';
-                dropdown.style.transform = 'translateY(-10px)';
-            });
-        }
+  (function () {
+    function toggle(menuId, e) {
+      e.stopPropagation();
+      document.querySelectorAll('.la-menu').forEach(function (m) { if (m.id !== menuId) m.classList.remove('open'); });
+      document.getElementById(menuId).classList.toggle('open');
+    }
+    document.getElementById('laUserBtn').addEventListener('click', function (e) { toggle('laUserMenu', e); });
+    document.getElementById('laLangBtn').addEventListener('click', function (e) { toggle('laLangMenu', e); });
+    // Lab notifications (samples sent to / received by / results from other labs).
+    var bellCopy = { empty: <%- JSON.stringify(__('labNotifications.empty')) %> };
+    function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+    function notifHref(d) {
+      if (d.type === 'transfer_incoming') return '/lab/external-transfers?tab=incoming';
+      if (d.type === 'transfer_received' || d.type === 'transfer_result') return '/lab/external-transfers';
+      return '';
+    }
+    function ago(iso) {
+      var m = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+      try {
+        var f = new Intl.RelativeTimeFormat(document.documentElement.lang || 'en', { numeric: 'auto' });
+        if (m < 60) return f.format(-m, 'minute');
+        if (m < 1440) return f.format(-Math.round(m / 60), 'hour');
+        return f.format(-Math.round(m / 1440), 'day');
+      } catch (e) { return new Date(iso).toLocaleString(); }
+    }
+    var bellItems = [];
+    function loadBell() {
+      fetch('/lab/api/notifications', { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d || !d.success) return;
+          bellItems = d.data.items;
+          var dot = document.getElementById('laBellDot');
+          dot.hidden = !d.data.unread;
+          dot.textContent = d.data.unread > 9 ? '9+' : String(d.data.unread || '');
+          var list = document.getElementById('laNotifList');
+          list.innerHTML = bellItems.length ? bellItems.map(function (n) {
+            var href = notifHref(n.data || {});
+            return '<a class="la-notif-item' + (n.isRead ? '' : ' unread') + '" data-id="' + esc(n.id) + '" href="' + (href || '#') + '">'
+              + '<b>' + esc(n.title) + '</b><span>' + esc(n.body) + '</span><small>' + esc(ago(n.createdAt)) + '</small></a>';
+          }).join('') : '<p class="la-notif-empty">' + esc(bellCopy.empty) + '</p>';
+        }).catch(function () {});
+    }
+    function markRead(ids) {
+      return fetch('/lab/api/notifications/read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids ? { ids: ids } : {}) })
+        .then(loadBell).catch(function () {});
+    }
+    document.getElementById('laBellBtn').addEventListener('click', function (e) { toggle('laNotifMenu', e); });
+    document.getElementById('laNotifMenu').addEventListener('click', function (e) { e.stopPropagation(); });
+    document.getElementById('laNotifAll').addEventListener('click', function () { markRead(null); });
+    document.getElementById('laNotifList').addEventListener('click', function (e) {
+      var a = e.target.closest('.la-notif-item');
+      if (!a) return;
+      if (a.getAttribute('href') === '#') e.preventDefault();
+      if (a.classList.contains('unread')) {
+        var nav = a.getAttribute('href');
+        e.preventDefault();
+        markRead([a.dataset.id]).then(function () { if (nav !== '#') window.location.href = nav; });
+      }
     });
-
-    // Language selector functionality
-    document.querySelectorAll('.language-option').forEach(option => {
-        option.addEventListener('click', function(e) {
-            e.preventDefault();
-            const lang = this.dataset.lang;
-
-            // Update language cookie via API
-            fetch('/api/language/set', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ language: lang })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Reload page to apply new language
-                    window.location.reload();
-                }
-            })
-            .catch(error => {
-                console.error('Error setting language:', error);
-            });
-        });
+    loadBell();
+    setInterval(function () { if (!document.hidden) loadBell(); }, 60000);
+    document.addEventListener('click', function () {
+      document.querySelectorAll('.la-menu.open').forEach(function (m) { m.classList.remove('open'); });
     });
-});
+    document.getElementById('laThemeBtn').addEventListener('click', function () {
+      var d = document.documentElement;
+      var dark = d.getAttribute('data-theme') !== 'dark';
+      if (dark) d.setAttribute('data-theme', 'dark'); else d.removeAttribute('data-theme');
+      try { localStorage.setItem('la-theme', dark ? 'dark' : 'light'); } catch (e) {}
+    });
+    // Language: same API as before (sets the cookie on the server), then reload.
+    document.querySelectorAll('.la-lang-opt').forEach(function (b) {
+      b.addEventListener('click', function () {
+        fetch('/api/language/set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language: b.dataset.lang })
+        }).then(function (r) { return r.json(); })
+          .then(function (d) { if (d.success) window.location.reload(); })
+          .catch(function (err) { console.error('Error setting language:', err); });
+      });
+    });
+    // Shared toast used by redesigned pages: window.laToast('text')
+    var timer;
+    window.laToast = function (text) {
+      var t = document.getElementById('laToast');
+      if (!t) { t = document.createElement('div'); t.id = 'laToast'; t.className = 'la-toast pop-in'; document.body.appendChild(t); }
+      t.textContent = text; t.style.display = 'block';
+      t.classList.remove('pop-in'); void t.offsetWidth; t.classList.add('pop-in');
+      clearTimeout(timer); timer = setTimeout(function () { t.style.display = 'none'; }, 2600);
+    };
+  })();
 </script>

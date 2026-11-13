@@ -4,145 +4,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/lab-dashboard.css">
-    <style>
-        body { font-family: <%= font %>; }
-        .orders-history-container { max-width: 1400px; margin: 0 auto; }
-    </style>
+    <link rel="stylesheet" href="/css/lab-patient-tests.css">
 </head>
 <body>
     <%- include('../partials/lab-navbar') %>
 
-    <div class="lab-wrapper">
-        <main class="lab-dashboard">
-            <div class="dashboard-container">
-
-                <!-- Page Header -->
-                <div class="orders-history-header">
-                    <div class="header-text">
-                        <h1><%= __('ordersHistory.title') %></h1>
-                        <p><%= __('ordersHistory.subtitle') %></p>
-                    </div>
-                    <div class="header-actions">
-                        <button class="btn-refresh" onclick="loadOrders()">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Statistics Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card primary">
-                        <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
-                        <div class="stat-content">
-                            <h3 class="stat-number" id="statTotal">-</h3>
-                            <p class="stat-label"><%= __('ordersHistory.stats.totalCompleted') %></p>
-                        </div>
-                    </div>
-                    <div class="stat-card success">
-                        <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
-                        <div class="stat-content">
-                            <h3 class="stat-number" id="statThisMonth">-</h3>
-                            <p class="stat-label"><%= __('ordersHistory.stats.thisMonth') %></p>
-                        </div>
-                    </div>
-                    <div class="stat-card secondary">
-                        <div class="stat-icon"><i class="fas fa-coins"></i></div>
-                        <div class="stat-content">
-                            <h3 class="stat-number" id="statRevenue">-</h3>
-                            <p class="stat-label"><%= __('ordersHistory.stats.totalRevenue') %></p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Filters -->
-                <div class="orders-filters">
-                    <div class="filter-group">
-                        <label><%= __('ordersHistory.filters.fromDate') %></label>
-                        <input type="date" id="filterFromDate" class="filter-input">
-                    </div>
-                    <div class="filter-group">
-                        <label><%= __('ordersHistory.filters.toDate') %></label>
-                        <input type="date" id="filterToDate" class="filter-input">
-                    </div>
-                    <div class="filter-group search-group">
-                        <input type="text" id="searchInput" placeholder="<%= __('ordersHistory.filters.searchPlaceholder') %>" class="search-input">
-                        <i class="fas fa-search search-icon"></i>
-                    </div>
-                    <button class="btn-clear-filters" onclick="clearFilters()">
-                        <i class="fas fa-times"></i> <%= __('ordersHistory.filters.clear') %>
-                    </button>
-                </div>
-
-                <!-- Orders Table -->
-                <div class="orders-table-container">
-                    <div class="table-wrapper">
-                        <table class="modern-table orders-table" id="ordersTable">
-                            <thead>
-                                <tr>
-                                    <th><%= __('ordersHistory.table.orderId') %></th>
-                                    <th><%= __('ordersHistory.table.patient') %></th>
-                                    <th><%= __('ordersHistory.table.tests') %></th>
-                                    <th><%= __('ordersHistory.table.completionDate') %></th>
-                                    <th><%= __('ordersHistory.table.amount') %></th>
-                                    <th><%= __('ordersHistory.table.results') %></th>
-                                    <th><%= __('ordersHistory.table.actions') %></th>
-                                </tr>
-                            </thead>
-                            <tbody id="ordersTableBody">
-                                <!-- Dynamic content -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Empty State -->
-                    <div class="empty-state" id="emptyState" style="display: none;">
-                        <i class="fas fa-clipboard-check"></i>
-                        <h3><%= __('ordersHistory.empty.title') %></h3>
-                        <p><%= __('ordersHistory.empty.description') %></p>
-                    </div>
-
-                    <!-- Loading State -->
-                    <div class="loading-state" id="loadingState">
-                        <div class="spinner"></div>
-                        <p><%= __('ordersHistory.loading') %></p>
-                    </div>
-                </div>
-
-                <!-- Pagination -->
-                <div class="pagination" id="pagination">
-                    <button class="pagination-btn" id="prevBtn" onclick="previousPage()">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <span class="pagination-info" id="paginationInfo">Page 1 of 1</span>
-                    <button class="pagination-btn" id="nextBtn" onclick="nextPage()">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
-
+    <main class="la-main screen-enter">
+        <section class="la-page-head">
+            <div>
+                <h1 class="la-h1"><%= __('ordersHistory.title') %></h1>
+                <p class="la-sub"><%= __('ordersHistory.subtitle') %></p>
             </div>
-        </main>
-    </div>
+            <div style="display:flex;gap:8px;align-items:center">
+            <a class="la-btn md press-95" href="/lab/patients/new"><svg class="ic"><use href="#i-user-plus"/></svg><%= __('labApp.addPatient') %></a>
+            <button class="la-circle press-90" onclick="loadOrders()" aria-label="refresh" style="width:44px;height:44px">
+                <svg class="ic" style="width:18px;height:18px"><use href="#i-refresh-cw"/></svg>
+            </button>
+            </div>
+        </section>
+
+        <section class="la-grid c3" style="margin-top:16px">
+            <div class="la-card la-kpi stagger">
+                <span class="la-kpi-ic"><svg class="ic"><use href="#i-circle-check"/></svg></span>
+                <div><b id="statTotal">-</b><span><%= __('ordersHistory.stats.totalCompleted') %></span></div>
+            </div>
+            <div class="la-card la-kpi stagger" style="animation-delay:.05s">
+                <span class="la-kpi-ic" style="background:var(--soft-green);color:var(--green-text)"><svg class="ic"><use href="#i-calendar"/></svg></span>
+                <div><b id="statThisMonth">-</b><span><%= __('ordersHistory.stats.thisMonth') %></span></div>
+            </div>
+            <div class="la-card la-kpi stagger" style="animation-delay:.1s">
+                <span class="la-kpi-ic" style="background:rgba(0,122,255,.12);color:var(--blue)"><svg class="ic"><use href="#i-wallet"/></svg></span>
+                <div style="min-width:0"><b id="statRevenue" style="font-size:24px">-</b><span><%= __('ordersHistory.stats.totalRevenue') %></span></div>
+            </div>
+        </section>
+
+        <section class="la-card stagger pt-filters" style="margin-top:12px;animation-delay:.12s">
+            <div class="la-search pt-search">
+                <svg class="ic"><use href="#i-search"/></svg>
+                <input type="text" id="searchInput" placeholder="<%= __('ordersHistory.filters.searchPlaceholder') %>">
+            </div>
+            <label class="pt-date"><span><%= __('ordersHistory.filters.fromDate') %></span><input type="date" id="filterFromDate"></label>
+            <label class="pt-date"><span><%= __('ordersHistory.filters.toDate') %></span><input type="date" id="filterToDate"></label>
+            <button class="la-btn soft md press" onclick="clearFilters()">
+                <svg class="ic"><use href="#i-x"/></svg><%= __('ordersHistory.filters.clear') %>
+            </button>
+        </section>
+
+        <section class="la-card stagger" style="margin-top:12px;animation-delay:.16s;padding-top:6px">
+            <div class="pt-table-wrap">
+                <table class="pt-table" id="ordersTable">
+                    <thead>
+                        <tr>
+                            <th><%= __('ordersHistory.table.orderId') %></th>
+                            <th><%= __('ordersHistory.table.patient') %></th>
+                            <th><%= __('ordersHistory.table.tests') %></th>
+                            <th><%= __('ordersHistory.table.completionDate') %></th>
+                            <th><%= __('ordersHistory.table.amount') %></th>
+                            <th><%= __('ordersHistory.table.results') %></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody"></tbody>
+                </table>
+            </div>
+            <div class="la-empty-box" id="emptyState" style="display:none">
+                <svg class="ic"><use href="#i-circle-check"/></svg>
+                <p style="font-weight:700;color:var(--ink);margin:0 0 4px"><%= __('ordersHistory.empty.title') %></p>
+                <p style="margin:0"><%= __('ordersHistory.empty.description') %></p>
+            </div>
+            <div class="la-spinner" id="loadingState"></div>
+            <div class="pt-pagination" id="pagination">
+                <button class="la-circle press-90" id="prevBtn" onclick="previousPage()" aria-label="previous"><svg class="ic flip-rtl"><use href="#i-chevron-left"/></svg></button>
+                <span class="la-sub" id="paginationInfo">1 / 1</span>
+                <button class="la-circle press-90" id="nextBtn" onclick="nextPage()" aria-label="next"><svg class="ic flip-rtl"><use href="#i-chevron-right"/></svg></button>
+            </div>
+        </section>
+    </main>
 
     <!-- Order Detail Modal -->
-    <div class="modal" id="orderModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><%= __('ordersHistory.modal.title') %></h3>
-                <button class="modal-close" onclick="closeModal()">
-                    <i class="fas fa-times"></i>
+    <div class="la-modal" id="orderModal" role="dialog" aria-modal="true">
+        <div class="la-modal-bg" onclick="closeModal()"></div>
+        <div class="la-modal-card">
+            <div class="la-between">
+                <h3 class="la-h2" style="font-size:18px"><%= __('ordersHistory.modal.title') %></h3>
+                <button class="la-circle press-90" onclick="closeModal()" style="width:32px;height:32px;background:var(--segmented);border:0;box-shadow:none" aria-label="close">
+                    <svg class="ic" style="width:16px;height:16px"><use href="#i-x"/></svg>
                 </button>
             </div>
-            <div class="modal-body" id="modalBody">
-                <!-- Dynamic content -->
-            </div>
+            <div id="modalBody" style="margin-top:12px"></div>
         </div>
     </div>
 
     <!-- Toast Notification -->
-    <div class="toast" id="toast"></div>
+    <div class="la-toast" id="toast" style="display:none"></div>
 
     <script>
         // State
@@ -249,7 +203,7 @@
                 const labAmount = order.financials && order.financials.labAmount ? formatCurrency(order.financials.labAmount) : '-';
                 const reportUrl = order.results && order.results.reportUrl ? order.results.reportUrl : null;
 
-                return `<tr class="order-row" data-order-id="${order._id}"><td><span class="order-id">${order.qrCode || 'N/A'}</span></td><td><div class="patient-cell"><div class="patient-avatar">${getInitials(patientName)}</div><div><div class="patient-name">${patientName}</div><div class="patient-phone">${patientMeta}</div></div></div></td><td><span class="tests-count">${testsCount} <%= __('ordersHistory.table.testsCount') %></span></td><td>${completedDate}</td><td><span class="amount">${labAmount}</span></td><td>${reportUrl ? `<a href="${reportUrl}" target="_blank" class="result-link"><i class="fas fa-file-download"></i> <%= __('ordersHistory.table.downloadResult') %></a>` : `<span class="no-results"><%= __('ordersHistory.table.noResults') %></span>`}</td><td><button class="btn-view-details" onclick="viewOrderDetails('${order._id}')"><i class="fas fa-eye"></i> <%= __('ordersHistory.table.viewDetails') %></button></td></tr>`;
+                return `<tr class="order-row" data-order-id="${order._id}"><td><span class="order-id">${order.qrCode || 'N/A'}</span></td><td><div class="patient-cell"><div class="patient-avatar">${getInitials(patientName)}</div><div><div class="patient-name">${patientName}</div><div class="patient-phone">${patientMeta}</div></div></div></td><td><span class="tests-count">${testsCount} <%= __('ordersHistory.table.testsCount') %></span></td><td>${completedDate}</td><td><span class="amount">${labAmount}</span></td><td>${reportUrl ? `<a href="${reportUrl}" target="_blank" class="result-link"><svg class="ic"><use href="#i-download"/></svg> <%= __('ordersHistory.table.downloadResult') %></a>` : `<span class="no-results"><%= __('ordersHistory.table.noResults') %></span>`}</td><td><button class="btn-view-details" onclick="viewOrderDetails('${order._id}')"><svg class="ic"><use href="#i-eye"/></svg> <%= __('ordersHistory.table.viewDetails') %></button></td></tr>`;
             }).join('');
         }
 
@@ -307,7 +261,7 @@
                     <h4><%= __('ordersHistory.modal.resultsInfo') %></h4>
                     ${reportUrl ?
                         `<a href="${reportUrl}" target="_blank" class="btn-download-result">
-                            <i class="fas fa-file-pdf"></i> <%= __('ordersHistory.modal.downloadResult') %>
+                            <svg class="ic"><use href="#i-file-text"/></svg> <%= __('ordersHistory.modal.downloadResult') %>
                         </a>` :
                         `<p class="no-result"><%= __('ordersHistory.modal.noResultFile') %></p>`
                     }
@@ -383,7 +337,7 @@
         }
 
         function showLoading(show) {
-            document.getElementById('loadingState').style.display = show ? 'flex' : 'none';
+            document.getElementById('loadingState').style.display = show ? 'grid' : 'none';
             document.getElementById('ordersTable').style.display = show ? 'none' : 'table';
         }
 
@@ -436,408 +390,6 @@
         });
     </script>
 
-    <style>
-        /* Fix table alignment */
-        .orders-table th,
-        .orders-table td {
-            text-align: center !important;
-            vertical-align: middle !important;
-        }
-        .orders-table th:first-child,
-        .orders-table td:first-child {
-            text-align: left !important;
-        }
-    </style>
-    <style>
-        /* Orders History Styles */
-        .orders-history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--spacing-xl);
-        }
-        .header-text h1 {
-            font-size: var(--font-size-3xl);
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: var(--spacing-xs);
-        }
-        .header-text p {
-            color: var(--gray-600);
-        }
-        .btn-refresh {
-            background: var(--primary-500);
-            color: white;
-            border: none;
-            padding: var(--spacing-sm) var(--spacing-md);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn-refresh:hover {
-            background: var(--primary-600);
-        }
-        .orders-filters {
-            display: flex;
-            gap: var(--spacing-md);
-            flex-wrap: wrap;
-            background: var(--white);
-            padding: var(--spacing-lg);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            margin-bottom: var(--spacing-lg);
-            align-items: flex-end;
-        }
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-xs);
-        }
-        .filter-group label {
-            font-size: var(--font-size-sm);
-            font-weight: 500;
-            color: var(--gray-700);
-        }
-        .filter-input, .filter-select {
-            padding: var(--spacing-sm) var(--spacing-md);
-            border: 1px solid var(--gray-300);
-            border-radius: var(--radius-md);
-            min-width: 150px;
-            font-size: var(--font-size-sm);
-        }
-        .filter-input:focus, .filter-select:focus {
-            outline: none;
-            border-color: var(--primary-500);
-            box-shadow: 0 0 0 3px rgba(107, 33, 168, 0.1);
-        }
-        .search-group {
-            position: relative;
-            flex: 1;
-            min-width: 250px;
-        }
-        .search-input {
-            width: 100%;
-            padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) 2.5rem;
-        }
-        .search-icon {
-            position: absolute;
-            left: var(--spacing-md);
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--gray-400);
-            pointer-events: none;
-        }
-        .btn-clear-filters {
-            background: var(--gray-100);
-            border: none;
-            padding: var(--spacing-sm) var(--spacing-md);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            color: var(--gray-700);
-            transition: background 0.2s;
-        }
-        .btn-clear-filters:hover {
-            background: var(--gray-200);
-        }
-        .orders-table-container {
-            background: var(--white);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            overflow: hidden;
-        }
-        .table-wrapper {
-            overflow-x: auto;
-        }
-        .order-id {
-            font-family: monospace;
-            background: var(--gray-100);
-            padding: var(--spacing-xs) var(--spacing-sm);
-            border-radius: var(--radius-sm);
-            font-size: var(--font-size-xs);
-        }
-        .patient-cell {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-sm);
-        }
-        .patient-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--primary-100);
-            color: var(--primary-600);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: var(--font-size-xs);
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-        .patient-name {
-            font-weight: 500;
-            color: var(--gray-900);
-        }
-        .patient-phone {
-            font-size: var(--font-size-xs);
-            color: var(--gray-500);
-        }
-        .tests-count {
-            color: var(--primary-600);
-            font-weight: 500;
-        }
-        .amount {
-            font-weight: 600;
-            color: var(--gray-900);
-        }
-        .result-link {
-            color: var(--success);
-            text-decoration: none;
-            font-size: var(--font-size-sm);
-            display: inline-flex;
-            align-items: center;
-            gap: var(--spacing-xs);
-            transition: opacity 0.2s;
-        }
-        .result-link:hover {
-            opacity: 0.8;
-        }
-        .no-results {
-            color: var(--gray-400);
-            font-size: var(--font-size-xs);
-        }
-        .btn-view-details {
-            background: var(--primary-50);
-            border: 1px solid var(--primary-200);
-            color: var(--primary-700);
-            padding: var(--spacing-xs) var(--spacing-sm);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-size: var(--font-size-xs);
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: var(--spacing-xs);
-        }
-        .btn-view-details:hover {
-            background: var(--primary-100);
-        }
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: var(--spacing-lg);
-            margin-top: var(--spacing-lg);
-        }
-        .pagination-btn {
-            background: var(--white);
-            border: 1px solid var(--gray-300);
-            padding: var(--spacing-sm) var(--spacing-md);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-xs);
-        }
-        .pagination-btn:hover:not(:disabled) {
-            background: var(--gray-50);
-        }
-        .pagination-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .pagination-info {
-            font-size: var(--font-size-sm);
-            color: var(--gray-600);
-        }
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(4px);
-        }
-        .modal.active {
-            display: flex;
-        }
-        .modal-content {
-            background: var(--white);
-            border-radius: var(--radius-xl);
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow-xl);
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: var(--spacing-lg);
-            border-bottom: 1px solid var(--gray-200);
-        }
-        .modal-header h3 {
-            font-size: var(--font-size-xl);
-            font-weight: 600;
-            color: var(--gray-900);
-        }
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: var(--font-size-xl);
-            cursor: pointer;
-            color: var(--gray-500);
-            transition: color 0.2s;
-            padding: var(--spacing-xs);
-        }
-        .modal-close:hover {
-            color: var(--gray-700);
-        }
-        .modal-body {
-            padding: var(--spacing-lg);
-        }
-        .modal-section {
-            margin-bottom: var(--spacing-lg);
-        }
-        .modal-section:last-child {
-            margin-bottom: 0;
-        }
-        .modal-section h4 {
-            font-size: var(--font-size-md);
-            font-weight: 600;
-            color: var(--gray-900);
-            margin-bottom: var(--spacing-sm);
-        }
-        .modal-section p {
-            margin: var(--spacing-xs) 0;
-            font-size: var(--font-size-sm);
-            color: var(--gray-700);
-        }
-        .test-item {
-            display: flex;
-            justify-content: space-between;
-            padding: var(--spacing-sm);
-            background: var(--gray-50);
-            border-radius: var(--radius-sm);
-            margin-bottom: var(--spacing-xs);
-        }
-        .test-name {
-            font-weight: 500;
-            color: var(--gray-800);
-        }
-        .test-price {
-            font-weight: 600;
-            color: var(--primary-600);
-        }
-        .btn-download-result {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--spacing-sm);
-            background: var(--success);
-            color: white;
-            padding: var(--spacing-sm) var(--spacing-md);
-            border-radius: var(--radius-md);
-            text-decoration: none;
-            transition: background 0.2s;
-        }
-        .btn-download-result:hover {
-            background: #059669;
-        }
-        .no-result {
-            color: var(--gray-500);
-            font-size: var(--font-size-sm);
-        }
-        /* Loading State */
-        .loading-state {
-            display: none;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            padding: var(--spacing-2xl);
-            gap: var(--spacing-md);
-        }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--gray-200);
-            border-top-color: var(--primary-500);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        .loading-state p {
-            color: var(--gray-500);
-            font-size: var(--font-size-sm);
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        /* Toast */
-        .toast {
-            display: none;
-            position: fixed;
-            bottom: var(--spacing-lg);
-            right: var(--spacing-lg);
-            padding: var(--spacing-md) var(--spacing-lg);
-            border-radius: var(--radius-md);
-            color: white;
-            z-index: 1001;
-            box-shadow: var(--shadow-lg);
-        }
-        .toast.error { background: var(--error); }
-        .toast.success { background: var(--success); }
-        .toast.info { background: var(--info); }
-        /* RTL Support */
-        [dir="rtl"] .search-input {
-            padding: var(--spacing-sm) 2.5rem var(--spacing-sm) var(--spacing-md);
-        }
-        [dir="rtl"] .search-icon {
-            left: auto;
-            right: var(--spacing-md);
-        }
-        [dir="rtl"] .toast {
-            right: auto;
-            left: var(--spacing-lg);
-        }
-        [dir="rtl"] .patient-cell {
-            flex-direction: row-reverse;
-        }
-        [dir="rtl"] .modal-close {
-            transform: scaleX(-1);
-        }
-        /* Responsive */
-        @media (max-width: 768px) {
-            .orders-filters {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .filter-group, .search-group {
-                width: 100%;
-            }
-            .orders-history-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: var(--spacing-md);
-            }
-            .header-actions {
-                align-self: flex-end;
-            }
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        @media (max-width: 480px) {
-            .modal-content {
-                width: 95%;
-                max-height: 90vh;
-            }
-        }
-    </style>
+
 </body>
 </html>

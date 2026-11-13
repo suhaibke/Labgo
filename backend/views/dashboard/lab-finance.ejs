@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/lab-finance.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+</head>
+
+<body>
+    <%- include('../partials/lab-navbar') %>
+    <%- include('../partials/lab-page-tabs', { group: 'reports', current: 'finance' }) %>
+
+    <main class="la-main fn-page">
+        <header class="fn-head">
+            <div>
+                <h1 class="la-h1"><%= __('finance.title') %></h1>
+                <p class="la-sub"><%= __('finance.subtitle') %></p>
+            </div>
+            <div class="la-seg fn-period" id="fnPeriod" role="radiogroup">
+                <button type="button" data-v="today"><%= __('finance.today') %></button>
+                <button type="button" data-v="month"><%= __('finance.thisMonth') %></button>
+                <button type="button" data-v="lastMonth"><%= __('finance.lastMonth') %></button>
+                <button type="button" data-v="year"><%= __('finance.thisYear') %></button>
+            </div>
+        </header>
+
+        <section class="fn-kpis">
+            <div class="la-card la-kpi pop-in"><div class="la-kpi-ic fn-green"><svg class="ic"><use href="#i-trending-up"/></svg></div><div><b id="kIncome">0</b><span><%= __('finance.income') %></span></div></div>
+            <div class="la-card la-kpi pop-in"><div class="la-kpi-ic fn-red"><svg class="ic"><use href="#i-receipt"/></svg></div><div><b id="kExpenses">0</b><span><%= __('finance.expenses') %></span></div></div>
+            <div class="la-card la-kpi pop-in"><div class="la-kpi-ic"><svg class="ic"><use href="#i-wallet"/></svg></div><div><b id="kProfit">0</b><span><%= __('finance.profit') %></span></div></div>
+            <div class="la-card la-kpi pop-in"><div class="la-kpi-ic fn-blue"><svg class="ic"><use href="#i-hourglass"/></svg></div><div><b id="kDebts">0</b><span><%= __('finance.debts') %></span></div></div>
+        </section>
+
+        <div class="fn-grid">
+            <section class="la-card fade-up fn-chart-card">
+                <div class="la-between">
+                    <h2 class="la-h2"><%= __('finance.incomeVsExpenses') %></h2>
+                    <span class="la-sub"><%= __('walkIn.iqd') %></span>
+                </div>
+                <div class="fn-chart"><canvas id="fnChart"></canvas></div>
+            </section>
+
+            <section class="la-card fade-up">
+                <h2 class="la-h2"><%= __('finance.breakdown') %></h2>
+                <div id="fnBreakdown" class="fn-breakdown"></div>
+            </section>
+        </div>
+
+        <div class="fn-grid">
+            <section class="la-card fade-up">
+                <div class="la-between fn-sec-head">
+                    <h2 class="la-h2"><%= __('finance.expenses') %></h2>
+                    <button type="button" class="la-btn md press-95" id="fnAddExpense"><svg class="ic"><use href="#i-plus"/></svg><%= __('finance.addExpense') %></button>
+                </div>
+                <div id="fnExpenses" class="fn-list"></div>
+            </section>
+
+            <section class="la-card fade-up">
+                <div class="fn-sec-head">
+                    <h2 class="la-h2"><%= __('finance.unpaid') %></h2>
+                    <p class="la-sub"><%= __('finance.unpaidHint') %></p>
+                </div>
+                <div id="fnDebts" class="fn-list"></div>
+            </section>
+        </div>
+    </main>
+
+    <div id="fnModal" class="la-modal" role="dialog" aria-modal="true" aria-labelledby="fnModalTitle">
+        <div class="la-modal-bg" data-close></div>
+        <form class="la-modal-card" id="fnForm" novalidate>
+            <div class="la-between">
+                <h2 class="la-h2" id="fnModalTitle"><%= __('finance.addExpense') %></h2>
+                <button type="button" class="la-circle press-90" data-close aria-label="<%= __('common.close') %>"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <span class="la-label fn-mt"><%= __('finance.category') %></span>
+            <div class="la-chips fn-cats" id="fnCats">
+                <% categories.forEach(function (c, i) { %>
+                    <button type="button" class="la-chip press-95 <%= i === 0 ? 'on' : '' %>" data-v="<%= c %>"><%= __('finance.cat_' + c) %></button>
+                <% }); %>
+            </div>
+            <div class="fn-two">
+                <label><span class="la-label fn-mt"><%= __('finance.amount') %></span><input class="la-input fn-amount" id="fnAmount" inputmode="numeric" dir="ltr" placeholder="0"></label>
+                <label><span class="la-label fn-mt"><%= __('finance.date') %></span><input class="la-input" id="fnDate" type="date"></label>
+            </div>
+            <label><span class="la-label fn-mt"><%= __('walkIn.notes') %></span><input class="la-input" id="fnNote" placeholder="<%= __('walkIn.companyPlaceholder') %>"></label>
+            <p class="fn-error" id="fnError" role="alert" hidden></p>
+            <button type="submit" class="la-btn block press-95 fn-save"><%= __('common.save') %></button>
+        </form>
+    </div>
+
+    <script id="fnData" type="application/json"><%- dataJson %></script>
+    <script id="fnStrings" type="application/json"><%- JSON.stringify({
+        iqd: __('walkIn.iqd'), income: __('finance.income'), expenses: __('finance.expenses'), noExpenses: __('finance.noExpenses'),
+        noDebts: __('finance.noDebts'), markPaid: __('finance.markPaid'), paid: __('finance.paidDone'), saved: __('staff.saved'),
+        error: __('walkIn.saveError'), needAmount: __('finance.needAmount'), remove: __('common.delete'), confirmRemove: __('finance.confirmRemove'),
+        cats: categories.reduce(function (o, c) { o[c] = __('finance.cat_' + c); return o; }, {}),
+        months: [1,2,3,4,5,6,7,8,9,10,11,12].map(function (m) { return new Date(2026, m - 1, 1).toLocaleDateString(currentLang === 'ar' ? 'ar-IQ' : currentLang, { month: 'short' }); })
+    }).replace(/</g, '\\u003c') %></script>
+    <script>window.FN_LANG = '<%= currentLang %>';</script>
+    <script src="/js/lab-finance.js" defer></script>
+</body>
+
+</html>

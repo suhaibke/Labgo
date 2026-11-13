@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/lab-dashboard.css">
     <style>
         body {
             font-family: <%= font %>;
         }
     </style>
+    <link rel="stylesheet" href="/css/lab-pages.css">
 </head>
 <body>
     <!-- Lab Navbar -->
@@ -24,7 +24,7 @@
                 <!-- Back Navigation -->
                 <div class="back-navigation">
                     <a href="/lab/tests" class="back-link">
-                        <i class="fas fa-arrow-left"></i>
+                        <svg class="ic"><use href="#i-arrow-left"/></svg>
                         <span><%= __('tests.details.backToCatalog') %></span>
                     </a>
                 </div>
@@ -33,12 +33,12 @@
                 <div class="test-header">
                     <div class="header-main">
                         <div class="test-badge <%= test.category.toLowerCase().replace(' ', '-') %>">
-                            <i class="fas fa-vial"></i>
+                            <svg class="ic"><use href="#i-test-tube"/></svg>
                         </div>
                         <div class="header-text">
                             <div class="breadcrumb">
                                 <span><%= __('navigation.tests') %></span>
-                                <i class="fas fa-chevron-right"></i>
+                                <svg class="ic"><use href="#i-chevron-right"/></svg>
                                 <span><%= __('tests.specializations.' + test.category, test.category) %></span>
                             </div>
                             <h1><%= test.nameAr || test.name %></h1>
@@ -46,14 +46,14 @@
                                 <p class="test-subtitle-en"><%= test.name %></p>
                             <% } %>
                             <div class="test-meta">
-                                <span class="code-tag"><i class="fas fa-barcode"></i> <%= test.code %></span>
-                                <span class="price-tag"><i class="fas fa-tag"></i> <%= Math.round(test.price).toLocaleString() %> IQD</span>
+                                <span class="code-tag"><svg class="ic"><use href="#i-barcode"/></svg> <%= test.code %></span>
+                                <span class="price-tag"><svg class="ic"><use href="#i-tag"/></svg> <%= Math.round(test.price).toLocaleString() %> IQD</span>
                             </div>
                         </div>
                     </div>
                     <div class="header-actions">
                         <button class="btn-primary" onclick="openEditModal()">
-                            <i class="fas fa-edit"></i>
+                            <svg class="ic"><use href="#i-pencil"/></svg>
                             <span><%= __('common.edit') %></span>
                         </button>
                     </div>
@@ -66,7 +66,7 @@
                         <!-- Description Card -->
                         <div class="info-card description-card">
                             <div class="card-header">
-                                <h3><i class="fas fa-info-circle"></i> <%= __('tests.details.testDescription') %></h3>
+                                <h3><svg class="ic"><use href="#i-info"/></svg> <%= __('tests.details.testDescription') %></h3>
                             </div>
                             <div class="card-body">
                                 <% if (test.description) { %>
@@ -80,7 +80,7 @@
                         <!-- Instructions Card -->
                         <div class="info-card instructions-card">
                             <div class="card-header">
-                                <h3><i class="fas fa-clipboard-list"></i> <%= __('tests.specialInstructions') %></h3>
+                                <h3><svg class="ic"><use href="#i-clipboard-list"/></svg> <%= __('tests.specialInstructions') %></h3>
                             </div>
                             <div class="card-body">
                                 <% if (test.instructions) { %>
@@ -96,13 +96,13 @@
                         <!-- Statistics Card -->
                         <div class="info-card stats-card">
                             <div class="card-header">
-                                <h3><i class="fas fa-chart-bar"></i> <%= __('tests.details.testStatistics') %></h3>
+                                <h3><svg class="ic"><use href="#i-chart-column"/></svg> <%= __('tests.details.testStatistics') %></h3>
                             </div>
                             <div class="card-body">
                                 <div class="stats-grid-small">
                                     <div class="stat-item">
                                         <div class="stat-icon-small total">
-                                            <i class="fas fa-users"></i>
+                                            <svg class="ic"><use href="#i-users"/></svg>
                                         </div>
                                         <div class="stat-info">
                                             <span class="stat-number"><%= testStats.totalRequests %></span>
@@ -111,7 +111,7 @@
                                     </div>
                                     <div class="stat-item">
                                         <div class="stat-icon-small completed">
-                                            <i class="fas fa-check"></i>
+                                            <svg class="ic"><use href="#i-check"/></svg>
                                         </div>
                                         <div class="stat-info">
                                             <span class="stat-number"><%= testStats.completedRequests %></span>
@@ -120,7 +120,7 @@
                                     </div>
                                     <div class="stat-item">
                                         <div class="stat-icon-small pending">
-                                            <i class="fas fa-clock"></i>
+                                            <svg class="ic"><use href="#i-clock"/></svg>
                                         </div>
                                         <div class="stat-info">
                                             <span class="stat-number"><%= testStats.pendingRequests %></span>
@@ -129,7 +129,7 @@
                                     </div>
                                     <div class="stat-item">
                                         <div class="stat-icon-small progress">
-                                            <i class="fas fa-spinner"></i>
+                                            <svg class="ic la-spin"><use href="#i-loader-circle"/></svg>
                                         </div>
                                         <div class="stat-info">
                                             <span class="stat-number"><%= testStats.inProgressRequests %></span>
@@ -144,7 +144,7 @@
                         <% if (recentRequests.length > 0) { %>
                         <div class="info-card requests-card">
                             <div class="card-header">
-                                <h3><i class="fas fa-history"></i> <%= __('tests.details.recentPatientRequests') %></h3>
+                                <h3><svg class="ic"><use href="#i-history"/></svg> <%= __('tests.details.recentPatientRequests') %></h3>
                                 <a href="/lab/patient-tests" class="view-all-link"><%= __('dashboard.viewAll') %></a>
                             </div>
                             <div class="card-body">
@@ -184,24 +184,24 @@
                         <!-- Quick Actions Card -->
                         <div class="info-card quick-actions-card">
                             <div class="card-header">
-                                <h3><i class="fas fa-bolt"></i> <%= __('tests.details.quickActions') %></h3>
+                                <h3><svg class="ic"><use href="#i-zap"/></svg> <%= __('tests.details.quickActions') %></h3>
                             </div>
                             <div class="card-body">
                                 <div class="actions-menu">
                                     <button class="action-item" onclick="openEditModal()">
-                                        <i class="fas fa-edit"></i>
+                                        <svg class="ic"><use href="#i-pencil"/></svg>
                                         <span><%= __('tests.details.editTestBtn') %></span>
                                     </button>
                                     <button class="action-item" onclick="duplicateTest()">
-                                        <i class="fas fa-copy"></i>
+                                        <svg class="ic"><use href="#i-copy"/></svg>
                                         <span><%= __('tests.details.duplicateTest') %></span>
                                     </button>
                                     <button class="action-item" onclick="exportTestData()">
-                                        <i class="fas fa-download"></i>
+                                        <svg class="ic"><use href="#i-download"/></svg>
                                         <span><%= __('tests.details.exportData') %></span>
                                     </button>
                                     <button class="action-item danger" onclick="deleteTest()">
-                                        <i class="fas fa-trash"></i>
+                                        <svg class="ic"><use href="#i-trash-2"/></svg>
                                         <span><%= __('tests.details.deleteTestBtn') %></span>
                                     </button>
                                 </div>
@@ -211,7 +211,7 @@
                         <!-- Category Info Card -->
                         <div class="info-card category-card">
                             <div class="card-header">
-                                <h3><i class="fas fa-folder"></i> <%= __('tests.details.categoryInfo') %></h3>
+                                <h3><svg class="ic"><use href="#i-folder"/></svg> <%= __('tests.details.categoryInfo') %></h3>
                             </div>
                             <div class="card-body">
                                 <div class="category-display">
@@ -225,7 +225,7 @@
                         <!-- Test Info Card -->
                         <div class="info-card test-info-card">
                             <div class="card-header">
-                                <h3><i class="fas fa-cog"></i> <%= __('tests.details.testInformation') %></h3>
+                                <h3><svg class="ic"><use href="#i-settings"/></svg> <%= __('tests.details.testInformation') %></h3>
                             </div>
                             <div class="card-body">
                                 <div class="info-rows">
@@ -248,7 +248,7 @@
                         <!-- Lab Info Card -->
                         <div class="info-card lab-card">
                             <div class="card-header">
-                                <h3><i class="fas fa-building"></i> <%= __('tests.details.laboratory') %></h3>
+                                <h3><svg class="ic"><use href="#i-building-2"/></svg> <%= __('tests.details.laboratory') %></h3>
                             </div>
                             <div class="card-body">
                                 <div class="lab-mini-info">
@@ -256,12 +256,12 @@
                                     <img src="<%= lab.logo %>" alt="<%= lab.name %>" class="lab-mini-logo">
                                     <% } else { %>
                                     <div class="lab-mini-logo-placeholder">
-                                        <i class="fas fa-flask"></i>
+                                        <svg class="ic"><use href="#i-flask-conical"/></svg>
                                     </div>
                                     <% } %>
                                     <div class="lab-mini-details">
                                         <h4><%= lab.name %></h4>
-                                        <p><i class="fas fa-map-marker-alt"></i> <%= lab.city %>, <%= lab.country %></p>
+                                        <p><svg class="ic"><use href="#i-map-pin"/></svg> <%= lab.city %>, <%= lab.country %></p>
                                     </div>
                                 </div>
                             </div>
@@ -279,7 +279,7 @@
             <div class="modal-header">
                 <h2><%= __('tests.details.editTestTitle') %></h2>
                 <button class="modal-close" onclick="closeEditModal()">
-                    <i class="fas fa-times"></i>
+                    <svg class="ic"><use href="#i-x"/></svg>
                 </button>
             </div>
             <form id="editTestForm" class="modal-body">
@@ -1155,7 +1155,7 @@
             const notification = document.createElement('div');
             notification.className = 'notification';
             notification.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <svg class="ic"><use href="#i-${type === 'success' ? 'circle-check' : 'circle-alert'}"/></svg>
                 <span>${message}</span>
             `;
             notification.style.cssText = `

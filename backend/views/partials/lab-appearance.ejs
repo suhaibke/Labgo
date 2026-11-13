@@ -1,0 +1,52 @@
+<%# Appearance: the same options as the lab app (theme and colour). Language is in the top bar. %>
+  <section class="la-card pop-in" style="margin:16px 0">
+    <div class="la-between">
+      <div>
+        <h2 class="la-h2"><%= __('labApp.appearance') %></h2>
+        <p class="la-sub"><%= __('labApp.sameAsApp') %></p>
+      </div>
+      <div class="la-seg" style="width:auto">
+        <button type="button" class="la-theme-opt" data-theme-opt="light"><%= __('labApp.light') %></button>
+        <button type="button" class="la-theme-opt" data-theme-opt="dark"><%= __('labApp.dark') %></button>
+      </div>
+    </div>
+    <p class="la-label" style="margin-top:14px"><%= __('labApp.accent') %></p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap" id="laAccents">
+      <% [['#FF5A00','#FF7A33'],['#007AFF','#3395FF'],['#34C759','#4CD964'],['#AF52DE','#BF5AF2'],['#FF3B30','#FF6961'],['#00C7BE','#40D9D1']].forEach(function (c) { %>
+        <button type="button" class="press-90" data-light="<%= c[0] %>" data-dark="<%= c[1] %>" aria-label="<%= c[0] %>"
+                style="width:44px;height:44px;border-radius:50%;background:<%= c[0] %>;display:grid;place-items:center;color:#fff">
+          <svg class="ic" style="width:20px;height:20px;display:none"><use href="#i-check"/></svg>
+        </button>
+      <% }); %>
+    </div>
+  </section>
+  <script>
+    (function () {
+      var d = document.documentElement;
+      function dark() { return d.getAttribute('data-theme') === 'dark'; }
+      function paint() {
+        document.querySelectorAll('.la-theme-opt').forEach(function (b) { b.classList.toggle('on', (b.dataset.themeOpt === 'dark') === dark()); });
+        var cur = (getComputedStyle(d).getPropertyValue('--accent') || '').trim().toUpperCase();
+        document.querySelectorAll('#laAccents button').forEach(function (b) {
+          b.style.background = dark() ? b.dataset.dark : b.dataset.light;
+          var on = cur === b.dataset.light.toUpperCase() || cur === b.dataset.dark.toUpperCase();
+          b.querySelector('svg').style.display = on ? 'block' : 'none';
+        });
+      }
+      document.querySelectorAll('.la-theme-opt').forEach(function (b) {
+        b.addEventListener('click', function () {
+          if (b.dataset.themeOpt === 'dark') d.setAttribute('data-theme', 'dark'); else d.removeAttribute('data-theme');
+          try { localStorage.setItem('la-theme', b.dataset.themeOpt); } catch (e) {}
+          paint();
+        });
+      });
+      document.querySelectorAll('#laAccents button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          d.style.setProperty('--accent', b.dataset.light);
+          try { localStorage.setItem('la-accent', b.dataset.light); } catch (e) {}
+          paint();
+        });
+      });
+      paint();
+    })();
+  </script>

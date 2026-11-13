@@ -6,6 +6,7 @@ const Order = require('../../models/Order');
 const Package = require('../../models/Package');
 const ExternalTransfer = require('../../models/ExternalTransfer');
 const auth = require('./middleware');
+const { cleanLicenseHolders } = require('../../helpers/license-holders');
 const path = require('path');
 const { __: translateHelper } = require('../../helpers/i18n-helper');
 const { r2SingleUpload } = require('../../middleware/r2Upload');
@@ -28,6 +29,13 @@ const uploadLabCoverImage = r2SingleUpload('labs', 'coverImage', 'lab-cover-');
 // Apply lab authentication middleware to all routes
 router.use(auth);
 router.use(require('./external-transfers'));
+router.use(require('./results'));
+router.use(require('./walk-in'));
+router.use(require('./staff'));
+router.use(require('./lab-finance-page'));
+router.use(require('./lab-waste-page'));
+router.use(require('./app-api'));
+router.use(require('./transfers-in'));
 
 // Get lab dashboard data
 router.get('/dashboard', async (req, res) => {
@@ -174,7 +182,7 @@ router.get('/dashboard', async (req, res) => {
 
         // Get recent orders (last 10)
         const recentOrders = await Order.find({ labId: lab._id })
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .sort({ createdAt: -1 })
             .limit(10)
             .lean();
@@ -539,7 +547,7 @@ router.get('/orders/:orderId', async (req, res) => {
         const font = ['ar'].includes(currentLang) ? 'Cairo, sans-serif' : 'Inter, sans-serif';
 
         const order = await Order.findById(orderId)
-            .populate('patientId', 'name phone email gender birthDate')
+            .populate('patientId', 'name phone email gender birthDate patientNo')
             .populate('nurseId', 'name phone email');
 
         if (!order) {
@@ -835,7 +843,7 @@ router.put('/api/profile', async (req, res) => {
         const allowedUpdates = [
             'name', 'email', 'phone', 'address', 'city', 'country',
             'website', 'logo', 'specialization', 'operatingHours',
-            'description', 'coordinates'
+            'description', 'coordinates', 'licenseHolders'
         ];
 
         // Only update allowed fields
@@ -845,6 +853,8 @@ router.put('/api/profile', async (req, res) => {
                     lab[key] = updateData[key].toLowerCase().trim();
                 } else if (key === 'phone') {
                     lab[key] = updateData[key].trim();
+                } else if (key === 'licenseHolders') {
+                    lab[key] = cleanLicenseHolders(updateData[key]);
                 } else if (key === 'specialization') {
                     // Ensure specialization is an array and not empty
                     const specArray = Array.isArray(updateData[key]) ? updateData[key] : [];
@@ -1801,7 +1811,7 @@ router.post('/api/orders/scan-qr', async (req, res) => {
 
         // Find order by QR code
         const order = await Order.findOne({ qrCode: qrCode })
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .populate('nurseId', 'name phone');
 
         if (!order) {
@@ -1832,7 +1842,7 @@ router.post('/api/orders/scan-qr', async (req, res) => {
 
         // Return updated order
         const updatedOrder = await Order.findById(order._id)
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .populate('labId', 'name address phone city')
             .populate('nurseId', 'name phone');
 
@@ -1878,7 +1888,7 @@ router.get('/api/orders', async (req, res) => {
         }
 
         const orders = await Order.find(query)
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .populate('nurseId', 'name phone')
             .sort({ createdAt: -1 })
             .limit(parseInt(limit))
@@ -1914,7 +1924,7 @@ router.get('/api/orders/:orderId', async (req, res) => {
         const { orderId } = req.params;
 
         const order = await Order.findById(orderId)
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .populate('nurseId', 'name phone')
             .lean();
 
@@ -2004,7 +2014,7 @@ router.post('/api/orders/:orderId/complete', async (req, res) => {
 
         // Return updated order
         const updatedOrder = await Order.findById(order._id)
-            .populate('patientId', 'name phone gender birthDate')
+            .populate('patientId', 'name phone gender birthDate patientNo')
             .populate('labId', 'name address phone city')
             .populate('nurseId', 'name phone');
 
@@ -2599,3 +2609,4 @@ router.patch('/api/packages/:id/toggle', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.cleanLicenseHolders = cleanLicenseHolders;

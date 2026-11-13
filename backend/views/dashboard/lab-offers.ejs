@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/lab-dashboard.css">
     <style>
         :root {
@@ -776,9 +775,11 @@
             .form-row { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="stylesheet" href="/css/lab-pages.css">
 </head>
 <body>
     <%- include('../partials/lab-navbar', { user: lab, activePage: 'offers' }) %>
+    <%- include('../partials/lab-page-tabs', { group: 'offers', current: 'offers' }) %>
 
     <main class="main-content">
         <!-- Page Header -->
@@ -786,14 +787,14 @@
             <div class="header-content">
                 <div class="header-title">
                     <h1>
-                        <i class="fas fa-tags"></i>
+                        <svg class="ic"><use href="#i-tags"/></svg>
                         <%= t ? t('offers.title') : 'Offers & Discounts' %>
                     </h1>
                     <p><%= t ? t('offers.subtitle') : 'Create discounts on individual tests to attract more customers' %></p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="openCreateModal()">
-                        <i class="fas fa-plus"></i>
+                        <svg class="ic"><use href="#i-plus"/></svg>
                         <%= t ? t('offers.createOffer') : 'Create Offer' %>
                     </button>
                 </div>
@@ -804,7 +805,7 @@
         <div class="stats-grid">
             <div class="stat-card primary">
                 <div class="stat-icon">
-                    <i class="fas fa-tags"></i>
+                    <svg class="ic"><use href="#i-tags"/></svg>
                 </div>
                 <div class="stat-info">
                     <h3 id="totalOffers"><%= offers.length %></h3>
@@ -813,7 +814,7 @@
             </div>
             <div class="stat-card success">
                 <div class="stat-icon">
-                    <i class="fas fa-check-circle"></i>
+                    <svg class="ic"><use href="#i-circle-check"/></svg>
                 </div>
                 <div class="stat-info">
                     <h3 id="activeOffers"><%= offers.filter(o => o.isActive).length %></h3>
@@ -822,7 +823,7 @@
             </div>
             <div class="stat-card warning">
                 <div class="stat-icon">
-                    <i class="fas fa-clock"></i>
+                    <svg class="ic"><use href="#i-clock"/></svg>
                 </div>
                 <div class="stat-info">
                     <h3 id="expiringOffers"><%= offers.filter(o => o.endDate && new Date(o.endDate) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)).length %></h3>
@@ -831,7 +832,7 @@
             </div>
             <div class="stat-card info">
                 <div class="stat-icon">
-                    <i class="fas fa-flask"></i>
+                    <svg class="ic"><use href="#i-flask-conical"/></svg>
                 </div>
                 <div class="stat-info">
                     <h3><%= tests.length %></h3>
@@ -844,12 +845,12 @@
         <% if (offers.length === 0) { %>
             <div class="empty-state">
                 <div class="empty-state-icon">
-                    <i class="fas fa-tags"></i>
+                    <svg class="ic"><use href="#i-tags"/></svg>
                 </div>
                 <h3><%= t ? t('offers.noOffers') : 'No Offers Yet' %></h3>
                 <p><%= t ? t('offers.noOffersDescription') : 'Create your first offer to attract more customers' %></p>
                 <button class="btn btn-primary" onclick="openCreateModal()">
-                    <i class="fas fa-plus"></i>
+                    <svg class="ic"><use href="#i-plus"/></svg>
                     <%= t ? t('offers.createFirstOffer') : 'Create First Offer' %>
                 </button>
             </div>
@@ -875,18 +876,18 @@
                             <div class="offer-details">
                                 <% if (offer.startDate) { %>
                                     <div class="offer-detail">
-                                        <i class="fas fa-calendar-alt"></i>
+                                        <svg class="ic"><use href="#i-calendar"/></svg>
                                         <span><%= t ? t('offers.startDate') : 'Start' %>: <%= new Date(offer.startDate).toLocaleDateString() %></span>
                                     </div>
                                 <% } %>
                                 <% if (offer.endDate) { %>
                                     <div class="offer-detail">
-                                        <i class="fas fa-calendar-times"></i>
+                                        <svg class="ic"><use href="#i-calendar-x"/></svg>
                                         <span><%= t ? t('offers.endDate') : 'End' %>: <%= new Date(offer.endDate).toLocaleDateString() %></span>
                                     </div>
                                 <% } else { %>
                                     <div class="offer-detail">
-                                        <i class="fas fa-infinity"></i>
+                                        <svg class="ic"><use href="#i-infinity"/></svg>
                                         <span><%= t ? t('offers.noExpiry') : 'No expiry date' %></span>
                                     </div>
                                 <% } %>
@@ -921,15 +922,15 @@
                         </div>
                         <div class="offer-footer">
                             <button class="btn btn-secondary btn-sm" onclick="toggleOffer('<%= offer._id %>')">
-                                <i class="fas <%= offer.isActive ? 'fa-pause' : 'fa-play' %>"></i>
+                                <svg class="ic"><use href="#i-<%= offer.isActive ? 'pause' : 'play' %>"/></svg>
                                 <%= offer.isActive ? (t ? t('offers.deactivate') : 'Deactivate') : (t ? t('offers.activate') : 'Activate') %>
                             </button>
                             <button class="btn btn-secondary btn-sm" onclick="editOffer('<%= offer._id %>')">
-                                <i class="fas fa-edit"></i>
+                                <svg class="ic"><use href="#i-pencil"/></svg>
                                 <%= t ? t('offers.edit') : 'Edit' %>
                             </button>
                             <button class="btn btn-danger btn-sm" onclick="deleteOffer('<%= offer._id %>')">
-                                <i class="fas fa-trash"></i>
+                                <svg class="ic"><use href="#i-trash-2"/></svg>
                             </button>
                         </div>
                     </div>
@@ -952,7 +953,7 @@
                     <!-- Basic Info Section -->
                     <div class="form-section">
                         <div class="form-section-title">
-                            <i class="fas fa-info-circle"></i>
+                            <svg class="ic"><use href="#i-info"/></svg>
                             <%= t ? t('offers.basicInfo') : 'Basic Information' %>
                         </div>
                         
@@ -982,7 +983,7 @@
                     <!-- Date Range Section -->
                     <div class="form-section">
                         <div class="form-section-title">
-                            <i class="fas fa-calendar-alt"></i>
+                            <svg class="ic"><use href="#i-calendar"/></svg>
                             <%= t ? t('offers.dateRange') : 'Date Range' %> <span class="optional" style="font-weight: 400; color: #9ca3af;">(<%= t ? t('offers.optionalDates') : 'leave empty for no expiry' %>)</span>
                         </div>
                         
@@ -1002,7 +1003,7 @@
                     <!-- Tests & Discounts Section -->
                     <div class="form-section">
                         <div class="form-section-title">
-                            <i class="fas fa-flask"></i>
+                            <svg class="ic"><use href="#i-flask-conical"/></svg>
                             <%= t ? t('offers.testsAndDiscounts') : 'Tests & Discounts' %>
                         </div>
 
@@ -1085,7 +1086,7 @@
                         <%= t ? t('common.cancel') : 'Cancel' %>
                     </button>
                     <button type="submit" class="btn btn-primary" id="saveBtn">
-                        <i class="fas fa-save"></i>
+                        <svg class="ic"><use href="#i-save"/></svg>
                         <%= t ? t('common.save') : 'Save Offer' %>
                     </button>
                 </div>
@@ -1384,7 +1385,7 @@
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.innerHTML = `
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <svg class="ic"><use href="#i-${type === 'success' ? 'circle-check' : 'circle-alert'}"/></svg>
                 <span>${message}</span>
             `;
             container.appendChild(toast);

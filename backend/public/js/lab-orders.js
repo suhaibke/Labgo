@@ -223,9 +223,7 @@
     // Show loading state
     function showLoadingState() {
         const loadingHTML = `
-            <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i>
-            </div>
+            <div class="la-spinner"></div>
         `;
 
         if (elements.incomingOrdersList) {
@@ -243,8 +241,8 @@
 
         if (orders.length === 0) {
             elements.incomingOrdersList.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
+                <div class="la-empty-box">
+                    <svg class="ic"><use href="#i-package"/></svg>
                     <p>${window.labOrdersData?.texts?.noIncomingSamples || 'No incoming samples'}</p>
                 </div>
             `;
@@ -261,8 +259,8 @@
 
         if (orders.length === 0) {
             elements.inLabOrdersList.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-flask"></i>
+                <div class="la-empty-box">
+                    <svg class="ic"><use href="#i-flask-conical"/></svg>
                     <p>${window.labOrdersData?.texts?.noOrdersInLab || 'No orders in lab'}</p>
                 </div>
             `;
@@ -290,62 +288,41 @@
         const urgency = order.urgency || 'routine';
         const createdAt = new Date(order.createdAt);
 
+        const initials = String(patientName).split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+        const urgent = urgency === 'urgent' || urgency === 'stat';
         const testTags = tests.map(test => `
-            <span class="order-test-tag">
-                <i class="fas fa-vial"></i>
-                ${test.testName}
-            </span>
+            <span class="la-tag"><svg class="ic"><use href="#i-test-tube"/></svg>${test.testName}</span>
         `).join('');
 
-        let footerHTML = '';
-        if (type === 'incoming') {
-            footerHTML = `
-                <button class="btn btn-receive" onclick="window.labOrders.receiveSample('${qrCode}', '${order._id}')">
-                    <i class="fas fa-check"></i>
-                    ${window.labOrdersData?.texts?.uploadResult || 'Receive'}
-                </button>
-            `;
-        } else {
-            footerHTML = `
-                <button class="btn btn-upload" onclick="window.labOrders.openUploadModal('${order._id}')">
-                    <i class="fas fa-upload"></i>
-                    ${window.labOrdersData?.texts?.uploadResult || 'Upload Result'}
-                </button>
-            `;
-        }
+        // stopPropagation keeps the button from also opening the order
+        const footerHTML = type === 'incoming'
+            ? `<button class="la-btn md press-95" onclick="event.stopPropagation(); window.labOrders.receiveSample('${qrCode}', '${order._id}')">
+                    <svg class="ic"><use href="#i-check"/></svg>${window.labOrdersData?.texts?.receiveSample || 'Receive'}
+               </button>`
+            : `<a class="la-btn md press-95" href="/lab/orders/${order._id}/results" onclick="event.stopPropagation()">
+                    <svg class="ic"><use href="#i-file-text"/></svg>${window.labOrdersData?.texts?.enterResults || 'Enter results'}
+               </a>
+               <button class="la-btn md soft press-95" title="${window.labOrdersData?.texts?.uploadResult || 'Upload Result'}" onclick="event.stopPropagation(); window.labOrders.openUploadModal('${order._id}')">
+                    <svg class="ic"><use href="#i-upload"/></svg>PDF
+               </button>`;
 
         return `
-            <div class="order-card" data-order-id="${order._id}" data-qr-code="${qrCode}" onclick="window.labOrders.viewOrderDetails('${order._id}')" style="cursor: pointer;">
-                <div class="order-card-header">
-                    <div class="order-patient">
-                        <div class="order-patient-icon">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="order-patient-info">
-                            <h4>${patientName}</h4>
-                            <div class="order-patient-demographics">${gender} · ${age}</div>
-                            <div class="order-qr-code">${qrCode}</div>
-                        </div>
-                    </div>
-                    <span class="order-urgency ${urgency}">${urgency}</span>
+            <div class="la-tile la-order pop-in" data-order-id="${order._id}" data-qr-code="${qrCode}" onclick="window.labOrders.viewOrderDetails('${order._id}')">
+                <div class="la-order-top">
+                    <span class="la-avatar">${initials || '?'}</span>
+                    <span class="main">
+                        <span class="name">${patientName}</span>
+                        <span class="meta">${gender} · ${age}${qrCode ? ' · ' + qrCode : ''}</span>
+                    </span>
+                    <span class="la-pill ${urgent ? 'red' : 'neutral'}">${urgency}</span>
                 </div>
-                <div class="order-card-body">
-                    <div class="order-tests">
-                        ${testTags}
+                <div class="la-tags">${testTags}</div>
+                <div class="la-order-foot">
+                    <div class="la-meta-row">
+                        <span><svg class="ic"><use href="#i-clock"/></svg>${formatOrderDate(createdAt)}</span>
+                        <span><svg class="ic"><use href="#i-clipboard-list"/></svg>${tests.length} ${window.labOrdersData?.texts?.tests || 'tests'}</span>
                     </div>
-                    <div class="order-meta">
-                        <div class="order-meta-item">
-                            <i class="fas fa-clock"></i>
-                            <span>${formatOrderDate(createdAt)}</span>
-                        </div>
-                        <div class="order-meta-item">
-                            <i class="fas fa-list"></i>
-                            <span>${tests.length} ${tests.length === 1 ? 'test' : 'tests'}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="order-card-footer">
-                    ${footerHTML}
+                    <div style="display:flex;gap:6px">${footerHTML}</div>
                 </div>
             </div>
         `;
@@ -440,7 +417,7 @@
     // Reset upload form
     function resetUploadForm() {
         if (elements.fileUploadArea) {
-            elements.fileUploadArea.style.display = 'flex';
+            elements.fileUploadArea.style.display = 'block';
         }
 
         if (elements.filePreview) {
@@ -523,7 +500,7 @@
         }
 
         if (elements.filePreview) {
-            elements.filePreview.style.display = 'block';
+            elements.filePreview.style.display = 'flex';
         }
 
         if (elements.fileName) {
@@ -703,23 +680,9 @@
         if (!elements.toastContainer) return;
 
         const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-
-        let icon = 'info-circle';
-        if (type === 'success') icon = 'check';
-        if (type === 'error') icon = 'exclamation-circle';
-        if (type === 'warning') icon = 'exclamation-triangle';
-
-        toast.innerHTML = `
-            <div class="toast-icon">
-                <i class="fas fa-${icon}"></i>
-            </div>
-            <div class="toast-message">${message}</div>
-            <button class="toast-close">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-
+        toast.className = `la-toast ${type}`;
+        toast.innerHTML = `<span class="dot"></span><span class="toast-message"></span>`;
+        toast.querySelector('.toast-message').textContent = message;
         elements.toastContainer.appendChild(toast);
 
         // Auto remove after 5 seconds
@@ -730,16 +693,11 @@
             }, 300);
         }, 5000);
 
-        // Close button handler
-        const closeBtn = toast.querySelector('.toast-close');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                toast.classList.add('removing');
-                setTimeout(() => {
-                    toast.remove();
-                }, 300);
-            });
-        }
+        // Tap to dismiss
+        toast.addEventListener('click', () => {
+            toast.classList.add('removing');
+            setTimeout(() => toast.remove(), 300);
+        });
     }
 
     // View order details - navigate to detail page

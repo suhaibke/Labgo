@@ -163,8 +163,15 @@ const OrderSchema = new mongoose.Schema({
     // Order type - always home collection for this workflow
     orderType: {
         type: String,
-        enum: ['home_collection'],
+        enum: ['home_collection', 'walk_in'],
         default: 'home_collection',
+    },
+    // Registered at the lab reception (orderType 'walk_in').
+    walkIn: {
+        doctor: { type: String, trim: true, default: '' },
+        company: { type: String, trim: true, default: '' },
+        sampleType: { type: String, enum: ['', 'blood', 'urine', 'stool', 'swab', 'csf'], default: '' },
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     },
 
     // Urgency level
@@ -372,6 +379,25 @@ const OrderSchema = new mongoose.Schema({
             type: Boolean,
             default: false,
         },
+        // Values entered by the lab, one per ordered test. The reference range
+        // is copied at entry time so later catalogue edits don't change old reports.
+        values: [{
+            _id: false,
+            testId: { type: mongoose.Schema.Types.ObjectId },
+            testName: { type: String, trim: true },
+            value: { type: String, trim: true, default: '' },
+            unit: { type: String, trim: true, default: '' },
+            min: { type: Number, default: null },
+            max: { type: Number, default: null },
+            normalText: { type: String, trim: true, default: '' },
+            flag: { type: String, enum: ['', 'normal', 'low', 'high'], default: '' },
+        }],
+        comment: { type: String, trim: true, default: '' },
+        entryStatus: { type: String, enum: ['none', 'draft', 'approved'], default: 'none' },
+        enteredAt: Date,
+        enteredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        approvedAt: Date,
+        approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     },
 
     // Cancellation details
@@ -859,11 +885,11 @@ OrderSchema.methods.markDelivered = function (adminId) {
 OrderSchema.methods.markCompleted = function (labUserId, reportUrl) {
     const completedAt = new Date();
     this.status = 'completed';
-    this.results = {
-        reportUrl: reportUrl || null,
-        completedAt,
-        notified: false,
-    };
+    // Keep any entered result values; only set the report and completion fields.
+    if (!this.results) this.results = {};
+    this.results.reportUrl = reportUrl || null;
+    this.results.completedAt = completedAt;
+    this.results.notified = false;
     this.statusHistory.push({
         status: 'completed',
         timestamp: completedAt,

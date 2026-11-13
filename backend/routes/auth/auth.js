@@ -17,27 +17,7 @@ const uploadProfilePicture = r2SingleUpload('profilePictures', 'profilePicture',
 // Valid Iraqi cities for registration
 const VALID_CITIES = ['بغداد', 'البصرة', 'نينوى', 'الأنبار', 'كركوك', 'صلاح الدين', 'ديالى', 'بابل', 'كربلاء', 'النجف', 'القادسية', 'المثنى', 'واسط', 'ذي قار', 'ميسان', 'أربيل', 'السليمانية', 'دهوك'];
 
-function getPhoneLoginCandidates(value) {
-    const raw = value.trim();
-    let digits = raw.replace(/\D/g, '');
-
-    if (digits.startsWith('00964')) {
-        digits = digits.slice(2);
-    }
-
-    const local = digits.startsWith('964') ? `0${digits.slice(3)}` : digits;
-    const international = local.startsWith('0') ? `964${local.slice(1)}` : local;
-
-    return [...new Set([raw, digits, local, international, `+${international}`].filter(Boolean))];
-}
-
-async function findByPhone(Model, candidates, extraQuery = {}) {
-    for (const phone of candidates) {
-        const record = await Model.findOne({ phone, ...extraQuery });
-        if (record) return record;
-    }
-    return null;
-}
+const { getPhoneLoginCandidates, findByPhone } = require('../../helpers/phone');
 
 // Register endpoint
 router.post('/register', [
@@ -436,7 +416,8 @@ router.post('/register-with-otp', [
 
         // Check if phone number already exists, under any equivalent format
         const existingPhone = await findByPhone(User, getPhoneLoginCandidates(phone));
-        if (existingPhone) {
+        const claimingPlaceholder = Boolean(existingPhone && existingPhone.labPlaceholder);
+        if (existingPhone && !claimingPlaceholder) {
             return res.status(409).json({
                 success: false,
                 message: 'User with this phone number already exists'
@@ -458,14 +439,25 @@ router.post('/register-with-otp', [
         const salt = await bcrypt.genSalt(12);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const user = new User(buildPublicPatient({
+        const fields = buildPublicPatient({
             name,
             email,
             phone,
             city,
             gender,
             birthDate
-        }, hashedPassword, { phoneVerified: true }));
+        }, hashedPassword, { phoneVerified: true });
+
+        // Claiming a lab placeholder keeps its _id, so the results the lab
+        // already entered show up in the patient's new account.
+        let user;
+        if (claimingPlaceholder) {
+            user = existingPhone;
+            Object.assign(user, fields);
+            user.labPlaceholder = false;
+        } else {
+            user = new User(fields);
+        }
 
         await user.save();
 
@@ -539,7 +531,9 @@ router.post('/send-otp', [
         const user = await findByPhone(User, getPhoneLoginCandidates(phone));
 
         // For registration, phone should not exist
-        if (purpose === 'register' && user) {
+        // A placeholder account created by a lab for a walk-in patient can be
+        // claimed by registering with the same (OTP-verified) phone.
+        if (purpose === 'register' && user && !user.labPlaceholder) {
             return res.status(409).json({
                 success: false,
                 message: 'Phone number already registered'

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/lab-waste.css">
+</head>
+
+<body>
+    <%- include('../partials/lab-navbar') %>
+
+    <main class="la-main ws-page">
+        <header class="la-between ws-head">
+            <div>
+                <h1 class="la-h1"><%= __('waste.title') %></h1>
+                <p class="la-sub"><%= __('waste.subtitle') %></p>
+            </div>
+            <button type="button" class="la-btn press-95" id="wsNew"><svg class="ic"><use href="#i-truck"/></svg><%= __('waste.newRequest') %></button>
+        </header>
+
+        <section class="ws-kpis">
+            <div class="la-card la-kpi pop-in"><div class="la-kpi-ic"><svg class="ic"><use href="#i-hourglass"/></svg></div><div><b id="wsPending">0</b><span><%= __('waste.pending') %></span></div></div>
+            <div class="la-card la-kpi pop-in"><div class="la-kpi-ic ws-green"><svg class="ic"><use href="#i-truck"/></svg></div><div><b id="wsMonth">0</b><span><%= __('waste.collectedThisMonth') %></span></div></div>
+            <div class="la-card pop-in ws-types" id="wsTypes"></div>
+        </section>
+
+        <section class="la-card fade-up">
+            <div class="la-between ws-log-head">
+                <h2 class="la-h2"><%= __('waste.log') %></h2>
+                <div class="la-seg ws-filter" id="wsFilter">
+                    <button type="button" class="on" data-v="all"><%= __('waste.all') %></button>
+                    <button type="button" data-v="pending"><%= __('waste.pending') %></button>
+                    <button type="button" data-v="collected"><%= __('waste.collected') %></button>
+                </div>
+            </div>
+            <div id="wsList" class="ws-list"></div>
+        </section>
+    </main>
+
+    <div id="wsModal" class="la-modal" role="dialog" aria-modal="true" aria-labelledby="wsModalTitle">
+        <div class="la-modal-bg" data-close></div>
+        <form class="la-modal-card" id="wsForm" novalidate>
+            <div class="la-between">
+                <h2 class="la-h2" id="wsModalTitle"><%= __('waste.newRequest') %></h2>
+                <button type="button" class="la-circle press-90" data-close aria-label="<%= __('common.close') %>"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <span class="la-label ws-mt"><%= __('waste.type') %></span>
+            <div class="ws-type-pick" id="wsTypePick">
+                <% types.forEach(function (t, i) { %>
+                    <button type="button" class="press-95 <%= i === 0 ? 'on' : '' %>" data-v="<%= t %>"><span class="ws-dot ws-<%= t %>"></span><%= __('waste.type_' + t) %></button>
+                <% }); %>
+            </div>
+            <div class="ws-two">
+                <label><span class="la-label ws-mt"><%= __('waste.weight') %></span>
+                    <span class="ws-weight"><input class="la-input" id="wsWeight" inputmode="decimal" dir="ltr" placeholder="0"><b><%= __('waste.kg') %></b></span></label>
+                <label><span class="la-label ws-mt"><%= __('waste.pickupDate') %></span><input class="la-input" id="wsDate" type="date"></label>
+            </div>
+            <label><span class="la-label ws-mt"><%= __('waste.company') %></span><input class="la-input" id="wsCompany" list="wsCompanies" placeholder="<%= __('walkIn.companyPlaceholder') %>"><datalist id="wsCompanies"></datalist></label>
+            <label><span class="la-label ws-mt"><%= __('walkIn.notes') %></span><input class="la-input" id="wsNotes" placeholder="<%= __('walkIn.companyPlaceholder') %>"></label>
+            <p class="ws-error" id="wsError" role="alert" hidden></p>
+            <button type="submit" class="la-btn block press-95 ws-save"><%= __('waste.submit') %></button>
+        </form>
+    </div>
+
+    <script id="wsData" type="application/json"><%- dataJson %></script>
+    <script id="wsStrings" type="application/json"><%- JSON.stringify({
+        kg: __('waste.kg'), pending: __('waste.pending'), collected: __('waste.collected'), markCollected: __('waste.markCollected'),
+        empty: __('waste.empty'), needWeight: __('waste.needWeight'), error: __('walkIn.saveError'), saved: __('staff.saved'),
+        remove: __('common.delete'), confirmRemove: __('waste.confirmRemove'), noneThisMonth: __('waste.noneThisMonth'),
+        types: types.reduce(function (o, t) { o[t] = __('waste.type_' + t); return o; }, {})
+    }).replace(/</g, '\\u003c') %></script>
+    <script>window.WS_LANG = '<%= currentLang %>';</script>
+    <script src="/js/lab-waste.js"></script>
+</body>
+
+</html>

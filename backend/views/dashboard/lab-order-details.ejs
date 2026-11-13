@@ -4,704 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= __('orders.orderDetails') %> - <%= order.qrCode %>
-    </title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/lab-dashboard.css">
-    <style>
-        body {
-            font-family: <%=font %>;
-        }
-
-        .order-details-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        .page-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 32px;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .back-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            color: #374151;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .back-btn:hover {
-            background: #f9fafb;
-            border-color: #d1d5db;
-        }
-
-        .header-title h1 {
-            font-size: 24px;
-            font-weight: 700;
-            color: #1d1d1f;
-            margin: 0;
-        }
-
-        .order-subtitle {
-            color: #6b7280;
-            font-size: 14px;
-            margin: 4px 0 0 0;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .modern-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 14px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .receive-btn {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
-        }
-
-        .receive-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-        }
-
-        .complete-btn {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-        }
-
-        .complete-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        .print-btn {
-            background: white;
-            border: 1px solid #e5e7eb;
-            color: #374151;
-        }
-
-        .print-btn:hover {
-            background: #f9fafb;
-        }
-
-        .details-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .details-grid.two-cols {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .detail-card {
-            background: white;
-            border-radius: 16px;
-            border: 1px solid #e5e7eb;
-            overflow: hidden;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 20px;
-            border-bottom: 1px solid #f3f4f6;
-            background: #fafafa;
-        }
-
-        .header-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-        }
-
-        .header-icon.blue {
-            background: rgba(59, 130, 246, 0.1);
-            color: #3b82f6;
-        }
-
-        .header-icon.green {
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-        }
-
-        .header-icon.purple {
-            background: rgba(139, 92, 246, 0.1);
-            color: #8b5cf6;
-        }
-
-        .header-icon.orange {
-            background: rgba(245, 158, 11, 0.1);
-            color: #f59e0b;
-        }
-
-        .header-icon.red {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-        }
-
-        .header-icon.teal {
-            background: rgba(20, 184, 166, 0.1);
-            color: #14b8a6;
-        }
-
-        .card-header h3 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1d1d1f;
-            margin: 0;
-        }
-
-        .card-body {
-            padding: 20px;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-row .label {
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .info-row .value {
-            color: #1d1d1f;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .status-badge.pending {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .status-badge.confirmed {
-            background: #dbeafe;
-            color: #2563eb;
-        }
-
-        .status-badge.nurse_assigned {
-            background: #e0e7ff;
-            color: #4f46e5;
-        }
-
-        .status-badge.sample_collected {
-            background: #fce7f3;
-            color: #db2777;
-        }
-
-        .status-badge.at_lab {
-            background: #d1fae5;
-            color: #059669;
-        }
-
-        .status-badge.completed {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .status-badge.cancelled {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        .hero-section {
-            grid-column: span 3;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 24px 32px;
-            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
-            color: white;
-        }
-
-        .hero-qr {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .qr-code-display {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            padding: 16px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-        }
-
-        .qr-code-display i {
-            font-size: 48px;
-        }
-
-        .qr-text {
-            font-family: 'Courier New', monospace;
-            font-size: 16px;
-            font-weight: 700;
-        }
-
-        .hero-info h2 {
-            font-size: 24px;
-            font-weight: 700;
-            margin: 0 0 8px 0;
-        }
-
-        .hero-date {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            opacity: 0.9;
-            font-size: 14px;
-        }
-
-        .hero-status .status-badge {
-            background: white;
-            font-size: 14px;
-            padding: 8px 16px;
-        }
-
-        .tests-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .test-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            background: #f9fafb;
-            border-radius: 10px;
-        }
-
-        .test-name {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 500;
-            color: #1d1d1f;
-        }
-
-        .test-name i {
-            color: #3b82f6;
-        }
-
-        .test-price {
-            font-weight: 600;
-            color: #059669;
-        }
-
-        .timeline-section .card-body {
-            padding: 16px 20px;
-        }
-
-        .timeline {
-            position: relative;
-            padding-left: 30px;
-        }
-
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 10px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #e5e7eb;
-        }
-
-        .timeline-item {
-            position: relative;
-            padding-bottom: 20px;
-        }
-
-        .timeline-item:last-child {
-            padding-bottom: 0;
-        }
-
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -24px;
-            top: 4px;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #d1d5db;
-            border: 2px solid white;
-        }
-
-        .timeline-item.active::before {
-            background: #3b82f6;
-        }
-
-        .timeline-item.completed::before {
-            background: #10b981;
-        }
-
-        .timeline-status {
-            font-weight: 600;
-            color: #1d1d1f;
-            margin-bottom: 4px;
-        }
-
-        .timeline-date {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .pricing-total {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            border-radius: 12px;
-            color: white;
-            margin-top: 12px;
-        }
-
-        .pricing-total .label {
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .pricing-total .value {
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .location-map-link {
-            margin-top: 16px;
-        }
-
-        .location-map-link a {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px;
-            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .location-map-link a:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .rating-stars {
-            display: flex;
-            gap: 4px;
-        }
-
-        .rating-stars i {
-            color: #fbbf24;
-            font-size: 18px;
-        }
-
-        .rating-stars i.empty {
-            color: #d1d5db;
-        }
-
-        .full-width {
-            grid-column: span 3;
-        }
-
-        /* Toast Notification */
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 24px;
-            background: #1d1d1f;
-            color: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 9999;
-        }
-
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .toast.success {
-            background: #10b981;
-        }
-
-        .toast.error {
-            background: #ef4444;
-        }
-
-        /* Sent to Lab Card */
-        .sent-to-lab-card {
-            background: white;
-            border-radius: 16px;
-            margin-bottom: 20px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-        }
-
-        .sent-to-lab-header {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .sent-to-lab-icon {
-            width: 36px;
-            height: 36px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
-        }
-
-        .sent-to-lab-header h3 {
-            margin: 0;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            flex: 1;
-        }
-
-        .sent-to-lab-close {
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            padding: 4px;
-            opacity: 0.8;
-            transition: opacity 0.2s;
-        }
-
-        .sent-to-lab-close:hover {
-            opacity: 1;
-        }
-
-        .sent-to-lab-body {
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .sent-to-lab-detail {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-inline-end: 20px;
-        }
-
-        .sent-to-lab-link {
-            margin-inline-start: auto;
-            color: #4f46e5;
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        .sent-to-lab-label {
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .sent-to-lab-value {
-            font-weight: 600;
-            color: #6366f1;
-            font-size: 16px;
-        }
-
-        .send-to-lab-btn {
-            gap: 8px;
-        }
-
-        /* Upload Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 9998;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal-container {
-            background: white;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 500px;
-            overflow: hidden;
-        }
-
-        .modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px 24px;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 20px;
-            color: #6b7280;
-            cursor: pointer;
-        }
-
-        .modal-body {
-            padding: 24px;
-        }
-
-        .file-upload-area {
-            border: 2px dashed #d1d5db;
-            border-radius: 12px;
-            padding: 40px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .file-upload-area:hover,
-        .file-upload-area.dragover {
-            border-color: #3b82f6;
-            background: rgba(59, 130, 246, 0.05);
-        }
-
-        .upload-icon {
-            font-size: 48px;
-            color: #3b82f6;
-            margin-bottom: 16px;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 12px;
-            padding: 20px 24px;
-            border-top: 1px solid #f3f4f6;
-            justify-content: flex-end;
-        }
-
-        @media (max-width: 1024px) {
-            .details-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .hero-section,
-            .full-width {
-                grid-column: span 2;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .details-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-section,
-            .full-width {
-                grid-column: span 1;
-            }
-
-            .page-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
-    </style>
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/lab-order-details.css">
 </head>
 
 <body>
@@ -716,7 +20,7 @@
                     <div class="page-header">
                         <div class="header-left">
                             <button class="back-btn" onclick="goBack()">
-                                <i class="fas fa-arrow-<%= direction === 'rtl' ? 'right' : 'left' %>"></i>
+                                <svg class="ic flip-rtl"><use href="#i-arrow-left"/></svg>
                                 <span>
                                     <%= __('common.back') %>
                                 </span>
@@ -733,31 +37,37 @@
                         <div class="header-actions">
                             <% if (order.status==='sample_collected' ) { %>
                                 <button class="modern-btn receive-btn" onclick="receiveSample()">
-                                    <i class="fas fa-check"></i>
+                                    <svg class="ic"><use href="#i-check"/></svg>
                                     <span>
                                         <%= __('labOrders.receiveSample') || 'Receive Sample' %>
                                     </span>
                                 </button>
                                 <% } %>
+                                    <% if (order.status==='at_lab' || order.status==='completed') { %>
+                                        <a class="modern-btn complete-btn" href="/lab/orders/<%= order._id %>/results">
+                                            <svg class="ic"><use href="#i-file-text"/></svg>
+                                            <span><%= order.status==='completed' ? __('results.title') : __('results.enterResults') %></span>
+                                        </a>
+                                    <% } %>
                                     <% if (order.status==='at_lab' ) { %>
-                                        <button class="modern-btn complete-btn" onclick="openUploadModal()">
-                                            <i class="fas fa-upload"></i>
+                                        <button class="modern-btn complete-btn" data-variant="soft" onclick="openUploadModal()">
+                                            <svg class="ic"><use href="#i-upload"/></svg>
                                             <span>
                                                 <%= __('labOrders.completeOrder') || 'Complete Order' %>
                                             </span>
                                         </button>
                                         <% } %>
                                             <button class="modern-btn print-btn" onclick="window.print()">
-                                                <i class="fas fa-print"></i>
+                                                <svg class="ic"><use href="#i-printer"/></svg>
                                             </button>
                                             <% if (!externalTransfer && order.status !== 'cancelled' && order.status !== 'completed') { %>
-                                                <a class="modern-btn send-to-lab-btn" href="/lab/external-transfers?orderId=<%= order._id %>" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; text-decoration: none;">
-                                                    <i class="fas fa-share"></i>
+                                                <a class="modern-btn send-to-lab-btn" href="/lab/external-transfers?orderId=<%= order._id %>" >
+                                                    <svg class="ic"><use href="#i-share-2"/></svg>
                                                     <span><%= __('labOrders.sendToAnotherLab') || 'Send to Another Lab' %></span>
                                                 </a>
                                             <% } else if (externalTransfer) { %>
-                                                <a class="modern-btn send-to-lab-btn" href="/lab/external-transfers" style="background: #eef2ff; color: #4f46e5; text-decoration: none;">
-                                                    <i class="fas fa-book-medical"></i>
+                                                <a class="modern-btn send-to-lab-btn" href="/lab/external-transfers" data-variant="soft">
+                                                    <svg class="ic"><use href="#i-arrow-left-right"/></svg>
                                                     <span><%= __('navigation.externalTransfers') %></span>
                                                 </a>
                                             <% } %>
@@ -768,7 +78,7 @@
                     <div class="sent-to-lab-card" id="sentToLabCard">
                         <div class="sent-to-lab-header">
                             <div class="sent-to-lab-icon">
-                                <i class="fas fa-share"></i>
+                                <svg class="ic"><use href="#i-share-2"/></svg>
                             </div>
                             <h3><%= __('labOrders.sentToAnotherLab') || 'تم الإرسال إلى مختبر آخر' %></h3>
                         </div>
@@ -785,7 +95,7 @@
                                 <span class="sent-to-lab-label"><%= __('externalTransfers.status') %>:</span>
                                 <span class="sent-to-lab-value"><%= externalTransfer.status === 'completed' ? __('externalTransfers.statusCompleted') : __('externalTransfers.statusSent') %></span>
                             </div>
-                            <a class="sent-to-lab-link" href="/lab/external-transfers"><%= __('navigation.externalTransfers') %> <i class="fas fa-arrow-<%= direction === 'rtl' ? 'left' : 'right' %>"></i></a>
+                            <a class="sent-to-lab-link" href="/lab/external-transfers"><%= __('navigation.externalTransfers') %> <svg class="ic flip-ltr"><use href="#i-arrow-left"/></svg></a>
                         </div>
                     </div>
                     <% } %>
@@ -795,7 +105,7 @@
                         <div class="detail-card hero-section">
                             <div class="hero-qr">
                                 <div class="qr-code-display">
-                                    <i class="fas fa-qrcode"></i>
+                                    <svg class="ic"><use href="#i-qr-code"/></svg>
                                     <span class="qr-text">
                                         <%= order.qrCode %>
                                     </span>
@@ -806,7 +116,7 @@
                                             <%= __('common.tests') %>
                                     </h2>
                                     <div class="hero-date">
-                                        <i class="far fa-calendar"></i>
+                                        <svg class="ic"><use href="#i-calendar"/></svg>
                                         <%= new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit' ,
                                             month: 'short' , year: 'numeric' }) %>
                                             •
@@ -833,7 +143,7 @@
                         <div class="detail-card">
                             <div class="card-header">
                                 <div class="header-icon blue">
-                                    <i class="fas fa-user"></i>
+                                    <svg class="ic"><use href="#i-user"/></svg>
                                 </div>
                                 <h3>
                                     <%= __('labOrderDetails.patientInfo') || 'Patient Information' %>
@@ -848,6 +158,12 @@
                                         <%= patientInfo.name || '-' %>
                                     </span>
                                 </div>
+                                <% if (patientInfo.patientNo) { %>
+                                <div class="info-row">
+                                    <span class="label"><%= __('walkIn.patientNo') %></span>
+                                    <span class="value" dir="ltr" style="color:var(--accent);font-weight:800">#<%= patientInfo.patientNo %></span>
+                                </div>
+                                <% } %>
                                 <div class="info-row">
                                     <span class="label"><%= __('common.gender') %></span>
                                     <span class="value">
@@ -875,7 +191,7 @@
                             <div class="detail-card">
                                 <div class="card-header">
                                     <div class="header-icon purple">
-                                        <i class="fas fa-user-nurse"></i>
+                                        <svg class="ic"><use href="#i-stethoscope"/></svg>
                                     </div>
                                     <h3>
                                         <%= __('labOrderDetails.nurseInfo') || 'Nurse Information' %>
@@ -904,12 +220,30 @@
                             </div>
                             <% } %>
 
+                        <!-- Registered at the lab reception -->
+                        <% if (order.orderType === 'walk_in') { %>
+                            <div class="detail-card">
+                                <div class="card-header">
+                                    <div class="header-icon purple"><svg class="ic"><use href="#i-hospital"/></svg></div>
+                                    <h3><%= __('walkIn.visit') %></h3>
+                                </div>
+                                <div class="card-body">
+                                    <% [['walkIn.doctor', order.walkIn && order.walkIn.doctor], ['walkIn.company', order.walkIn && order.walkIn.company],
+                                        ['walkIn.sampleType', order.walkIn && order.walkIn.sampleType ? __('walkIn.' + order.walkIn.sampleType) : ''],
+                                        ['walkIn.notes', order.notes && order.notes.labNotes]].forEach(function (r) { if (!r[1]) return; %>
+                                        <div class="info-row"><span class="label"><%= __(r[0]) %></span><span class="value"><%= r[1] %></span></div>
+                                    <% }); %>
+                                    <div class="info-row"><span class="label"><%= __('walkIn.total') %></span><span class="value"><%= Number((order.pricing && order.pricing.total) || 0).toLocaleString('en-US') %> <%= __('walkIn.iqd') %></span></div>
+                                </div>
+                            </div>
+                        <% } %>
+
                                 <!-- Beneficiary Info -->
                                 <% if (order.beneficiary?.isForOtherPerson) { %>
                                     <div class="detail-card">
                                         <div class="card-header">
                                             <div class="header-icon teal">
-                                                <i class="fas fa-user-plus"></i>
+                                                <svg class="ic"><use href="#i-user-plus"/></svg>
                                             </div>
                                             <h3>
                                                 <%= __('labOrderDetails.beneficiary') || 'Beneficiary' %>
@@ -952,7 +286,7 @@
                                         <div class="detail-card">
                                             <div class="card-header">
                                                 <div class="header-icon green">
-                                                    <i class="fas fa-vial"></i>
+                                                    <svg class="ic"><use href="#i-test-tube"/></svg>
                                                 </div>
                                                 <h3>
                                                     <%= __('common.tests') %> (<%= order.tests?.length || 0 %>)
@@ -964,7 +298,7 @@
                                                         <% order.tests.forEach(test=> { %>
                                                             <div class="test-item">
                                                                 <span class="test-name">
-                                                                    <i class="fas fa-flask"></i>
+                                                                    <svg class="ic"><use href="#i-flask-conical"/></svg>
                                                                     <%= test.testName %>
                                                                 </span>
                                                                 <span class="test-price">
@@ -976,8 +310,7 @@
                                                             </div>
                                                             <% }); %>
                                                                 <% } else { %>
-                                                                    <p style="color: #6b7280; text-align: center;">No
-                                                                        tests</p>
+                                                                    <p class="la-empty">—</p>
                                                                     <% } %>
                                                 </div>
                                             </div>
@@ -987,7 +320,7 @@
                                         <div class="detail-card">
                                             <div class="card-header">
                                                 <div class="header-icon orange">
-                                                    <i class="fas fa-receipt"></i>
+                                                    <svg class="ic"><use href="#i-receipt"/></svg>
                                                 </div>
                                                 <h3>
                                                     <%= __('labOrderDetails.pricing') || 'Pricing' %>
@@ -1014,7 +347,7 @@
                                                             <%= __('labOrderDetails.appCommission') || 'App Commission'
                                                                 %> (<%= commissionRate %>%)
                                                         </span>
-                                                        <span class="value" style="color: #ef4444;">
+                                                        <span class="value" style="color: var(--red);">
                                                             - <%= new Intl.NumberFormat('en-IQ', { style: 'currency' ,
                                                                 currency: 'IQD' , maximumFractionDigits: 0
                                                                 }).format(appCommission) %>
@@ -1050,7 +383,7 @@
                                         <div class="detail-card timeline-section">
                                             <div class="card-header">
                                                 <div class="header-icon purple">
-                                                    <i class="fas fa-history"></i>
+                                                    <svg class="ic"><use href="#i-history"/></svg>
                                                 </div>
                                                 <h3>
                                                     <%= __('labOrderDetails.timeline') || 'Order Timeline' %>
@@ -1111,7 +444,7 @@
                                             <div class="detail-card full-width">
                                                 <div class="card-header">
                                                     <div class="header-icon orange">
-                                                        <i class="fas fa-star"></i>
+                                                        <svg class="ic"><use href="#i-star"/></svg>
                                                     </div>
                                                     <h3>
                                                         <%= __('labOrderDetails.rating') || 'Rating' %>
@@ -1126,8 +459,7 @@
                                                             <span class="value">
                                                                 <div class="rating-stars">
                                                                     <% for (let i=1; i <=5; i++) { %>
-                                                                        <i
-                                                                            class="fas fa-star <%= i <= order.rating.labRating ? '' : 'empty' %>"></i>
+                                                                        <svg class="ic star <%= i <= order.rating.labRating ? '' : 'empty' %>"><use href="#i-star"/></svg>
                                                                         <% } %>
                                                                 </div>
                                                             </span>
@@ -1141,8 +473,7 @@
                                                                     <span class="value">
                                                                         <div class="rating-stars">
                                                                             <% for (let i=1; i <=5; i++) { %>
-                                                                                <i
-                                                                                    class="fas fa-star <%= i <= order.rating.nurseRating ? '' : 'empty' %>"></i>
+                                                                                <svg class="ic star <%= i <= order.rating.nurseRating ? '' : 'empty' %>"><use href="#i-star"/></svg>
                                                                                 <% } %>
                                                                         </div>
                                                                     </span>
@@ -1168,7 +499,7 @@
                                                     <div class="detail-card full-width">
                                                         <div class="card-header">
                                                             <div class="header-icon green">
-                                                                <i class="fas fa-file-medical-alt"></i>
+                                                                <svg class="ic"><use href="#i-file-check"/></svg>
                                                             </div>
                                                             <h3>
                                                                 <%= __('labOrderDetails.result') || 'Test Result' %>
@@ -1178,7 +509,7 @@
                                                             <a href="<%= order.results.reportUrl %>" target="_blank"
                                                                 class="modern-btn complete-btn"
                                                                 style="width: 100%; justify-content: center;">
-                                                                <i class="fas fa-download"></i>
+                                                                <svg class="ic"><use href="#i-download"/></svg>
                                                                 <%= __('labOrderDetails.viewResult')
                                                                     || 'View/Download Result' %>
                                                             </a>
@@ -1198,7 +529,7 @@
                         <%= __('labOrders.fileUpload.title') || 'Upload Test Result' %>
                     </h3>
                     <button class="modal-close" onclick="closeUploadModal()">
-                        <i class="fas fa-times"></i>
+                        <svg class="ic"><use href="#i-x"/></svg>
                     </button>
                 </div>
                 <div class="modal-body">
@@ -1206,18 +537,18 @@
                         <div class="file-upload-area" id="fileUploadArea">
                             <label for="resultFile" style="cursor: pointer;">
                                 <div class="upload-icon">
-                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <svg class="ic"><use href="#i-upload"/></svg>
                                 </div>
                                 <p>
                                     <%= __('labOrders.fileUpload.dragDrop') || 'Drag & drop or click to upload' %>
                                 </p>
-                                <p style="font-size: 12px; color: #6b7280;">PDF, JPG, PNG (max 5MB)</p>
+                                <p class="la-sub">PDF, JPG, PNG (max 5MB)</p>
                             </label>
                             <input type="file" id="resultFile" name="resultFile" accept=".pdf,.jpg,.jpeg,.png"
                                 style="display: none;">
                         </div>
                         <div id="filePreview"
-                            style="display: none; margin-top: 16px; padding: 12px; background: #f3f4f6; border-radius: 8px;">
+                            style="display: none;">
                         </div>
                     </form>
                 </div>
@@ -1226,7 +557,7 @@
                         <%= __('common.cancel') %>
                     </button>
                     <button class="modern-btn complete-btn" id="confirmUploadBtn" disabled onclick="handleUpload()">
-                        <i class="fas fa-check"></i>
+                        <svg class="ic"><use href="#i-check"/></svg>
                         <%= __('labOrders.completeOrder') || 'Complete Order' %>
                     </button>
                 </div>
@@ -1289,7 +620,7 @@
                     document.getElementById('filePreview').style.display = 'block';
                     document.getElementById('filePreview').innerHTML = `
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <i class="fas fa-file" style="font-size: 24px; color: #3b82f6;"></i>
+                        <svg class="ic" style="width:24px;height:24px;color:var(--accent)"><use href="#i-file"/></svg>
                         <div>
                             <div style="font-weight: 500;">${file.name}</div>
                             <div style="font-size: 12px; color: #6b7280;">${(file.size / 1024).toFixed(1)} KB</div>

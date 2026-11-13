@@ -523,6 +523,34 @@ router.delete('/:id', verifyToken, adminOnly, async (req, res) => {
     }
 });
 
+// Show or hide the "Powered by LabGo" footer on this lab's result reports.
+// Platform admins only (labs cannot change it from their settings).
+router.patch('/:id/report-branding', verifyToken, adminOnly, async (req, res) => {
+    try {
+        if (typeof req.body?.hidePlatformFooter !== 'boolean') {
+            return res.status(400).json({ success: false, message: 'hidePlatformFooter must be true or false' });
+        }
+        const lab = await Lab.findById(req.params.id);
+        if (!lab) {
+            return res.status(404).json({ success: false, message: 'Lab not found' });
+        }
+        lab.reportBranding = {
+            hidePlatformFooter: req.body.hidePlatformFooter,
+            updatedBy: req.user.id || req.user._id,
+            updatedAt: new Date(),
+        };
+        await lab.save();
+        res.json({
+            success: true,
+            message: req.body.hidePlatformFooter ? 'LabGo footer hidden on reports' : 'LabGo footer shown on reports',
+            data: { reportBranding: lab.reportBranding },
+        });
+    } catch (error) {
+        console.error('Error updating report branding:', error);
+        res.status(500).json({ success: false, message: 'Failed to update report branding' });
+    }
+});
+
 // Toggle featured status
 router.patch('/:id/featured', verifyToken, adminOnly, async (req, res) => {
     try {

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/lab-dashboard.css">
     <style>
         :root {
@@ -419,10 +418,12 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/css/lab-pages.css">
 </head>
 <body>
     <!-- Lab Navbar -->
     <%- include('../partials/lab-navbar') %>
+    <%- include('../partials/lab-page-tabs', { group: 'settings', current: 'settings' }) %>
 
     <!-- Main Content Wrapper -->
     <div class="lab-wrapper">
@@ -431,7 +432,7 @@
                 <!-- Page Header -->
                 <div class="settings-header">
                     <div class="settings-title">
-                        <i class="fas fa-cog"></i>
+                        <svg class="ic"><use href="#i-settings"/></svg>
                         <div>
                             <h1><%= __('settings.title') %></h1>
                             <p class="settings-subtitle"><%= __('profile.manageLabInfo') %></p>
@@ -439,12 +440,14 @@
                     </div>
                 </div>
 
+                <%- include('../partials/lab-appearance') %>
+
                 <form id="settingsForm" class="settings-container">
                     <!-- Basic Information Section -->
                     <div class="settings-section">
                         <div class="section-header">
                             <div class="section-icon">
-                                <i class="fas fa-info-circle"></i>
+                                <svg class="ic"><use href="#i-info"/></svg>
                             </div>
                             <div>
                                 <h2 class="section-title"><%= __('profile.basicInfo') %></h2>
@@ -484,7 +487,7 @@
                     <div class="settings-section">
                         <div class="section-header">
                             <div class="section-icon" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">
-                                <i class="fas fa-image"></i>
+                                <svg class="ic"><use href="#i-image"/></svg>
                             </div>
                             <div>
                                 <h2 class="section-title"><%= __('profile.images') %></h2>
@@ -500,13 +503,13 @@
                                         <% if (lab.logo) { %>
                                             <img src="<%= lab.logo %>" alt="logo">
                                         <% } else { %>
-                                            <i class="fas fa-flask" style="font-size: 32px; color: #9ca3af;"></i>
+                                            <svg class="ic" style="font-size: 32px; color: #9ca3af;"><use href="#i-flask-conical"/></svg>
                                         <% } %>
                                     </div>
                                     <div class="logo-upload-btn">
                                         <input type="file" id="logoInput" accept="image/*" style="display: none;">
                                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('logoInput').click()">
-                                            <i class="fas fa-upload"></i> <span id="logoUploadLabel"><%= __('profile.chooseImage') %></span>
+                                            <svg class="ic"><use href="#i-upload"/></svg> <span id="logoUploadLabel"><%= __('profile.chooseImage') %></span>
                                         </button>
                                     </div>
                                 </div>
@@ -520,13 +523,13 @@
                                         <% if (lab.coverImage) { %>
                                             <img src="<%= lab.coverImage %>" alt="cover">
                                         <% } else { %>
-                                            <i class="fas fa-panorama" style="font-size: 28px; color: #9ca3af;"></i>
+                                            <svg class="ic" style="font-size: 28px; color: #9ca3af;"><use href="#i-image"/></svg>
                                         <% } %>
                                     </div>
                                     <div class="logo-upload-btn">
                                         <input type="file" id="coverInput" accept="image/*" style="display: none;">
                                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('coverInput').click()">
-                                            <i class="fas fa-upload"></i> <span id="coverUploadLabel"><%= __('profile.chooseImage') %></span>
+                                            <svg class="ic"><use href="#i-upload"/></svg> <span id="coverUploadLabel"><%= __('profile.chooseImage') %></span>
                                         </button>
                                     </div>
                                 </div>
@@ -538,7 +541,7 @@
                     <div class="settings-section">
                         <div class="section-header">
                             <div class="section-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                                <i class="fas fa-map-marker-alt"></i>
+                                <svg class="ic"><use href="#i-map-pin"/></svg>
                             </div>
                             <div>
                                 <h2 class="section-title"><%= __('profile.addressInfo') %></h2>
@@ -584,11 +587,26 @@
                         </div>
                     </div>
 
+                    <!-- Licence holders (printed in the report header, in English) -->
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <div class="section-icon"><svg class="ic"><use href="#i-badge-check"/></svg></div>
+                            <div>
+                                <h2 class="section-title"><%= __('licenseHolders.title') %></h2>
+                                <p class="section-description"><%= __('licenseHolders.desc') %></p>
+                            </div>
+                        </div>
+                        <div id="lhRows" class="lh-rows"></div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="lhAdd"><svg class="ic"><use href="#i-plus"/></svg><%= __('licenseHolders.add') %></button>
+                        <p class="form-hint lh-preview-label"><%= __('licenseHolders.preview') %></p>
+                        <div class="lh-preview" id="lhPreview" dir="ltr"></div>
+                    </div>
+
                     <!-- Specializations Section -->
                     <div class="settings-section">
                         <div class="section-header">
                             <div class="section-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-                                <i class="fas fa-stethoscope"></i>
+                                <svg class="ic"><use href="#i-stethoscope"/></svg>
                             </div>
                             <div>
                                 <h2 class="section-title"><%= __('profile.specializations') %></h2>
@@ -610,7 +628,7 @@
                     <div class="settings-section">
                         <div class="section-header">
                             <div class="section-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
-                                <i class="fas fa-clock"></i>
+                                <svg class="ic"><use href="#i-clock"/></svg>
                             </div>
                             <div>
                                 <h2 class="section-title"><%= __('profile.operatingHours') %></h2>
@@ -644,7 +662,7 @@
                         </div>
                         <div class="save-buttons">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i>
+                                <svg class="ic"><use href="#i-save"/></svg>
                                 <%= __('common.save') %> <%= __('profile.changes') %>
                             </button>
                         </div>
@@ -727,6 +745,55 @@
         setupImageUpload('coverInput', 'coverPreview', 'coverUploadLabel', '/lab/api/profile/cover-image', 'coverImage');
 
         // Handle form submission
+        // ---- licence holders ----
+        (function () {
+            var TITLES = ['Dr.', 'Prof.', 'Assoc. Prof.', 'Asst. Prof.', 'Mr.', 'Ms.', 'د.', 'أ.د.', 'أ.م.د.', 'م.د.', 'السيد', 'السيدة'];
+            var rows = <%- JSON.stringify((lab.licenseHolders || []).map(function (h) { return { title: h.title, name: h.name, specialty: h.specialty }; })).replace(/</g, '\\u003c') %>;
+            var box = document.getElementById('lhRows');
+            var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+            function read() {
+                rows = Array.prototype.map.call(box.querySelectorAll('.lh-row'), function (r) {
+                    return { title: r.querySelector('[data-k=title]').value, name: r.querySelector('[data-k=name]').value.trim(), specialty: r.querySelector('[data-k=specialty]').value.trim() };
+                });
+            }
+            function preview() {
+                var list = rows.filter(function (h) { return h.name; });
+                document.getElementById('lhPreview').innerHTML = list.length
+                    ? list.map(function (h) { return '<span dir="auto"><b>' + esc([h.title, h.name].filter(Boolean).join(' ')) + '</b>' + (h.specialty ? ' · ' + esc(h.specialty) : '') + '</span>'; }).join('')
+                    : '<span class="lh-empty">—</span>';
+            }
+            function render() {
+                box.innerHTML = rows.map(function (h, i) {
+                    return '<div class="lh-row" data-i="' + i + '">' +
+                        '<select class="form-select" data-k="title" aria-label="Title">' + TITLES.concat(TITLES.indexOf(h.title) === -1 && h.title ? [h.title] : []).map(function (t) { return '<option' + (t === h.title ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '<option value=""' + (h.title === '' ? ' selected' : '') + '>—</option></select>' +
+                        '<input class="form-input" data-k="name" dir="auto" maxlength="80" placeholder="Ahmed Hamdoon Ahmed / أحمد حمدون أحمد" value="' + esc(h.name) + '">' +
+                        '<input class="form-input" data-k="specialty" dir="auto" maxlength="60" placeholder="Bacteriologist / بكتريولوجي" value="' + esc(h.specialty) + '">' +
+                        '<button type="button" class="icon-action" data-del="' + i + '" aria-label="<%= __('common.delete') %>"><svg class="ic"><use href="#i-trash-2"/></svg></button></div>';
+                }).join('');
+                document.getElementById('lhAdd').style.display = rows.length >= 6 ? 'none' : '';
+                preview();
+            }
+            box.addEventListener('input', function () { read(); preview(); });
+            box.addEventListener('change', function () { read(); preview(); });
+            box.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-del]');
+                if (!b) return;
+                read();
+                rows.splice(Number(b.dataset.del), 1);
+                render();
+            });
+            document.getElementById('lhAdd').addEventListener('click', function () {
+                read();
+                if (rows.length >= 6) return;
+                rows.push({ title: 'Dr.', name: '', specialty: '' });
+                render();
+                var inputs = box.querySelectorAll('[data-k=name]');
+                inputs[inputs.length - 1].focus();
+            });
+            window.lhCollect = function () { read(); return rows.filter(function (h) { return h.name; }); };
+            render();
+        })();
+
         document.getElementById('settingsForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -758,6 +825,10 @@
             document.querySelectorAll('.specialization-item.selected input[type="checkbox"]').forEach(checkbox => {
                 updateData.specialization.push(checkbox.value);
             });
+
+            // Licence holders (rows are not plain form fields)
+            updateData.licenseHolders = window.lhCollect();
+            Object.keys(updateData).forEach(function (k) { if (k.indexOf('lh_') === 0) delete updateData[k]; });
 
             // Ensure at least one specialization is selected
             if (updateData.specialization.length === 0) {
@@ -804,7 +875,7 @@
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <svg class="ic"><use href="#i-${type === 'success' ? 'circle-check' : 'circle-alert'}"/></svg>
                 ${message}
             `;
 

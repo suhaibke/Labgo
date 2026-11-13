@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/lab-dashboard.css">
     <link rel="stylesheet" href="/css/lab-external-transfers.css">
     <style>body { font-family: <%= font %>; }</style>
     <!-- Used only by the sample label's "Download PDF" button -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="/css/lab-pages.css">
 </head>
 <body>
     <%- include('../partials/lab-navbar') %>
@@ -21,27 +21,33 @@
             <div class="external-transfers-container">
                 <section class="transfer-page-header">
                     <div>
-                        <span class="page-eyebrow"><i class="fas fa-arrow-right-arrow-left"></i> <%= __('navigation.externalTransfers') %></span>
+                        <span class="page-eyebrow"><svg class="ic"><use href="#i-arrow-left-right"/></svg> <%= __('navigation.externalTransfers') %></span>
                         <h1><%= __('externalTransfers.title') %></h1>
                         <p><%= __('externalTransfers.subtitle') %></p>
                     </div>
                     <button class="primary-action" id="openTransferModal">
-                        <i class="fas fa-plus"></i>
+                        <svg class="ic"><use href="#i-plus"/></svg>
                         <%= __('externalTransfers.newTransfer') %>
                     </button>
                 </section>
 
+                <div class="custody-tabs page-tabs" id="pageTabs">
+                    <button type="button" class="custody-tab-btn active" data-pane="sent"><svg class="ic"><use href="#i-send"/></svg> <%= __('externalTransfers.tabSent') %></button>
+                    <button type="button" class="custody-tab-btn" data-pane="incoming"><svg class="ic"><use href="#i-inbox"/></svg> <%= __('externalTransfers.tabIncoming') %> <span class="tab-count" id="incomingCount" hidden></span></button>
+                </div>
+
+                <div id="sentPane">
                 <section class="transfer-stats" aria-label="<%= __('externalTransfers.title') %>">
                     <article class="transfer-stat total">
-                        <span class="stat-icon"><i class="fas fa-book-medical"></i></span>
+                        <span class="stat-icon"><svg class="ic"><use href="#i-book-open"/></svg></span>
                         <div><strong><%= stats.total %></strong><span><%= __('externalTransfers.total') %></span></div>
                     </article>
                     <article class="transfer-stat awaiting">
-                        <span class="stat-icon"><i class="fas fa-hourglass-half"></i></span>
+                        <span class="stat-icon"><svg class="ic"><use href="#i-hourglass"/></svg></span>
                         <div><strong><%= stats.awaiting %></strong><span><%= __('externalTransfers.awaiting') %></span></div>
                     </article>
                     <article class="transfer-stat completed">
-                        <span class="stat-icon"><i class="fas fa-file-circle-check"></i></span>
+                        <span class="stat-icon"><svg class="ic"><use href="#i-file-check"/></svg></span>
                         <div><strong><%= stats.completed %></strong><span><%= __('externalTransfers.completed') %></span></div>
                     </article>
                 </section>
@@ -49,7 +55,7 @@
                 <section class="notebook-card">
                     <div class="notebook-toolbar">
                         <div class="search-field">
-                            <i class="fas fa-search"></i>
+                            <svg class="ic"><use href="#i-search"/></svg>
                             <input id="transferSearch" type="search" placeholder="<%= __('externalTransfers.searchPlaceholder') %>">
                         </div>
                         <select id="statusFilter" aria-label="<%= __('externalTransfers.status') %>">
@@ -95,16 +101,17 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <strong class="sample-code"><i class="fas fa-qrcode"></i> <%= transfer.sampleCode %></strong>
+                                            <strong class="sample-code"><svg class="ic"><use href="#i-qr-code"/></svg> <%= transfer.sampleCode %></strong>
                                             <small class="tests-list"><%= testsText %></small>
+                                            <% if (typeof transfer.price === 'number') { %><small class="price-tag"><%= transfer.price.toLocaleString('en-US') %> <%= __('externalTransfers.currency') %></small><% } %>
                                         </td>
                                         <td>
-                                            <strong><%= externalLab.name %></strong>
-                                            <% if (externalLab.contactName) { %><small><i class="fas fa-user-doctor"></i> <%= externalLab.contactName %></small><% } %>
-                                            <% if (externalLab.phone) { %><small><i class="fas fa-phone"></i> <%= externalLab.phone %></small><% } %>
-                                            <% if (externalLab.address) { %><small class="transfer-note" title="<%= externalLab.address %>"><i class="fas fa-location-dot"></i> <%= externalLab.address %></small><% } %>
+                                            <strong><%= externalLab.name %><% if (transfer.toLabId) { %> <span class="labgo-badge" title="LabGo">LabGo</span><% } %></strong>
+                                            <% if (externalLab.contactName) { %><small><svg class="ic"><use href="#i-stethoscope"/></svg> <%= externalLab.contactName %></small><% } %>
+                                            <% if (externalLab.phone) { %><small><svg class="ic"><use href="#i-phone"/></svg> <%= externalLab.phone %></small><% } %>
+                                            <% if (externalLab.address) { %><small class="transfer-note" title="<%= externalLab.address %>"><svg class="ic"><use href="#i-map-pin"/></svg> <%= externalLab.address %></small><% } %>
                                             <% if (transfer.referenceNumber) { %><small>#<%= transfer.referenceNumber %></small><% } %>
-                                            <% if (transfer.notes) { %><small class="transfer-note" title="<%= transfer.notes %>"><i class="fas fa-note-sticky"></i> <%= transfer.notes %></small><% } %>
+                                            <% if (transfer.notes) { %><small class="transfer-note" title="<%= transfer.notes %>"><svg class="ic"><use href="#i-sticky-note"/></svg> <%= transfer.notes %></small><% } %>
                                         </td>
                                         <td>
                                             <strong><%= new Date(transfer.sentAt).toLocaleDateString(currentLang) %></strong>
@@ -114,7 +121,7 @@
                                         </td>
                                         <td>
                                             <span class="status-pill <%= transfer.status %>">
-                                                <i class="fas <%= transfer.status === 'completed' ? 'fa-circle-check' : 'fa-clock' %>"></i>
+                                                <svg class="ic"><use href="#i-<%= transfer.status === 'completed' ? 'circle-check' : 'clock' %>"/></svg>
                                                 <%= transfer.status === 'completed' ? __('externalTransfers.statusCompleted') : __('externalTransfers.statusSent') %>
                                             </span>
                                         </td>
@@ -122,13 +129,13 @@
                                             <div class="row-actions">
                                                 <% if (transfer.orderId) { %>
                                                     <a href="/lab/orders/<%= transfer.orderId %>" class="icon-action" title="<%= __('externalTransfers.viewOrder') %>">
-                                                        <i class="fas fa-eye"></i>
+                                                        <svg class="ic"><use href="#i-eye"/></svg>
                                                     </a>
                                                 <% } %>
                                                 <% const fromLabBits = [lab.name, lab.phone].filter(Boolean).join(' - ');
                                                    const toLabBits = [externalLab.name, externalLab.contactName, externalLab.phone, externalLab.address].filter(Boolean).join(' - ');
                                                    const expectedText = transfer.expectedResultAt ? new Date(transfer.expectedResultAt).toLocaleDateString(currentLang) : ''; %>
-                                                <button type="button" class="icon-action" data-action="print-label"
+                                                <button type="button" class="icon-action" data-action="print-label" data-transfer-id="<%= transfer._id %>"
                                                     data-code="<%= transfer.sampleCode %>"
                                                     data-patient="<%= transfer.patientName || '' %>"
                                                     data-gender="<%= genderText %>"
@@ -140,9 +147,9 @@
                                                     data-expected="<%= expectedText %>"
                                                     data-ref="<%= transfer.referenceNumber || '' %>"
                                                     title="<%= __('externalTransfers.printLabel') %>">
-                                                    <i class="fas fa-print"></i>
+                                                    <svg class="ic"><use href="#i-printer"/></svg>
                                                 </button>
-                                                <button type="button" class="icon-action" data-action="download-label"
+                                                <button type="button" class="icon-action" data-action="download-label" data-transfer-id="<%= transfer._id %>"
                                                     data-code="<%= transfer.sampleCode %>"
                                                     data-patient="<%= transfer.patientName || '' %>"
                                                     data-gender="<%= genderText %>"
@@ -154,21 +161,35 @@
                                                     data-expected="<%= expectedText %>"
                                                     data-ref="<%= transfer.referenceNumber || '' %>"
                                                     title="<%= __('externalTransfers.downloadPdf') %>">
-                                                    <i class="fas fa-file-arrow-down"></i>
+                                                    <svg class="ic"><use href="#i-file-down"/></svg>
                                                 </button>
                                                 <% if (transfer.status === 'sent') { %>
                                                     <button type="button" class="result-action" data-action="upload-result" data-transfer-id="<%= transfer._id %>">
-                                                        <i class="fas fa-cloud-arrow-up"></i>
+                                                        <svg class="ic"><use href="#i-upload"/></svg>
                                                         <%= __('externalTransfers.uploadResult') %>
                                                     </button>
                                                 <% } else if (transfer.resultFileUrl) { %>
                                                     <a href="<%= transfer.resultFileUrl %>" target="_blank" rel="noopener" class="result-link">
-                                                        <i class="fas fa-file-arrow-down"></i>
+                                                        <svg class="ic"><use href="#i-file-down"/></svg>
                                                         <%= __('labOrderDetails.viewResult') %>
                                                     </a>
+                                                    <% if (transfer.resultSource === 'external_link' || transfer.resultSource === 'receiving_lab') { %>
+                                                        <% if (transfer.resultSource === 'receiving_lab') { %>
+                                                        <span class="qr-badge"><svg class="ic"><use href="#i-flask-conical"/></svg><%= __('externalTransfers.viaLab') %></span>
+                                                        <% } else { %>
+                                                        <span class="qr-badge" title="<%= (transfer.externalUpload && transfer.externalUpload.uploaderName) || '' %>"><svg class="ic"><use href="#i-qr-code"/></svg><%= __('externalTransfers.viaQr') %></span>
+                                                        <% } %>
+                                                        <% if (transfer.orderId && !transfer.forwardedAt) { %>
+                                                            <button type="button" class="result-action" data-action="forward-result" data-transfer-id="<%= transfer._id %>">
+                                                                <svg class="ic"><use href="#i-send"/></svg><%= __('externalTransfers.sendToPatient') %>
+                                                            </button>
+                                                        <% } else if (transfer.forwardedAt) { %>
+                                                            <span class="qr-badge sent"><svg class="ic"><use href="#i-check"/></svg><%= __('externalTransfers.sentToPatient') %></span>
+                                                        <% } %>
+                                                    <% } %>
                                                 <% } %>
                                                 <button type="button" class="icon-action" data-action="delete-transfer" data-transfer-id="<%= transfer._id %>" title="<%= __('externalTransfers.deleteTransfer') %>">
-                                                    <i class="fas fa-trash"></i>
+                                                    <svg class="ic"><use href="#i-trash-2"/></svg>
                                                 </button>
                                             </div>
                                         </td>
@@ -178,16 +199,51 @@
                         </table>
 
                         <div class="empty-state <%= transfers.length ? 'hidden' : '' %>" id="emptyTransfers">
-                            <span><i class="fas fa-book-open"></i></span>
+                            <span><svg class="ic"><use href="#i-book-open"/></svg></span>
                             <h2><%= __('externalTransfers.noTransfers') %></h2>
                             <p><%= __('externalTransfers.noTransfersDescription') %></p>
                         </div>
                         <div class="empty-state hidden" id="emptySearch">
-                            <span><i class="fas fa-magnifying-glass"></i></span>
+                            <span><svg class="ic"><use href="#i-search"/></svg></span>
                             <h2><%= __('externalTransfers.noTransfers') %></h2>
                         </div>
                     </div>
                 </section>
+                </div>
+
+                <div id="incomingPane" hidden>
+                    <section class="notebook-card receive-card">
+                        <form id="receiveForm" class="receive-form">
+                            <label for="receiveCode"><svg class="ic"><use href="#i-qr-code"/></svg> <%= __('externalTransfers.receiveTitle') %></label>
+                            <div class="receive-row">
+                                <input id="receiveCode" type="text" autocomplete="off" maxlength="60" placeholder="<%= __('externalTransfers.receivePlaceholder') %>">
+                                <button type="submit" class="primary-action"><svg class="ic"><use href="#i-check"/></svg> <%= __('externalTransfers.receive') %></button>
+                            </div>
+                        </form>
+                    </section>
+                    <section class="notebook-card">
+                        <div class="notebook-table-wrap">
+                            <table class="notebook-table">
+                                <thead>
+                                    <tr>
+                                        <th><%= __('externalTransfers.patientInfo') %></th>
+                                        <th><%= __('externalTransfers.sampleInfo') %></th>
+                                        <th><%= __('externalTransfers.fromLab') %></th>
+                                        <th><%= __('externalTransfers.sentAt') %></th>
+                                        <th><%= __('externalTransfers.status') %></th>
+                                        <th><%= __('common.actions') %></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="incomingRows"></tbody>
+                            </table>
+                            <div class="empty-state hidden" id="emptyIncoming">
+                                <span><svg class="ic"><use href="#i-inbox"/></svg></span>
+                                <h2><%= __('externalTransfers.noIncoming') %></h2>
+                            </div>
+                        </div>
+                    </section>
+                    <input type="file" id="incomingFile" accept="application/pdf,image/jpeg,image/png" hidden>
+                </div>
             </div>
         </main>
     </div>
@@ -195,8 +251,8 @@
     <div class="transfer-modal" id="newTransferModal" aria-hidden="true">
         <div class="modal-panel large" role="dialog" aria-modal="true" aria-labelledby="newTransferTitle">
             <div class="modal-heading">
-                <div><span><i class="fas fa-arrow-right-arrow-left"></i></span><h2 id="newTransferTitle"><%= __('externalTransfers.newTransfer') %></h2></div>
-                <button type="button" class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+                <div><span><svg class="ic"><use href="#i-arrow-left-right"/></svg></span><h2 id="newTransferTitle"><%= __('externalTransfers.newTransfer') %></h2></div>
+                <button type="button" class="modal-close" data-close-modal><svg class="ic"><use href="#i-x"/></svg></button>
             </div>
             <form id="newTransferForm">
                 <div class="modal-scroll">
@@ -216,30 +272,30 @@
                                     </option>
                                 <% }); %>
                             </select>
-                            <% if (!eligibleOrders.length) { %><p class="form-note warning"><i class="fas fa-circle-info"></i> <%= __('externalTransfers.cannotTransfer') %></p><% } %>
+                            <% if (!eligibleOrders.length) { %><p class="form-note warning"><svg class="ic"><use href="#i-info"/></svg> <%= __('externalTransfers.cannotTransfer') %></p><% } %>
                         </div>
 
                         <div class="patient-info-card" id="patientInfoCard" hidden>
                             <div class="patient-info-head">
-                                <i class="fas fa-user"></i>
+                                <svg class="ic"><use href="#i-user"/></svg>
                                 <span><%= __('externalTransfers.patientInfo') %></span>
                             </div>
                             <strong class="patient-info-name" id="autoPatientName">—</strong>
                             <div class="patient-detail-grid">
                                 <div class="patient-detail-item">
-                                    <i class="fas fa-venus-mars"></i>
+                                    <svg class="ic"><use href="#i-users"/></svg>
                                     <span id="autoPatientGender">—</span>
                                 </div>
                                 <div class="patient-detail-item">
-                                    <i class="fas fa-cake-candles"></i>
+                                    <svg class="ic"><use href="#i-cake"/></svg>
                                     <span id="autoPatientAge">—</span>
                                 </div>
                                 <div class="patient-detail-item">
-                                    <i class="fas fa-phone"></i>
+                                    <svg class="ic"><use href="#i-phone"/></svg>
                                     <span id="autoPatientPhone">—</span>
                                 </div>
                                 <div class="patient-detail-item span-2">
-                                    <i class="fas fa-location-dot"></i>
+                                    <svg class="ic"><use href="#i-map-pin"/></svg>
                                     <span id="autoPatientAddress">—</span>
                                 </div>
                             </div>
@@ -247,7 +303,7 @@
 
                         <div class="auto-fill-grid" id="autoFillPanel" hidden>
                             <article class="span-2">
-                                <span><i class="fas fa-vial"></i> <%= __('externalTransfers.sampleInfo') %></span>
+                                <span><svg class="ic"><use href="#i-test-tube"/></svg> <%= __('externalTransfers.sampleInfo') %></span>
                                 <strong id="autoSampleCode">—</strong>
                                 <small id="autoSampleTests">—</small>
                             </article>
@@ -299,6 +355,17 @@
                     <fieldset>
                         <legend><%= __('externalTransfers.externalLabInfo') %></legend>
                         <div class="form-grid">
+                            <div class="form-field span-2 lab-picker">
+                                <label for="labSearch"><%= __('externalTransfers.registeredLab') %></label>
+                                <div class="lab-chosen" id="labChosen" hidden>
+                                    <span class="labgo-badge">LabGo</span> <strong id="labChosenName"></strong>
+                                    <button type="button" class="link-btn" id="labClear"><%= __('externalTransfers.clearLab') %></button>
+                                </div>
+                                <input id="labSearch" type="search" autocomplete="off" placeholder="<%= __('externalTransfers.searchLabs') %>">
+                                <input type="hidden" id="toLabId" name="toLabId">
+                                <div class="lab-results" id="labResults" hidden></div>
+                                <small class="field-hint"><%= __('externalTransfers.registeredLabHint') %></small>
+                            </div>
                             <div class="form-field span-2">
                                 <label for="externalLabName"><%= __('externalTransfers.labName') %> *</label>
                                 <input id="externalLabName" name="labName" type="text" maxlength="160" required>
@@ -324,6 +391,11 @@
                                 <input id="expectedResultAt" name="expectedResultAt" type="date">
                             </div>
                             <div class="form-field span-2">
+                                <label for="transferPrice"><%= __('externalTransfers.price') %> (<%= __('externalTransfers.currency') %>)</label>
+                                <input id="transferPrice" name="price" type="text" inputmode="numeric" maxlength="12">
+                                <small class="field-hint" id="priceHint"><%= __('externalTransfers.priceHint') %></small>
+                            </div>
+                            <div class="form-field span-2">
                                 <label for="transferNotes"><%= __('externalTransfers.notes') %></label>
                                 <textarea id="transferNotes" name="notes" rows="3" maxlength="1000"></textarea>
                             </div>
@@ -333,7 +405,7 @@
                 <div class="modal-footer">
                     <button type="button" class="secondary-action" data-close-modal><%= __('common.cancel') %></button>
                     <button type="submit" class="primary-action" id="saveTransferButton">
-                        <i class="fas fa-floppy-disk"></i> <%= __('externalTransfers.saveTransfer') %>
+                        <svg class="ic"><use href="#i-save"/></svg> <%= __('externalTransfers.saveTransfer') %>
                     </button>
                 </div>
             </form>
@@ -343,14 +415,14 @@
     <div class="transfer-modal" id="resultModal" aria-hidden="true">
         <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="resultModalTitle">
             <div class="modal-heading">
-                <div><span><i class="fas fa-file-medical"></i></span><h2 id="resultModalTitle"><%= __('externalTransfers.uploadResult') %></h2></div>
-                <button type="button" class="modal-close" data-close-result><i class="fas fa-times"></i></button>
+                <div><span><svg class="ic"><use href="#i-file-plus"/></svg></span><h2 id="resultModalTitle"><%= __('externalTransfers.uploadResult') %></h2></div>
+                <button type="button" class="modal-close" data-close-result><svg class="ic"><use href="#i-x"/></svg></button>
             </div>
             <form id="resultUploadForm">
                 <div class="result-upload-area">
                     <input id="returnedResultFile" name="resultFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp" required>
                     <label for="returnedResultFile">
-                        <i class="fas fa-cloud-arrow-up"></i>
+                        <svg class="ic"><use href="#i-upload"/></svg>
                         <strong><%= __('externalTransfers.chooseFile') %></strong>
                         <span id="selectedResultFile">PDF, JPG, PNG, HEIC, WEBP</span>
                     </label>
@@ -358,7 +430,7 @@
                 <div class="modal-footer">
                     <button type="button" class="secondary-action" data-close-result><%= __('common.cancel') %></button>
                     <button type="submit" class="primary-action" id="uploadResultButton">
-                        <i class="fas fa-paper-plane"></i> <%= __('externalTransfers.uploadResult') %>
+                        <svg class="ic"><use href="#i-send"/></svg> <%= __('externalTransfers.uploadResult') %>
                     </button>
                 </div>
             </form>
@@ -370,7 +442,7 @@
     <div id="printLabelArea">
         <div class="print-label">
             <div class="print-label-head">
-                <span class="print-label-brand"><i class="fas fa-flask"></i> labgo</span>
+                <span class="print-label-brand"><svg class="ic"><use href="#i-flask-conical"/></svg> labgo</span>
                 <span class="print-label-title"><%= __('externalTransfers.labelTitle') %></span>
             </div>
 
@@ -380,20 +452,20 @@
             </div>
 
             <div class="print-label-section">
-                <span class="print-label-heading"><i class="fas fa-user"></i> <%= __('externalTransfers.patientInfo') %></span>
+                <span class="print-label-heading"><svg class="ic"><use href="#i-user"/></svg> <%= __('externalTransfers.patientInfo') %></span>
                 <strong id="lblPatient" class="print-label-patient-name"></strong>
                 <small id="lblPatientMeta"></small>
                 <small id="lblTests"></small>
             </div>
 
             <div class="print-label-section">
-                <span class="print-label-heading"><i class="fas fa-calendar-days"></i> <%= __('externalTransfers.datesSection') %></span>
+                <span class="print-label-heading"><svg class="ic"><use href="#i-calendar-days"/></svg> <%= __('externalTransfers.datesSection') %></span>
                 <div class="print-label-row"><span><%= __('externalTransfers.sentAt') %></span><strong id="lblSent"></strong></div>
                 <div class="print-label-row" id="lblExpectedRow"><span><%= __('externalTransfers.expectedResultDate') %></span><strong id="lblExpected"></strong></div>
             </div>
 
             <div class="print-label-section">
-                <span class="print-label-heading"><i class="fas fa-arrow-right-arrow-left"></i> <%= __('externalTransfers.externalLabInfo') %></span>
+                <span class="print-label-heading"><svg class="ic"><use href="#i-arrow-left-right"/></svg> <%= __('externalTransfers.externalLabInfo') %></span>
                 <div class="print-label-row"><span><%= __('externalTransfers.fromLab') %></span><strong id="lblFromLab"></strong></div>
                 <div class="print-label-row"><span><%= __('externalTransfers.toLab') %></span><strong id="lblToLab"></strong></div>
                 <div class="print-label-row" id="lblRefRow"><span><%= __('externalTransfers.referenceNumber') %></span><strong id="lblRef"></strong></div>
@@ -411,11 +483,27 @@
             years: __('common.years'),
             notAvailable: __('common.notAvailable'),
             transferSaved: __('externalTransfers.transferSaved'),
+            forwardDone: __('externalTransfers.forwardDone'),
             transferError: __('externalTransfers.transferError'),
             uploadSuccess: __('externalTransfers.uploadSuccess'),
             uploadError: __('externalTransfers.uploadError'),
             patientNameRequired: __('externalTransfers.patientNameRequired'),
-            confirmDeleteTransfer: __('externalTransfers.confirmDeleteTransfer')
+            confirmDeleteTransfer: __('externalTransfers.confirmDeleteTransfer'),
+            priceHint: __('externalTransfers.priceHint'),
+            priceMissing: __('externalTransfers.priceMissing'),
+            currency: __('externalTransfers.currency'),
+            searchLabs: __('externalTransfers.searchLabs'),
+            receive: __('externalTransfers.receive'),
+            received: __('externalTransfers.received'),
+            onTheWay: __('externalTransfers.onTheWay'),
+            completed: __('externalTransfers.statusCompleted'),
+            enterResults: __('externalTransfers.enterResults'),
+            uploadFile: __('externalTransfers.uploadFile'),
+            viewResult: __('labOrderDetails.viewResult'),
+            receiveDone: __('externalTransfers.receiveDone'),
+            resultDone: __('externalTransfers.resultDone'),
+            notFound: __('externalTransfers.notFound'),
+            noLabs: __('externalTransfers.noTransfers')
         }).replace(/</g, '\\u003c') %>;
         let resultTransferId = null;
         let transferMode = 'order';
@@ -516,6 +604,9 @@
             delete values.patientAge;
             delete values.sampleCode;
             delete values.testsDescription;
+            // An untouched price is left to the server (the receiving lab's B2B prices).
+            if (!priceEdited || !values.price) delete values.price;
+            if (!values.toLabId) delete values.toLabId;
 
             if (transferMode === 'order') {
                 const orderId = sampleSelect.value;
@@ -738,9 +829,11 @@
             fillLabel(data);
             const area = document.getElementById('printLabelArea');
             const labelEl = area.querySelector('.print-label');
-            const icon = button.querySelector('i');
-            const originalIconClass = icon.className;
-            icon.className = 'fas fa-spinner fa-spin';
+            // Swap the button icon to a spinner while the PDF is built
+            const icon = button.querySelector('svg.ic');
+            const iconUse = icon ? icon.querySelector('use') : null;
+            const originalIconHref = iconUse ? iconUse.getAttribute('href') : null;
+            if (iconUse) { iconUse.setAttribute('href', '#i-loader-circle'); icon.classList.add('la-spin'); }
             button.disabled = true;
 
             // Render off-screen (not display:none, or html2canvas captures a blank
@@ -759,18 +852,229 @@
                 showToast(copy.transferError, 'error');
             } finally {
                 area.style.cssText = '';
-                icon.className = originalIconClass;
+                if (iconUse) { iconUse.setAttribute('href', originalIconHref); icon.classList.remove('la-spin'); }
                 button.disabled = false;
             }
         }
 
+        // The label is built by the server (same design as the lab app, real QR + barcode).
+        const labelLang = <%- JSON.stringify(['ar', 'ku'].includes(currentLang) ? currentLang : 'en') %>;
         document.querySelectorAll('[data-action="print-label"]').forEach(button => {
-            button.addEventListener('click', () => printSampleLabel(readLabelData(button)));
+            button.addEventListener('click', () => {
+                const win = window.open(`/lab/external-transfers/${button.dataset.transferId}/label?lang=${labelLang}`, '_blank');
+                if (!win) printSampleLabel(readLabelData(button));
+            });
+        });
+        document.querySelectorAll('[data-action="forward-result"]').forEach(button => {
+            button.addEventListener('click', async () => {
+                button.disabled = true;
+                try {
+                    const res = await fetch(`/lab/api/external-transfers/${button.dataset.transferId}/forward`, { method: 'POST' });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    if (window.laToast) window.laToast(copy.forwardDone);
+                    setTimeout(() => window.location.reload(), 900);
+                } catch (error) {
+                    button.disabled = false;
+                    if (window.laToast) window.laToast(copy.transferError);
+                }
+            });
         });
 
         document.querySelectorAll('[data-action="download-label"]').forEach(button => {
-            button.addEventListener('click', () => downloadLabelPdf(readLabelData(button), button));
+            button.addEventListener('click', async () => {
+                try {
+                    const res = await fetch(`/lab/api/external-transfers/${button.dataset.transferId}/label.pdf?lang=${labelLang}`);
+                    if (!res.ok) throw new Error(String(res.status));
+                    const url = URL.createObjectURL(await res.blob());
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `label-${button.dataset.code}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 5000);
+                } catch (error) {
+                    // No PDF engine on this server: build it in the browser instead.
+                    downloadLabelPdf(readLabelData(button), button);
+                }
+            });
         });
+
+        // ---- Registered (LabGo) receiving lab + price from its B2B prices ----
+        const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => '&#' + ch.charCodeAt(0) + ';');
+        const money = n => Number(n || 0).toLocaleString('en-US');
+        const labSearch = document.getElementById('labSearch');
+        const labResults = document.getElementById('labResults');
+        const toLabId = document.getElementById('toLabId');
+        const priceInput = document.getElementById('transferPrice');
+        const priceHint = document.getElementById('priceHint');
+        let priceEdited = false;
+        let labTimer = null;
+        let quoteTimer = null;
+
+        function chosenTestNames() {
+            if (transferMode === 'order') {
+                return [...document.querySelectorAll('#testSelectList input:checked')]
+                    .map(el => el.closest('label').querySelector('span').textContent.trim());
+            }
+            return document.getElementById('manualTestsDescription').value.split(/[,،\n]/).map(x => x.trim()).filter(Boolean);
+        }
+        async function refreshQuote() {
+            priceHint.classList.remove('warn');
+            priceHint.textContent = copy.priceHint;
+            if (!toLabId.value || priceEdited) return;
+            const names = chosenTestNames();
+            if (!names.length) { priceInput.value = ''; return; }
+            try {
+                const res = await fetch(`/lab/api/labs/${toLabId.value}/quote?tests=${encodeURIComponent(names.join(','))}`);
+                const data = await res.json();
+                if (!data.success) return;
+                priceInput.value = data.data.lines.length ? money(data.data.total) : '';
+                if (data.data.missing.length) {
+                    priceHint.classList.add('warn');
+                    priceHint.textContent = `${copy.priceMissing}: ${data.data.missing.join(', ')} — ${copy.priceHint}`;
+                }
+            } catch (e) { /* the lab can still type the price */ }
+        }
+        function scheduleQuote() { clearTimeout(quoteTimer); quoteTimer = setTimeout(refreshQuote, 300); }
+
+        function chooseLab(lab) {
+            toLabId.value = lab ? lab.id : '';
+            document.getElementById('labChosen').hidden = !lab;
+            labSearch.hidden = Boolean(lab);
+            labResults.hidden = true;
+            if (lab) {
+                document.getElementById('labChosenName').textContent = lab.name + (lab.city ? ` · ${lab.city}` : '');
+                document.getElementById('externalLabName').value = lab.name;
+                if (lab.phone) document.getElementById('externalLabPhone').value = lab.phone;
+                if (lab.address) document.getElementById('externalLabAddress').value = lab.address;
+                priceEdited = false;
+                refreshQuote();
+            } else {
+                labSearch.value = '';
+                labSearch.focus();
+            }
+        }
+        async function searchLabs() {
+            try {
+                const res = await fetch(`/lab/api/labs/directory?q=${encodeURIComponent(labSearch.value.trim())}`);
+                const data = await res.json();
+                const labs = (data.data && data.data.labs) || [];
+                labResults.innerHTML = labs.length
+                    ? labs.map((l, i) => `<button type="button" data-i="${i}"><b>${esc(l.name)}</b><small>${esc([l.city, l.phone].filter(Boolean).join(' · '))}</small></button>`).join('')
+                    : `<p>${esc(copy.noLabs)}</p>`;
+                labResults.querySelectorAll('button').forEach(b => b.addEventListener('click', () => chooseLab(labs[Number(b.dataset.i)])));
+                labResults.hidden = false;
+            } catch (e) { labResults.hidden = true; }
+        }
+        labSearch.addEventListener('input', () => { clearTimeout(labTimer); labTimer = setTimeout(searchLabs, 250); });
+        labSearch.addEventListener('focus', searchLabs);
+        document.addEventListener('click', e => { if (!e.target.closest('.lab-picker')) labResults.hidden = true; });
+        document.getElementById('labClear').addEventListener('click', () => chooseLab(null));
+        priceInput.addEventListener('input', () => {
+            priceEdited = true;
+            const digits = priceInput.value.replace(/[^0-9]/g, '');
+            priceInput.value = digits ? money(digits) : '';
+        });
+        document.getElementById('testSelectList').addEventListener('change', scheduleQuote);
+        document.getElementById('manualTestsDescription').addEventListener('input', scheduleQuote);
+        sampleSelect.addEventListener('change', scheduleQuote);
+        document.querySelectorAll('#transferModeTabs .custody-tab-btn').forEach(btn => btn.addEventListener('click', scheduleQuote));
+
+        // ---- Sent / received tabs ----
+        const sentPane = document.getElementById('sentPane');
+        const incomingPane = document.getElementById('incomingPane');
+        const newTransferBtn = document.getElementById('openTransferModal');
+        function showPane(name) {
+            document.querySelectorAll('#pageTabs .custody-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.pane === name));
+            sentPane.hidden = name !== 'sent';
+            incomingPane.hidden = name !== 'incoming';
+            newTransferBtn.hidden = name !== 'sent';
+            const url = new URL(window.location.href);
+            if (name === 'incoming') url.searchParams.set('tab', 'incoming'); else url.searchParams.delete('tab');
+            history.replaceState(null, '', url);
+            if (name === 'incoming') { loadIncoming(); document.getElementById('receiveCode').focus(); }
+        }
+        document.querySelectorAll('#pageTabs .custody-tab-btn').forEach(b => b.addEventListener('click', () => showPane(b.dataset.pane)));
+
+        // ---- Samples other LabGo labs sent to this lab ----
+        const statusText = { on_the_way: copy.onTheWay, received: copy.received, completed: copy.completed };
+        const statusIcon = { on_the_way: 'clock', received: 'flask-conical', completed: 'circle-check' };
+        let uploadFor = null;
+        function incomingRow(t) {
+            const demo = [t.gender ? copy[t.gender] : '', t.age !== null && t.age !== undefined ? `${t.age} ${copy.years}` : ''].filter(Boolean).join(' · ');
+            const base = `/lab/api/transfers/incoming/${t.id}`;
+            let actions = '';
+            if (t.status === 'on_the_way') {
+                actions = `<button type="button" class="result-action" data-receive="${esc(t.code)}"><svg class="ic"><use href="#i-check"/></svg>${esc(copy.receive)}</button>`;
+            } else if (t.status === 'received') {
+                actions = `<a class="result-action" href="/lab/transfers/incoming/${t.id}/results"><svg class="ic"><use href="#i-pencil"/></svg>${esc(copy.enterResults)}</a>`
+                    + `<button type="button" class="icon-action" data-upload="${t.id}" title="${esc(copy.uploadFile)}"><svg class="ic"><use href="#i-upload"/></svg></button>`;
+            } else {
+                actions = `<a class="result-link" href="${esc(t.fileUrl || base + '/report.pdf')}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-file-down"/></svg>${esc(copy.viewResult)}</a>`;
+            }
+            return `<tr>
+                <td><div class="patient-cell"><span class="patient-avatar">${esc((t.patient || '?').charAt(0).toUpperCase())}</span><div><strong>${esc(t.patient)}</strong><small>${esc(demo)}</small></div></div></td>
+                <td><strong class="sample-code"><svg class="ic"><use href="#i-qr-code"/></svg> ${esc(t.code)}</strong><small class="tests-list">${esc(t.tests.join(', '))}</small>${typeof t.price === 'number' ? `<small class="price-tag">${money(t.price)} ${esc(copy.currency)}</small>` : ''}</td>
+                <td><strong>${esc(t.fromLab)}</strong></td>
+                <td><strong>${esc(new Date(t.sentAt).toLocaleDateString(document.documentElement.lang))}</strong></td>
+                <td><span class="status-pill ${t.status}"><svg class="ic"><use href="#i-${statusIcon[t.status]}"/></svg>${esc(statusText[t.status])}</span></td>
+                <td><div class="row-actions incoming-actions">${actions}</div></td>
+            </tr>`;
+        }
+        async function loadIncoming() {
+            try {
+                const res = await fetch('/lab/api/transfers/incoming', { headers: { Accept: 'application/json' } });
+                const data = await res.json();
+                if (!data.success) return;
+                const items = data.data.items;
+                document.getElementById('incomingRows').innerHTML = items.map(incomingRow).join('');
+                document.getElementById('emptyIncoming').classList.toggle('hidden', items.length > 0);
+                const waiting = items.filter(t => t.status !== 'completed').length;
+                const badge = document.getElementById('incomingCount');
+                badge.hidden = !waiting;
+                badge.textContent = waiting;
+            } catch (e) { /* offline: keep the last list */ }
+        }
+        async function receive(code) {
+            try {
+                const res = await fetch('/lab/api/transfers/incoming/receive', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(res.status === 404 ? copy.notFound : (data.message || copy.transferError));
+                showToast(copy.receiveDone, 'success');
+                document.getElementById('receiveCode').value = '';
+                loadIncoming();
+            } catch (error) { showToast(error.message, 'error'); }
+        }
+        document.getElementById('receiveForm').addEventListener('submit', e => {
+            e.preventDefault();
+            const code = document.getElementById('receiveCode').value.trim();
+            if (code) receive(code);
+        });
+        const incomingFile = document.getElementById('incomingFile');
+        document.getElementById('incomingRows').addEventListener('click', e => {
+            const r = e.target.closest('[data-receive]');
+            if (r) { r.disabled = true; receive(r.dataset.receive); return; }
+            const u = e.target.closest('[data-upload]');
+            if (u) { uploadFor = u.dataset.upload; incomingFile.value = ''; incomingFile.click(); }
+        });
+        incomingFile.addEventListener('change', async () => {
+            if (!incomingFile.files[0] || !uploadFor) return;
+            const body = new FormData();
+            body.append('resultFile', incomingFile.files[0]);
+            try {
+                const res = await fetch(`/lab/api/transfers/incoming/${uploadFor}/upload-result?finish=1`, { method: 'POST', body });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || copy.uploadError);
+                showToast(copy.resultDone, 'success');
+                loadIncoming();
+            } catch (error) { showToast(error.message || copy.uploadError, 'error'); }
+        });
+        loadIncoming();
+        if (new URLSearchParams(window.location.search).get('tab') === 'incoming') showPane('incoming');
 
         updateAutoFill();
         if (<%- JSON.stringify(Boolean(selectedOrderId)) %>) {

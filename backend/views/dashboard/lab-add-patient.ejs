@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/lab-add-patient.css">
+</head>
+
+<body>
+    <%- include('../partials/lab-navbar') %>
+
+    <main class="la-main ap-page">
+        <header class="ap-head">
+            <h1 class="la-h1"><%= __('labApp.addPatient') %></h1>
+            <p class="la-sub"><%= __('walkIn.subtitle') %></p>
+        </header>
+
+        <form id="apForm" class="ap-grid" autocomplete="off" novalidate>
+            <!-- patient + visit -->
+            <div class="ap-col">
+                <section class="la-card pop-in">
+                    <h2 class="la-h2 ap-title"><svg class="ic"><use href="#i-user"/></svg><%= __('walkIn.patient') %></h2>
+
+                    <label class="ap-field">
+                        <span class="la-label"><%= __('walkIn.fullName') %> <b class="ap-req">*</b></span>
+                        <input class="la-input" id="apName" required>
+                    </label>
+
+                    <label class="ap-field">
+                        <span class="la-label"><%= __('walkIn.phone') %> <b class="ap-req">*</b></span>
+                        <span class="ap-input-wrap">
+                            <svg class="ic"><use href="#i-phone"/></svg>
+                            <input class="la-input" id="apPhone" type="tel" inputmode="tel" dir="ltr" placeholder="07XX XXX XXXX" required aria-describedby="apPhoneHint">
+                        </span>
+                        <small class="ap-hint" id="apPhoneHint"><%= __('walkIn.phoneOrId') %></small>
+                        <small class="ap-found" id="apFound" hidden><svg class="ic"><use href="#i-circle-check"/></svg><%= __('walkIn.knownPatient') %><b id="apFoundNo" dir="ltr"></b></small>
+                    </label>
+
+                    <div class="ap-row2">
+                        <div class="ap-field">
+                            <span class="la-label"><%= __('walkIn.age') %></span>
+                            <div class="ap-age">
+                                <input class="la-input" id="apAge" inputmode="numeric" placeholder="30">
+                                <div class="la-seg" id="apAgeUnit" role="radiogroup">
+                                    <button type="button" class="on" data-v="Y"><%= __('results.unitYears') %></button>
+                                    <button type="button" data-v="M"><%= __('results.unitMonths') %></button>
+                                    <button type="button" data-v="D"><%= __('results.unitDays') %></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ap-field">
+                            <span class="la-label"><%= __('walkIn.gender') %></span>
+                            <div class="la-seg" id="apGender" role="radiogroup">
+                                <button type="button" data-v="male"><%= __('common.male') %></button>
+                                <button type="button" data-v="female"><%= __('common.female') %></button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="la-card fade-up">
+                    <h2 class="la-h2 ap-title"><svg class="ic"><use href="#i-stethoscope"/></svg><%= __('walkIn.visit') %></h2>
+                    <div class="ap-row2">
+                        <label class="ap-field">
+                            <span class="la-label"><%= __('walkIn.doctor') %></span>
+                            <input class="la-input" id="apDoctor" list="apDoctors" placeholder="<%= __('walkIn.doctorPlaceholder') %>">
+                            <datalist id="apDoctors"></datalist>
+                        </label>
+                        <label class="ap-field">
+                            <span class="la-label"><%= __('walkIn.company') %></span>
+                            <input class="la-input" id="apCompany" placeholder="<%= __('walkIn.companyPlaceholder') %>">
+                        </label>
+                    </div>
+                    <div class="ap-field">
+                        <span class="la-label"><%= __('walkIn.sampleType') %></span>
+                        <div class="la-chips ap-wrap" id="apSample">
+                            <% [['blood', 'walkIn.blood'], ['urine', 'walkIn.urine'], ['stool', 'walkIn.stool'], ['swab', 'walkIn.swab'], ['csf', 'walkIn.csf']].forEach(function (s, i) { %>
+                                <button type="button" class="la-chip press-95 <%= i === 0 ? 'on' : '' %>" data-v="<%= s[0] %>"><%= __(s[1]) %></button>
+                            <% }); %>
+                        </div>
+                    </div>
+                    <div class="ap-field">
+                        <span class="la-label"><%= __('walkIn.urgency') %></span>
+                        <div class="la-seg accent ap-urgency" id="apUrgency" role="radiogroup">
+                            <button type="button" class="on" data-v="routine"><%= __('walkIn.routine') %></button>
+                            <button type="button" data-v="urgent"><%= __('walkIn.urgent') %></button>
+                        </div>
+                    </div>
+                    <label class="ap-field">
+                        <span class="la-label"><%= __('walkIn.notes') %></span>
+                        <textarea class="la-textarea" id="apNotes" rows="2" placeholder="<%= __('walkIn.notesPlaceholder') %>"></textarea>
+                    </label>
+                </section>
+            </div>
+
+            <!-- tests + payment -->
+            <div class="ap-col ap-side">
+                <section class="la-card pop-in">
+                    <div class="la-between">
+                        <h2 class="la-h2 ap-title"><svg class="ic"><use href="#i-flask-conical"/></svg><%= __('walkIn.tests') %></h2>
+                        <span class="ap-count" id="apCount">0</span>
+                    </div>
+                    <label class="la-search ap-search">
+                        <svg class="ic"><use href="#i-search"/></svg>
+                        <input id="apSearch" placeholder="<%= __('walkIn.searchTests') %>" aria-label="<%= __('walkIn.searchTests') %>">
+                    </label>
+                    <div id="apPackages" class="ap-packages"></div>
+                    <div id="apTests" class="ap-tests"></div>
+                </section>
+
+                <section class="la-card ap-pay fade-up">
+                    <div id="apSelected" class="ap-selected"></div>
+                    <div class="ap-line"><span><%= __('walkIn.subtotal') %></span><b id="apSubtotal">0</b></div>
+                    <label class="ap-line">
+                        <span><%= __('walkIn.discount') %></span>
+                        <input class="la-input ap-discount" id="apDiscount" inputmode="numeric" placeholder="0" dir="ltr">
+                    </label>
+                    <div class="ap-line ap-total"><span><%= __('walkIn.total') %></span><b id="apTotal">0</b></div>
+                    <div class="ap-line">
+                        <span><%= __('walkIn.payLater') %></span>
+                        <button type="button" class="la-switch" id="apPayLater" role="switch" aria-checked="false" aria-label="<%= __('walkIn.payLater') %>"></button>
+                    </div>
+                    <button type="submit" class="la-btn block press-95 ap-submit" id="apSubmit">
+                        <svg class="ic"><use href="#i-user-plus"/></svg><span><%= __('walkIn.addAndStart') %></span>
+                    </button>
+                    <p class="ap-error" id="apError" role="alert" hidden></p>
+                </section>
+            </div>
+        </form>
+
+        <!-- after saving -->
+        <section class="la-card ap-done pop-in" id="apDone" hidden>
+            <div class="ap-done-icon"><svg class="ic"><use href="#i-circle-check"/></svg></div>
+            <h2 class="la-h2"><%= __('walkIn.added') %></h2>
+            <div class="ap-done-no" id="apDoneNoWrap" hidden>
+                <span><%= __('walkIn.patientNo') %></span>
+                <b id="apDoneNo" dir="ltr"></b>
+                <small><%= __('walkIn.patientNoHint') %></small>
+            </div>
+            <p class="la-sub"><span id="apDoneName"></span> · <span dir="ltr" id="apDoneCode"></span></p>
+            <div class="ap-done-actions">
+                <a class="la-btn press-95" id="apGoResults"><svg class="ic"><use href="#i-file-text"/></svg><%= __('results.enterResults') %></a>
+                <a class="la-btn soft press-95" id="apGoOrder"><svg class="ic"><use href="#i-printer"/></svg><%= __('walkIn.printReceipt') %></a>
+                <button type="button" class="la-btn chip press-95" id="apAnother"><svg class="ic"><use href="#i-plus"/></svg><%= __('walkIn.addAnother') %></button>
+            </div>
+        </section>
+    </main>
+
+    <script id="apCatalog" type="application/json"><%- catalogJson %></script>
+    <script id="apStrings" type="application/json"><%- JSON.stringify({
+        iqd: __('walkIn.iqd'), noTests: __('walkIn.noTests'), noMatch: __('walkIn.noMatch'),
+        needPhone: __('walkIn.needPhone'), needName: __('walkIn.needName'), needTests: __('walkIn.needTests'),
+        saving: __('results.saving'), error: __('walkIn.saveError'), packageLabel: __('walkIn.package'), remove: __('common.delete')
+    }).replace(/</g, '\\u003c') %></script>
+    <script>window.AP_LANG = '<%= currentLang %>';</script>
+    <script src="/js/lab-add-patient.js"></script>
+</body>
+
+</html>

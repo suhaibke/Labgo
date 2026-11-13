@@ -30,7 +30,7 @@ const UserSchema = new mongoose.Schema({
     city: {
         type: String,
         required: false, // Not required for existing users, but required in registration
-        enum: ['بغداد', 'البصرة', 'نينوى', 'الأنبار', 'كركوك', 'صلاح الدين', 'ديالى', 'بابل', 'كربلاء', 'النجف', 'القادسية', 'المثنى', 'واسط', 'ذي قار', 'ميسان', 'أربيل', 'السليمانية', 'دهوك'],
+        enum: ['بغداد', 'البصرة', 'نينوى', 'الأنبار', 'كركوك', 'صلاح الدين', 'ديالى', 'بابل', 'كربلاء', 'النجف', 'القادسية', 'المثنى', 'واسط', 'ذي قار', 'ميسان', 'أربيل', 'السليمانية', 'دهوك', null],
         default: null,
     },
 
@@ -170,6 +170,33 @@ const UserSchema = new mongoose.Schema({
         default: null,
     },
 
+    // Lab staff member (role 'lab', not the owner). Permissions come from
+    // the role on the lab (Lab.staffRoles / built-in roles).
+    labStaff: {
+        labId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lab', default: null },
+        roleKey: { type: String, trim: true, default: '' },
+        active: { type: Boolean, default: true },
+        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        addedAt: Date,
+    },
+    // Patient ID number shown to labs and on reports (e.g. 100245).
+    // Given to every patient on first save; never changes.
+    patientNo: {
+        type: Number,
+        unique: true,
+        sparse: true,
+    },
+    // Account created by a lab for a walk-in patient (no password the patient knows).
+    // Registering with the same phone through OTP claims it.
+    labPlaceholder: {
+        type: Boolean,
+        default: false,
+    },
+    createdByLabId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Lab',
+        default: null,
+    },
     phoneVerified: {
         type: Boolean,
         default: false,
@@ -551,10 +578,20 @@ UserSchema.statics.cleanupAllExpiredPrescriptions = function() {
 // Email is required for dashboard-login roles (admin/lab/nurse) but optional for patients,
 // who register and log in with phone only.
 UserSchema.pre('validate', function(next) {
-    if (['admin', 'lab', 'nurse'].includes(this.role) && !this.email) {
+    // Lab staff sign in with their phone, so email stays optional for them.
+    const isLabStaff = this.role === 'lab' && this.labStaff && this.labStaff.labId;
+    if (['admin', 'lab', 'nurse'].includes(this.role) && !this.email && !isLabStaff) {
         this.invalidate('email', 'Email is required for this account type');
     }
     next();
+});
+
+// Every patient gets a permanent ID number the first time they are saved.
+UserSchema.pre('save', async function() {
+    if (this.role === 'patient' && (this.patientNo === undefined || this.patientNo === null)) {
+        const Counter = require('./Counter');
+        this.patientNo = await Counter.next('patientNo', 100000);
+    }
 });
 
 // Indexes for better query performance

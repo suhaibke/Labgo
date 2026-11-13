@@ -11,7 +11,6 @@
     <% } else { %>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <% } %>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/lab-dashboard.css">
     <style>
         body {
@@ -355,10 +354,12 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/css/lab-pages.css">
 </head>
 <body>
     <!-- Lab Navbar -->
     <%- include('../partials/lab-navbar') %>
+    <%- include('../partials/lab-page-tabs', { group: 'settings', current: 'profile' }) %>
 
     <!-- Main Content Wrapper -->
     <div class="lab-wrapper">
@@ -375,7 +376,7 @@
                         <h1><%= user.name %></h1>
                         <p><%= user.email %></p>
                         <div class="role-badge">
-                            <i class="fas fa-user-shield"></i>
+                            <svg class="ic"><use href="#i-shield-check"/></svg>
                             <%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %>
                         </div>
                     </div>
@@ -384,7 +385,7 @@
                 <!-- Personal Information Form -->
                 <form id="profileForm" class="form-section">
                     <h2 class="section-title">
-                        <i class="fas fa-user"></i>
+                        <svg class="ic"><use href="#i-user"/></svg>
                         <%= __('userProfile.personalInfo') %>
                     </h2>
 
@@ -424,7 +425,7 @@
                         <div class="password-header">
                             <h4><%= __('userProfile.security') %></h4>
                             <button type="button" class="toggle-password" id="togglePassword">
-                                <i class="fas fa-lock"></i> <%= __('userProfile.changePassword') %>
+                                <svg class="ic"><use href="#i-lock"/></svg> <%= __('userProfile.changePassword') %>
                             </button>
                         </div>
                         <div class="password-fields" id="passwordFields">
@@ -445,11 +446,11 @@
 
                     <div class="button-group">
                         <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                            <i class="fas fa-undo"></i>
+                            <svg class="ic"><use href="#i-rotate-ccw"/></svg>
                             <%= __('userProfile.cancel') %>
                         </button>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i>
+                            <svg class="ic"><use href="#i-save"/></svg>
                             <%= __('userProfile.saveChanges') %>
                         </button>
                     </div>
@@ -466,8 +467,8 @@
         togglePassword.addEventListener('click', function() {
             const isActive = passwordFields.classList.toggle('active');
             this.innerHTML = isActive ?
-                '<i class="fas fa-times"></i> <%= __("userProfile.cancelPasswordChange") %>' :
-                '<i class="fas fa-lock"></i> <%= __("userProfile.changePassword") %>';
+                '<svg class="ic"><use href="#i-x"/></svg> <%= __("userProfile.cancelPasswordChange") %>' :
+                '<svg class="ic"><use href="#i-lock"/></svg> <%= __("userProfile.changePassword") %>';
         });
 
         // Form submission
@@ -541,7 +542,7 @@
 
                     // Reset password fields
                     passwordFields.classList.remove('active');
-                    togglePassword.innerHTML = '<i class="fas fa-lock"></i> <%= __("userProfile.changePassword") %>';
+                    togglePassword.innerHTML = '<svg class="ic"><use href="#i-lock"/></svg> <%= __("userProfile.changePassword") %>';
                     document.getElementById('currentPassword').value = '';
                     document.getElementById('newPassword').value = '';
                     document.getElementById('confirmPassword').value = '';
@@ -559,7 +560,7 @@
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <svg class="ic"><use href="#i-${type === 'success' ? 'circle-check' : 'circle-alert'}"/></svg>
                 <span>${message}</span>
             `;
 

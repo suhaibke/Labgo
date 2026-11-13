@@ -161,6 +161,23 @@ const LabSchema = new mongoose.Schema({
             trim: true,
             default: null,
         },
+        // Price for companies/clinics (B2B); 0 = same as price.
+        priceB2B: { type: Number, min: 0, default: 0 },
+        // Offered or not (the lab app's on/off switch); hidden from new orders when off.
+        isActive: { type: Boolean, default: true },
+        // Result entry: unit and normal ranges used to flag values High/Low.
+        // normalText is shown instead of min-max for text results (e.g. "Negative").
+        unit: { type: String, trim: true, default: '' },
+        normalText: { type: String, trim: true, default: '' },
+        ranges: [{
+            _id: false,
+            gender: { type: String, enum: ['Both', 'Male', 'Female'], default: 'Both' },
+            ageFrom: { type: Number, min: 0, default: 0 },
+            ageTo: { type: Number, min: 0, default: 120 },
+            ageUnit: { type: String, enum: ['Y', 'M', 'D'], default: 'Y' },
+            min: { type: Number, default: null },
+            max: { type: Number, default: null },
+        }],
         // Links this test to an admin-managed quick Service, so the lab
         // shows up when a patient taps that service on the home page.
         serviceId: {
@@ -168,6 +185,23 @@ const LabSchema = new mongoose.Schema({
             ref: 'Service',
             default: null,
         },
+    }],
+
+    // Result report branding. The "Powered by LabGo" footer is shown unless
+    // the platform admin turns it off (e.g. a paid plan). Labs cannot change it.
+    reportBranding: {
+        hidePlatformFooter: { type: Boolean, default: false },
+        updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        updatedAt: Date,
+    },
+
+    // Staff roles: overrides of the built-in roles plus the lab's own roles.
+    staffRoles: [{
+        _id: false,
+        key: { type: String, trim: true, required: true },
+        name: { type: String, trim: true, default: '' },
+        color: { type: String, trim: true, default: '' },
+        permissions: [{ type: String, trim: true }],
     }],
 
     status: {
@@ -180,6 +214,15 @@ const LabSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
+
+    // People the lab is licensed under, printed in the report header in English
+    // (e.g. Dr. Ahmed Hamdoon Ahmed · Bacteriologist).
+    licenseHolders: [{
+        _id: false,
+        title: { type: String, trim: true, default: 'Dr.', maxlength: 20 },
+        name: { type: String, trim: true, required: true, maxlength: 80 },
+        specialty: { type: String, trim: true, default: '', maxlength: 60 },
+    }],
 
     accreditation: {
         type: String,

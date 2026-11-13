@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/lab-results.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+</head>
+
+<body>
+    <%- include('../partials/lab-navbar') %>
+    <%
+      const p = order.patientInfo || {};
+      const initials = String(p.name || '?').trim().split(/\s+/).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+      const genderLabel = p.gender === 'female' ? __('common.female') : (p.gender === 'male' ? __('common.male') : '');
+      const fmtDate = function (d) { return d ? new Date(d).toLocaleDateString(currentLang === 'ar' ? 'ar-IQ' : currentLang) : ''; };
+    %>
+
+    <main class="la-main rs-page">
+        <a href="<%= typeof backHref !== 'undefined' && backHref ? backHref : '/lab/orders/' + order._id %>" class="rs-back press-95">
+            <svg class="ic flip-rtl"><use href="#i-arrow-left"/></svg>
+            <%= __('results.backToOrder') %>
+        </a>
+
+        <!-- patient -->
+        <section class="la-card rs-patient pop-in">
+            <div class="rs-avatar"><%= initials %></div>
+            <div class="rs-patient-text">
+                <h1><%= p.name %><% if (p.patientNo) { %> <span class="rs-pno" dir="ltr">#<%= p.patientNo %></span><% } %></h1>
+                <p class="la-sub">
+                    <% if (genderLabel) { %><%= genderLabel %><% } %>
+                    <% if (p.age !== null && p.age !== undefined) { %> · <%= p.age %> <%= __('common.years') %><% } %>
+                    · <span dir="ltr"><%= order.qrCode %></span> · <%= fmtDate(order.createdAt) %>
+                </p>
+            </div>
+            <span class="rs-status" id="rsStatus" data-status="<%= order.results.entryStatus %>"></span>
+        </section>
+
+        <% if (!editable) { %>
+            <div class="la-card rs-note">
+                <svg class="ic"><use href="#i-triangle-alert"/></svg>
+                <%= __('results.notAtLab') %>
+            </div>
+        <% } %>
+
+        <!-- values -->
+        <section class="la-card rs-table-card fade-up">
+            <div class="la-between rs-head">
+                <div>
+                    <h2 class="la-h2"><%= __('results.title') %></h2>
+                    <p class="la-sub rs-hint"><svg class="ic"><use href="#i-keyboard"/></svg> <%= __('results.enterHint') %></p>
+                </div>
+                <span class="rs-count" id="rsCount"></span>
+            </div>
+
+            <div class="rs-cols" aria-hidden="true">
+                <span><%= __('results.test') %></span><span><%= __('results.result') %></span><span><%= __('results.normalRange') %></span>
+            </div>
+            <div id="rsRows" class="rs-rows"></div>
+
+            <label class="la-label rs-comment-label" for="rsComment"><%= __('results.comment') %></label>
+            <textarea id="rsComment" class="la-textarea rs-comment" rows="2" placeholder="<%= __('results.commentPlaceholder') %>" <%= editable ? '' : 'disabled' %>></textarea>
+        </section>
+
+        <!-- actions -->
+        <div class="rs-actions">
+            <span class="rs-saved" id="rsSaved"></span>
+            <button type="button" class="la-btn soft press-95" id="rsPrint">
+                <svg class="ic"><use href="#i-printer"/></svg> <%= __('results.print') %>
+            </button>
+            <% if (editable) { %>
+            <button type="button" class="la-btn press-95" id="rsApprove" disabled>
+                <svg class="ic"><use href="#i-send"/></svg> <span><%= __('results.approveSend') %></span>
+            </button>
+            <% } %>
+        </div>
+    </main>
+
+    <!-- normal range editor -->
+    <div id="rangeModal" class="la-modal" role="dialog" aria-modal="true" aria-labelledby="rangeTitle">
+        <div class="la-modal-bg" data-close></div>
+        <div class="la-modal-card">
+            <div class="la-between">
+                <div>
+                    <h2 class="la-h2" id="rangeTitle"><%= __('results.normalRange') %></h2>
+                    <p class="la-sub" id="rangeTest"></p>
+                </div>
+                <button type="button" class="la-circle press-90" data-close aria-label="<%= __('common.close') %>"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <div class="rs-range-grid">
+                <label><span class="la-label"><%= __('results.unit') %></span><input class="la-input" id="rgUnit" placeholder="mg/dL"></label>
+                <label><span class="la-label"><%= __('results.normalText') %></span><input class="la-input" id="rgText" placeholder="<%= __('results.normalTextPlaceholder') %>"></label>
+            </div>
+            <p class="la-label" style="margin-top:14px"><%= __('results.rangesByAge') %></p>
+            <div id="rgRows" class="rs-range-rows"></div>
+            <button type="button" class="la-btn chip sm press-95" id="rgAdd"><svg class="ic"><use href="#i-plus"/></svg> <%= __('results.addRange') %></button>
+            <p class="la-sub" style="margin-top:10px"><%= __('results.rangeSavedForTest') %></p>
+            <button type="button" class="la-btn block press-95" id="rgSave" style="margin-top:14px"><%= __('common.save') %></button>
+        </div>
+    </div>
+
+    <!-- printable report (also turned into the PDF the patient receives) -->
+    <div class="rs-report-holder" aria-hidden="true">
+        <article id="rsReport" class="rs-report" dir="<%= direction %>">
+            <header class="rp-head">
+                <div>
+                    <h1><%= lab.name %></h1>
+                    <p><%= [lab.address, lab.city].filter(Boolean).join(' - ') %></p>
+                    <p dir="ltr"><%= [lab.phone, lab.email].filter(Boolean).join('  ·  ') %></p>
+                </div>
+                <% if (lab.logo) { %><img src="<%= lab.logo %>" alt="" crossorigin="anonymous"><% } %>
+            </header>
+            <h2 class="rp-title"><%= __('results.reportTitle') %></h2>
+            <dl class="rp-info">
+                <div><dt><%= __('results.patient') %></dt><dd><%= p.name %></dd></div>
+                <% if (p.patientNo) { %><div><dt><%= __('walkIn.patientNo') %></dt><dd dir="ltr">#<%= p.patientNo %></dd></div><% } %>
+                <div><dt><%= __('results.genderAge') %></dt><dd><%= genderLabel %><% if (p.age !== null && p.age !== undefined) { %> / <%= p.age %> <%= __('common.years') %><% } %></dd></div>
+                <div><dt><%= __('results.orderNo') %></dt><dd dir="ltr"><%= order.qrCode %></dd></div>
+                <div><dt><%= __('results.sampleDate') %></dt><dd><%= fmtDate(order.createdAt) %></dd></div>
+            </dl>
+            <table class="rp-table">
+                <thead><tr><th><%= __('results.test') %></th><th><%= __('results.result') %></th><th><%= __('results.unit') %></th><th><%= __('results.normalRange') %></th><th></th></tr></thead>
+                <tbody id="rpRows"></tbody>
+            </table>
+            <p class="rp-comment" id="rpComment"></p>
+            <footer class="rp-foot">
+                <span><%= __('results.reportDate') %>: <span id="rpDate"></span></span>
+                <span><%= __('results.approvedBy') %>: <%= (user && user.name) || lab.name %></span>
+            </footer>
+        </article>
+    </div>
+
+    <script id="rsData" type="application/json"><%- initialJson %></script>
+    <script id="rsStrings" type="application/json"><%- JSON.stringify({
+        high: __('results.high'), low: __('results.low'), normal: __('results.normal'),
+        draft: __('results.statusDraft'), approved: __('results.statusApproved'), none: __('results.statusNew'),
+        saving: __('results.saving'), saved: __('results.saved'), saveError: __('results.saveError'),
+        setRange: __('results.setRange'), editRange: __('results.editRange'), valuePlaceholder: __('results.valuePlaceholder'),
+        filled: __('results.filled'), missing: __('results.missingValues'), sending: __('results.sending'),
+        sent: __('results.sent'), sendError: __('results.sendError'), resend: __('results.resend'),
+        both: __('results.both'), male: __('common.male'), female: __('common.female'),
+        years: __('results.unitYears'), months: __('results.unitMonths'), days: __('results.unitDays'),
+        from: __('results.ageFrom'), to: __('results.ageTo'), min: __('results.min'), max: __('results.max'),
+        rangeSaved: __('results.rangeSaved'), remove: __('common.delete')
+    }).replace(/</g, '\\u003c') %></script>
+    <script>window.RS_EDITABLE = <%= editable ? 'true' : 'false' %>; window.RS_LANG = '<%= currentLang %>';<% if (typeof apiBase !== 'undefined' && apiBase) { %> window.RS_BASE = <%- JSON.stringify(apiBase) %>;<% } %></script>
+    <script src="/js/lab-results.js"></script>
+</body>
+
+</html>
