@@ -104,9 +104,14 @@ class LabApi {
     return (json['data'] as Map)['orderId'].toString();
   }
 
+  /// Results of a sample another lab sent here use ids starting with "tr:".
+  static String _resultsBase(String id) => id.startsWith('tr:')
+      ? '/lab/api/transfers/incoming/${id.substring(3)}'
+      : '/lab/api/orders/$id';
+
   /// Saves result values as a draft (test name -> value).
   Future<void> saveResults(String orderId, Map<String, String> values) async {
-    await _send('PUT', '/lab/api/orders/$orderId/results', {
+    await _send('PUT', '${_resultsBase(orderId)}/results', {
       'values': [
         for (final e in values.entries) {'testName': e.key, 'value': e.value},
       ],
@@ -117,7 +122,7 @@ class LabApi {
   /// order and notifies the patient. Every test needs a value.
   Future<void> approveResults(String orderId, Map<String, String> values) async {
     try {
-      await _send('POST', '/lab/api/orders/$orderId/results/approve', {
+      await _send('POST', '${_resultsBase(orderId)}/results/approve', {
         'values': [
           for (final e in values.entries) {'testName': e.key, 'value': e.value},
         ],
@@ -151,6 +156,24 @@ class LabApi {
 
   Future<Map<String, dynamic>> saveTest(Map<String, dynamic> body) => _data('PUT', '/lab/api/app/tests', body);
   Future<Map<String, dynamic>> savePackage(Map<String, dynamic> body) => _data('PUT', '/lab/api/app/packages', body);
+
+  /// Labs registered on LabGo (to send samples to).
+  Future<List<dynamic>> labDirectory([String q = '']) async =>
+      ((await _data('GET', '/lab/api/labs/directory?q=${Uri.encodeQueryComponent(q)}'))['labs'] as List?) ?? const [];
+
+  /// What a registered lab charges for these tests (its B2B prices).
+  Future<Map<String, dynamic>> labQuote(String labId, List<String> tests) =>
+      _data('GET', '/lab/api/labs/$labId/quote?tests=${Uri.encodeQueryComponent(tests.join(','))}');
+
+  /// Samples other LabGo labs sent to this lab.
+  Future<List<dynamic>> incomingTransfers() async =>
+      ((await _data('GET', '/lab/api/transfers/incoming'))['items'] as List?) ?? const [];
+  Future<Map<String, dynamic>> receiveTransfer(String code) =>
+      _data('POST', '/lab/api/transfers/incoming/receive', {'code': code});
+
+  Future<Map<String, dynamic>> notifications() => _data('GET', '/lab/api/notifications');
+  Future<void> markNotificationsRead([List<String>? ids]) =>
+      _send('POST', '/lab/api/notifications/read', ids == null ? <String, dynamic>{} : {'ids': ids});
 
   /// Shipping label for a sample sent to another lab (real QR + barcode as SVG).
   Future<Map<String, dynamic>> transferLabel(String id, String lang) =>

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../api.dart';
 import '../models.dart';
 import '../results_logic.dart';
 import '../theme.dart';
@@ -56,6 +57,10 @@ class ResultsScreen extends StatelessWidget {
           for (final r in app.receivedFiltered) ...[
             Tap(
               onTap: () {
+                if (LabApi.enabled) {
+                  app.openIncoming(r);
+                  return;
+                }
                 final match = app.patients.where(
                   (m) => m.name.toLowerCase() == r.patient.toLowerCase(),
                 );

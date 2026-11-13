@@ -136,11 +136,7 @@ class _NotificationsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = context.app;
     final pal = app.palette;
-    final items = [
-      ('n1', app.w('n1'), app.w('n1Time')),
-      ('n2', app.w('n2'), app.w('n2Time')),
-      ('n3', app.w('n3'), app.w('n3Time')),
-    ];
+    final items = app.notificationItems;
     return BottomSheetBox(
       maxHeightFactor: .72,
       child: Column(
@@ -296,10 +292,12 @@ class _SendSheetState extends State<_SendSheet> {
           const SizedBox(height: 4),
           Text.rich(
             TextSpan(
-              children: [
-                TextSpan(text: '${app.sendChannel} • '),
-                TextSpan(text: app.sendPhone, locale: const Locale('en')),
-              ],
+              children: app.sendPatient?.id.startsWith('tr:') == true
+                  ? [TextSpan(text: app.sendPatient!.company ?? '')]
+                  : [
+                      TextSpan(text: '${app.sendChannel} • '),
+                      TextSpan(text: app.sendPhone, locale: const Locale('en')),
+                    ],
             ),
             textAlign: TextAlign.center,
             style: ts(context, 12, color: pal.muted),
@@ -326,73 +324,102 @@ class _SendSheetState extends State<_SendSheet> {
         ('SMS', app.w('sms'), 'MessageSquare'),
         ('In-app', app.tr('داخل التطبيق', 'ناو ئەپ', 'In-app'), 'Send'),
       ];
-      final disabled = app.sending || app.sendPhone.trim().isEmpty;
+      // A sample another lab sent here: the result goes back to that lab.
+      final toLab = app.sendPatient?.id.startsWith('tr:') == true;
+      final disabled = app.sending || (!toLab && app.sendPhone.trim().isEmpty);
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 12),
-          Text(
-            app.w('phone'),
-            style: ts(context, 12, weight: w700, color: pal.muted),
-          ),
-          const SizedBox(height: 4),
-          BoxField(
-            controller: _phone,
-            onChanged: app.setSendPhone,
-            ltr: true,
-            keyboard: TextInputType.phone,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              for (var i = 0; i < channels.length; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => app.setSendChannel(channels[i].$1),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        gradient: app.sendChannel == channels[i].$1
-                            ? Fixed.sendGradient
-                            : null,
-                        color: app.sendChannel == channels[i].$1
-                            ? null
-                            : pal.chipBg,
-                        borderRadius: BorderRadius.circular(16),
-                        border: app.sendChannel == channels[i].$1
-                            ? null
-                            : Border.all(color: pal.cardBorder),
+          if (toLab)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: pal.chipBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: pal.line),
+              ),
+              child: Row(
+                children: [
+                  LIcon('Building2', size: 18, color: pal.accent),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      app.tr(
+                        'تصل النتيجة مباشرة إلى ${app.sendPatient!.company ?? ''} مع إشعار',
+                        'ئەنجام ڕاستەوخۆ دەگاتە ${app.sendPatient!.company ?? ''}',
+                        'The result goes straight to ${app.sendPatient!.company ?? ''} with a notification',
                       ),
-                      child: Column(
-                        children: [
-                          LIcon(
-                            channels[i].$3,
-                            size: 17,
-                            color: app.sendChannel == channels[i].$1
-                                ? Colors.white
-                                : pal.ink,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            channels[i].$2,
-                            style: ts(
-                              context,
-                              12,
-                              weight: w700,
+                      style: ts(context, 13, weight: w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (!toLab) ...[
+            Text(
+              app.w('phone'),
+              style: ts(context, 12, weight: w700, color: pal.muted),
+            ),
+            const SizedBox(height: 4),
+            BoxField(
+              controller: _phone,
+              onChanged: app.setSendPhone,
+              ltr: true,
+              keyboard: TextInputType.phone,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                for (var i = 0; i < channels.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => app.setSendChannel(channels[i].$1),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          gradient: app.sendChannel == channels[i].$1
+                              ? Fixed.sendGradient
+                              : null,
+                          color: app.sendChannel == channels[i].$1
+                              ? null
+                              : pal.chipBg,
+                          borderRadius: BorderRadius.circular(16),
+                          border: app.sendChannel == channels[i].$1
+                              ? null
+                              : Border.all(color: pal.cardBorder),
+                        ),
+                        child: Column(
+                          children: [
+                            LIcon(
+                              channels[i].$3,
+                              size: 17,
                               color: app.sendChannel == channels[i].$1
                                   ? Colors.white
                                   : pal.ink,
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              channels[i].$2,
+                              style: ts(
+                                context,
+                                12,
+                                weight: w700,
+                                color: app.sendChannel == channels[i].$1
+                                    ? Colors.white
+                                    : pal.ink,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ],
-            ],
-          ),
+            ),
+          ],
           const SizedBox(height: 16),
           Opacity(
             opacity: disabled ? .6 : 1,
@@ -657,6 +684,11 @@ class _ShippingLabel extends StatelessWidget {
     final code = '${ld?['code'] ?? r.tracking}';
     final ink = pal.dark ? Colors.white : const Color(0xFF111111);
     final grey = pal.dark ? const Color(0xFFA1A1AA) : const Color(0xFF666666);
+    final demo = [
+      if (ld?['gender'] == 'male') app.tr('ذكر', 'نێر', 'Male'),
+      if (ld?['gender'] == 'female') app.tr('أنثى', 'مێ', 'Female'),
+      if (ld?['age'] != null) '${ld!['age']} ${app.tr('سنة', 'ساڵ', 'y')}',
+    ].join(' · ');
     return Positioned(
       left: 12,
       right: 12,
@@ -726,7 +758,12 @@ class _ShippingLabel extends StatelessWidget {
                                 text: r.patient,
                                 style: const TextStyle(fontWeight: w700),
                               ),
-                              TextSpan(text: ' • ${r.test}'),
+                              if (demo.isNotEmpty)
+                                TextSpan(
+                                  text: ' ($demo)',
+                                  style: TextStyle(color: grey),
+                                ),
+                              TextSpan(text: ' • ${ld?['tests'] ?? r.test}'),
                             ],
                           ),
                           style: ts(context, 13, color: ink),
@@ -741,6 +778,27 @@ class _ShippingLabel extends StatelessWidget {
                           '${app.w('dateCol')}: ${ld?['date'] ?? '27 Sep 2026'} • ${app.w('eta')}: ${ld?['eta'] ?? r.eta}',
                           style: ts(context, 13, color: grey),
                         ),
+                        if ('${ld?['priceText'] ?? ''}'.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '${app.tr('السعر', 'نرخ', 'Price')}: ',
+                                ),
+                                TextSpan(
+                                  text:
+                                      '${ld!['priceText']} ${app.tr('د.ع', 'د.ع', 'IQD')}',
+                                  style: const TextStyle(
+                                    fontWeight: w900,
+                                    color: Fixed.orange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            style: ts(context, 13, color: grey),
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,

@@ -166,7 +166,8 @@ class AppState extends ChangeNotifier {
     referrals = [];
     partnerLabs = [];
     wasteTransfers = [];
-    await Future.wait([_loadStaff(), _loadWaste(), loadFinance(), _loadTransfers()]);
+    await Future.wait([_loadStaff(), _loadWaste(), loadFinance(), _loadTransfers(), _loadIncoming(), loadNotifications()]);
+    _notifTimer ??= Timer.periodic(const Duration(seconds: 60), (_) => loadNotifications());
   }
 
   // ---- settings sections from the server --------------------------------
@@ -267,11 +268,209 @@ class AppState extends ChangeNotifier {
             step: ((r['step'] ?? 0) as num).toInt(),
           ),
       ];
-      partnerLabs = [
-        for (final l in (data['labs'] as List? ?? const [])) PartnerLab('$l', '—', '—', '—', '—'),
+      // Labs registered on LabGo first (price from their B2B prices), then
+      // other labs this lab sent to before.
+      final names = [for (final l in (data['labs'] as List? ?? const [])) '$l'];
+      List<dynamic> dir = const [];
+      try {
+        dir = await LabApi.instance.labDirectory();
+      } catch (_) {}
+      final registered = [
+        for (final l in dir)
+          PartnerLab(
+            '${l['name']}',
+            '${l['city'] ?? ''}'.isEmpty ? '—' : '${l['city']}',
+            ((l['rating'] ?? 0) as num) > 0 ? (l['rating'] as num).toStringAsFixed(1) : '—',
+            'LabGo',
+            '',
+            id: '${l['id']}',
+          ),
       ];
+      partnerLabs = [
+        ...registered,
+        for (final n in names)
+          if (!registered.any((l) => l.name.toLowerCase() == n.toLowerCase())) PartnerLab(n, '—', '—', '—', ''),
+      ];
+      if (partnerLabs.isNotEmpty && !partnerLabs.any((l) => l.name == refLab)) refLab = partnerLabs.first.name;
+      notifyListeners();
+      _quoteLabs();
     } catch (_) {}
   }
+
+  // ---- B2B price of the receiving lab --------------------------------------
+  /// Lab id -> price for the chosen test (null = that lab has no price for it).
+  Map<String, int?> labQuotes = {};
+  String _quotedTest = '';
+  String refPrice = '';
+  bool refPriceEdited = false;
+  Timer? _notifTimer;
+
+  static String money(int v) => v.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+  String get currency => tr('د.ع', 'د.ع', 'IQD');
+
+  PartnerLab? get refLabObj {
+    for (final l in partnerLabs) {
+      if (l.name == refLab) return l;
+    }
+    return null;
+  }
+
+  int? get refQuote {
+    final l = refLabObj;
+    return l == null || l.id.isEmpty ? null : labQuotes[l.id];
+  }
+
+  /// Price shown on a lab card.
+  String labPriceText(PartnerLab l) {
+    if (l.id.isEmpty) return l.price;
+    if (!labQuotes.containsKey(l.id)) return '…';
+    final v = labQuotes[l.id];
+    return v == null ? tr('لا يوجد سعر', 'نرخ نییە', 'No price') : '${money(v)} $currency';
+  }
+
+  void _syncRefPrice() {
+    if (refPriceEdited) return;
+    final q = refQuote;
+    refPrice = q == null ? '' : money(q);
+  }
+
+  Future<void> _quoteLabs() async {
+    if (!LabApi.enabled || refTest.isEmpty) return;
+    final test = refTest;
+    _quotedTest = test;
+    final labs = partnerLabs.where((l) => l.id.isNotEmpty).take(15).toList();
+    await Future.wait([
+      for (final l in labs)
+        LabApi.instance.labQuote(l.id, [test]).then((q) {
+          if (_quotedTest != test) return;
+          labQuotes = {...labQuotes, l.id: (q['lines'] as List?)?.isNotEmpty == true ? (q['total'] as num).toInt() : null};
+        }).catchError((Object _) {}),
+    ]);
+    if (_quotedTest == test) {
+      _syncRefPrice();
+      notifyListeners();
+    }
+  }
+
+  void setRefPrice(String v) {
+    final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+    refPrice = digits.isEmpty ? '' : money(int.parse(digits));
+    refPriceEdited = true;
+    notifyListeners();
+  }
+
+  // ---- samples other LabGo labs sent to this lab ---------------------------
+  List<ReceivedSample> incomingAll = [];
+
+  ReceivedSample _incomingFromJson(Map<String, dynamic> t) {
+    final state = '${t['status']}';
+    final tests = [for (final x in (t['tests'] as List? ?? const [])) '$x'];
+    return ReceivedSample(
+      id: '${t['id']}',
+      code: '${t['code']}',
+      patient: '${t['patient'] ?? ''}',
+      test: tests.join(', '),
+      lab: '${t['fromLab'] ?? ''}',
+      status: state == 'completed'
+          ? tr('مكتملة', 'تەواو', 'Completed')
+          : state == 'received'
+          ? tr('مستلمة', 'وەرگیرا', 'Received')
+          : tr('في الطريق', 'لە ڕێگادا', 'On the way'),
+      state: state,
+      gender: '${t['gender'] ?? ''}',
+      age: t['age'] == null ? '' : '${t['age']}',
+      tests: tests,
+      values: {for (final e in ((t['values'] ?? {}) as Map).entries) '${e.key}': '${e.value}'},
+      price: (t['price'] as num?)?.toInt(),
+      sentAt: DateTime.tryParse('${t['sentAt'] ?? ''}')?.toLocal(),
+    );
+  }
+
+  Future<void> _loadIncoming() async {
+    if (!can('patients') && !can('results')) return;
+    try {
+      final items = await LabApi.instance.incomingTransfers();
+      incomingAll = [for (final t in items) _incomingFromJson(t as Map<String, dynamic>)];
+      receivedSamples = incomingAll.where((x) => x.state != 'on_the_way').toList();
+      if (foundSample != null) {
+        for (final x in incomingAll) {
+          if (x.id == foundSample!.id) foundSample = x;
+        }
+      }
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  /// Opens a received sample in the result-entry screen; approving it sends
+  /// the result straight to the lab that sent it.
+  void openIncoming(ReceivedSample r) {
+    if (r.state == 'on_the_way') {
+      toast(tr('استلم العينة أولاً', 'سەرەتا نموونەکە وەربگرە', 'Receive the sample first'));
+      return;
+    }
+    openPatient(Patient(
+      id: 'tr:${r.id}',
+      name: r.patient,
+      age: r.age.isEmpty ? '—' : r.age,
+      gender: r.gender == 'female' ? 'Female' : 'Male',
+      phone: '',
+      tests: r.tests,
+      sample: 'Blood',
+      urgency: 'Normal',
+      notes: '',
+      status: r.state == 'completed' ? 'Completed' : 'Pending',
+      // Header: sample code • sending lab • date sent.
+      time: r.lab,
+      price: r.price ?? 0,
+      doctor: '',
+      mode: 'B2B',
+      company: r.lab,
+      results: r.values,
+      permanent: r.code,
+      createdAt: r.sentAt ?? DateTime.now(),
+    ));
+  }
+
+  // ---- lab notifications (server) ------------------------------------------
+  List<Map<String, dynamic>> serverNotifs = [];
+
+  Future<void> loadNotifications() async {
+    if (!LabApi.enabled) return;
+    try {
+      final data = await LabApi.instance.notifications();
+      final before = serverNotifs.map((n) => n['id']).toSet();
+      serverNotifs = [for (final n in (data['items'] as List? ?? const [])) Map<String, dynamic>.from(n as Map)];
+      for (final n in serverNotifs) {
+        if (n['isRead'] == true) readNotifications.add('${n['id']}');
+      }
+      // Something new about transfers: refresh those lists too.
+      if (serverNotifs.any((n) => !before.contains(n['id'])) && before.isNotEmpty) {
+        _loadTransfers();
+        _loadIncoming();
+      }
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  String _ago(DateTime t) {
+    final m = DateTime.now().difference(t).inMinutes;
+    if (m < 1) return tr('الآن', 'ئێستا', 'now');
+    if (m < 60) return tr('قبل $m د', 'پێش $m خ', '${m}m ago');
+    if (m < 1440) return tr('قبل ${m ~/ 60} س', 'پێش ${m ~/ 60} ک', '${m ~/ 60}h ago');
+    return tr('قبل ${m ~/ 1440} يوم', 'پێش ${m ~/ 1440} ڕۆژ', '${m ~/ 1440}d ago');
+  }
+
+  /// (id, text, time) for the notifications sheet.
+  List<(String, String, String)> get notificationItems => LabApi.enabled
+      ? [
+          for (final n in serverNotifs)
+            (
+              '${n['id']}',
+              '${n['title']}\n${n['body']}',
+              _ago(DateTime.tryParse('${n['createdAt']}')?.toLocal() ?? DateTime.now()),
+            ),
+        ]
+      : [('n1', w('n1'), w('n1Time')), ('n2', w('n2'), w('n2Time')), ('n3', w('n3'), w('n3Time'))];
 
   void _serverError(Object e) {
     final code = e is ApiError ? e.code : null;
@@ -478,20 +677,24 @@ class AppState extends ChangeNotifier {
   // ---- notifications ---------------------------------------------------------
   bool notificationsOpen = false;
   final Set<String> readNotifications = {};
-  int get unreadCount => 3 - readNotifications.length;
+  int get unreadCount => notificationItems.where((n) => !readNotifications.contains(n.$1)).length;
 
   void openNotifications(bool open) {
     notificationsOpen = open;
     notifyListeners();
+    if (open) loadNotifications();
   }
 
   void markRead(String id) {
-    readNotifications.add(id);
+    if (readNotifications.add(id) && LabApi.enabled) {
+      LabApi.instance.markNotificationsRead([id]).catchError((Object _) {});
+    }
     notifyListeners();
   }
 
   void markAllRead() {
-    readNotifications.addAll(['n1', 'n2', 'n3']);
+    readNotifications.addAll(notificationItems.map((n) => n.$1));
+    if (LabApi.enabled) LabApi.instance.markNotificationsRead().catchError((Object _) {});
     notifyListeners();
   }
 
@@ -921,7 +1124,17 @@ class AppState extends ChangeNotifier {
   Referral? labelReferral;
 
   void updateSend(void Function() change) {
+    final lab = refLab;
     change();
+    if (refLab != lab) {
+      refPriceEdited = false;
+      _syncRefPrice();
+    }
+    if (LabApi.enabled && refTest != _quotedTest) {
+      refPriceEdited = false;
+      refPrice = '';
+      _quoteLabs();
+    }
     notifyListeners();
   }
 
@@ -973,12 +1186,16 @@ class AppState extends ChangeNotifier {
       for (final p in patients) {
         if (p.name.trim().toLowerCase() == refPatient.trim().toLowerCase() && p.status != 'Completed') match = p;
       }
+      final lab = refLabObj;
       LabApi.instance.addTransfer({
         if (match != null) 'orderId': match.id,
         'patientName': refPatient.trim(),
         'testName': refTest,
         'labName': refLab,
+        if (lab != null && lab.id.isNotEmpty) 'toLabId': lab.id,
+        if (refPriceEdited && refPrice.isNotEmpty) 'price': refPrice.replaceAll(',', ''),
       }).then((_) async {
+        refPriceEdited = false;
         await _loadTransfers();
         toast(w('sentToast'));
       }).catchError((Object e) => _serverError(e));
@@ -1002,6 +1219,15 @@ class AppState extends ChangeNotifier {
 
   void setBarcode(String v) {
     barcode = v;
+    if (LabApi.enabled) {
+      final code = v.trim().toLowerCase();
+      foundSample = null;
+      for (final x in incomingAll) {
+        if (code.isNotEmpty && x.code.toLowerCase() == code) foundSample = x;
+      }
+      notifyListeners();
+      return;
+    }
     if (v.trim().isNotEmpty) {
       foundSample = ReceivedSample(
         id: '${DateTime.now().microsecondsSinceEpoch}',
@@ -1016,6 +1242,16 @@ class AppState extends ChangeNotifier {
   }
 
   void simulateScan() {
+    if (LabApi.enabled) {
+      final waiting = incomingAll.where((x) => x.state == 'on_the_way');
+      if (waiting.isEmpty) {
+        _loadIncoming();
+        toast(tr('لا توجد عينات في الطريق إليك', 'هیچ نموونەیەک لە ڕێگادا نییە', 'No samples on the way to you'));
+        return;
+      }
+      setBarcode(waiting.first.code);
+      return;
+    }
     barcode = 'B2B-8842';
     foundSample = ReceivedSample(
       id: '${DateTime.now().microsecondsSinceEpoch}',
@@ -1031,6 +1267,21 @@ class AppState extends ChangeNotifier {
   void confirmReceive() {
     final s = foundSample;
     if (s == null) return;
+    if (LabApi.enabled) {
+      if (s.state != 'on_the_way') {
+        foundSample = null;
+        barcode = '';
+        openIncoming(s);
+        return;
+      }
+      LabApi.instance.receiveTransfer(s.code).then((_) async {
+        foundSample = null;
+        barcode = '';
+        await _loadIncoming();
+        toast(tr('تم استلام العينة — وصل إشعار للمختبر المرسل', 'نموونە وەرگیرا — تاقیگەی نێرەر ئاگادار کرا', 'Sample received — the sending lab was notified'));
+      }).catchError((Object e) => _serverError(e));
+      return;
+    }
     receivedSamples = [s, ...receivedSamples];
     foundSample = null;
     barcode = '';
@@ -1409,8 +1660,13 @@ class AppState extends ChangeNotifier {
       if (selectedPatient?.id == p.id) {
         selectedPatient = selectedPatient!.copyWith(results: values, status: 'Completed');
       }
-      toast(tr('تم اعتماد النتيجة وإرسالها للمريض ✓', 'ئەنجام پەسەندکرا و نێردرا ✓', 'Result approved and sent to the patient ✓'));
-      refreshPatients();
+      if (p.id.startsWith('tr:')) {
+        toast(tr('وصلت النتيجة إلى المختبر المرسل ✓', 'ئەنجام گەیشتە تاقیگەی نێرەر ✓', 'Result sent to the sending lab ✓'));
+        _loadIncoming();
+      } else {
+        toast(tr('تم اعتماد النتيجة وإرسالها للمريض ✓', 'ئەنجام پەسەندکرا و نێردرا ✓', 'Result approved and sent to the patient ✓'));
+        refreshPatients();
+      }
     } on ApiError catch (e) {
       toast(e.message == 'missing'
           ? tr('أكمل نتائج كل التحاليل أولاً', 'سەرەتا هەموو ئەنجامەکان پڕ بکەرەوە', 'Fill in every result first')
@@ -1433,6 +1689,7 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     _toastTimer?.cancel();
+    _notifTimer?.cancel();
     _labTimer?.cancel();
     _rolesTimer?.cancel();
     for (final tm in _testTimers.values) {

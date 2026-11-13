@@ -16,6 +16,7 @@ class _SendScreenState extends State<SendScreen> {
   late final TextEditingController _test;
   late final TextEditingController _lab;
   late final TextEditingController _barcode;
+  final _price = TextEditingController();
 
   @override
   void initState() {
@@ -29,7 +30,7 @@ class _SendScreenState extends State<SendScreen> {
 
   @override
   void dispose() {
-    for (final c in [_patient, _test, _lab, _barcode]) {
+    for (final c in [_patient, _test, _lab, _barcode, _price]) {
       c.dispose();
     }
     super.dispose();
@@ -419,7 +420,7 @@ class _SendScreenState extends State<SendScreen> {
                             style: ts(context, 13, weight: w700),
                           ),
                           Text(
-                            l.price,
+                            app.labPriceText(l),
                             style: ts(context, 11, color: pal.muted),
                           ),
                         ],
@@ -432,6 +433,29 @@ class _SendScreenState extends State<SendScreen> {
                   ),
                 ),
               ),
+            ],
+            // Price: the receiving lab's B2B price, editable.
+            if (app.refPrice.isNotEmpty || app.refLabObj?.id.isNotEmpty == true) ...[
+              const SizedBox(height: 12),
+              Text(
+                '${app.tr('السعر', 'نرخ', 'Price')} (${app.currency})',
+                style: ts(context, 13, weight: w700, color: pal.muted2),
+              ),
+              const SizedBox(height: 6),
+              Builder(builder: (context) {
+                if (_price.text != app.refPrice) {
+                  _price.value = TextEditingValue(
+                    text: app.refPrice,
+                    selection: TextSelection.collapsed(offset: app.refPrice.length),
+                  );
+                }
+                return SearchBarBox(
+                  icon: 'Pencil',
+                  controller: _price,
+                  hint: app.tr('اكتب السعر', 'نرخ بنووسە', 'Type the price'),
+                  onChanged: app.setRefPrice,
+                );
+              }),
             ],
             const SizedBox(height: 16),
             Tap(

@@ -282,12 +282,20 @@ class Referral {
 /// Destination lab card (design `hw`).
 class PartnerLab {
   final String name, city, rating, dist, price;
-  const PartnerLab(this.name, this.city, this.rating, this.dist, this.price);
+  /// Server id when the lab is registered on LabGo ('' otherwise).
+  final String id;
+  const PartnerLab(this.name, this.city, this.rating, this.dist, this.price, {this.id = ''});
 }
 
 /// Sample received from another lab (design `Df`).
 class ReceivedSample {
   final String id, code, patient, test, lab, status;
+  /// Server mode: on_the_way | received | completed, and the details.
+  final String state, gender, age;
+  final List<String> tests;
+  final Map<String, String> values;
+  final int? price;
+  final DateTime? sentAt;
   const ReceivedSample({
     required this.id,
     required this.code,
@@ -295,6 +303,13 @@ class ReceivedSample {
     required this.test,
     required this.lab,
     required this.status,
+    this.state = 'received',
+    this.gender = '',
+    this.age = '',
+    this.tests = const [],
+    this.values = const {},
+    this.price,
+    this.sentAt,
   });
 }
 
