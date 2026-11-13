@@ -155,6 +155,178 @@ class AppState extends ChangeNotifier {
     labPhone = (b.lab['phone'] ?? labPhone) as String;
     labAddress = (b.lab['address'] ?? labAddress) as String;
     userAddress = labAddress;
+    licenseOwners = (b.lab['licenseOwners'] ?? '') as String;
+    _labSaved = (labName, labPhone, labAddress, licenseOwners);
+    permissions = [for (final p in (b.user['permissions'] as List? ?? const [])) '$p'];
+    isOwner = b.user['isOwner'] == true;
+    if (!isOwner && !permissions.contains('users')) users = [];
+    referrals = [];
+    partnerLabs = [];
+    wasteTransfers = [];
+    await Future.wait([_loadStaff(), _loadWaste(), loadFinance(), _loadTransfers()]);
+  }
+
+  // ---- settings sections from the server --------------------------------
+  List<String> permissions = [];
+  bool isOwner = false;
+  bool can(String p) => !LabApi.enabled || isOwner || permissions.contains(p);
+  /// Finance card data (null = demo numbers).
+  Map<String, dynamic>? finance;
+  (String, String, String, String) _labSaved = ('', '', '', '');
+  Timer? _labTimer, _rolesTimer;
+
+  static String _roleId(String key) => key.startsWith('c-') ? key : 'role-$key';
+  static String _roleKey(String id) => id.startsWith('role-') ? id.substring(5) : id;
+  static int _color(String? hex) {
+    final h = (hex ?? '').replaceAll('#', '');
+    return h.length == 6 ? int.parse('FF$h', radix: 16) : 0xFF8E8E93;
+  }
+  static String _hex(int c) => '#${(c & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+  void _applyStaff(Map<String, dynamic> data) {
+    if (data['roles'] is List) {
+      roles = [
+        for (final r in data['roles'] as List)
+          LabRole(
+            id: _roleId('${r['key']}'),
+            name: '${r['name'] ?? ''}',
+            description: '',
+            color: _color(r['color'] as String?),
+            permissions: [for (final p in (r['permissions'] as List)) '$p'],
+            isDefault: r['isDefault'] == true,
+          ),
+      ];
+    }
+    if (data['staff'] is List) {
+      users = [
+        for (final u in data['staff'] as List)
+          ManagedUser(
+            id: '${u['_id']}',
+            name: '${u['name'] ?? ''}',
+            phone: '${u['phone'] ?? ''}',
+            email: '${u['email'] ?? ''}',
+            roleId: _roleId('${u['roleKey']}'),
+            active: u['active'] != false,
+          ),
+      ];
+    }
+  }
+
+  Future<void> _loadStaff() async {
+    if (!can('users')) return;
+    try {
+      _applyStaff(await LabApi.instance.staff());
+    } catch (_) {}
+  }
+
+  Future<void> _loadWaste() async {
+    if (!can('waste')) return;
+    try {
+      final data = await LabApi.instance.waste();
+      String cap(String v) => v.isEmpty ? v : v[0].toUpperCase() + v.substring(1);
+      wasteTransfers = [
+        for (final w in (data['items'] as List? ?? const []))
+          WasteTransfer(
+            id: '${w['_id']}',
+            date: '${w['pickupDate'] ?? ''}'.split('T').first,
+            type: cap('${w['type']}'),
+            weight: ((w['weightKg'] ?? 0) as num).toDouble(),
+            status: w['status'] == 'collected' ? 'Completed' : 'Pending',
+            driver: '${w['company'] ?? ''}',
+            notes: '${w['notes'] ?? ''}',
+          ),
+      ];
+    } catch (_) {}
+  }
+
+  Future<void> loadFinance() async {
+    if (!can('finance')) return;
+    try {
+      finance = await LabApi.instance.finance();
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> _loadTransfers() async {
+    if (!can('patients') && !can('results')) return;
+    try {
+      final data = await LabApi.instance.transfers();
+      referrals = [
+        for (final r in (data['referrals'] as List? ?? const []))
+          Referral(
+            id: '${r['id']}',
+            patient: '${r['patient']}',
+            test: '${r['test']}',
+            lab: '${r['lab']}',
+            status: '${r['status']}',
+            eta: '${r['eta']}',
+            tracking: '${r['tracking']}',
+            step: ((r['step'] ?? 0) as num).toInt(),
+          ),
+      ];
+      partnerLabs = [
+        for (final l in (data['labs'] as List? ?? const [])) PartnerLab('$l', '—', '—', '—', '—'),
+      ];
+    } catch (_) {}
+  }
+
+  void _serverError(Object e) {
+    final code = e is ApiError ? e.code : null;
+    const msgs = {
+      'phoneTaken': ('هذا الرقم مسجل بحساب آخر', 'ئەم ژمارەیە هەژماری هەیە', 'This phone number already has an account'),
+      'emailTaken': ('هذا البريد مسجل بحساب آخر', 'ئەم ئیمەیڵە هەژماری هەیە', 'This email already has an account'),
+      'password': ('كلمة المرور 6 أحرف على الأقل', 'وشەی نهێنی لانیکەم ٦ پیت', 'Password must be at least 6 characters'),
+      'phone': ('أدخل رقم هاتف صحيح', 'ژمارەیەکی دروست بنووسە', 'Enter a valid phone number'),
+      'roleInUse': ('انقل الموظفين من هذا الدور أولاً', 'سەرەتا کارمەندانی ئەم ڕۆڵە بگوازەرەوە', 'Move the staff using this role first'),
+      'self': ('لا يمكنك تغيير دورك أو إيقاف حسابك', 'ناتوانیت ڕۆڵی خۆت بگۆڕیت', 'You cannot change your own role or disable yourself'),
+    };
+    final m = msgs[code];
+    toast(m != null ? tr(m.$1, m.$2, m.$3) : e.toString());
+  }
+
+  /// Lab details are edited without a Save button: save shortly after typing stops.
+  void _scheduleLabSave() {
+    if (!LabApi.enabled || !LabApi.instance.signedIn) return;
+    final now = (labName, labPhone, labAddress, licenseOwners);
+    if (now == _labSaved) return;
+    _labTimer?.cancel();
+    _labTimer = Timer(const Duration(milliseconds: 1200), () async {
+      final sent = (labName, labPhone, labAddress, licenseOwners);
+      try {
+        await LabApi.instance.saveLab({
+          'name': labName,
+          'phone': labPhone,
+          'address': labAddress,
+          'licenseOwners': licenseOwners,
+        });
+        _labSaved = sent;
+      } catch (e) {
+        _serverError(e);
+      }
+    });
+  }
+
+  void _saveRolesSoon() {
+    if (!LabApi.enabled) return;
+    _rolesTimer?.cancel();
+    _rolesTimer = Timer(const Duration(milliseconds: 600), () async {
+      try {
+        _applyStaff(await LabApi.instance.saveRoles([
+          for (final r in roles)
+            {
+              'key': _roleKey(r.id),
+              'name': r.isDefault ? '' : r.name,
+              'color': _hex(r.color),
+              'permissions': r.permissions,
+            },
+        ]));
+        notifyListeners();
+      } catch (e) {
+        _serverError(e);
+        await _loadStaff();
+        notifyListeners();
+      }
+    });
   }
 
   /// Home card numbers for today / this week / this month:
@@ -791,6 +963,22 @@ class AppState extends ChangeNotifier {
 
   void sendReferral() {
     if (refPatient.trim().isEmpty || refTest.isEmpty) return;
+    if (LabApi.enabled) {
+      Patient? match;
+      for (final p in patients) {
+        if (p.name.trim().toLowerCase() == refPatient.trim().toLowerCase() && p.status != 'Completed') match = p;
+      }
+      LabApi.instance.addTransfer({
+        if (match != null) 'orderId': match.id,
+        'patientName': refPatient.trim(),
+        'testName': refTest,
+        'labName': refLab,
+      }).then((_) async {
+        await _loadTransfers();
+        toast(w('sentToast'));
+      }).catchError((Object e) => _serverError(e));
+      return;
+    }
     referrals = [
       Referral(
         id: '${DateTime.now().millisecondsSinceEpoch}',
@@ -882,11 +1070,13 @@ class AppState extends ChangeNotifier {
   void updateSettings(void Function() change) {
     change();
     notifyListeners();
+    _scheduleLabSave();
   }
 
   void toggleSection(String id) {
     openSection = openSection == id ? null : id;
     notifyListeners();
+    if (openSection == 'financial') loadFinance();
   }
 
   String roleName(LabRole r) {
@@ -900,6 +1090,10 @@ class AppState extends ChangeNotifier {
   }
 
   void saveUser(ManagedUser u) {
+    if (LabApi.enabled) {
+      _saveUserOnServer(u);
+      return;
+    }
     final i = users.indexWhere((x) => x.id == u.id);
     users = i >= 0
         ? [for (final x in users) x.id == u.id ? u : x]
@@ -908,11 +1102,25 @@ class AppState extends ChangeNotifier {
   }
 
   void deleteUser(ManagedUser u) {
+    if (LabApi.enabled) {
+      LabApi.instance.deleteStaff(u.id).then((_) {
+        users = users.where((x) => x.id != u.id).toList();
+        toast(t('userDeleted'));
+      }).catchError((Object e) => _serverError(e));
+      return;
+    }
     users = users.where((x) => x.id != u.id).toList();
     toast(t('userDeleted'));
   }
 
   void toggleUserActive(ManagedUser u) {
+    if (LabApi.enabled) {
+      LabApi.instance.updateStaff(u.id, {'active': !u.active}).then((_) {
+        users = [for (final x in users) x.id == u.id ? x.copyWith(active: !x.active) : x];
+        notifyListeners();
+      }).catchError((Object e) => _serverError(e));
+      return;
+    }
     users = [
       for (final x in users) x.id == u.id ? x.copyWith(active: !x.active) : x,
     ];
@@ -925,6 +1133,7 @@ class AppState extends ChangeNotifier {
         ? [for (final x in roles) x.id == r.id ? r : x]
         : [...roles, r];
     toast(t('roleSaved'));
+    _saveRolesSoon();
   }
 
   /// Returns false when the role is still assigned to a user.
@@ -935,6 +1144,7 @@ class AppState extends ChangeNotifier {
     }
     roles = roles.where((x) => x.id != r.id).toList();
     toast(t('roleDeleted'));
+    _saveRolesSoon();
     return true;
   }
 
@@ -946,6 +1156,33 @@ class AppState extends ChangeNotifier {
       for (final x in roles) x.id == r.id ? x.copyWith(permissions: perms) : x,
     ];
     notifyListeners();
+    _saveRolesSoon();
+  }
+
+  Future<void> _saveUserOnServer(ManagedUser u) async {
+    final existing = users.any((x) => x.id == u.id);
+    try {
+      if (existing) {
+        await LabApi.instance.updateStaff(u.id, {
+          'name': u.name,
+          'roleKey': _roleKey(u.roleId),
+          'active': u.active,
+          if (u.password.isNotEmpty) 'password': u.password,
+        });
+      } else {
+        await LabApi.instance.createStaff({
+          'name': u.name,
+          'phone': LabApi.normalizePhone(u.phone),
+          'email': u.email,
+          'password': u.password,
+          'roleKey': _roleKey(u.roleId),
+        });
+      }
+      await _loadStaff();
+      toast(t('userSaved'));
+    } catch (e) {
+      _serverError(e);
+    }
   }
 
   void replaceTest(CatalogTest updated) {
@@ -976,6 +1213,27 @@ class AppState extends ChangeNotifier {
   }
 
   void addWasteTransfer(WasteTransfer t) {
+    if (LabApi.enabled) {
+      () async {
+        try {
+          final created = await LabApi.instance.addWaste({
+            'type': t.type.toLowerCase(),
+            'weightKg': t.weight,
+            'pickupDate': t.date,
+            'company': t.driver,
+            'notes': t.notes,
+          });
+          if (t.status == 'Completed' && created['_id'] != null) {
+            await LabApi.instance.wasteCollected('${created['_id']}');
+          }
+          await _loadWaste();
+          toast(d('transferCreated'));
+        } catch (e) {
+          _serverError(e);
+        }
+      }();
+      return;
+    }
     wasteTransfers = [t, ...wasteTransfers];
     toast(d('transferCreated'));
   }
@@ -1081,6 +1339,8 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     _toastTimer?.cancel();
+    _labTimer?.cancel();
+    _rolesTimer?.cancel();
     for (final t in _printTimers) {
       t.cancel();
     }

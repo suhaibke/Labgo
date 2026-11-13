@@ -47,3 +47,21 @@ test('catalog gives each test its ranges and a hidden Arabic-name entry', () => 
     assert.equal(c[1].on, false);
     assert.equal(c[1].units, 'g/dL');
 });
+
+test('licence holders round-trip through the app text field', () => {
+    const { textToHolders, holdersToText } = require('../routes/lab/app-api');
+    const list = textToHolders('Dr. Ahmed Hamdoon Ahmed · Bacteriologist\nأ.د. سارة علي - اختصاص علم الأمراض, Mr. Omar');
+    assert.deepEqual(list, [
+        { title: 'Dr.', name: 'Ahmed Hamdoon Ahmed', specialty: 'Bacteriologist' },
+        { title: 'أ.د.', name: 'سارة علي', specialty: 'اختصاص علم الأمراض' },
+        { title: 'Mr.', name: 'Omar', specialty: '' },
+    ]);
+    assert.equal(holdersToText(list), 'Dr. Ahmed Hamdoon Ahmed · Bacteriologist\nأ.د. سارة علي · اختصاص علم الأمراض\nMr. Omar');
+});
+
+test('a transfer becomes an app referral', () => {
+    const { toReferral } = require('../routes/lab/app-api');
+    const r = toReferral({ _id: 'x', patientName: 'Sara', tests: [{ testName: 'Vitamin D' }], externalLab: { name: 'Al-Noor' }, status: 'sent', referenceNumber: 'EXT-1', expectedResultAt: new Date(2026, 10, 15) });
+    assert.deepEqual(r, { id: 'x', patient: 'Sara', test: 'Vitamin D', lab: 'Al-Noor', status: 'Sent', eta: '15/11/2026', tracking: 'EXT-1', step: 1 });
+    assert.equal(toReferral({ _id: 'y', status: 'completed', sampleCode: 'S-1' }).step, 3);
+});

@@ -18,6 +18,9 @@ const RULES = [
     [/^\/api\/stats$/, 'any'],
     // The lab mobile app's start-up data; each screen's actions still check permissions.
     [/^\/api\/app\/(bootstrap|patients)$/, 'any'],
+    [/^\/api\/app\/finance$/, ['finance']],
+    [/^\/api\/app\/lab$/, ['settings']],
+    [/^\/api\/app\/transfers$/, ['patients', 'results']],
     [/^\/profile\/?$/, 'any'],
     [/^\/api\/user\/profile$/, 'any'],
     [/^\/(api\/)?orders\/[^/]+\/results(\/approve)?$/, ['results']],

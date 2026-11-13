@@ -68,7 +68,7 @@ class LabApi {
     }
     if (res.statusCode == 401) await _saveToken(null);
     if (res.statusCode >= 400 || json['success'] == false) {
-      throw ApiError(res.statusCode, (json['message'] ?? 'Request failed').toString());
+      throw ApiError(res.statusCode, (json['message'] ?? 'Request failed').toString(), code: json['code']?.toString());
     }
     return json;
   }
@@ -128,6 +128,27 @@ class LabApi {
     }
   }
 
+  // ---------- settings sections ----------
+  Future<Map<String, dynamic>> _data(String method, String path, [Object? body]) async =>
+      ((await _send(method, path, body))['data'] ?? <String, dynamic>{}) as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> staff() => _data('GET', '/lab/api/staff');
+  Future<Map<String, dynamic>> createStaff(Map<String, dynamic> body) => _data('POST', '/lab/api/staff', body);
+  Future<Map<String, dynamic>> updateStaff(String id, Map<String, dynamic> body) => _data('PUT', '/lab/api/staff/$id', body);
+  Future<void> deleteStaff(String id) => _send('DELETE', '/lab/api/staff/$id');
+  Future<Map<String, dynamic>> saveRoles(List<Map<String, dynamic>> roles) =>
+      _data('PUT', '/lab/api/staff/roles', {'roles': roles});
+
+  Future<Map<String, dynamic>> waste() => _data('GET', '/lab/api/waste');
+  Future<Map<String, dynamic>> addWaste(Map<String, dynamic> body) => _data('POST', '/lab/api/waste', body);
+  Future<void> wasteCollected(String id) => _send('PATCH', '/lab/api/waste/$id/collected');
+
+  Future<Map<String, dynamic>> finance() => _data('GET', '/lab/api/app/finance');
+  Future<Map<String, dynamic>> saveLab(Map<String, dynamic> body) => _data('PATCH', '/lab/api/app/lab', body);
+
+  Future<Map<String, dynamic>> transfers() => _data('GET', '/lab/api/app/transfers');
+  Future<Map<String, dynamic>> addTransfer(Map<String, dynamic> body) => _data('POST', '/lab/api/app/transfers', body);
+
   /// 10-digit Iraqi mobiles typed without the leading 0 get it back.
   static String normalizePhone(String v) {
     final t = v.trim();
@@ -141,7 +162,8 @@ class LabApi {
 class ApiError implements Exception {
   final int status;
   final String message;
-  ApiError(this.status, this.message);
+  final String? code;
+  ApiError(this.status, this.message, {this.code});
   @override
   String toString() => message;
 }

@@ -297,6 +297,10 @@ class SettingsScreen extends StatelessWidget {
       ('color', w('changeColor'), 'Pencil'),
     ];
 
+    // Server mode: only the sections this account may use (staff permissions).
+    const needs = {'usersRoles': 'users', 'financial': 'finance', 'tests': 'tests', 'packages': 'packages', 'labData': 'settings', 'createOrder': 'patients'};
+    sections.removeWhere((sct) => needs[sct.$1] != null && !app.can(needs[sct.$1]!));
+
     Widget? body(String id) {
       switch (id) {
         case 'settings':
@@ -1767,11 +1771,51 @@ class _Financial extends StatelessWidget {
       s,
       style: ts(context, 12, weight: w700, color: pal.muted),
     );
-    const bars = [(80, 45), (90, 55), (70, 40), (95, 60), (85, 50), (100, 65)];
-    final invoices = [
-      ('INV-124', 'Ali Ahmed', '25,000', 'Paid'),
-      ('INV-125', 'Sara Ali', '40,000', 'Pending'),
-      ('INV-126', 'Layla Hassan', '10,000', 'Paid'),
+    // Server numbers when connected; the design's sample numbers in demo mode.
+    final f = app.finance;
+    String money(num v) => v.round().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+    num total(String k) => ((f?['totals'] as Map?)?[k] ?? 0) as num;
+    num cat(String k) => ((f?['byCategory'] as Map?)?[k] ?? 0) as num;
+    final income = f == null ? 0 : total('income');
+    double pctOf(num v) => income <= 0 ? (v > 0 ? 100 : 0) : (v / income * 100).clamp(0, 100).toDouble();
+    const catNames = {
+      'rent': ('إيجار', 'کرێ', 'Rent'),
+      'salaries': ('رواتب', 'مووچە', 'Salaries'),
+      'reagents': ('مواد ومحاليل', 'ماددە', 'Reagents'),
+      'electricity': ('كهرباء', 'کارەبا', 'Electricity'),
+      'transport': ('نقل', 'گواستنەوە', 'Transport'),
+      'maintenance': ('صيانة', 'چاککردنەوە', 'Maintenance'),
+      'other': ('أخرى', 'هیتر', 'Other'),
+    };
+    String catLabel(String k) => catNames[k] == null ? k : app.tr(catNames[k]!.$1, catNames[k]!.$2, catNames[k]!.$3);
+    List<(int, int)> bars = const [(80, 45), (90, 55), (70, 40), (95, 60), (85, 50), (100, 65)];
+    if (f != null) {
+      final inc = [for (final v in ((f['bars'] as Map)['income'] as List)) (v as num).toDouble()];
+      final exp = [for (final v in ((f['bars'] as Map)['expenses'] as List)) (v as num).toDouble()];
+      final top = [...inc, ...exp, 1.0].reduce((a, b) => a > b ? a : b);
+      bars = [for (var i = 0; i < inc.length; i++) ((inc[i] / top * 100).round(), (exp[i] / top * 100).round())];
+    }
+    final invoices = f == null
+        ? [
+            ('INV-124', 'Ali Ahmed', '25,000', 'Paid'),
+            ('INV-125', 'Sara Ali', '40,000', 'Pending'),
+            ('INV-126', 'Layla Hassan', '10,000', 'Paid'),
+          ]
+        : [
+            for (final inv in (f['invoices'] as List))
+              ('${inv['code']}', '${inv['name']}', money(inv['amount'] as num), inv['paid'] == true ? 'Paid' : 'Pending'),
+          ];
+    final expenseList = (f?['expenses'] as List?) ?? const [];
+    final salaryLines = [
+      for (final e in expenseList)
+        if (e['category'] == 'salaries') ('${e['note']}'.isNotEmpty ? '${e['note']}' : catLabel('salaries'), money(e['amount'] as num)),
+    ];
+    final otherLines = [
+      for (final e in ((f?['byCategory'] as Map?) ?? const {}).entries)
+        if (e.key != 'salaries' && e.key != 'rent') (catLabel('${e.key}'), money(e.value as num)),
+    ];
+    final debtLines = [
+      for (final dbt in ((f?['debts'] as List?) ?? const [])) ('${dbt['name']}', money(dbt['amount'] as num)),
     ];
 
     return _sectionBody([
@@ -1779,37 +1823,46 @@ class _Financial extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: stat('₫ ${d('debts')}', '450,000', 30)),
+              Expanded(child: stat('₫ ${d('debts')}', f == null ? '450,000' : money(total('debts')), f == null ? 30 : pctOf(total('debts')))),
               const SizedBox(width: 8),
-              Expanded(child: stat('↗ ${d('profits')}', '1,200,000', 85)),
+              Expanded(child: stat('↗ ${d('profits')}', f == null ? '1,200,000' : money(total('profit')), f == null ? 85 : pctOf(total('profit') < 0 ? 0 : total('profit')))),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: stat('↓ ${d('expenses')}', '680,000', 55)),
+              Expanded(child: stat('↓ ${d('expenses')}', f == null ? '680,000' : money(total('expenses')), f == null ? 55 : pctOf(total('expenses')))),
               const SizedBox(width: 8),
               Expanded(
-                child: stat('⌂ ${d('rent')} ${d('perMonth')}', '500,000', 40),
+                child: stat('⌂ ${d('rent')} ${d('perMonth')}', f == null ? '500,000' : money(cat('rent')), f == null ? 40 : pctOf(cat('rent'))),
               ),
             ],
           ),
         ],
       ),
-      stat(d('salaries'), '2,100,000', 90),
+      stat(d('salaries'), f == null ? '2,100,000' : money(cat('salaries')), f == null ? 90 : pctOf(cat('salaries'))),
       Text(d('breakdown'), style: ts(context, 13, weight: w700)),
       _col([
         sub(d('salaries')),
-        line(d('salaryAhmed'), '800,000'),
-        line(d('salarySara'), '700,000'),
-        line(d('salaryOmar'), '600,000'),
+        if (f == null) ...[
+          line(d('salaryAhmed'), '800,000'),
+          line(d('salarySara'), '700,000'),
+          line(d('salaryOmar'), '600,000'),
+        ] else
+          for (final l in salaryLines) line(l.$1, l.$2),
         sub(d('expenses')),
-        line(d('expReagents'), '300,000'),
-        line(d('expElectricity'), '120,000'),
-        line(d('expTransport'), '260,000'),
+        if (f == null) ...[
+          line(d('expReagents'), '300,000'),
+          line(d('expElectricity'), '120,000'),
+          line(d('expTransport'), '260,000'),
+        ] else
+          for (final l in otherLines) line(l.$1, l.$2),
         sub(d('debts')),
-        line(d('debtAli'), '50,000', accent: true),
-        line(d('debtNoor'), '400,000', accent: true),
+        if (f == null) ...[
+          line(d('debtAli'), '50,000', accent: true),
+          line(d('debtNoor'), '400,000', accent: true),
+        ] else
+          for (final l in debtLines) line(l.$1, l.$2, accent: true),
       ], gap: 8),
       Text(d('incomeVsExpenses'), style: ts(context, 13, weight: w700)),
       SizedBox(
