@@ -1,10 +1,18 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:pdf/pdf.dart' show PdfPageFormat;
+import 'package:printing/printing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api.dart';
 import 'catalog_data.dart';
 import 'models.dart';
+import 'report_pdf.dart';
+import 'screens/store_screen.dart';
 import 'strings_data.dart';
 import 'theme.dart';
 
@@ -335,13 +343,13 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _quoteLabs() async {
-    if (!LabApi.enabled || refTest.isEmpty) return;
-    final test = refTest;
+    if (!LabApi.enabled || refTests.isEmpty) return;
+    final test = refTests.join(',');
     _quotedTest = test;
     final labs = partnerLabs.where((l) => l.id.isNotEmpty).take(15).toList();
     await Future.wait([
       for (final l in labs)
-        LabApi.instance.labQuote(l.id, [test]).then((q) {
+        LabApi.instance.labQuote(l.id, List.of(refTests)).then((q) {
           if (_quotedTest != test) return;
           labQuotes = {...labQuotes, l.id: (q['lines'] as List?)?.isNotEmpty == true ? (q['total'] as num).toInt() : null};
         }).catchError((Object _) {}),
@@ -443,11 +451,15 @@ class AppState extends ChangeNotifier {
       for (final n in serverNotifs) {
         if (n['isRead'] == true) readNotifications.add('${n['id']}');
       }
-      // Something new about transfers: refresh those lists too.
-      if (serverNotifs.any((n) => !before.contains(n['id'])) && before.isNotEmpty) {
+      // Something new arrived: alert, and refresh the lists it is about.
+      final fresh = serverNotifs.where((n) => !before.contains(n['id']) && n['isRead'] != true);
+      if (_notifsLoaded && fresh.isNotEmpty) {
+        alertNotification();
         _loadTransfers();
         _loadIncoming();
+        refreshPatients();
       }
+      _notifsLoaded = true;
       notifyListeners();
     } catch (_) {}
   }
@@ -460,6 +472,94 @@ class AppState extends ChangeNotifier {
     return tr('قبل ${m ~/ 1440} يوم', 'پێش ${m ~/ 1440} ڕۆژ', '${m ~/ 1440}d ago');
   }
 
+  bool _notifsLoaded = false;
+  final AudioPlayer _chime = AudioPlayer();
+
+  /// A new notification: vibration and a short sound.
+  Future<void> alertNotification() async {
+    try {
+      await HapticFeedback.heavyImpact();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      await HapticFeedback.vibrate();
+    } catch (_) {}
+    if (!notificationsOn) return;
+    try {
+      await _chime.stop();
+      await _chime.play(AssetSource('sounds/notify.wav'));
+    } catch (_) {}
+  }
+
+  /// Demo mode: sample notifications, plus one that arrives a little after
+  /// signing in so the alert can be tried. (id, text, time, target)
+  final List<(String, String, String, String)> _demoNotifs = [];
+  Timer? _demoNotifTimer;
+
+  List<(String, String, String, String)> get _demoList => [
+        ..._demoNotifs,
+        ('n1', w('n1'), w('n1Time'), 'results'),
+        ('n2', w('n2'), w('n2Time'), 'results'),
+        ('n3', w('n3'), w('n3Time'), 'waste'),
+      ];
+
+  void _scheduleDemoNotification() {
+    if (LabApi.enabled || _demoNotifs.isNotEmpty) return;
+    _demoNotifTimer?.cancel();
+    _demoNotifTimer = Timer(const Duration(seconds: 20), () {
+      if (auth != 'app') return;
+      _demoNotifs.insert(0, (
+        'n4',
+        tr('عينة جديدة من مختبر النور — Zainab Kareem • Vitamin D', 'نموونەی نوێ لە تاقیگەی النور — Zainab Kareem • Vitamin D', 'New sample from Al-Noor Lab — Zainab Kareem • Vitamin D'),
+        tr('الآن', 'ئێستا', 'now'),
+        'receive',
+      ));
+      alertNotification();
+      notifyListeners();
+    });
+  }
+
+  /// Where a notification leads: results, receive (B2B), tracking (sent) or waste.
+  String _notifTarget(String id) {
+    if (!LabApi.enabled) {
+      for (final n in _demoList) {
+        if (n.$1 == id) return n.$4;
+      }
+      return 'results';
+    }
+    for (final n in serverNotifs) {
+      if ('${n['id']}' != id) continue;
+      final type = '${(n['data'] as Map?)?['type'] ?? ''}';
+      if (type == 'transfer_incoming') return 'receive';
+      if (type == 'transfer_received') return 'tracking';
+      return 'results';
+    }
+    return 'results';
+  }
+
+  /// Tapping a notification: mark it read and open the screen it is about.
+  void openNotification(String id) {
+    final target = _notifTarget(id);
+    markRead(id);
+    notificationsOpen = false;
+    selectedPatient = null;
+    wastePage = false;
+    switch (target) {
+      case 'receive':
+        tab = 'send';
+        sendTab = 'receive';
+        _loadIncoming();
+      case 'tracking':
+        tab = 'send';
+        sendTab = 'send';
+      case 'waste':
+        tab = 'profile';
+        wastePage = true;
+      default:
+        tab = 'results';
+        refreshPatients();
+    }
+    notifyListeners();
+  }
+
   /// (id, text, time) for the notifications sheet.
   List<(String, String, String)> get notificationItems => LabApi.enabled
       ? [
@@ -470,7 +570,7 @@ class AppState extends ChangeNotifier {
               _ago(DateTime.tryParse('${n['createdAt']}')?.toLocal() ?? DateTime.now()),
             ),
         ]
-      : [('n1', w('n1'), w('n1Time')), ('n2', w('n2'), w('n2Time')), ('n3', w('n3'), w('n3Time'))];
+      : [for (final n in _demoList) (n.$1, n.$2, n.$3)];
 
   void _serverError(Object e) {
     final code = e is ApiError ? e.code : null;
@@ -537,7 +637,7 @@ class AppState extends ChangeNotifier {
   /// (patients, completed, pending, sent). Demo mode keeps the design's numbers.
   List<(int, int, int, int)> get periodStats {
     if (!LabApi.enabled) {
-      return const [(24, 18, 4, 2), (142, 121, 4, 2), (586, 512, 4, 2)];
+      return const [(24, 18, 4, 2), (142, 121, 4, 2), (586, 512, 4, 2), (6940, 6812, 4, 2)];
     }
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -545,6 +645,7 @@ class AppState extends ChangeNotifier {
       today,
       today.subtract(Duration(days: today.weekday % 7)),
       DateTime(now.year, now.month),
+      DateTime(now.year),
     ];
     return [
       for (final from in starts)
@@ -556,9 +657,39 @@ class AppState extends ChangeNotifier {
     ];
   }
 
-  /// Today's date for the home header ("Fri, 13 Nov").
+  /// Card titles for today / week / month / year.
+  String get periodReportsTitle => [
+        tr('تقارير اليوم', 'ڕاپۆرتەکانی ئەمڕۆ', "Today's Reports"),
+        tr('تقارير الأسبوع', 'ڕاپۆرتەکانی هەفتە', "This Week's Reports"),
+        tr('تقارير الشهر', 'ڕاپۆرتەکانی مانگ', "This Month's Reports"),
+        tr('تقارير السنة', 'ڕاپۆرتەکانی ساڵ', "This Year's Reports"),
+      ][period];
+
+  String get periodPatientsLabel => [
+        tr('مرضى اليوم', 'نەخۆشانی ئەمڕۆ', 'Patients Today'),
+        tr('مرضى هذا الأسبوع', 'نەخۆشانی ئەم هەفتەیە', 'Patients This Week'),
+        tr('مرضى هذا الشهر', 'نەخۆشانی ئەم مانگە', 'Patients This Month'),
+        tr('مرضى هذه السنة', 'نەخۆشانی ئەمساڵ', 'Patients This Year'),
+      ][period];
+
+  String get periodReportsWord => [
+        tr('تقارير اليوم', 'ڕاپۆرتی ئەمڕۆ', "today's reports"),
+        tr('تقارير الأسبوع', 'ڕاپۆرتی هەفتە', 'reports this week'),
+        tr('تقارير الشهر', 'ڕاپۆرتی مانگ', 'reports this month'),
+        tr('تقارير السنة', 'ڕاپۆرتی ساڵ', 'reports this year'),
+      ][period];
+
+  /// "Good morning" until noon, then "Good evening" (device clock).
+  String get greetingNow {
+    final h = DateTime.now().hour;
+    return h >= 4 && h < 12
+        ? tr('صباح الخير', 'بەیانی باش', 'Good Morning')
+        : tr('مساء الخير', 'ئێوارە باش', 'Good Evening');
+  }
+
+  /// Today's date for the home header ("Fri, 13 Nov"), from the device clock.
   String get todayLabel {
-    if (!LabApi.enabled) return w('date');
+    const ku = ['دووشەممە', 'سێشەممە', 'چوارشەممە', 'پێنجشەممە', 'هەینی', 'شەممە', 'یەکشەممە'];
     const en = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const ar = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
     const mEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -566,7 +697,7 @@ class AppState extends ChangeNotifier {
     final n = DateTime.now();
     return lang == 'en'
         ? '${en[n.weekday - 1]}, ${n.day} ${mEn[n.month - 1]}'
-        : '${ar[n.weekday - 1]}، ${n.day} ${mAr[n.month - 1]}';
+        : '${(lang == 'ku' ? ku : ar)[n.weekday - 1]}، ${n.day} ${mAr[n.month - 1]}';
   }
 
   /// Fetches the latest patients (orders) from the server.
@@ -642,6 +773,7 @@ class AppState extends ChangeNotifier {
     auth = 'app';
     tab = 'home';
     notifyListeners();
+    _scheduleDemoNotification();
   }
 
   void logout() {
@@ -651,7 +783,39 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ---- LabGo store ----------------------------------------------------------
+  bool storeOpen = false;
+  List<StoreProduct> storeProducts = List.of(kStoreProducts);
+  final List<StoreOrder> storeOrders = [];
+
+  void openStore() {
+    storeOpen = true;
+    notificationsOpen = false;
+    notifyListeners();
+  }
+
+  void closeStore() {
+    storeOpen = false;
+    notifyListeners();
+  }
+
+  void addStoreProduct(StoreProduct p) {
+    storeProducts = [p, ...storeProducts];
+    notifyListeners();
+  }
+
+  void removeStoreProduct(String id) {
+    storeProducts = storeProducts.where((p) => p.id != id).toList();
+    notifyListeners();
+  }
+
+  void addStoreOrder(StoreOrder o) {
+    storeOrders.insert(0, o);
+    notifyListeners();
+  }
+
   void selectTab(String id) {
+    storeOpen = false;
     selectedPatient = null;
     wastePage = false;
     tab = id;
@@ -706,7 +870,7 @@ class AppState extends ChangeNotifier {
   String homeSearch = '';
   int card = 0; // stat card index 0..3
   bool cardFlipping = false;
-  int period = 0; // 0 today, 1 week, 2 month
+  int period = 0; // 0 today, 1 week, 2 month, 3 year
   String peak = 'Day';
 
   List<Patient> get homeList => patients.where((e) {
@@ -747,7 +911,7 @@ class AppState extends ChangeNotifier {
   }
 
   void cyclePeriod() {
-    period = (period + 1) % 3;
+    period = (period + 1) % 4;
     notifyListeners();
   }
 
@@ -870,6 +1034,87 @@ class AppState extends ChangeNotifier {
     printDraft = draftResults;
     printReturnTab = 'results';
     _startPrinting();
+    _buildPrintPdf(p.copyWith(results: {...p.results, ...draftResults}));
+  }
+
+  /// The designed report (PDF) for the print screen, and a picture of its
+  /// first page that the printer animation shows.
+  Uint8List? printPdf;
+  Uint8List? printPreview;
+  int _printBuild = 0;
+
+  Future<void> _buildPrintPdf(Patient p) async {
+    final run = ++_printBuild;
+    printPdf = null;
+    printPreview = null;
+    try {
+      final bytes = await buildResultReportPdf(this, p, approved: p.status == 'Completed');
+      if (run != _printBuild) return;
+      printPdf = bytes;
+      await for (final page in Printing.raster(bytes, pages: const [0], dpi: 144)) {
+        if (run != _printBuild) return;
+        printPreview = await page.toPng();
+        break;
+      }
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  /// "Print": the report as a PDF to print or share (AirPrint, WhatsApp, Files…).
+  Future<void> sharePrintPdf() async {
+    final p = printPatient;
+    if (p == null) return;
+    if (printPdf == null) {
+      await _buildPrintPdf(p.copyWith(results: {...p.results, ...printDraft}));
+    }
+    final bytes = printPdf;
+    if (bytes == null) {
+      toast(tr('تعذر إنشاء ملف PDF', 'نەتوانرا PDF دروست بکرێت', 'Could not create the PDF'));
+      return;
+    }
+    final name = (p.permanent.isNotEmpty ? p.permanent : p.name).replaceAll(RegExp(r'[^A-Za-z0-9-]+'), '_');
+    try {
+      await Printing.sharePdf(bytes: bytes, filename: 'report-$name.pdf');
+    } catch (_) {
+      toast(tr('تعذر مشاركة الملف', 'نەتوانرا فایلەکە بڵاوبکرێتەوە', 'Could not share the file'));
+    }
+  }
+
+  /// "Approve" on the result screen: every test needs a value; the server
+  /// builds its report and notifies the patient (or the lab that sent the sample).
+  bool approving = false;
+  Future<void> approveResultsFromDetail() async {
+    final p = selectedPatient;
+    if (p == null || approving) return;
+    final values = <String, String>{...p.results, ...draft};
+    if (p.tests.any((t) => (values[t] ?? '').trim().isEmpty)) {
+      toast(tr('أكمل نتائج كل التحاليل أولاً', 'سەرەتا هەموو ئەنجامەکان پڕ بکەرەوە', 'Fill in every result first'));
+      return;
+    }
+    approving = true;
+    notifyListeners();
+    try {
+      if (LabApi.enabled) await LabApi.instance.approveResults(p.id, values);
+      final updated = p.copyWith(results: values, status: 'Completed');
+      patients = patients.map((m) => m.id == p.id ? updated : m).toList();
+      selectedPatient = updated;
+      toast(p.id.startsWith('tr:')
+          ? tr('تم الاعتماد — وصلت النتيجة إلى المختبر المرسل ✓', 'پەسەندکرا — ئەنجام گەیشتە تاقیگەی نێرەر ✓', 'Approved — the result went to the sending lab ✓')
+          : tr('تم اعتماد النتيجة ✓', 'ئەنجام پەسەندکرا ✓', 'Result approved ✓'));
+      if (p.id.startsWith('tr:')) {
+        _loadIncoming();
+      } else if (LabApi.enabled) {
+        refreshPatients();
+      }
+      openPrint(updated, const {});
+    } on ApiError catch (e) {
+      toast(e.message == 'missing' ? tr('أكمل نتائج كل التحاليل أولاً', 'سەرەتا هەموو ئەنجامەکان پڕ بکەرەوە', 'Fill in every result first') : e.message);
+    } catch (_) {
+      toast(tr('تعذر الاعتماد، تحقق من الاتصال', 'پەسەند نەکرا، پەیوەندی بپشکنە', 'Could not approve, check the connection'));
+    } finally {
+      approving = false;
+      notifyListeners();
+    }
   }
 
   void openReceipt(
@@ -967,13 +1212,52 @@ class AppState extends ChangeNotifier {
         .toList();
   }
 
-  List<String> get addDoctorMatches => kDoctors
-      .where(
-        (d) =>
-            addDoctor.trim().isEmpty ||
-            d.toLowerCase().contains(addDoctor.toLowerCase()),
-      )
-      .toList();
+  // Names typed before (doctors, companies / clinics / labs) are remembered on
+  // this device and suggested again; patients' records add theirs too.
+  List<String> savedDoctors = [];
+  List<String> savedCompanies = [];
+
+  Future<void> loadMemory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      savedDoctors = prefs.getStringList('lab.doctors') ?? [];
+      savedCompanies = prefs.getStringList('lab.companies') ?? [];
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> _remember(String doctor, String company) async {
+    List<String> push(List<String> list, String v) {
+      final t = v.trim();
+      if (t.isEmpty) return list;
+      return [t, ...list.where((x) => x.toLowerCase() != t.toLowerCase())].take(40).toList();
+    }
+    savedDoctors = push(savedDoctors, doctor);
+    savedCompanies = push(savedCompanies, company);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('lab.doctors', savedDoctors);
+      await prefs.setStringList('lab.companies', savedCompanies);
+    } catch (_) {}
+  }
+
+  static List<String> _suggest(Iterable<String> all, String typed) {
+    final seen = <String>{};
+    final q = typed.trim().toLowerCase();
+    return [
+      for (final v in all)
+        if (v.trim().isNotEmpty && seen.add(v.trim().toLowerCase()) && (q.isEmpty || v.toLowerCase().contains(q)) && v.trim().toLowerCase() != q) v.trim(),
+    ].take(8).toList();
+  }
+
+  List<String> get addDoctorMatches => _suggest([...savedDoctors, ...patients.map((p) => p.doctor), ...kDoctors], addDoctor);
+
+  List<String> get addCompanyMatches => _suggest([
+        ...savedCompanies,
+        for (final p in patients)
+          if (p.company != null) p.company!,
+        for (final l in partnerLabs) l.name,
+      ], addCompany);
 
   void togglePackage(LabPackage p) {
     if (addPackages.contains(p.id)) {
@@ -1030,6 +1314,7 @@ class AppState extends ChangeNotifier {
       packageCategory: pkgs.isNotEmpty ? pkgs.first.category : null,
     );
     patients = [patient, ...patients];
+    _remember(addDoctor, addMode == 'B2B' ? addCompany : '');
     addName = '';
     addAge = '';
     addPhone = '';
@@ -1078,6 +1363,7 @@ class AppState extends ChangeNotifier {
         'packageIds': List.of(addPackages),
         'payLater': payLater,
       });
+      _remember(addDoctor, addMode == 'B2B' ? addCompany : '');
       await refreshPatients();
       Patient? created;
       for (final p in patients) {
@@ -1110,7 +1396,21 @@ class AppState extends ChangeNotifier {
   String sendTab = 'send';
   String refPatient = 'Sara Ali';
   bool refPatientOpen = false;
-  String refTest = 'Vitamin D';
+  /// Tests chosen to send (removable chips).
+  List<String> refTests = ['Vitamin D'];
+  String get refTest => refTests.join(', ');
+
+  void addRefTest(String name) {
+    if (!refTests.contains(name)) refTests = [...refTests, name];
+    refTestSearch = '';
+    refTestOpen = false;
+    updateSend(() {});
+  }
+
+  void removeRefTest(String name) {
+    refTests = refTests.where((t) => t != name).toList();
+    updateSend(() {});
+  }
   String refTestSearch = '';
   bool refTestOpen = false;
   String refLabSearch = '';
@@ -1130,7 +1430,7 @@ class AppState extends ChangeNotifier {
       refPriceEdited = false;
       _syncRefPrice();
     }
-    if (LabApi.enabled && refTest != _quotedTest) {
+    if (LabApi.enabled && refTests.join(',') != _quotedTest) {
       refPriceEdited = false;
       refPrice = '';
       _quoteLabs();
@@ -1150,6 +1450,7 @@ class AppState extends ChangeNotifier {
       .where(
         (c) =>
             c.on &&
+            !refTests.contains(c.name) &&
             (refTestSearch.trim().isEmpty ||
                 c.name.toLowerCase().contains(refTestSearch.toLowerCase())),
       )
@@ -1180,7 +1481,10 @@ class AppState extends ChangeNotifier {
   }
 
   void sendReferral() {
-    if (refPatient.trim().isEmpty || refTest.isEmpty) return;
+    if (refPatient.trim().isEmpty || refTests.isEmpty) {
+      toast(tr('اختر المريض والتحاليل', 'نەخۆش و پشکنین هەڵبژێرە', 'Choose the patient and tests'));
+      return;
+    }
     if (LabApi.enabled) {
       Patient? match;
       for (final p in patients) {
@@ -1191,6 +1495,7 @@ class AppState extends ChangeNotifier {
         if (match != null) 'orderId': match.id,
         'patientName': refPatient.trim(),
         'testName': refTest,
+        'testNames': List.of(refTests),
         'labName': refLab,
         if (lab != null && lab.id.isNotEmpty) 'toLabId': lab.id,
         if (refPriceEdited && refPrice.isNotEmpty) 'price': refPrice.replaceAll(',', ''),
@@ -1302,6 +1607,55 @@ class AppState extends ChangeNotifier {
           notifyListeners();
         }
       }).catchError((Object e) => _serverError(e));
+    }
+  }
+
+  /// "Print label": the device's print preview with the label PDF (same design
+  /// as the server label; real QR and barcode).
+  Future<void> printLabel() async {
+    final r = labelReferral;
+    if (r == null) return;
+    final ld = labelData;
+    Patient? match;
+    for (final p in patients) {
+      if (p.name.toLowerCase() == r.patient.toLowerCase()) match = p;
+    }
+    String demo() {
+      if (ld != null) {
+        return [
+          if (ld['gender'] == 'male') tr('ذكر', 'نێر', 'Male'),
+          if (ld['gender'] == 'female') tr('أنثى', 'مێ', 'Female'),
+          if (ld['age'] != null) '${ld['age']} ${tr('سنة', 'ساڵ', 'y')}',
+        ].join(' · ');
+      }
+      if (match == null) return '';
+      return '${match.gender == 'Female' ? tr('أنثى', 'مێ', 'Female') : tr('ذكر', 'نێر', 'Male')} · ${match.age}';
+    }
+    final n = DateTime.now();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final code = '${ld?['code'] ?? r.tracking}';
+    final info = LabelInfo(
+      code: code,
+      patient: '${ld?['patient'] ?? r.patient}',
+      demographic: demo(),
+      tests: '${ld?['tests'] ?? r.test}',
+      fromLab: '${ld?['fromLab'] ?? labDisplayName}',
+      toLab: '${ld?['toLab'] ?? r.lab}',
+      date: '${ld?['date'] ?? '${n.day} ${months[n.month - 1]} ${n.year}'}',
+      eta: '${ld?['eta'] ?? r.eta}',
+      reference: '${ld?['reference'] ?? ''}',
+      price: '${ld?['priceText'] ?? ''}',
+      qr: '${ld?['uploadUrl'] ?? code}',
+    );
+    try {
+      final bytes = await buildLabelPdf(this, info);
+      await Printing.layoutPdf(
+        name: 'label-$code',
+        format: const PdfPageFormat(100 * PdfPageFormat.mm, 70 * PdfPageFormat.mm),
+        onLayout: (_) async => bytes,
+      );
+    } catch (_) {
+      toast(tr('تعذر فتح الطباعة', 'نەتوانرا چاپ بکرێت', 'Could not open printing'));
     }
   }
 
@@ -1690,6 +2044,8 @@ class AppState extends ChangeNotifier {
   void dispose() {
     _toastTimer?.cancel();
     _notifTimer?.cancel();
+    _demoNotifTimer?.cancel();
+    _chime.dispose();
     _labTimer?.cancel();
     _rolesTimer?.cancel();
     for (final tm in _testTimers.values) {

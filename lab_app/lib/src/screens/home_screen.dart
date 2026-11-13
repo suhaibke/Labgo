@@ -14,10 +14,6 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = context.app;
     final pal = app.palette;
-    final labReports = app.w('labReports');
-    final reportsWord = labReports.split(' - ').length > 1
-        ? labReports.split(' - ')[1]
-        : labReports;
     final list = app.homeList;
 
     return Padding(
@@ -86,7 +82,7 @@ class HomeScreen extends StatelessWidget {
             style: ts(context, 14, weight: w500, color: pal.muted),
           ),
           Text(
-            '${app.labDisplayName} — $reportsWord',
+            app.labDisplayName,
             style: ts(
               context,
               30,
@@ -97,7 +93,7 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${app.w('greeting')} • ${app.doctorName}',
+            '${app.greetingNow} • ${app.doctorName}',
             style: ts(context, 15, color: pal.muted2),
           ),
           const SizedBox(height: 12),
@@ -399,7 +395,7 @@ class _StatsCardState extends State<_StatsCard>
         height: 28,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: active ? Fixed.orange : pal.chipBg,
+          color: active ? pal.accent : pal.chipBg,
           borderRadius: BorderRadius.circular(999),
           border: active ? null : Border.all(color: pal.line),
         ),
@@ -506,11 +502,7 @@ class _StatsCardState extends State<_StatsCard>
     Widget body;
     switch (index) {
       case 0:
-        final label = app.period == 0
-            ? d('patientsToday')
-            : app.period == 1
-            ? d('patientsWeekly')
-            : d('patientsMonthly');
+        final label = app.periodPatientsLabel;
         body = Column(
           children: [
             _headerRow(
@@ -533,7 +525,7 @@ class _StatsCardState extends State<_StatsCard>
                       LIcon('FlaskConical', size: 13, color: pal.accent),
                       const SizedBox(width: 6),
                       Text(
-                        w('todayReports'),
+                        app.periodReportsTitle,
                         style: ts(context, 12, weight: w700),
                       ),
                     ],
@@ -552,7 +544,7 @@ class _StatsCardState extends State<_StatsCard>
                       context,
                       label,
                       '$patients',
-                      '$reports ${w('todayReports').toLowerCase()}',
+                      '$reports ${app.periodReportsWord}',
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -616,7 +608,7 @@ class _StatsCardState extends State<_StatsCard>
                               const SizedBox(height: 6),
                               _legend(
                                 context,
-                                Fixed.orange,
+                                pal.accent,
                                 '${w('pending')} ${context.app.periodStats[context.app.period].$3}',
                               ),
                               const SizedBox(height: 6),

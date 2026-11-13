@@ -443,7 +443,7 @@ class GradientButton extends StatelessWidget {
   final double radius;
   final bool shadow;
   final bool arrow;
-  final Gradient gradient;
+  final Gradient? gradient;
 
   const GradientButton({
     super.key,
@@ -453,7 +453,7 @@ class GradientButton extends StatelessWidget {
     this.radius = 16,
     this.shadow = false,
     this.arrow = false,
-    this.gradient = Fixed.loginGradient,
+    this.gradient,
   });
 
   @override
@@ -465,12 +465,12 @@ class GradientButton extends StatelessWidget {
         height: height,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          gradient: gradient,
+          gradient: gradient ?? context.pal.accentGradient,
           borderRadius: BorderRadius.circular(radius),
           boxShadow: shadow
-              ? const [
+              ? [
                   BoxShadow(
-                    color: Color.fromRGBO(255, 90, 0, .35),
+                    color: context.pal.accentShadow,
                     offset: Offset(0, 10),
                     blurRadius: 24,
                   ),

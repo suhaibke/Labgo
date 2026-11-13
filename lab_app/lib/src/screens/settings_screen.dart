@@ -437,11 +437,11 @@ class SettingsScreen extends StatelessWidget {
             child: Container(
               height: 52,
               decoration: BoxDecoration(
-                gradient: Fixed.sendGradient,
+                gradient: context.pal.accentGradient,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: Color.fromRGBO(255, 107, 0, .35),
+                    color: context.pal.accentShadow,
                     offset: Offset(0, 10),
                     blurRadius: 24,
                   ),
@@ -3379,7 +3379,7 @@ class _ReportsState extends State<_Reports> {
                   height: 32,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Fixed.orange,
+                    color: context.pal.accent,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -3775,7 +3775,7 @@ class LabDataCard extends StatelessWidget {
                       height: 32,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: Fixed.orange,
+                        color: context.pal.accent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(

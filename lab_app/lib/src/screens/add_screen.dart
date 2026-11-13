@@ -132,12 +132,14 @@ class AddScreen extends StatelessWidget {
               style: ts(context, 11, weight: w700, color: pal.accent),
             ),
             const SizedBox(height: 4),
-            _KeepInput(
+            _SuggestField(
+              key: ValueKey('co-${app.addFormVersion}'),
               initial: app.addCompany,
               hint: w('companyPh'),
               vPad: 10,
               fontSize: 14,
-              onChanged: (v) => app.addCompany = v,
+              matches: () => app.addCompanyMatches,
+              onChanged: (v) => app.updateAdd(() => app.addCompany = v),
             ),
           ],
           const SizedBox(height: 12),
@@ -251,7 +253,13 @@ class AddScreen extends StatelessWidget {
               children: [
                 FieldLabel(w('doctor')),
                 const SizedBox(height: 4),
-                _DoctorField(key: ValueKey('doc-${app.addFormVersion}')),
+                _SuggestField(
+                  key: ValueKey('doc-${app.addFormVersion}'),
+                  initial: app.addDoctor,
+                  hint: app.w('doctorPh'),
+                  matches: () => app.addDoctorMatches,
+                  onChanged: (v) => app.updateAdd(() => app.addDoctor = v),
+                ),
               ],
             ),
           ]),
@@ -662,26 +670,37 @@ class _KeepInputState extends State<_KeepInput> {
   }
 }
 
-class _DoctorField extends StatefulWidget {
-  const _DoctorField({super.key});
+/// A text field that suggests names typed before (doctor, company / clinic / lab).
+class _SuggestField extends StatefulWidget {
+  final String initial;
+  final String hint;
+  final ValueChanged<String> onChanged;
+  final List<String> Function() matches;
+  final double fontSize;
+  final double vPad;
+  const _SuggestField({
+    super.key,
+    required this.initial,
+    required this.hint,
+    required this.onChanged,
+    required this.matches,
+    this.fontSize = 15,
+    this.vPad = 12,
+  });
 
   @override
-  State<_DoctorField> createState() => _DoctorFieldState();
+  State<_SuggestField> createState() => _SuggestFieldState();
 }
 
-class _DoctorFieldState extends State<_DoctorField> {
-  late final TextEditingController _c = TextEditingController(
-    text: context.app.addDoctor,
-  );
+class _SuggestFieldState extends State<_SuggestField> {
+  late final TextEditingController _c = TextEditingController(text: widget.initial);
   final _focus = FocusNode();
+  bool _open = false;
 
   @override
   void initState() {
     super.initState();
-    _focus.addListener(() {
-      if (_focus.hasFocus)
-        context.app.updateAdd(() => context.app.addDoctorOpen = true);
-    });
+    _focus.addListener(() => setState(() => _open = _focus.hasFocus));
   }
 
   @override
@@ -693,22 +712,23 @@ class _DoctorFieldState extends State<_DoctorField> {
 
   @override
   Widget build(BuildContext context) {
-    final app = context.app;
-    final pal = app.palette;
-    final matches = app.addDoctorMatches;
+    final pal = context.pal;
+    final matches = _open ? widget.matches() : const <String>[];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         BoxField(
           controller: _c,
           focusNode: _focus,
-          hint: app.w('doctorPh'),
-          onChanged: (v) => app.updateAdd(() {
-            app.addDoctor = v;
-            app.addDoctorOpen = true;
-          }),
+          hint: widget.hint,
+          fontSize: widget.fontSize,
+          vPad: widget.vPad,
+          onChanged: (v) {
+            widget.onChanged(v);
+            setState(() => _open = true);
+          },
         ),
-        if (app.addDoctorOpen && matches.isNotEmpty)
+        if (matches.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(top: 4),
             clipBehavior: Clip.antiAlias,
@@ -727,24 +747,19 @@ class _DoctorFieldState extends State<_DoctorField> {
             ),
             child: Column(
               children: [
-                for (final doc in matches)
+                for (final v in matches)
                   GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
-                      _c.text = doc;
+                      _c.text = v;
+                      widget.onChanged(v);
                       _focus.unfocus();
-                      app.updateAdd(() {
-                        app.addDoctor = doc;
-                        app.addDoctorOpen = false;
-                      });
+                      setState(() => _open = false);
                     },
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      child: Text(doc, style: ts(context, 14, weight: w600)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      child: Text(v, style: ts(context, 14, weight: w600)),
                     ),
                   ),
               ],

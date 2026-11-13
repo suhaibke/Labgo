@@ -1,6 +1,6 @@
+import 'package:barcode/barcode.dart' as bc;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'theme.dart';
 import 'ui.dart';
@@ -21,7 +21,7 @@ class Overlays extends StatelessWidget {
           ],
           if (app.sendSheetOpen && app.sendPatient != null) ...[
             _Backdrop(opacity: .4, onTap: app.closeSendSheet),
-            const _SendSheet(),
+            _SendSheet(key: ValueKey('send-${app.sendPatient?.id}')),
           ],
           if (app.labelReferral != null) ...[
             _Backdrop(opacity: .5, onTap: () => app.showLabel(null)),
@@ -182,7 +182,7 @@ class _NotificationsSheet extends StatelessWidget {
           const SizedBox(height: 12),
           for (final n in items) ...[
             Tap(
-              onTap: () => app.markRead(n.$1),
+              onTap: () => app.openNotification(n.$1),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -240,7 +240,7 @@ class _NotificationsSheet extends StatelessWidget {
 }
 
 class _SendSheet extends StatefulWidget {
-  const _SendSheet();
+  const _SendSheet({super.key});
 
   @override
   State<_SendSheet> createState() => _SendSheetState();
@@ -380,7 +380,7 @@ class _SendSheetState extends State<_SendSheet> {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
                           gradient: app.sendChannel == channels[i].$1
-                              ? Fixed.sendGradient
+                              ? context.pal.accentGradient
                               : null,
                           color: app.sendChannel == channels[i].$1
                               ? null
@@ -428,7 +428,7 @@ class _SendSheetState extends State<_SendSheet> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  gradient: Fixed.sendGradient,
+                  gradient: context.pal.accentGradient,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Row(
@@ -533,11 +533,11 @@ class _LogoutDialog extends StatelessWidget {
                         child: Container(
                           height: 52,
                           decoration: BoxDecoration(
-                            gradient: Fixed.sendGradient,
+                            gradient: context.pal.accentGradient,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: const [
+                            boxShadow: [
                               BoxShadow(
-                                color: Color.fromRGBO(255, 107, 0, .35),
+                                color: context.pal.accentShadow,
                                 offset: Offset(0, 10),
                                 blurRadius: 24,
                               ),
@@ -577,99 +577,6 @@ class _LogoutDialog extends StatelessWidget {
   }
 }
 
-const _qrBits = [
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  0,
-  1,
-  0,
-  1,
-  0,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  0,
-  0,
-  1,
-  0,
-  1,
-  0,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  0,
-  1,
-  1,
-  0,
-  1,
-  0,
-  1,
-  0,
-  0,
-  1,
-  1,
-  0,
-  1,
-  1,
-  1,
-  0,
-  1,
-  1,
-  1,
-  1,
-  1,
-  0,
-  0,
-  1,
-  0,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  1,
-  0,
-];
-const _barWidths = [
-  3,
-  1,
-  2,
-  1,
-  3,
-  2,
-  1,
-  2,
-  3,
-  1,
-  2,
-  1,
-  3,
-  2,
-  1,
-  2,
-  3,
-  1,
-  2,
-  3,
-  1,
-  2,
-  1,
-  3,
-];
-
 /// Shipping label popup for a referral (design `wl`).
 class _ShippingLabel extends StatelessWidget {
   const _ShippingLabel();
@@ -682,13 +589,25 @@ class _ShippingLabel extends StatelessWidget {
     // Server mode: real label data (QR = result upload link, Code 128 barcode).
     final ld = app.labelData;
     final code = '${ld?['code'] ?? r.tracking}';
+    // Real codes: from the server, or made here (demo).
+    final qrSvg = ld != null
+        ? '${ld['qrSvg']}'
+        : bc.Barcode.qrCode().toSvg(code, width: 200, height: 200);
+    final barSvg = ld != null
+        ? '${ld['barcodeSvg']}'
+        : bc.Barcode.code128().toSvg(code, width: 320, height: 80, drawText: false);
     final ink = pal.dark ? Colors.white : const Color(0xFF111111);
     final grey = pal.dark ? const Color(0xFFA1A1AA) : const Color(0xFF666666);
-    final demo = [
-      if (ld?['gender'] == 'male') app.tr('ذكر', 'نێر', 'Male'),
-      if (ld?['gender'] == 'female') app.tr('أنثى', 'مێ', 'Female'),
-      if (ld?['age'] != null) '${ld!['age']} ${app.tr('سنة', 'ساڵ', 'y')}',
-    ].join(' · ');
+    final match = app.patients.where((p) => p.name.toLowerCase() == r.patient.toLowerCase());
+    final demo = ld != null
+        ? [
+            if (ld['gender'] == 'male') app.tr('ذكر', 'نێر', 'Male'),
+            if (ld['gender'] == 'female') app.tr('أنثى', 'مێ', 'Female'),
+            if (ld['age'] != null) '${ld['age']} ${app.tr('سنة', 'ساڵ', 'y')}',
+          ].join(' · ')
+        : match.isEmpty
+        ? ''
+        : '${match.first.gender == 'Female' ? app.tr('أنثى', 'مێ', 'Female') : app.tr('ذكر', 'نێر', 'Male')} · ${match.first.age}';
     return Positioned(
       left: 12,
       right: 12,
@@ -775,7 +694,7 @@ class _ShippingLabel extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${app.w('dateCol')}: ${ld?['date'] ?? '27 Sep 2026'} • ${app.w('eta')}: ${ld?['eta'] ?? r.eta}',
+                          '${app.w('dateCol')}: ${ld?['date'] ?? '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}'} • ${app.w('eta')}: ${ld?['eta'] ?? r.eta}',
                           style: ts(context, 13, color: grey),
                         ),
                         if ('${ld?['priceText'] ?? ''}'.isNotEmpty) ...[
@@ -810,33 +729,11 @@ class _ShippingLabel extends StatelessWidget {
                                   height: 76,
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: ld != null
-                                        ? Colors.white
-                                        : pal.inputBg,
+                                    color: Colors.white,
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: pal.cardBorder),
                                   ),
-                                  child: ld != null
-                                      ? SvgPicture.string('${ld['qrSvg']}')
-                                      : LayoutBuilder(
-                                          builder: (context, c) {
-                                            final cell = (c.maxWidth - 7) / 8;
-                                            return Wrap(
-                                              spacing: 1,
-                                              runSpacing: 1,
-                                              children: [
-                                                for (var i = 0; i < 64; i++)
-                                                  Container(
-                                                    width: cell,
-                                                    height: cell,
-                                                    color: _qrBits[i] == 1
-                                                        ? pal.ink
-                                                        : pal.inputBg,
-                                                  ),
-                                              ],
-                                            );
-                                          },
-                                        ),
+                                  child: SvgPicture.string(qrSvg),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -854,42 +751,18 @@ class _ShippingLabel extends StatelessWidget {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: ld != null
-                                        ? Colors.white
-                                        : pal.inputBg,
+                                    color: Colors.white,
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: pal.cardBorder),
                                   ),
-                                  child: ld != null
-                                      ? SvgPicture.string(
-                                          '${ld['barcodeSvg']}',
-                                          height: 34,
-                                          colorFilter: const ColorFilter.mode(
-                                            Colors.black,
-                                            BlendMode.srcIn,
-                                          ),
-                                        )
-                                      : Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            for (
-                                              var i = 0;
-                                              i < _barWidths.length;
-                                              i++
-                                            ) ...[
-                                              if (i > 0)
-                                                const SizedBox(width: 2),
-                                              Container(
-                                                width: _barWidths[i].toDouble(),
-                                                height: (18 + (i * 7) % 20)
-                                                    .toDouble(),
-                                                color: pal.ink,
-                                              ),
-                                            ],
-                                          ],
-                                        ),
+                                  child: SvgPicture.string(
+                                    barSvg,
+                                    height: 34,
+                                    colorFilter: const ColorFilter.mode(
+                                      Colors.black,
+                                      BlendMode.srcIn,
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -939,23 +812,12 @@ class _ShippingLabel extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: GestureDetector(
-                        onTap: () {
-                          final printUrl = ld?['printUrl'];
-                          app.showLabel(null);
-                          if (printUrl != null) {
-                            // Opens the printable label (same design) to print or share.
-                            launchUrl(
-                              Uri.parse('$printUrl'),
-                              mode: LaunchMode.externalApplication,
-                            );
-                          } else {
-                            app.toast(app.d('labelPrinted'));
-                          }
-                        },
+                        // The device's print preview (AirPrint / share) with the label PDF.
+                        onTap: app.printLabel,
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
-                            color: Fixed.orange,
+                            color: context.pal.accent,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Row(

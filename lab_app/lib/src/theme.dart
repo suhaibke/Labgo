@@ -31,9 +31,20 @@ class Palette {
   /// `bg-white` utility (dark mode turns it into #1C1C1E).
   Color get white => dark ? const Color(0xFF1C1C1E) : Colors.white;
 
-  /// `bg-[#FFF0E6]` (soft accent surface).
-  Color get softAccent =>
-      dark ? const Color(0xFF3A2A1E) : const Color(0xFFFFF0E6);
+  /// Soft surface tinted with the chosen accent colour (#FFF0E6 for orange).
+  Color get softAccent => dark
+      ? Color.lerp(accent, const Color(0xFF1C1C1E), .78)!
+      : Color.lerp(accent, Colors.white, .9)!;
+
+  /// The accent as a gradient (buttons that were orange gradients in the design).
+  LinearGradient get accentGradient => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [accent, Color.lerp(accent, Colors.white, .22)!],
+      );
+
+  /// The accent's glow under raised buttons.
+  Color get accentShadow => accent.withValues(alpha: .35);
 
   /// `bg-[#E6F7ED]` / `text-[#0E7A3E]`.
   Color get softGreen =>

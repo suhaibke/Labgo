@@ -243,7 +243,7 @@ class _ResultRow extends StatelessWidget {
           action(
             icon: 'Send',
             label: app.tr('إرسال', 'ناردن', 'Send'),
-            gradient: Fixed.sendGradient,
+            gradient: context.pal.accentGradient,
             onTap: () => app.openSendSheet(patient),
           ),
           const SizedBox(width: 8),
@@ -318,7 +318,7 @@ class ResultDetailScreen extends StatelessWidget {
           Text(p.name, style: ts(context, 26, weight: w700, height: 1.25)),
           Text(
             p.createdAt == null
-                ? 'ID LG-$idTail • ${p.time} • 27 Sep • ${p.permanent}'
+                ? 'ID LG-$idTail • ${p.time} • ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} • ${p.permanent}'
                 // Server data: patient ID, time and the order's real date.
                 : 'ID ${p.permanent} • ${p.time} • ${p.createdAt!.day}/${p.createdAt!.month}/${p.createdAt!.year}',
             style: ts(context, 13, color: pal.muted),
@@ -383,7 +383,7 @@ class ResultDetailScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: Tap(
-                  onTap: () => app.openPrint(p, app.draft),
+                  onTap: app.approveResultsFromDetail,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
@@ -393,14 +393,14 @@ class ResultDetailScreen extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const LIcon('Printer', size: 16, color: Colors.white),
+                        const LIcon('BadgeCheck', size: 16, color: Colors.white),
                         const SizedBox(width: 6),
                         Text(
-                          app.tr(
-                            'طباعة النتائج',
-                            'چاپکردنی ئەنجامەکان',
-                            'Print Results',
-                          ),
+                          app.approving
+                              ? '…'
+                              : p.status == 'Completed'
+                              ? app.tr('معتمدة ✓', 'پەسەندکراوە ✓', 'Approved ✓')
+                              : app.tr('اعتماد', 'پەسەندکردن', 'Approve'),
                           style: ts(
                             context,
                             13,

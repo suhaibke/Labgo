@@ -243,7 +243,9 @@ router.post('/api/app/transfers', async (req, res) => {
         }
         if (order) {
             const info = decorateOrderWithPatientInfo(order).patientInfo || {};
-            const picked = (order.tests || []).filter((t) => t.testName === b.testName).map((t) => String(t.testId));
+            // One or more test names (testNames), or a single testName.
+            const names = new Set((Array.isArray(b.testNames) ? b.testNames : [b.testName]).map((n) => String(n || '').trim()).filter(Boolean));
+            const picked = (order.tests || []).filter((t) => names.has(t.testName)).map((t) => String(t.testId));
             fields.orderId = order._id;
             fields.sampleCode = order.qrCode;
             fields.patientName = info.name || 'Unknown';
@@ -256,7 +258,8 @@ router.post('/api/app/transfers', async (req, res) => {
             if (!name) return res.status(400).json({ success: false, message: 'Patient name is required' });
             fields.sampleCode = ExternalTransfer.generateSampleCode();
             fields.patientName = name.slice(0, 120);
-            if (b.testName) fields.testsDescription = String(b.testName).slice(0, 300);
+            const typed = Array.isArray(b.testNames) && b.testNames.length ? b.testNames.join(', ') : b.testName;
+            if (typed) fields.testsDescription = String(typed).slice(0, 300);
         }
         labTransfers.applyTargetAndPrice(fields, b, targetLab);
         const transfer = await ExternalTransfer.create(fields);

@@ -68,6 +68,8 @@
 	</array>
 	<!-- Lets the app reach a test server on the local Wi-Fi over http;
 	     internet servers still need https -->
+	<key>NSCameraUsageDescription</key>
+	<string>The camera reads sample barcodes and QR codes.</string>
 	<!-- Only standard HTTPS: no export-compliance question on each TestFlight build -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>

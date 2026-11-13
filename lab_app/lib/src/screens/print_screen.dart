@@ -110,22 +110,30 @@ class PrintScreen extends StatelessWidget {
       trailing = '${rows.length} ${t3('نتيجة', 'ئەنجام', 'results')}';
       sub =
           '${patient.permanent} • ${t3('تقرير النتائج', 'ڕاپۆرتی ئەنجامەکان', 'Lab Results Report')}';
-      paper = _ResultsPaper(patient: merged, rows: rows);
+      // The designed report (same as the server's PDF); the old paper is
+      // only shown for the moment the PDF takes to build.
+      paper = app.printPreview != null
+          ? Container(
+              color: Colors.white,
+              child: Image.memory(app.printPreview!, fit: BoxFit.fitWidth, gaplessPlayback: true),
+            )
+          : _ResultsPaper(patient: merged, rows: rows);
       buttons = [
         Expanded(
           child: _PillButton(
-            label: t3('تأكيد', 'پشتڕاستکردنەوە', 'Confirm'),
+            label: t3('طباعة', 'چاپ', 'Print'),
             color: pal.accent,
             textColor: Colors.white,
+            icon: 'Printer',
             fontSize: 13,
-            onTap: app.closePrint,
+            onTap: app.sharePrintPdf,
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: _PillButton(
             label: t3('إرسال', 'ناردن', 'Send'),
-            gradient: Fixed.sendGradient,
+            gradient: context.pal.accentGradient,
             textColor: Colors.white,
             icon: 'Send',
             fontSize: 13,

@@ -20,7 +20,8 @@ class LabGoLabApp extends StatefulWidget {
 class _LabGoLabAppState extends State<LabGoLabApp> {
   final _state = AppState()
     ..startSplash()
-    ..restoreSession();
+    ..restoreSession()
+    ..loadMemory();
 
   @override
   void dispose() {

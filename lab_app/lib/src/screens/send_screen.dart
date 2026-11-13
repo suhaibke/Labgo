@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../ui.dart';
+import 'scan_screen.dart';
 
 /// "Send to Other Labs": send a referral, receive B2B samples, track shipments.
 class SendScreen extends StatefulWidget {
@@ -128,7 +129,12 @@ class _SendScreenState extends State<SendScreen> {
             ),
             const SizedBox(height: 12),
             Tap(
-              onTap: app.simulateScan,
+              onTap: () async {
+                final code = await ScanScreen.open(context);
+                if (code == null || code.isEmpty) return;
+                _barcode.text = code;
+                app.setBarcode(code);
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 11),
                 decoration: BoxDecoration(
@@ -139,10 +145,10 @@ class _SendScreenState extends State<SendScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    LIcon('QrCode', size: 17, color: pal.ink),
+                    LIcon('ScanLine', size: 17, color: pal.ink),
                     const SizedBox(width: 8),
                     Text(
-                      d('simulateScan'),
+                      app.tr('مسح بالكاميرا', 'سکان بە کامێرا', 'Scan with camera'),
                       style: ts(context, 16, weight: w700),
                     ),
                   ],
@@ -235,20 +241,13 @@ class _SendScreenState extends State<SendScreen> {
     Widget stepTitle(String n, String text) =>
         Text('$n. $text', style: ts(context, 15, weight: w700));
 
+    final typingLab = app.refLabSearch.trim().isNotEmpty && app.refLabOpen;
+    final labCards = typingLab
+        ? app.refLabMatches
+        : app.partnerLabs.where((l) => l.name == app.refLab).toList();
     final labDropdownItems = <Widget>[
-      for (final l in app.refLabMatches)
-        DropdownRow(
-          label: l.name,
-          onTap: () {
-            _lab.text = l.name;
-            app.updateSend(() {
-              app.refLab = l.name;
-              app.refLabSearch = l.name;
-              app.refLabOpen = false;
-            });
-          },
-        ),
       if (app.refLabSearch.trim().isNotEmpty &&
+          app.refLabMatches.isEmpty &&
           !app.partnerLabs.any(
             (l) =>
                 l.name.toLowerCase() == app.refLabSearch.trim().toLowerCase(),
@@ -271,7 +270,7 @@ class _SendScreenState extends State<SendScreen> {
             Text(w('chooseNameHint'), style: ts(context, 12, color: pal.muted)),
             const SizedBox(height: 8),
             FloatingDropdown(
-              open: app.refPatientOpen,
+              open: app.refPatientOpen && app.refPatient.trim().isNotEmpty && app.refPatientMatches.isNotEmpty,
               items: [
                 for (final p in app.refPatientMatches)
                   DropdownRow(
@@ -288,7 +287,6 @@ class _SendScreenState extends State<SendScreen> {
               child: SearchBarBox(
                 controller: _patient,
                 hint: w('chooseName'),
-                onTap: () => app.updateSend(() => app.refPatientOpen = true),
                 onChanged: (v) => app.updateSend(() {
                   app.refPatient = v;
                   app.refPatientOpen = true;
@@ -299,61 +297,75 @@ class _SendScreenState extends State<SendScreen> {
             stepTitle('2', w('chooseTest')),
             const SizedBox(height: 8),
             FloatingDropdown(
-              open: app.refTestOpen,
+              open: app.refTestOpen && app.refTestSearch.trim().isNotEmpty && app.refTestMatches.isNotEmpty,
               items: [
                 for (final t in app.refTestMatches)
                   DropdownRow(
                     label: t.name,
                     onTap: () {
-                      _test.text = t.name;
-                      app.updateSend(() {
-                        app.refTest = t.name;
-                        app.refTestSearch = t.name;
-                        app.refTestOpen = false;
-                      });
+                      _test.clear();
+                      app.addRefTest(t.name);
                     },
                   ),
               ],
               child: SearchBarBox(
                 controller: _test,
                 hint: w('searchTests'),
-                onTap: () => app.updateSend(() => app.refTestOpen = true),
                 onChanged: (v) => app.updateSend(() {
                   app.refTestSearch = v;
                   app.refTestOpen = true;
                 }),
               ),
             ),
-            if (app.refTest.isNotEmpty) ...[
+            if (app.refTests.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: pal.accent,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    app.refTest,
-                    style: ts(context, 12, weight: w700, color: Colors.white),
-                  ),
-                ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final t in app.refTests)
+                    Container(
+                      padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 6, 6),
+                      decoration: BoxDecoration(
+                        color: pal.accent,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            t,
+                            style: ts(context, 12, weight: w700, color: Colors.white),
+                          ),
+                          const SizedBox(width: 4),
+                          Tap(
+                            onTap: () => app.removeRefTest(t),
+                            child: Container(
+                              width: 20,
+                              height: 20,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: .25),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const LIcon('X', size: 12, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
             ],
             const SizedBox(height: 16),
             stepTitle('3', w('destinationLab')),
             const SizedBox(height: 8),
             FloatingDropdown(
-              open: app.refLabOpen,
+              open: typingLab && labDropdownItems.isNotEmpty,
               items: labDropdownItems,
               child: SearchBarBox(
                 controller: _lab,
                 hint: d('labSearchPh'),
-                onTap: () => app.updateSend(() => app.refLabOpen = true),
                 onSubmitted: (_) => app.useTypedLab(),
                 onChanged: (v) => app.updateSend(() {
                   app.refLabSearch = v;
@@ -361,10 +373,18 @@ class _SendScreenState extends State<SendScreen> {
                 }),
               ),
             ),
-            for (final l in app.partnerLabs) ...[
+            for (final l in labCards) ...[
               const SizedBox(height: 8),
               Tap(
-                onTap: () => app.updateSend(() => app.refLab = l.name),
+                onTap: () {
+                  _lab.clear();
+                  FocusScope.of(context).unfocus();
+                  app.updateSend(() {
+                    app.refLab = l.name;
+                    app.refLabSearch = '';
+                    app.refLabOpen = false;
+                  });
+                },
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(

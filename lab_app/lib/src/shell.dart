@@ -11,6 +11,7 @@ import 'screens/print_screen.dart';
 import 'screens/results_screen.dart';
 import 'screens/send_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/store_screen.dart';
 import 'sheets.dart';
 import 'splash.dart';
 import 'theme.dart';
@@ -32,7 +33,7 @@ class Shell extends StatelessWidget {
     } else {
       body = _AppBody(
         key: ValueKey(
-          '${app.lang}-${app.tab}-${app.selectedPatient?.id}-${app.wastePage}',
+          '${app.lang}-${app.tab}-${app.selectedPatient?.id}-${app.wastePage}-${app.storeOpen}',
         ),
       );
     }
@@ -77,7 +78,9 @@ class _AppBodyState extends State<_AppBody> {
   Widget build(BuildContext context) {
     final app = context.app;
     Widget screen;
-    switch (app.tab) {
+    switch (app.storeOpen ? 'store' : app.tab) {
+      case 'store':
+        screen = const StoreScreen();
       case 'home':
         screen = const HomeScreen();
       case 'add':
@@ -159,7 +162,10 @@ class TopBar extends StatelessWidget {
                 children: [
                   circle(
                     onTap: () => app.openNotifications(true),
-                    child: LIcon('Bell', size: 17, color: pal.ink),
+                    child: _ShakingBell(
+                      active: app.unreadCount > 0,
+                      child: LIcon('Bell', size: 17, color: pal.ink),
+                    ),
                   ),
                   if (app.unreadCount > 0)
                     Positioned(
@@ -197,7 +203,7 @@ class TopBar extends StatelessWidget {
             const _ThemeSwitch(),
             const Spacer(),
             circle(
-              onTap: () => app.toast(app.d('storeTitle')),
+              onTap: app.openStore,
               child: LIcon('Store', size: 19, strokeWidth: 1.8, color: pal.ink),
             ),
             const SizedBox(width: 8),
@@ -501,4 +507,56 @@ class _ToastLayout extends SingleChildLayoutDelegate {
 
   @override
   bool shouldRelayout(covariant SingleChildLayoutDelegate oldDelegate) => false;
+}
+
+
+/// The bell rings (a short swing every few seconds) while there are unread notifications.
+class _ShakingBell extends StatefulWidget {
+  final bool active;
+  final Widget child;
+  const _ShakingBell({required this.active, required this.child});
+
+  @override
+  State<_ShakingBell> createState() => _ShakingBellState();
+}
+
+class _ShakingBellState extends State<_ShakingBell> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600));
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.active) _c.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ShakingBell old) {
+    super.didUpdateWidget(old);
+    if (widget.active && !_c.isAnimating) {
+      _c.repeat();
+    } else if (!widget.active && _c.isAnimating) {
+      _c.stop();
+      _c.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      child: widget.child,
+      builder: (context, child) {
+        // Swing during the first quarter of each cycle, then rest.
+        final t = _c.value / .25;
+        final angle = t >= 1 ? 0.0 : math.sin(t * math.pi * 6) * (1 - t) * .45;
+        return Transform.rotate(angle: angle, alignment: const Alignment(0, -0.8), child: child);
+      },
+    );
+  }
 }
