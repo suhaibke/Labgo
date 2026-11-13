@@ -1313,15 +1313,46 @@ class AppState extends ChangeNotifier {
         Timer(const Duration(milliseconds: 1000), () {
           printStage = 'printing';
           notifyListeners();
+          _printerFeel();
         }),
       )
       ..add(
         Timer(const Duration(milliseconds: 2750), () {
           printStage = 'complete';
           notifyListeners();
+          _printDone();
         }),
       );
     notifyListeners();
+  }
+
+  /// While the paper comes out: the printer's sound and a light, steady
+  /// vibration; a chime and a firm tap when it is done.
+  final AudioPlayer _printSound = AudioPlayer();
+  Timer? _buzz;
+
+  void _printerFeel() {
+    if (notificationsOn) {
+      _printSound.stop().then((_) => _printSound.play(AssetSource('sounds/printer.wav'))).catchError((Object _) {});
+    }
+    _buzz?.cancel();
+    var n = 0;
+    _buzz = Timer.periodic(const Duration(milliseconds: 90), (t) {
+      if (++n > 18 || printStage != 'printing') {
+        t.cancel();
+        return;
+      }
+      HapticFeedback.selectionClick();
+      if (n % 4 == 0) HapticFeedback.lightImpact();
+    });
+  }
+
+  void _printDone() {
+    _buzz?.cancel();
+    HapticFeedback.heavyImpact();
+    if (notificationsOn) {
+      _printSound.stop().then((_) => _printSound.play(AssetSource('sounds/print_done.wav'))).catchError((Object _) {});
+    }
   }
 
   void openPrint(Patient p, Map<String, String> draftResults) {
@@ -1458,6 +1489,8 @@ class AppState extends ChangeNotifier {
     for (final t in _printTimers) {
       t.cancel();
     }
+    _buzz?.cancel();
+    _printSound.stop().catchError((Object _) {});
     tab = printReturnTab;
     notifyListeners();
   }
@@ -2590,6 +2623,8 @@ class AppState extends ChangeNotifier {
     _syncTimer?.cancel();
     _demoNotifTimer?.cancel();
     _chime.dispose();
+    _buzz?.cancel();
+    _printSound.dispose();
     _labTimer?.cancel();
     _rolesTimer?.cancel();
     for (final tm in _testTimers.values) {
