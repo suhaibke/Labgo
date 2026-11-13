@@ -128,7 +128,7 @@
                                                 <% const fromLabBits = [lab.name, lab.phone].filter(Boolean).join(' - ');
                                                    const toLabBits = [externalLab.name, externalLab.contactName, externalLab.phone, externalLab.address].filter(Boolean).join(' - ');
                                                    const expectedText = transfer.expectedResultAt ? new Date(transfer.expectedResultAt).toLocaleDateString(currentLang) : ''; %>
-                                                <button type="button" class="icon-action" data-action="print-label"
+                                                <button type="button" class="icon-action" data-action="print-label" data-transfer-id="<%= transfer._id %>"
                                                     data-code="<%= transfer.sampleCode %>"
                                                     data-patient="<%= transfer.patientName || '' %>"
                                                     data-gender="<%= genderText %>"
@@ -142,7 +142,7 @@
                                                     title="<%= __('externalTransfers.printLabel') %>">
                                                     <svg class="ic"><use href="#i-printer"/></svg>
                                                 </button>
-                                                <button type="button" class="icon-action" data-action="download-label"
+                                                <button type="button" class="icon-action" data-action="download-label" data-transfer-id="<%= transfer._id %>"
                                                     data-code="<%= transfer.sampleCode %>"
                                                     data-patient="<%= transfer.patientName || '' %>"
                                                     data-gender="<%= genderText %>"
@@ -166,6 +166,16 @@
                                                         <svg class="ic"><use href="#i-file-down"/></svg>
                                                         <%= __('labOrderDetails.viewResult') %>
                                                     </a>
+                                                    <% if (transfer.resultSource === 'external_link') { %>
+                                                        <span class="qr-badge" title="<%= (transfer.externalUpload && transfer.externalUpload.uploaderName) || '' %>"><svg class="ic"><use href="#i-qr-code"/></svg><%= __('externalTransfers.viaQr') %></span>
+                                                        <% if (transfer.orderId && !transfer.forwardedAt) { %>
+                                                            <button type="button" class="result-action" data-action="forward-result" data-transfer-id="<%= transfer._id %>">
+                                                                <svg class="ic"><use href="#i-send"/></svg><%= __('externalTransfers.sendToPatient') %>
+                                                            </button>
+                                                        <% } else if (transfer.forwardedAt) { %>
+                                                            <span class="qr-badge sent"><svg class="ic"><use href="#i-check"/></svg><%= __('externalTransfers.sentToPatient') %></span>
+                                                        <% } %>
+                                                    <% } %>
                                                 <% } %>
                                                 <button type="button" class="icon-action" data-action="delete-transfer" data-transfer-id="<%= transfer._id %>" title="<%= __('externalTransfers.deleteTransfer') %>">
                                                     <svg class="ic"><use href="#i-trash-2"/></svg>
@@ -411,6 +421,7 @@
             years: __('common.years'),
             notAvailable: __('common.notAvailable'),
             transferSaved: __('externalTransfers.transferSaved'),
+            forwardDone: __('externalTransfers.forwardDone'),
             transferError: __('externalTransfers.transferError'),
             uploadSuccess: __('externalTransfers.uploadSuccess'),
             uploadError: __('externalTransfers.uploadError'),
@@ -766,12 +777,48 @@
             }
         }
 
+        // The label is built by the server (same design as the lab app, real QR + barcode).
+        const labelLang = <%- JSON.stringify(['ar', 'ku'].includes(currentLang) ? currentLang : 'en') %>;
         document.querySelectorAll('[data-action="print-label"]').forEach(button => {
-            button.addEventListener('click', () => printSampleLabel(readLabelData(button)));
+            button.addEventListener('click', () => {
+                const win = window.open(`/lab/external-transfers/${button.dataset.transferId}/label?lang=${labelLang}`, '_blank');
+                if (!win) printSampleLabel(readLabelData(button));
+            });
+        });
+        document.querySelectorAll('[data-action="forward-result"]').forEach(button => {
+            button.addEventListener('click', async () => {
+                button.disabled = true;
+                try {
+                    const res = await fetch(`/lab/api/external-transfers/${button.dataset.transferId}/forward`, { method: 'POST' });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message);
+                    if (window.laToast) window.laToast(copy.forwardDone);
+                    setTimeout(() => window.location.reload(), 900);
+                } catch (error) {
+                    button.disabled = false;
+                    if (window.laToast) window.laToast(copy.transferError);
+                }
+            });
         });
 
         document.querySelectorAll('[data-action="download-label"]').forEach(button => {
-            button.addEventListener('click', () => downloadLabelPdf(readLabelData(button), button));
+            button.addEventListener('click', async () => {
+                try {
+                    const res = await fetch(`/lab/api/external-transfers/${button.dataset.transferId}/label.pdf?lang=${labelLang}`);
+                    if (!res.ok) throw new Error(String(res.status));
+                    const url = URL.createObjectURL(await res.blob());
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `label-${button.dataset.code}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 5000);
+                } catch (error) {
+                    // No PDF engine on this server: build it in the browser instead.
+                    downloadLabelPdf(readLabelData(button), button);
+                }
+            });
         });
 
         updateAutoFill();

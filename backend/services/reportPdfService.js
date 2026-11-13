@@ -264,7 +264,7 @@ async function withSlot(fn) {
     }
 }
 
-async function renderPdf(html, { footerLeft = '', showPlatform = true } = {}) {
+async function renderPdf(html, { footerLeft = '', showPlatform = true, size = null } = {}) {
     return withSlot(async () => {
         const browser = await getBrowser();
         const page = await browser.newPage();
@@ -272,6 +272,10 @@ async function renderPdf(html, { footerLeft = '', showPlatform = true } = {}) {
             await page.setJavaScriptEnabled(false);
             await page.setContent(html, { waitUntil: 'load', timeout: 20000 });
             await page.evaluateHandle('document.fonts.ready').catch(() => {});
+            // Small formats (labels): exact page size, no header/footer.
+            if (size) {
+                return Buffer.from(await page.pdf({ width: size.width, height: size.height, printBackground: true, pageRanges: '1', margin: { top: 0, right: 0, bottom: 0, left: 0 } }));
+            }
             const pdf = await page.pdf({
                 format: 'A4',
                 printBackground: true,
@@ -307,6 +311,7 @@ module.exports = {
     buildReportPdf,
     footerTemplate,
     barcodeDataUrl,
+    fontFaces,
     renderPdf,
     closeBrowser,
     isAvailable,

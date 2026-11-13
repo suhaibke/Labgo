@@ -911,7 +911,11 @@
     "testsDescription": "وەسفی تاقیکردنەوەکان",
     "deleteTransfer": "سڕینەوەی گواستنەوە",
     "confirmDeleteTransfer": "دڵنیایت لە سڕینەوەی ئەم گواستنەوەیە؟",
-    "patientNameRequired": "ناوی نەخۆش پێویستە"
+    "patientNameRequired": "ناوی نەخۆش پێویستە",
+    "viaQr": "لە ڕێگەی QR گەیشت",
+    "sendToPatient": "ناردن بۆ نەخۆش",
+    "sentToPatient": "نێردرا بۆ نەخۆش",
+    "forwardDone": "ئەنجام نێردرا بۆ نەخۆش"
   },
   "offers": {
     "title": "پیشکشەکان و داشکاندنەکان",

@@ -1037,9 +1037,21 @@ class AppState extends ChangeNotifier {
     toast(d('receivedToast'));
   }
 
+  /// Server label data for the open label (null in demo mode or while loading).
+  Map<String, dynamic>? labelData;
+
   void showLabel(Referral? r) {
     labelReferral = r;
+    labelData = null;
     notifyListeners();
+    if (r != null && LabApi.enabled) {
+      LabApi.instance.transferLabel(r.id, lang == 'en' ? 'en' : lang).then((data) {
+        if (labelReferral?.id == r.id) {
+          labelData = data;
+          notifyListeners();
+        }
+      }).catchError((Object e) => _serverError(e));
+    }
   }
 
   List<ReceivedSample> get receivedFiltered {

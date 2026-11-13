@@ -178,3 +178,8 @@ html.la .lh-preview .lh-empty { color: var(--muted); }
 html.la .settings-section:has(#lhRows) { grid-column: 1 / -1; }
 html.la .lh-row, html.la .lh-preview { direction: ltr; }
 html.la .lh-row > * { min-width: 0; }
+
+/* transfers: result received through the label QR code */
+html.la .qr-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: var(--soft-accent); color: var(--accent); font-size: 12px; font-weight: 700; white-space: nowrap; }
+html.la .qr-badge.sent { background: var(--soft-green); color: var(--green-text); }
+html.la .qr-badge .ic { width: 14px; height: 14px; }

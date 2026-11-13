@@ -10,6 +10,8 @@ const {
 } = require('../../services/externalTransferService');
 const { r2SingleUpload } = require('../../middleware/r2Upload');
 const r2Service = require('../../services/r2Service');
+const transferLabel = require('../../services/transferLabelService');
+const { baseUrl } = require('../../helpers/base-url');
 
 const router = express.Router();
 const patientFields = 'name phone gender birthDate patientNo';
@@ -177,6 +179,90 @@ router.post('/api/external-transfers/:id/result', ...uploadTransferResult, async
     } catch (error) {
         console.error('Upload external transfer result error:', error);
         return res.status(500).json({ success: false, message: 'Error uploading result' });
+    }
+});
+
+// ---------- shipping label (same design as the lab app) ----------
+async function ownTransfer(req, res) {
+    const transfer = await ExternalTransfer.findById(req.params.id);
+    if (!transfer || String(transfer.labId) !== String(req.lab._id)) {
+        res.status(404).json({ success: false, message: 'Transfer not found' });
+        return null;
+    }
+    return transfer;
+}
+
+function labelLang(req) {
+    const l = String(req.query.lang || req.cookies?.lang || 'en');
+    return ['en', 'ar', 'ku'].includes(l) ? l : 'en';
+}
+
+// Printable label page (opens the print dialog).
+router.get('/external-transfers/:id/label', async (req, res) => {
+    try {
+        const transfer = await ownTransfer(req, res);
+        if (!transfer) return;
+        res.set('Cache-Control', 'no-store');
+        res.send(await transferLabel.labelHtml({ transfer, lab: req.lab, baseUrl: baseUrl(req), lang: labelLang(req), autoPrint: req.query.print !== '0' }));
+    } catch (error) {
+        console.error('Transfer label page error:', error);
+        res.status(500).send('Error building the label');
+    }
+});
+
+// Label data for the lab app (it draws the label itself).
+router.get('/api/external-transfers/:id/label', async (req, res) => {
+    try {
+        const transfer = await ownTransfer(req, res);
+        if (!transfer) return;
+        res.json({ success: true, data: await transferLabel.labelData({ transfer, lab: req.lab, baseUrl: baseUrl(req), lang: labelLang(req) }) });
+    } catch (error) {
+        console.error('Transfer label data error:', error);
+        res.status(500).json({ success: false, message: 'Error building the label' });
+    }
+});
+
+router.get('/api/external-transfers/:id/label.pdf', async (req, res) => {
+    try {
+        const transfer = await ownTransfer(req, res);
+        if (!transfer) return;
+        const pdf = await transferLabel.labelPdf({ transfer, lab: req.lab, baseUrl: baseUrl(req), lang: labelLang(req) });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="label-${String(transfer.sampleCode).replace(/[^\w.-]/g, '')}.pdf"`);
+        res.send(pdf);
+    } catch (error) {
+        if (error.code === 'pdfUnavailable') return res.status(503).json({ success: false, code: 'pdfUnavailable', message: 'PDF is not available on this server' });
+        console.error('Transfer label PDF error:', error);
+        res.status(500).json({ success: false, message: 'Error building the label' });
+    }
+});
+
+// A result uploaded by the receiving lab through the QR code is reviewed here
+// first; this sends it on to the patient's order.
+router.post('/api/external-transfers/:id/forward', async (req, res) => {
+    try {
+        const transfer = await ownTransfer(req, res);
+        if (!transfer) return;
+        if (!transfer.resultFileUrl) return res.status(400).json({ success: false, message: 'No result received yet' });
+        if (!transfer.orderId) return res.status(400).json({ success: false, message: 'This sample is not linked to an order' });
+        const order = await Order.findById(transfer.orderId);
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+        if (order.status !== 'completed') {
+            await order.markCompleted(req.user._id, transfer.resultFileUrl);
+        }
+        transfer.forwardedAt = new Date();
+        await transfer.save();
+        try {
+            // Loaded here: the FCM service needs the firebase key at load time.
+            const fcmService = require('../../services/fcmService');
+            await fcmService.sendToUser(order.patientId, 'نتائج الفحوصات جاهزة', 'نتائج فحوصاتك متاحة الآن', { type: 'results_ready', orderId: String(order._id) });
+        } catch (fcmError) {
+            console.error('FCM forward notification error:', fcmError);
+        }
+        res.json({ success: true, data: { transfer } });
+    } catch (error) {
+        console.error('Forward transfer result error:', error);
+        res.status(500).json({ success: false, message: 'Error sending the result' });
     }
 });
 

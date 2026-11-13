@@ -882,7 +882,11 @@
     "testsDescription": "Testlerin Açıklaması",
     "deleteTransfer": "Transferi Sil",
     "confirmDeleteTransfer": "Bu transferi silmek istediğinizden emin misiniz?",
-    "patientNameRequired": "Hastanın adı gereklidir"
+    "patientNameRequired": "Hastanın adı gereklidir",
+    "viaQr": "QR ile geldi",
+    "sendToPatient": "Hastaya gönder",
+    "sentToPatient": "Hastaya gönderildi",
+    "forwardDone": "Sonuç hastaya gönderildi"
   },
   "offers": {
     "title": "İndirimler ve Teklifler",

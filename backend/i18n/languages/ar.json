@@ -1159,7 +1159,11 @@
     "testsDescription": "وصف الفحوصات",
     "deleteTransfer": "حذف التحويل",
     "confirmDeleteTransfer": "هل أنت متأكد من حذف هذا التحويل؟",
-    "patientNameRequired": "اسم المريض مطلوب"
+    "patientNameRequired": "اسم المريض مطلوب",
+    "viaQr": "وصلت عبر QR",
+    "sendToPatient": "إرسال للمريض",
+    "sentToPatient": "أُرسلت للمريض",
+    "forwardDone": "تم إرسال النتيجة للمريض"
   },
   "offers": {
     "title": "العروض والتخفيضات",

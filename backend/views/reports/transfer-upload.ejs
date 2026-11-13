@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>رفع نتيجة العينة · Upload sample result</title>
+<style>
+  :root { --accent: #FF5A00; --ink: #111; --muted: #6E6E73; --line: #E7E7E9; --ok: #0E7A3E; --bad: #C81E1E; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; background: #EDEDED; color: var(--ink);
+         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Tahoma, sans-serif; }
+  .card { width: min(460px, 100%); background: #F7F7F7; border: 1px solid #fff; border-radius: 28px; padding: 24px 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,.08); }
+  h1 { margin: 0; font-size: 21px; }
+  h1 small { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+  .sample { margin: 16px 0; border: 2px dashed var(--accent); border-radius: 18px; padding: 14px; background: #fff; }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 14px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row span { color: var(--muted); }
+  .row b { text-align: end; }
+  .pill { background: #FFF0E6; color: var(--accent); border-radius: 999px; padding: 2px 10px; font-weight: 700; direction: ltr; }
+  label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin: 12px 0 4px; }
+  input[type=text], textarea { width: 100%; border: 1px solid #fff; border-radius: 16px; padding: 12px; font: inherit; font-size: 15px; background: #fff; }
+  textarea { resize: vertical; min-height: 64px; }
+  .drop { display: block; border: 2px dashed var(--line); border-radius: 16px; padding: 18px; text-align: center; background: #fff; cursor: pointer; color: var(--muted); font-size: 14px; }
+  .drop b { display: block; color: var(--ink); margin-bottom: 2px; }
+  .drop input { display: none; }
+  button { width: 100%; margin-top: 16px; border: 0; border-radius: 999px; padding: 14px; font: inherit; font-size: 16px; font-weight: 700; background: var(--accent); color: #fff; cursor: pointer; }
+  button:disabled { opacity: .5; }
+  .msg { text-align: center; padding: 8px 0 0; }
+  .msg .icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 12px; font-size: 34px; }
+  .ok .icon { background: #E6F7ED; color: var(--ok); }
+  .bad .icon { background: #FDECEC; color: var(--bad); }
+  .msg p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+  .error { color: var(--bad); font-size: 13px; font-weight: 700; margin-top: 10px; text-align: center; }
+  .brand { text-align: center; margin-top: 16px; font-size: 12px; color: var(--muted); }
+  .brand b { color: var(--accent); }
+  .en { display: block; font-size: 12px; color: var(--muted); font-weight: 500; direction: ltr; text-align: start; }
+</style>
+</head>
+<body>
+<main class="card">
+<% if (state === 'invalid') { %>
+  <div class="msg bad"><div class="icon">!</div>
+    <h1>رابط غير صالح<small>This link is not valid</small></h1>
+    <p>تأكد من مسح رمز QR الموجود على ملصق العينة نفسه، أو تواصل مع المختبر المرسل.<br>Scan the QR code on the sample label again, or contact the sending lab.</p></div>
+<% } else if (state === 'done') { %>
+  <div class="msg ok"><div class="icon">✓</div>
+    <h1>تم استلام النتيجة<small>Result received</small></h1>
+    <p>وصلت النتيجة إلى <b><%= sendingLab %></b>. شكراً لكم.<br>The result was delivered to <b><%= sendingLab %></b>. Thank you.</p></div>
+<% } else { %>
+  <h1>رفع نتيجة العينة<small>Upload the result for this sample</small></h1>
+  <div class="sample">
+    <div class="row"><span>رقم العينة · Sample</span><b class="pill"><%= code %></b></div>
+    <div class="row"><span>المختبر المرسل · From</span><b dir="auto"><%= sendingLab %></b></div>
+    <div class="row"><span>المريض · Patient</span><b dir="auto"><%= patient %></b></div>
+    <div class="row"><span>التحاليل · Tests</span><b dir="auto"><%= tests || '—' %></b></div>
+  </div>
+  <form method="post" enctype="multipart/form-data" id="f">
+    <label for="lab">اسم مختبركم <span class="en">Your lab name</span></label>
+    <input type="text" id="lab" name="uploaderName" maxlength="120" required value="<%= toLab %>">
+    <label>ملف النتيجة (PDF أو صورة، حتى 10 ميغا) <span class="en">Result file (PDF or photo, up to 10 MB)</span></label>
+    <label class="drop" id="drop"><b id="fileName">اختر الملف أو صوّر النتيجة</b>Choose a file or take a photo
+      <input type="file" name="resultFile" id="file" accept="application/pdf,image/jpeg,image/png" required></label>
+    <label for="note">ملاحظات (اختياري) <span class="en">Notes (optional)</span></label>
+    <textarea id="note" name="note" maxlength="1000"></textarea>
+    <% if (error) { %><p class="error"><%= error %></p><% } %>
+    <button type="submit" id="send">إرسال النتيجة · Send result</button>
+  </form>
+  <script>
+    document.getElementById('file').addEventListener('change', function () {
+      if (this.files[0]) document.getElementById('fileName').textContent = this.files[0].name;
+    });
+    document.getElementById('f').addEventListener('submit', function () { document.getElementById('send').disabled = true; });
+  </script>
+<% } %>
+  <div class="brand">LabGo · <b>labgo</b></div>
+</main>
+</body>
+</html>

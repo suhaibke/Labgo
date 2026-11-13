@@ -681,7 +681,11 @@
     "testsDescription": "Tests Description",
     "deleteTransfer": "Delete Transfer",
     "confirmDeleteTransfer": "Are you sure you want to delete this transfer?",
-    "patientNameRequired": "Patient's name is required"
+    "patientNameRequired": "Patient's name is required",
+    "viaQr": "Received via QR",
+    "sendToPatient": "Send to patient",
+    "sentToPatient": "Sent to patient",
+    "forwardDone": "Result sent to the patient"
   },
   "offers": {
     "title": "Offers & Discounts",

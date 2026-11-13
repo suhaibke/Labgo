@@ -152,6 +152,10 @@ class LabApi {
   Future<Map<String, dynamic>> saveTest(Map<String, dynamic> body) => _data('PUT', '/lab/api/app/tests', body);
   Future<Map<String, dynamic>> savePackage(Map<String, dynamic> body) => _data('PUT', '/lab/api/app/packages', body);
 
+  /// Shipping label for a sample sent to another lab (real QR + barcode as SVG).
+  Future<Map<String, dynamic>> transferLabel(String id, String lang) =>
+      _data('GET', '/lab/api/external-transfers/$id/label?lang=$lang');
+
   /// 10-digit Iraqi mobiles typed without the leading 0 get it back.
   static String normalizePhone(String v) {
     final t = v.trim();

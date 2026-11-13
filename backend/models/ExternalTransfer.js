@@ -62,6 +62,16 @@ const ExternalTransferSchema = new mongoose.Schema({
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     completedAt: Date,
     resultFileUrl: String,
+    // 'lab' = uploaded by this lab; 'external_link' = uploaded by the receiving
+    // lab through the QR code on the label (reviewed before going to the patient).
+    resultSource: { type: String, enum: ['lab', 'external_link'], default: 'lab' },
+    externalUpload: {
+        uploadedAt: Date,
+        uploaderName: { type: String, trim: true, maxlength: 120 },
+        note: { type: String, trim: true, maxlength: 1000 },
+    },
+    // When an external result was sent on to the patient's order.
+    forwardedAt: Date,
 }, { timestamps: true });
 
 ExternalTransferSchema.index({ labId: 1, sentAt: -1 });

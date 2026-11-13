@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'theme.dart';
 import 'ui.dart';
@@ -650,6 +652,9 @@ class _ShippingLabel extends StatelessWidget {
     final app = context.app;
     final pal = app.palette;
     final r = app.labelReferral!;
+    // Server mode: real label data (QR = result upload link, Code 128 barcode).
+    final ld = app.labelData;
+    final code = '${ld?['code'] ?? r.tracking}';
     final ink = pal.dark ? Colors.white : const Color(0xFF111111);
     final grey = pal.dark ? const Color(0xFFA1A1AA) : const Color(0xFF666666);
     return Positioned(
@@ -701,7 +706,7 @@ class _ShippingLabel extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: Text(
-                                r.tracking,
+                                code,
                                 style: ts(
                                   context,
                                   11,
@@ -728,12 +733,12 @@ class _ShippingLabel extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${app.d('sendingLab')}: LabGo Mosul → ${app.d('receivingLab')}: ${r.lab}',
+                          '${app.d('sendingLab')}: ${ld?['fromLab'] ?? 'LabGo Mosul'} → ${app.d('receivingLab')}: ${ld?['toLab'] ?? r.lab}',
                           style: ts(context, 13, color: grey),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${app.w('dateCol')}: 27 Sep 2026 • ${app.w('eta')}: ${r.eta}',
+                          '${app.w('dateCol')}: ${ld?['date'] ?? '27 Sep 2026'} • ${app.w('eta')}: ${ld?['eta'] ?? r.eta}',
                           style: ts(context, 13, color: grey),
                         ),
                         const SizedBox(height: 16),
@@ -747,29 +752,33 @@ class _ShippingLabel extends StatelessWidget {
                                   height: 76,
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: pal.inputBg,
+                                    color: ld != null
+                                        ? Colors.white
+                                        : pal.inputBg,
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: pal.cardBorder),
                                   ),
-                                  child: LayoutBuilder(
-                                    builder: (context, c) {
-                                      final cell = (c.maxWidth - 7) / 8;
-                                      return Wrap(
-                                        spacing: 1,
-                                        runSpacing: 1,
-                                        children: [
-                                          for (var i = 0; i < 64; i++)
-                                            Container(
-                                              width: cell,
-                                              height: cell,
-                                              color: _qrBits[i] == 1
-                                                  ? pal.ink
-                                                  : pal.inputBg,
-                                            ),
-                                        ],
-                                      );
-                                    },
-                                  ),
+                                  child: ld != null
+                                      ? SvgPicture.string('${ld['qrSvg']}')
+                                      : LayoutBuilder(
+                                          builder: (context, c) {
+                                            final cell = (c.maxWidth - 7) / 8;
+                                            return Wrap(
+                                              spacing: 1,
+                                              runSpacing: 1,
+                                              children: [
+                                                for (var i = 0; i < 64; i++)
+                                                  Container(
+                                                    width: cell,
+                                                    height: cell,
+                                                    color: _qrBits[i] == 1
+                                                        ? pal.ink
+                                                        : pal.inputBg,
+                                                  ),
+                                              ],
+                                            );
+                                          },
+                                        ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -787,33 +796,46 @@ class _ShippingLabel extends StatelessWidget {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: pal.inputBg,
+                                    color: ld != null
+                                        ? Colors.white
+                                        : pal.inputBg,
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: pal.cardBorder),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      for (
-                                        var i = 0;
-                                        i < _barWidths.length;
-                                        i++
-                                      ) ...[
-                                        if (i > 0) const SizedBox(width: 2),
-                                        Container(
-                                          width: _barWidths[i].toDouble(),
-                                          height: (18 + (i * 7) % 20)
-                                              .toDouble(),
-                                          color: pal.ink,
+                                  child: ld != null
+                                      ? SvgPicture.string(
+                                          '${ld['barcodeSvg']}',
+                                          height: 34,
+                                          colorFilter: const ColorFilter.mode(
+                                            Colors.black,
+                                            BlendMode.srcIn,
+                                          ),
+                                        )
+                                      : Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            for (
+                                              var i = 0;
+                                              i < _barWidths.length;
+                                              i++
+                                            ) ...[
+                                              if (i > 0)
+                                                const SizedBox(width: 2),
+                                              Container(
+                                                width: _barWidths[i].toDouble(),
+                                                height: (18 + (i * 7) % 20)
+                                                    .toDouble(),
+                                                color: pal.ink,
+                                              ),
+                                            ],
+                                          ],
                                         ),
-                                      ],
-                                    ],
-                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  r.tracking,
+                                  code,
                                   style: ts(
                                     context,
                                     10,
@@ -860,8 +882,17 @@ class _ShippingLabel extends StatelessWidget {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
+                          final printUrl = ld?['printUrl'];
                           app.showLabel(null);
-                          app.toast(app.d('labelPrinted'));
+                          if (printUrl != null) {
+                            // Opens the printable label (same design) to print or share.
+                            launchUrl(
+                              Uri.parse('$printUrl'),
+                              mode: LaunchMode.externalApplication,
+                            );
+                          } else {
+                            app.toast(app.d('labelPrinted'));
+                          }
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12),
