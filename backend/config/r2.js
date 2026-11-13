@@ -39,7 +39,9 @@ const r2Config = {
         testImports: 'uploads/test-imports',
         serviceIcons: 'uploads/service-icons',
         tests: 'uploads/tests',
-        banners: 'uploads/banners'
+        banners: 'uploads/banners',
+        market: 'uploads/market',
+        support: 'uploads/support'
     },
 
     // Region (R2 uses 'auto' for automatic region selection)

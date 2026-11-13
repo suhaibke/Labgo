@@ -18,7 +18,7 @@ const { canAccess, requiredFor, labRoles } = require('../helpers/lab-permissions
 const jwtSecret = secrets.jwtSecret();
 
 test('every lab route has a permission rule (none left owner-only by accident)', () => {
-    const routers = ['dashboard', 'external-transfers', 'results', 'walk-in', 'staff', 'lab-finance-page', 'lab-waste-page', 'app-api', 'transfers-in'].map((f) => require(`../routes/lab/${f}`));
+    const routers = ['dashboard', 'external-transfers', 'results', 'walk-in', 'staff', 'lab-finance-page', 'lab-waste-page', 'app-api', 'transfers-in', 'market-support'].map((f) => require(`../routes/lab/${f}`));
     const paths = new Set();
     for (const r of routers) {
         for (const layer of r.stack) if (layer.route) paths.add(layer.route.path.replace(/:[a-zA-Z]+/g, 'x'));

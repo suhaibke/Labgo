@@ -454,6 +454,28 @@
           <%= __('navigation.banners') || 'بانر الرئيسية' %>
         </span>
       </a>
+      <a href="/admin/market"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'market' ? 'active' : '' %>">
+        <i class="fas fa-store"></i>
+        <span>مراجعة متجر المختبرات</span>
+        <span id="marketBadge" class="hub-badge" style="display:none"></span>
+      </a>
+      <a href="/admin/support"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'support' ? 'active' : '' %>">
+        <i class="fas fa-headset"></i>
+        <span>الدعم والبلاغات</span>
+        <span id="supportBadge" class="hub-badge" style="display:none"></span>
+      </a>
+      <style>.hub-badge{margin-inline-start:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#FF5A00;color:#fff;font-size:11px;font-weight:700;line-height:20px;text-align:center}</style>
+      <script>
+        (function () {
+          var t = localStorage.getItem('token') || (document.cookie.split('; ').find(function (r) { return r.indexOf('token=') === 0; }) || '').split('=')[1];
+          fetch('/api/admin/hub/counts', { headers: { Authorization: 'Bearer ' + t } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+            if (!d || !d.success) return;
+            [['marketBadge', d.data.market], ['supportBadge', d.data.support]].forEach(function (x) { var b = document.getElementById(x[0]); if (x[1]) { b.textContent = x[1]; b.style.display = 'inline-block'; } });
+          }).catch(function () {});
+        })();
+      </script>
       <a href="/admin/waste"
         class="nav-item <%= typeof page !== 'undefined' && page === 'waste' ? 'active' : '' %>">
         <i class="fas fa-biohazard"></i>

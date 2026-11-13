@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الدعم والبلاغات - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-nurses.css">
+    <style>
+        body { font-family: <%= font %>; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+        .card { background: #fff; border-radius: 16px; padding: 14px; border: 1px solid #eef0f3; }
+        .card.new { border-color: #FF5A00; }
+        .imgs { display: flex; gap: 6px; overflow-x: auto; margin: 8px 0; }
+        .imgs img { width: 96px; height: 96px; object-fit: cover; border-radius: 10px; cursor: zoom-in; }
+        .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #f1f2f4; }
+        .pill.pending, .pill.open { background: #FFF0E6; color: #FF5A00; }
+        .pill.approved, .pill.closed { background: #E6F7ED; color: #0E7A3E; }
+        .pill.rejected { background: #FDECEC; color: #C81E1E; }
+        .pill.in_progress { background: #EAF2FF; color: #1d4ed8; }
+        .muted { color: #6b7280; font-size: 12px; }
+        .row { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+        .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+        .actions button { border: 0; border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 700; cursor: pointer; background: #f1f2f4; }
+        .actions button.ok { background: #0E7A3E; color: #fff; }
+        .actions button.no { background: #C81E1E; color: #fff; }
+        .filters { display: flex; gap: 8px; margin: 0 0 14px; flex-wrap: wrap; }
+        .filters button { border: 1px solid #e5e7eb; background: #fff; border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 700; cursor: pointer; }
+        .filters button.on { background: #111; color: #fff; border-color: #111; }
+        p.msg { white-space: pre-wrap; margin: 6px 0; }
+        textarea { width: 100%; border: 1px solid #e5e7eb; border-radius: 12px; padding: 8px; font: inherit; }
+        .ltr { direction: ltr; unicode-bidi: isolate; }
+    </style>
+</head>
+<body>
+    <%- include('../partials/admin-navbar') %>
+    <main class="admin-dashboard">
+        <div class="nurse-management-container">
+            <div class="page-header">
+                <div class="header-left">
+                    <h1>الدعم والبلاغات</h1>
+                    <p class="header-subtitle">رسائل المختبرات من التطبيق: اقتراحات تطوير، أخطاء، مشاكل. الرد يصل للمختبر كإشعار.</p>
+                </div>
+                <div class="header-actions"><button class="modern-btn refresh-btn" onclick="load()"><i class="fas fa-sync-alt"></i><span>تحديث</span></button></div>
+            </div>
+            <div class="filters" id="filters">
+                <button data-s="" class="on">الكل</button>
+                <button data-s="open">جديد</button>
+                <button data-s="in_progress">قيد المعالجة</button>
+                <button data-s="closed">مغلق</button>
+            </div>
+            <div class="cards" id="list"></div>
+        </div>
+    </main>
+    <script>
+        function token() { return localStorage.getItem('token') || (document.cookie.split('; ').find(r => r.startsWith('token=')) || '').split('=')[1]; }
+        const headers = () => ({ Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' });
+        const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';');
+        const day = (d) => d ? new Date(d).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+        const money = (n) => Number(n || 0).toLocaleString('en-US');
+        const imgs = (list) => (list && list.length) ? '<div class="imgs">' + list.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt=""></a>`).join('') + '</div>' : '';
+        let filter = '';
+        document.querySelectorAll('#filters button').forEach((b) => b.addEventListener('click', () => {
+            document.querySelectorAll('#filters button').forEach((x) => x.classList.toggle('on', x === b));
+            filter = b.dataset.s; load();
+        }));
+
+        const TYPE = { suggestion: 'اقتراح تطوير', bug: 'خطأ في النظام', problem: 'مشكلة', other: 'أخرى' };
+        const STATUS = { open: 'جديد', in_progress: 'قيد المعالجة', closed: 'مغلق' };
+        async function load() {
+            const res = await fetch('/api/admin/hub/support' + (filter ? `?status=${filter}` : ''), { headers: headers() });
+            const data = await res.json();
+            const list = document.getElementById('list');
+            if (!data.success) { list.innerHTML = 'تعذر التحميل'; return; }
+            list.innerHTML = data.data.items.map((t) => `
+                <div class="card ${t.adminSeenAt ? '' : 'new'}">
+                    <div class="row"><b>#${esc(t.ticketNo)} · ${TYPE[t.type] || t.type}</b><span class="pill ${t.status}">${STATUS[t.status]}</span></div>
+                    <div class="muted">${esc(t.labId ? t.labId.name : '—')} · ${esc(t.userId ? t.userId.name : '')} · <span class="ltr">${esc(t.userId ? t.userId.phone : '')}</span> · ${day(t.createdAt)}</div>
+                    ${t.subject ? `<div><b>${esc(t.subject)}</b></div>` : ''}
+                    <p class="msg">${esc(t.message)}</p>
+                    ${imgs(t.images)}
+                    ${t.adminReply ? `<div class="muted">ردّك: ${esc(t.adminReply)}</div>` : ''}
+                    <textarea id="r-${t._id}" rows="2" placeholder="اكتب رداً يصل للمختبر..."></textarea>
+                    <div class="actions">
+                        <button class="ok" onclick="reply('${t._id}')"><i class="fas fa-reply"></i> إرسال الرد</button>
+                        <button onclick="setStatus('${t._id}','in_progress')">قيد المعالجة</button>
+                        <button onclick="setStatus('${t._id}','closed')">إغلاق</button>
+                    </div>
+                </div>`).join('') || '<p class="muted">لا توجد بلاغات</p>';
+            fetch('/api/admin/hub/support/seen', { method: 'POST', headers: headers() });
+        }
+        async function reply(id) {
+            const v = document.getElementById('r-' + id).value.trim();
+            if (!v) return;
+            await fetch(`/api/admin/hub/support/${id}`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ reply: v, status: 'in_progress' }) });
+            load();
+        }
+        async function setStatus(id, status) {
+            await fetch(`/api/admin/hub/support/${id}`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ status }) });
+            load();
+        }
+        load();
+    </script>
+</body>
+</html>

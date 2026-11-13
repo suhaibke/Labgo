@@ -199,6 +199,7 @@ app.use('/api/admin/custody', require('./routes/admin/custody'));
 app.use('/api/admin/services', require('./routes/admin/services'));
 app.use('/api/admin/banners', require('./routes/admin/banners'));
 app.use('/api/admin/waste', require('./routes/admin/waste'));
+app.use('/api/admin/hub', require('./routes/admin/market-support'));
 app.use('/api/nurse', require('./routes/nurse/applications'));
 app.use('/api/nurse/orders', require('./routes/nurse'));
 app.use('/api/nurse/finance', require('./routes/nurse/finance'));
@@ -346,6 +347,14 @@ app.get('/admin/banners', requireAdmin, (req, res) => {
   const font = currentLang === 'ar' ? 'Cairo, sans-serif' : 'Inter, sans-serif';
   res.render('dashboard/admin-banners', { page: 'banners', user: req.user, currentLang, direction, font });
 });
+
+// Marketplace review and support tickets
+for (const [path, view, page] of [['/admin/market', 'admin-market', 'market'], ['/admin/support', 'admin-support', 'support']]) {
+  app.get(path, requireAdmin, (req, res) => {
+    const currentLang = req.cookies?.lang || 'ar';
+    res.render('dashboard/' + view, { page, user: req.user, currentLang, direction: ['ar', 'ku'].includes(currentLang) ? 'rtl' : 'ltr', font: currentLang === 'ar' ? 'Cairo, sans-serif' : 'Inter, sans-serif' });
+  });
+}
 
 // Medical waste pickup requests from the labs
 app.get('/admin/waste', requireAdmin, (req, res) => {
