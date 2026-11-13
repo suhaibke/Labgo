@@ -121,3 +121,16 @@ test('lab staff can be saved without an email, a lab owner still needs one', asy
     const owner = new User({ name: 'Owner', phone: '07705556666', password: 'x', role: 'lab' });
     await assert.rejects(() => owner.validate(), /Email is required/);
 });
+
+test('licence holders are trimmed, need a name and are capped at six', () => {
+    const { cleanLicenseHolders } = require('../routes/lab/dashboard');
+    const out = cleanLicenseHolders([
+        { title: ' Dr. ', name: '  Ahmed   Hamdoon Ahmed ', specialty: 'Bacteriologist' },
+        { title: 'Dr.', name: '', specialty: 'nobody' },
+        ...Array.from({ length: 8 }, (_, i) => ({ name: `Person ${i}`, specialty: 'x'.repeat(200) })),
+    ]);
+    assert.equal(out.length, 6);
+    assert.deepEqual(out[0], { title: 'Dr.', name: 'Ahmed Hamdoon Ahmed', specialty: 'Bacteriologist' });
+    assert.equal(out[1].specialty.length, 60);
+    assert.deepEqual(cleanLicenseHolders('nope'), []);
+});

@@ -166,3 +166,15 @@ html.la .offer-tests, html.la .form-section, html.la .tests-selection-container,
 html.la .tests-selection-header, html.la .test-tag { background: var(--chip-bg) !important; }
 html.la .settings-section { min-width: 0; box-sizing: border-box; }
 html.la .settings-header { padding-inline: 0 !important; margin-bottom: 8px !important; }
+
+/* licence holders (settings) */
+html.la .lh-rows { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+html.la .lh-row { display: grid; grid-template-columns: 120px 1.4fr 1fr 40px; gap: 8px; align-items: center; }
+html.la .lh-row .icon-action { width: 40px; height: 40px; display: grid; place-items: center; color: var(--red) !important; }
+html.la .lh-preview-label { margin-top: 14px !important; }
+html.la .lh-preview { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 10px 12px; border-radius: 14px; background: var(--chip-bg); font-size: 13px; color: var(--ink); }
+html.la .lh-preview .lh-empty { color: var(--muted); }
+@media (max-width: 700px) { html.la .lh-row { grid-template-columns: 1fr 1fr; } html.la .lh-row [data-k=name] { grid-column: 1 / -1; order: -1; } }
+html.la .settings-section:has(#lhRows) { grid-column: 1 / -1; }
+html.la .lh-row, html.la .lh-preview { direction: ltr; }
+html.la .lh-row > * { min-width: 0; }

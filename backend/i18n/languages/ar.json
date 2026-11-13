@@ -2334,5 +2334,11 @@
     "empty": "لا توجد طلبات بعد",
     "needWeight": "أدخل الوزن",
     "confirmRemove": "حذف هذا الطلب؟"
+  },
+  "licenseHolders": {
+    "title": "أصحاب الإجازة",
+    "desc": "تظهر بالإنكليزي في رأس تقرير النتائج، مثل: Dr. Ahmed Hamdoon Ahmed · Bacteriologist",
+    "add": "إضافة صاحب إجازة",
+    "preview": "كيف تظهر في التقرير"
   }
 }

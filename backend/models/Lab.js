@@ -211,6 +211,15 @@ const LabSchema = new mongoose.Schema({
         trim: true,
     },
 
+    // People the lab is licensed under, printed in the report header in English
+    // (e.g. Dr. Ahmed Hamdoon Ahmed · Bacteriologist).
+    licenseHolders: [{
+        _id: false,
+        title: { type: String, trim: true, default: 'Dr.', maxlength: 20 },
+        name: { type: String, trim: true, required: true, maxlength: 80 },
+        specialty: { type: String, trim: true, default: '', maxlength: 60 },
+    }],
+
     accreditation: {
         type: String,
         trim: true,

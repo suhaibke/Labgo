@@ -180,6 +180,10 @@ async function buildHtml({ order, lab, rows, approvedBy, baseUrl }) {
             website: String(lab.website || '').replace(/^https?:\/\//, ''),
             licenseNumber: lab.licenseNumber || '', accreditation: lab.accreditation || '',
             tagline: (Array.isArray(lab.specialization) ? lab.specialization : []).slice(0, 5).join('  ·  '),
+            holders: (Array.isArray(lab.licenseHolders) ? lab.licenseHolders : [])
+                .filter((h) => h && h.name)
+                .slice(0, 6)
+                .map((h) => ({ title: h.title || '', name: h.name, specialty: h.specialty || '' })),
         },
         barcode: barcodeDataUrl(order.qrCode),
         logo: await logoDataUrl(lab.logo),

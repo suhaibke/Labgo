@@ -587,6 +587,21 @@
                         </div>
                     </div>
 
+                    <!-- Licence holders (printed in the report header, in English) -->
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <div class="section-icon"><svg class="ic"><use href="#i-badge-check"/></svg></div>
+                            <div>
+                                <h2 class="section-title"><%= __('licenseHolders.title') %></h2>
+                                <p class="section-description"><%= __('licenseHolders.desc') %></p>
+                            </div>
+                        </div>
+                        <div id="lhRows" class="lh-rows"></div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="lhAdd"><svg class="ic"><use href="#i-plus"/></svg><%= __('licenseHolders.add') %></button>
+                        <p class="form-hint lh-preview-label"><%= __('licenseHolders.preview') %></p>
+                        <div class="lh-preview" id="lhPreview" dir="ltr"></div>
+                    </div>
+
                     <!-- Specializations Section -->
                     <div class="settings-section">
                         <div class="section-header">
@@ -730,6 +745,55 @@
         setupImageUpload('coverInput', 'coverPreview', 'coverUploadLabel', '/lab/api/profile/cover-image', 'coverImage');
 
         // Handle form submission
+        // ---- licence holders ----
+        (function () {
+            var TITLES = ['Dr.', 'Prof.', 'Assoc. Prof.', 'Asst. Prof.', 'Mr.', 'Ms.'];
+            var rows = <%- JSON.stringify((lab.licenseHolders || []).map(function (h) { return { title: h.title, name: h.name, specialty: h.specialty }; })).replace(/</g, '\\u003c') %>;
+            var box = document.getElementById('lhRows');
+            var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+            function read() {
+                rows = Array.prototype.map.call(box.querySelectorAll('.lh-row'), function (r) {
+                    return { title: r.querySelector('[data-k=title]').value, name: r.querySelector('[data-k=name]').value.trim(), specialty: r.querySelector('[data-k=specialty]').value.trim() };
+                });
+            }
+            function preview() {
+                var list = rows.filter(function (h) { return h.name; });
+                document.getElementById('lhPreview').innerHTML = list.length
+                    ? list.map(function (h) { return '<span><b>' + esc([h.title, h.name].filter(Boolean).join(' ')) + '</b>' + (h.specialty ? ' · ' + esc(h.specialty) : '') + '</span>'; }).join('')
+                    : '<span class="lh-empty">—</span>';
+            }
+            function render() {
+                box.innerHTML = rows.map(function (h, i) {
+                    return '<div class="lh-row" data-i="' + i + '">' +
+                        '<select class="form-select" data-k="title" aria-label="Title">' + TITLES.concat(TITLES.indexOf(h.title) === -1 && h.title ? [h.title] : []).map(function (t) { return '<option' + (t === h.title ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '<option value=""' + (h.title === '' ? ' selected' : '') + '>—</option></select>' +
+                        '<input class="form-input" data-k="name" dir="ltr" maxlength="80" placeholder="Ahmed Hamdoon Ahmed" value="' + esc(h.name) + '">' +
+                        '<input class="form-input" data-k="specialty" dir="ltr" maxlength="60" placeholder="Bacteriologist" value="' + esc(h.specialty) + '">' +
+                        '<button type="button" class="icon-action" data-del="' + i + '" aria-label="<%= __('common.delete') %>"><svg class="ic"><use href="#i-trash-2"/></svg></button></div>';
+                }).join('');
+                document.getElementById('lhAdd').style.display = rows.length >= 6 ? 'none' : '';
+                preview();
+            }
+            box.addEventListener('input', function () { read(); preview(); });
+            box.addEventListener('change', function () { read(); preview(); });
+            box.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-del]');
+                if (!b) return;
+                read();
+                rows.splice(Number(b.dataset.del), 1);
+                render();
+            });
+            document.getElementById('lhAdd').addEventListener('click', function () {
+                read();
+                if (rows.length >= 6) return;
+                rows.push({ title: 'Dr.', name: '', specialty: '' });
+                render();
+                var inputs = box.querySelectorAll('[data-k=name]');
+                inputs[inputs.length - 1].focus();
+            });
+            window.lhCollect = function () { read(); return rows.filter(function (h) { return h.name; }); };
+            render();
+        })();
+
         document.getElementById('settingsForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -761,6 +825,10 @@
             document.querySelectorAll('.specialization-item.selected input[type="checkbox"]').forEach(checkbox => {
                 updateData.specialization.push(checkbox.value);
             });
+
+            // Licence holders (rows are not plain form fields)
+            updateData.licenseHolders = window.lhCollect();
+            Object.keys(updateData).forEach(function (k) { if (k.indexOf('lh_') === 0) delete updateData[k]; });
 
             // Ensure at least one specialization is selected
             if (updateData.specialization.length === 0) {

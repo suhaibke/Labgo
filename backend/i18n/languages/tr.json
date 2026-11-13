@@ -1703,5 +1703,11 @@
     "empty": "Henüz talep yok",
     "needWeight": "Ağırlığı girin",
     "confirmRemove": "Bu talep silinsin mi?"
+  },
+  "licenseHolders": {
+    "title": "Ruhsat sahipleri",
+    "desc": "Sonuç raporunun başlığında İngilizce gösterilir",
+    "add": "Ruhsat sahibi ekle",
+    "preview": "Raporda görünümü"
   }
 }

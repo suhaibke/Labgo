@@ -820,6 +820,16 @@ router.get('/profile', async (req, res) => {
 });
 
 // Update lab profile (API endpoint)
+// Licence holders shown in the report header: at most 6, short plain text.
+function cleanLicenseHolders(list) {
+    if (!Array.isArray(list)) return [];
+    const clip = (v, n) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, n);
+    return list
+        .map((h) => ({ title: clip(h && h.title, 20), name: clip(h && h.name, 80), specialty: clip(h && h.specialty, 60) }))
+        .filter((h) => h.name)
+        .slice(0, 6);
+}
+
 router.put('/api/profile', async (req, res) => {
     try {
         const lab = req.lab;
@@ -841,7 +851,7 @@ router.put('/api/profile', async (req, res) => {
         const allowedUpdates = [
             'name', 'email', 'phone', 'address', 'city', 'country',
             'website', 'logo', 'specialization', 'operatingHours',
-            'description', 'coordinates'
+            'description', 'coordinates', 'licenseHolders'
         ];
 
         // Only update allowed fields
@@ -851,6 +861,8 @@ router.put('/api/profile', async (req, res) => {
                     lab[key] = updateData[key].toLowerCase().trim();
                 } else if (key === 'phone') {
                     lab[key] = updateData[key].trim();
+                } else if (key === 'licenseHolders') {
+                    lab[key] = cleanLicenseHolders(updateData[key]);
                 } else if (key === 'specialization') {
                     // Ensure specialization is an array and not empty
                     const specArray = Array.isArray(updateData[key]) ? updateData[key] : [];
@@ -2605,3 +2617,4 @@ router.patch('/api/packages/:id/toggle', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.cleanLicenseHolders = cleanLicenseHolders;
