@@ -19,8 +19,13 @@ RUN npm ci
 # Stage 2: Production
 FROM node:20-alpine AS production
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache openssl dumb-init
+# Install dumb-init for proper signal handling, and Chromium for the PDF
+# result reports (fonts are bundled in assets/fonts)
+RUN apk add --no-cache openssl dumb-init chromium nss freetype harfbuzz ca-certificates
+
+# puppeteer-core uses the system Chromium; it never downloads its own
+ENV PUPPETEER_SKIP_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \

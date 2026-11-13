@@ -211,6 +211,9 @@ app.use('/api/admin/shop', require('./routes/admin/shop'));
 // Public routes (no authentication required)
 app.use('/api/public', require('./routes/public'));
 
+// Public check opened from the QR code on lab result reports
+app.use(require('./routes/report-verify'));
+
 // Lab management routes (will be mounted after page routes)
 const labRoutes = require('./routes/admin/labs');
 

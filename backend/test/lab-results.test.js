@@ -12,6 +12,7 @@ const fcmService = { sendToUser: async () => {} };
 require.cache[fcmPath] = { id: fcmPath, filename: fcmPath, loaded: true, exports: fcmService };
 
 const Order = require('../models/Order');
+const User = require('../models/User');
 const { pickRange, classify } = require('../helpers/result-ranges');
 
 const labId = new mongoose.Types.ObjectId();
@@ -59,11 +60,13 @@ async function startServer(t, order) {
     await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
     t.after(() => new Promise((resolve) => server.close(resolve)));
     const base = `http://127.0.0.1:${server.address().port}`;
-    return (path, method = 'GET', body) => fetch(base + path, {
+    const call = (path, method = 'GET', body) => fetch(base + path, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined,
     }).then(async (r) => ({ status: r.status, json: await r.json() }));
+    call.base = base;
+    return call;
 }
 
 test('ranges follow gender and values are flagged', () => {
@@ -128,4 +131,53 @@ test('orders from another lab are refused', async (t) => {
     const call = await startServer(t, order);
     const res = await call(`/api/orders/${order._id}/results`);
     assert.equal(res.status, 403);
+});
+
+test('approving without a file builds the report on the server and uploads it', async (t) => {
+    const r2Service = require('../services/r2Service');
+    const reportPdf = require('../services/reportPdfService');
+    const order = makeOrder();
+    const call = await startServer(t, order);
+    let built = null;
+    t.mock.method(reportPdf, 'buildReportPdf', async (args) => { built = args; return Buffer.from('%PDF-1.7 test'); });
+    t.mock.method(r2Service, 'uploadBuffer', async (buf, folder, name, opts) => ({ url: `/${folder}/${name}`, contentType: opts.contentType }));
+    const res = await call(`/api/orders/${order._id}/results/approve`, 'POST', {
+        values: [{ testId: String(cbcId), value: '14' }, { testId: String(vitId), value: '25' }],
+    });
+    assert.equal(res.status, 200);
+    assert.equal(built.order.results.entryStatus, 'approved', 'the report is built as approved');
+    assert.equal(built.rows.length, 2);
+    assert.match(order.results.reportUrl, /^\/uploads\/results\/report-.*\.pdf$/);
+    assert.equal(order.status, 'completed');
+});
+
+test('without a PDF engine nothing is approved and the caller is told to fall back', async (t) => {
+    const reportPdf = require('../services/reportPdfService');
+    const order = makeOrder();
+    const call = await startServer(t, order);
+    let saved = 0;
+    order.save = async function save() { saved += 1; return this; };
+    t.mock.method(reportPdf, 'buildReportPdf', async () => { throw new reportPdf.PdfUnavailableError('none'); });
+    const res = await call(`/api/orders/${order._id}/results/approve`, 'POST', {
+        values: [{ testId: String(cbcId), value: '14' }, { testId: String(vitId), value: '25' }],
+    });
+    assert.equal(res.status, 503);
+    assert.equal(res.json.code, 'pdfUnavailable');
+    assert.equal(saved, 0);
+    assert.equal(order.status, 'at_lab');
+});
+
+test('the report endpoint returns a real PDF (needs Chromium)', { skip: !require('../services/reportPdfService').isAvailable() && 'no Chromium here' }, async (t) => {
+    const order = makeOrder('completed');
+    order.results = { values: [{ testId: cbcId, testName: 'Hemoglobin', value: '11.2', unit: 'g/dL', min: 12, max: 15.5, flag: 'low' },
+        { testId: vitId, testName: 'Vitamin D', value: '45', unit: 'ng/mL' }], entryStatus: 'approved', approvedAt: new Date() };
+    const call = await startServer(t, order);
+    t.mock.method(User, 'findById', () => ({ select: async () => ({ name: 'Dr. Ahmed' }) }));
+    t.after(() => require('../services/reportPdfService').closeBrowser());
+    const base = call.base;
+    const res = await fetch(`${base}/api/orders/${order._id}/report.pdf`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('content-type'), 'application/pdf');
+    const buf = Buffer.from(await res.arrayBuffer());
+    assert.equal(buf.subarray(0, 5).toString(), '%PDF-');
 });

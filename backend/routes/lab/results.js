@@ -3,7 +3,10 @@
 const express = require('express');
 const Order = require('../../models/Order');
 const Lab = require('../../models/Lab');
+const User = require('../../models/User');
 const fcmService = require('../../services/fcmService');
+const r2Service = require('../../services/r2Service');
+const reportPdf = require('../../services/reportPdfService');
 const { decorateOrderWithPatientInfo } = require('../../helpers/order-patient-info');
 const { pickRange, classify } = require('../../helpers/result-ranges');
 
@@ -67,6 +70,25 @@ function buildRows(order, lab) {
             // Every age/gender group of the lab test, for the range editor.
             ranges: (labTest?.ranges || []).map((r) => ({ gender: r.gender, ageFrom: r.ageFrom, ageTo: r.ageTo, ageUnit: r.ageUnit, min: r.min, max: r.max })),
         };
+    });
+}
+
+// Public address used in the report's verification QR code.
+function baseUrl(req) {
+    if (process.env.PUBLIC_BASE_URL) return process.env.PUBLIC_BASE_URL;
+    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+    return `${proto}://${req.get('host')}`;
+}
+
+// Builds the report PDF from the order as it stands (approved or draft).
+async function reportFor(req, order, approverName) {
+    const decorated = decorateOrderWithPatientInfo(order);
+    return reportPdf.buildReportPdf({
+        order: decorated,
+        lab: req.lab,
+        rows: buildRows(decorated, req.lab),
+        approvedBy: approverName,
+        baseUrl: baseUrl(req),
     });
 }
 
@@ -197,10 +219,25 @@ router.post('/api/orders/:orderId/results/approve', async (req, res) => {
         if (missing.length) {
             return res.status(400).json({ success: false, message: 'Some tests have no value', missing });
         }
-        const reportUrl = typeof req.body?.reportUrl === 'string' && req.body.reportUrl ? req.body.reportUrl : null;
         order.results.entryStatus = 'approved';
         order.results.approvedAt = new Date();
         order.results.approvedBy = req.user._id;
+
+        // The server builds the report unless the caller sent one (dashboard fallback).
+        let reportUrl = typeof req.body?.reportUrl === 'string' && req.body.reportUrl ? req.body.reportUrl : null;
+        if (!reportUrl) {
+            try {
+                const pdf = await reportFor(req, order, req.user.name);
+                const filename = r2Service.generateUniqueFilename(`${order.qrCode || order._id}.pdf`, 'report-');
+                const uploaded = await r2Service.uploadBuffer(pdf, r2Service.r2Config.paths.results, filename, { contentType: 'application/pdf' });
+                reportUrl = uploaded.url;
+            } catch (error) {
+                if (error.code === 'pdfUnavailable') {
+                    return res.status(503).json({ success: false, code: 'pdfUnavailable', message: 'The server cannot build PDF reports right now' });
+                }
+                throw error;
+            }
+        }
 
         const wasAtLab = order.status === 'at_lab';
         if (wasAtLab) {
@@ -225,6 +262,30 @@ router.post('/api/orders/:orderId/results/approve', async (req, res) => {
     } catch (error) {
         console.error('Approve results error:', error);
         res.status(500).json({ success: false, message: 'Error approving results' });
+    }
+});
+
+// The report PDF (approved, or a DRAFT copy) to view or print.
+router.get('/api/orders/:orderId/report.pdf', async (req, res) => {
+    try {
+        const order = await loadOrder(req, res);
+        if (!order) return;
+        let approver = '';
+        if (order.results?.approvedBy) {
+            const u = await User.findById(order.results.approvedBy).select('name');
+            approver = u?.name || '';
+        }
+        const pdf = await reportFor(req, order, approver);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${String(order.qrCode || order._id).replace(/[^\w.-]/g, '')}.pdf"`);
+        res.setHeader('Cache-Control', 'no-store');
+        res.send(pdf);
+    } catch (error) {
+        if (error.code === 'pdfUnavailable') {
+            return res.status(503).json({ success: false, code: 'pdfUnavailable', message: 'The server cannot build PDF reports right now' });
+        }
+        console.error('Report PDF error:', error);
+        res.status(500).json({ success: false, message: 'Error building the report' });
     }
 });
 

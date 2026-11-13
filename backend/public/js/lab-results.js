@@ -205,7 +205,24 @@
     $('rpComment').textContent = $('rsComment').value.trim();
     $('rpDate').textContent = new Date().toLocaleDateString(window.RS_LANG === 'ar' ? 'ar-IQ' : window.RS_LANG);
   }
-  $('rsPrint').addEventListener('click', function () { fillReport(); window.print(); });
+  // Print / preview: the same PDF the patient gets (a DRAFT copy until approved).
+  // If the server cannot build PDFs, fall back to the browser's print.
+  $('rsPrint').addEventListener('click', function () {
+    var win = window.open('', '_blank');
+    saveNow().then(function () {
+      return fetch(API + '/orders/' + orderId + '/report.pdf');
+    }).then(function (r) {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.blob();
+    }).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      if (win) win.location = url; else window.location = url;
+    }).catch(function () {
+      if (win) win.close();
+      fillReport();
+      window.print();
+    });
+  });
 
   async function reportPdf() {
     fillReport();
@@ -226,16 +243,24 @@
       label.textContent = S.sending;
       try {
         await saveNow();
-        var blob = await reportPdf();
-        var form = new FormData();
-        form.append('resultFile', new File([blob], 'result-' + (data.order.qrCode || orderId) + '.pdf', { type: 'application/pdf' }));
-        var up = await fetch(API + '/orders/' + orderId + '/upload-result', { method: 'POST', body: form }).then(function (r) { return r.json(); });
-        if (!up.success) throw new Error(up.message);
-        var body = valuesPayload();
-        body.reportUrl = up.data.fileUrl;
-        var res = await fetch(API + '/orders/' + orderId + '/results/approve', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-        }).then(function (r) { return r.json(); });
+        var approve = function (body) {
+          return fetch(API + '/orders/' + orderId + '/results/approve', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+          }).then(function (r) { return r.json(); });
+        };
+        // The server builds the report PDF itself.
+        var res = await approve(valuesPayload());
+        if (!res.success && res.code === 'pdfUnavailable') {
+          // Fallback: build the PDF in the browser and send it with the approval.
+          var blob = await reportPdf();
+          var form = new FormData();
+          form.append('resultFile', new File([blob], 'result-' + (data.order.qrCode || orderId) + '.pdf', { type: 'application/pdf' }));
+          var up = await fetch(API + '/orders/' + orderId + '/upload-result', { method: 'POST', body: form }).then(function (r) { return r.json(); });
+          if (!up.success) throw new Error(up.message);
+          var body = valuesPayload();
+          body.reportUrl = up.data.fileUrl;
+          res = await approve(body);
+        }
         if (!res.success) throw new Error(res.missing ? S.missing : res.message);
         data = res.data;
         renderRows();

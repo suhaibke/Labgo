@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<title><%= order.code %> — <%= patient.name %></title>
+<style>
+<%- fontFaces %>
+@page { size: A4; margin: 11mm 12mm 15mm; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: "Inter", "IBM Plex Sans Arabic", sans-serif; font-size: 10pt; color: #16181d; line-height: 1.38;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.ar { font-family: "IBM Plex Sans Arabic", "Inter", sans-serif; direction: rtl; unicode-bidi: isolate; }
+.auto { unicode-bidi: plaintext; }
+:root { --accent: <%= accent %>; --muted: #6b7280; --line: #e5e7eb; --soft: #f5f6f8; --high: #c81e1e; --low: #1d4ed8; }
+
+/* header */
+.head { display: flex; align-items: center; gap: 14px; padding-bottom: 9px; border-bottom: 2.5px solid var(--accent); }
+.logo { width: 54px; height: 54px; object-fit: contain; border-radius: 12px; }
+.logo-ph { width: 54px; height: 54px; border-radius: 12px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22pt; }
+.lab { flex: 1; min-width: 0; }
+.lab h1 { text-align: left; margin: 0; font-size: 17pt; font-weight: 800; letter-spacing: -.2px; }
+.lab .ar-name { font-size: 11pt; font-weight: 600; color: #374151; text-align: left; }
+.lab .meta { margin-top: 3px; font-size: 8.5pt; color: var(--muted); }
+.lab .meta span + span::before { content: "  •  "; }
+.title { text-align: right; }
+.title b { display: block; font-size: 12pt; letter-spacing: 1.5px; color: var(--accent); }
+.title .ar { display: block; font-size: 10pt; font-weight: 600; color: #374151; }
+
+/* patient */
+.patient { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 10px 0 10px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.patient div { padding: 5px 10px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); }
+.patient div:nth-child(3n) { border-right: 0; }
+.patient div:nth-last-child(-n+3) { border-bottom: 0; }
+.patient dt { font-size: 7.5pt; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.patient dt .ar { text-transform: none; letter-spacing: 0; float: right; font-size: 7.5pt; }
+.patient dd { margin: 1px 0 0; font-weight: 700; font-size: 10pt; text-align: left; }
+.patient .main dd { font-size: 12pt; }
+.patient .pid dd { color: var(--accent); }
+
+/* results */
+table { width: 100%; border-collapse: collapse; }
+thead { display: table-header-group; }
+thead th { font-size: 7.5pt; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); text-align: left; padding: 4px 8px; border-bottom: 1.5px solid #d1d5db; font-weight: 700; }
+thead th .ar { display: block; text-transform: none; letter-spacing: 0; font-weight: 600; text-align: left; direction: rtl; }
+tr { page-break-inside: avoid; }
+td { padding: 4px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+td.test b { font-weight: 600; }
+td.test .ar { display: block; font-size: 8pt; line-height: 1.25; color: var(--muted); text-align: left; }
+td.val { font-weight: 800; font-size: 11pt; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.unit, td.range { color: #374151; font-size: 9.5pt; white-space: nowrap; }
+td.flag { width: 46px; text-align: center; }
+tr.high td.val { color: var(--high); }
+tr.low td.val { color: var(--low); }
+tr.high td, tr.low td { background: #fbfbfc; }
+.pill { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 999px; font-size: 8pt; font-weight: 800; color: #fff; }
+.pill.H { background: var(--high); }
+.pill.L { background: var(--low); }
+tr.cat td { background: var(--soft); font-weight: 800; font-size: 8.5pt; letter-spacing: .5px; text-transform: uppercase; color: #374151; padding: 5px 8px; border-bottom: 0; }
+.legend { margin-top: 6px; font-size: 8pt; color: var(--muted); }
+
+/* notes + sign-off */
+.note { margin-top: 10px; padding: 8px 12px; background: var(--soft); border-radius: 10px; border-left: 3px solid var(--accent); page-break-inside: avoid; }
+.note b { display: block; font-size: 8pt; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.note p { margin: 0; white-space: pre-wrap; }
+.sign { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-top: 16px; page-break-inside: avoid; }
+.sign .who b { display: block; font-size: 11pt; }
+.sign .who span { font-size: 8.5pt; color: var(--muted); }
+.sign .line { width: 190px; border-top: 1px solid #9ca3af; margin-bottom: 4px; }
+.qr { display: flex; align-items: center; gap: 8px; text-align: right; }
+.qr img { width: 68px; height: 68px; }
+.qr small { display: block; font-size: 7.5pt; color: var(--muted); max-width: 150px; }
+.end { margin-top: 12px; text-align: center; font-size: 8pt; color: var(--muted); letter-spacing: 2px; }
+.draft { position: fixed; top: 40%; left: 0; right: 0; text-align: center; font-size: 80pt; font-weight: 800; color: rgba(200, 30, 30, .07); transform: rotate(-24deg); z-index: -1; }
+</style>
+</head>
+<body>
+<% if (!approved) { %><div class="draft">DRAFT</div><% } %>
+
+<header class="head">
+  <% if (logo) { %><img class="logo" src="<%= logo %>" alt=""><% } else { %><div class="logo-ph"><%= (lab.name || 'L').trim().charAt(0).toUpperCase() %></div><% } %>
+  <div class="lab">
+    <h1 class="auto"><%= lab.name %></h1>
+    <% if (lab.nameAr && lab.nameAr !== lab.name) { %><div class="ar ar-name"><%= lab.nameAr %></div><% } %>
+    <div class="meta">
+      <% [lab.address, lab.phone, lab.email, lab.licenseNumber ? 'License ' + lab.licenseNumber : '', lab.accreditation].filter(Boolean).forEach(function (m) { %><span class="auto"><%= m %></span><% }); %>
+    </div>
+  </div>
+  <div class="title"><b>LABORATORY REPORT</b><span class="ar">تقرير نتائج التحاليل</span></div>
+</header>
+
+<dl class="patient">
+  <div class="main"><dt>Patient <span class="ar">المريض</span></dt><dd class="auto"><%= patient.name %></dd></div>
+  <div class="pid"><dt>Patient ID <span class="ar">رقم المريض</span></dt><dd><%= patient.no ? '#' + patient.no : '—' %></dd></div>
+  <div><dt>Gender / Age <span class="ar">الجنس / العمر</span></dt><dd><%= patient.gender || '—' %><%= patient.age ? ' / ' + patient.age : '' %></dd></div>
+  <div><dt>Order No. <span class="ar">رقم الطلب</span></dt><dd><%= order.code %></dd></div>
+  <div><dt>Referred by <span class="ar">الطبيب</span></dt><dd class="auto"><%= order.doctor || '—' %></dd></div>
+  <div><dt>Sample <span class="ar">العينة</span></dt><dd><%= order.sample || '—' %></dd></div>
+  <div><dt>Collected <span class="ar">تاريخ السحب</span></dt><dd><%= order.collectedAt %></dd></div>
+  <div><dt>Reported <span class="ar">تاريخ التقرير</span></dt><dd><%= order.reportedAt %></dd></div>
+  <div><dt>Phone <span class="ar">الهاتف</span></dt><dd><%= patient.phone || '—' %></dd></div>
+</dl>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:36%">Test<span class="ar">التحليل</span></th>
+      <th style="width:16%">Result<span class="ar">النتيجة</span></th>
+      <th style="width:8%"></th>
+      <th style="width:14%">Unit<span class="ar">الوحدة</span></th>
+      <th style="width:26%">Reference range<span class="ar">المعدل الطبيعي</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% groups.forEach(function (g) { %>
+      <% if (groups.length > 1) { %><tr class="cat"><td colspan="5"><%= g.category %></td></tr><% } %>
+      <% g.rows.forEach(function (r) { %>
+        <tr class="<%= r.flag %>">
+          <td class="test"><b><%= r.name %></b><% if (r.nameAr) { %><span class="ar"><%= r.nameAr %></span><% } %></td>
+          <td class="val auto"><%= r.value || '—' %></td>
+          <td class="flag"><% if (r.flag === 'high') { %><span class="pill H">H</span><% } else if (r.flag === 'low') { %><span class="pill L">L</span><% } %></td>
+          <td class="unit"><%= r.unit %></td>
+          <td class="range auto"><%= r.range || '—' %></td>
+        </tr>
+      <% }); %>
+    <% }); %>
+  </tbody>
+</table>
+<div class="legend">H = above the reference range · L = below the reference range &nbsp;&nbsp; <span class="ar">H = أعلى من الطبيعي · L = أقل من الطبيعي</span></div>
+
+<% if (comment) { %>
+<div class="note"><b>Lab note <span class="ar">ملاحظة المختبر</span></b><p class="auto"><%= comment %></p></div>
+<% } %>
+
+<div class="sign">
+  <div class="who">
+    <div class="line"></div>
+    <b class="auto"><%= approvedBy || '—' %></b>
+    <span><%= approved ? 'Electronically approved · ' + order.reportedAt : 'Not approved yet — draft copy' %></span>
+  </div>
+  <% if (qr) { %>
+  <div class="qr">
+    <small>Scan to verify this report<br><span class="ar">امسح للتحقق من صحة التقرير</span></small>
+    <img src="<%= qr %>" alt="">
+  </div>
+  <% } %>
+</div>
+
+<div class="end">— END OF REPORT —</div>
+</body>
+</html>
