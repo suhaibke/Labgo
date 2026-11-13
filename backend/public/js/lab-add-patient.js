@@ -41,6 +41,11 @@
   function doctors() { try { return JSON.parse(localStorage.getItem(DOCTORS_KEY) || '[]'); } catch (e) { return []; } }
   $('apDoctors').innerHTML = doctors().map(function (d) { return '<option value="' + esc(d) + '">'; }).join('');
 
+  // Name first, then Enter moves on to the phone.
+  $('apName').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); $('apPhone').focus(); }
+  });
+
   // ---------- phone autofill ----------
   var lookupTimer = null;
   $('apPhone').addEventListener('input', function () {
@@ -155,8 +160,8 @@
     e.preventDefault();
     $('apError').hidden = true;
     var phone = $('apPhone').value.trim(), name = $('apName').value.trim();
-    if (phone.replace(/\D/g, '').length < 10) return fail(S.needPhone, 'apPhone');
     if (!name) return fail(S.needName, 'apName');
+    if (phone.replace(/\D/g, '').length < 10) return fail(S.needPhone, 'apPhone');
     if (!lines().length) return fail(S.needTests, 'apSearch');
 
     var btn = $('apSubmit'), txt = btn.querySelector('span'), old = txt.textContent;
@@ -209,10 +214,10 @@
     renderTotals();
     $('apDone').hidden = true;
     $('apForm').hidden = false;
-    $('apPhone').focus();
+    $('apName').focus();
   });
 
   renderPicker();
   renderTotals();
-  $('apPhone').focus();
+  $('apName').focus();
 })();

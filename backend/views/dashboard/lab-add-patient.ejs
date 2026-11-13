@@ -24,6 +24,11 @@
                     <h2 class="la-h2 ap-title"><svg class="ic"><use href="#i-user"/></svg><%= __('walkIn.patient') %></h2>
 
                     <label class="ap-field">
+                        <span class="la-label"><%= __('walkIn.fullName') %> <b class="ap-req">*</b></span>
+                        <input class="la-input" id="apName" required>
+                    </label>
+
+                    <label class="ap-field">
                         <span class="la-label"><%= __('walkIn.phone') %> <b class="ap-req">*</b></span>
                         <span class="ap-input-wrap">
                             <svg class="ic"><use href="#i-phone"/></svg>
@@ -31,11 +36,6 @@
                         </span>
                         <small class="ap-hint" id="apPhoneHint"><%= __('walkIn.phoneOrId') %></small>
                         <small class="ap-found" id="apFound" hidden><svg class="ic"><use href="#i-circle-check"/></svg><%= __('walkIn.knownPatient') %><b id="apFoundNo" dir="ltr"></b></small>
-                    </label>
-
-                    <label class="ap-field">
-                        <span class="la-label"><%= __('walkIn.fullName') %> <b class="ap-req">*</b></span>
-                        <input class="la-input" id="apName" required>
                     </label>
 
                     <div class="ap-row2">
