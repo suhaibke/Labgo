@@ -22,7 +22,10 @@ class LabApi {
 
   bool get signedIn => _token != null;
 
-  Uri _uri(String path) => Uri.parse('${base.replaceAll(RegExp(r'/+$'), '')}$path');
+  /// API_BASE=same-origin: the web build talks to the server that serves it.
+  Uri _uri(String path) => base == 'same-origin'
+      ? Uri.base.resolve(path)
+      : Uri.parse('${base.replaceAll(RegExp(r'/+$'), '')}$path');
 
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
