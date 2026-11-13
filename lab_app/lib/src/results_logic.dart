@@ -102,8 +102,9 @@ List<ResultRow> resultRows(Patient p) {
     for (final t in p.tests)
       () {
         CatalogTest? c;
+        final name = kCatalogAliases[t] ?? t;
         for (final x in kCatalog) {
-          if (x.name == t) c = x;
+          if (x.name == name) c = x;
         }
         final row = normalRowFor(c, p);
         final range = (c != null && c.normalText.trim().isNotEmpty)

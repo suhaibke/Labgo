@@ -157,3 +157,13 @@ test('a placeholder patient passes validation without a city or email', async ()
     const u = new User({ name: 'Walk-in', phone: '07701230000', password: 'x', role: 'patient', labPlaceholder: true });
     await u.validate();
 });
+
+test('a company patient pays the B2B price when the lab set one', async (t) => {
+    stubDb(t);
+    const b2bLab = { ...lab, tests: [{ ...lab.tests[0], priceB2B: 9000 }, lab.tests[1]] };
+    const order = await createWalkInOrder(b2bLab, staffId, {
+        name: 'Clinic Patient', phone: '07701239999', company: 'Al-Noor Clinic', testIds: [String(t1), String(t2)],
+    });
+    assert.equal(order.tests[0].price, 9000);
+    assert.equal(order.tests[1].price, 45000, 'no B2B price -> normal price');
+});

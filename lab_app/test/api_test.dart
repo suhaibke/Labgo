@@ -20,6 +20,10 @@ void main() {
             {'ageFrom': '0', 'ageTo': '120', 'ageUnit': 'Y', 'gender': 'Female', 'min': '12', 'max': '15.5'},
           ],
         },
+        {
+          'id': 't1', 'name': 'الهيموغلوبين', 'alias': true, 'price': 5000, 'priceB2B': 5000, 'category': 'General', 'on': false,
+          'units': 'g/dL', 'normalText': '', 'ranges': [],
+        },
       ],
       'packages': [
         {'id': 'p1', 'code': '', 'name': 'Full', 'category': 'General', 'aliases': ['Full'], 'tests': ['Hemoglobin'], 'price': 9000, 'priceB2B': 9000, 'active': true},
@@ -34,6 +38,8 @@ void main() {
       ],
     });
     expect(b.testIds['Hemoglobin'], 't1');
+    expect(b.catalog.length, 1, reason: 'Arabic names are not separate tests');
+    expect(b.aliases['الهيموغلوبين'], 'Hemoglobin');
     expect(b.catalog.single.ranges.single.max, '15.5');
     expect(b.packages.single.tests, ['Hemoglobin']);
     final p = b.patients.single;

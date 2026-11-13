@@ -58,7 +58,7 @@ function packageLines(pkg, tests) {
     });
 }
 
-async function resolveTests(lab, testIds = [], packageIds = []) {
+async function resolveTests(lab, testIds = [], packageIds = [], b2b = false) {
     const labTests = lab.tests || [];
     const byId = new Map(labTests.map((t) => [String(t._id), t]));
     const lines = [];
@@ -79,7 +79,9 @@ async function resolveTests(lab, testIds = [], packageIds = []) {
         const t = byId.get(String(id));
         if (!t || seen.has(String(t._id))) continue;
         seen.add(String(t._id));
-        lines.push({ testId: t._id, testName: t.name, testCode: t.code, category: t.category || 'General', price: t.price || 0 });
+        // Companies/clinics pay the B2B price when the lab set one.
+        const price = b2b && t.priceB2B > 0 ? t.priceB2B : (t.price || 0);
+        lines.push({ testId: t._id, testName: t.name, testCode: t.code, category: t.category || 'General', price });
     }
     return lines;
 }
@@ -136,7 +138,7 @@ async function createWalkInOrder(lab, staffUserId, body = {}) {
 
     const testIds = Array.isArray(body.testIds) ? body.testIds.map(String) : [];
     const packageIds = Array.isArray(body.packageIds) ? body.packageIds.map(String) : [];
-    const tests = await resolveTests(lab, testIds, packageIds);
+    const tests = await resolveTests(lab, testIds, packageIds, Boolean(String(body.company || '').trim()));
     if (!tests.length) throw new WalkInError('Choose at least one test');
 
     const subtotal = tests.reduce((sum, t) => sum + t.price, 0);

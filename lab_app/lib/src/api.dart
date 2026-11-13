@@ -149,6 +149,9 @@ class LabApi {
   Future<Map<String, dynamic>> transfers() => _data('GET', '/lab/api/app/transfers');
   Future<Map<String, dynamic>> addTransfer(Map<String, dynamic> body) => _data('POST', '/lab/api/app/transfers', body);
 
+  Future<Map<String, dynamic>> saveTest(Map<String, dynamic> body) => _data('PUT', '/lab/api/app/tests', body);
+  Future<Map<String, dynamic>> savePackage(Map<String, dynamic> body) => _data('PUT', '/lab/api/app/packages', body);
+
   /// 10-digit Iraqi mobiles typed without the leading 0 get it back.
   static String normalizePhone(String v) {
     final t = v.trim();
@@ -172,15 +175,28 @@ class Bootstrap {
   final Map<String, dynamic> user, lab;
   final List<CatalogTest> catalog;
   final Map<String, String> testIds; // test name -> server id
+  final Map<String, String> aliases; // other name -> test name
   final List<LabPackage> packages;
   final List<Patient> patients;
-  Bootstrap(this.user, this.lab, this.catalog, this.testIds, this.packages, this.patients);
+  Bootstrap(this.user, this.lab, this.catalog, this.testIds, this.aliases, this.packages, this.patients);
 
   factory Bootstrap.fromJson(Map<String, dynamic> j) {
     final ids = <String, String>{};
     final catalog = <CatalogTest>[];
+    final aliases = <String, String>{};
+    final nameById = <String, String>{};
     for (final raw in (j['catalog'] as List)) {
       final c = raw as Map<String, dynamic>;
+      if (c['alias'] != true) nameById[c['id'] as String] = c['name'] as String;
+    }
+    for (final raw in (j['catalog'] as List)) {
+      final c = raw as Map<String, dynamic>;
+      // Another name of a real test: only used to find its ranges.
+      if (c['alias'] == true) {
+        final real = nameById[c['id']];
+        if (real != null) aliases[c['name'] as String] = real;
+        continue;
+      }
       ids[c['name'] as String] = c['id'] as String;
       catalog.add(
         CatalogTest(
@@ -227,6 +243,7 @@ class Bootstrap {
       j['lab'] as Map<String, dynamic>,
       catalog,
       ids,
+      aliases,
       packages,
       [
         for (final p in (j['patients'] as List))

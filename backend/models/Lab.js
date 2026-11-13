@@ -161,6 +161,10 @@ const LabSchema = new mongoose.Schema({
             trim: true,
             default: null,
         },
+        // Price for companies/clinics (B2B); 0 = same as price.
+        priceB2B: { type: Number, min: 0, default: 0 },
+        // Offered or not (the lab app's on/off switch); hidden from new orders when off.
+        isActive: { type: Boolean, default: true },
         // Result entry: unit and normal ranges used to flag values High/Low.
         // normalText is shown instead of min-max for text results (e.g. "Negative").
         unit: { type: String, trim: true, default: '' },

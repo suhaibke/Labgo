@@ -90,6 +90,10 @@ final kCatalog = <CatalogTest>[
 ];
 
 /// Mutable so Settings → Packages can edit it (phase 1, in memory).
+/// Other names of a test (e.g. the Arabic name stored on orders from the
+/// patient app) -> the catalog name. Filled from the server.
+final kCatalogAliases = <String, String>{};
+
 final kPackages = <LabPackage>[
   LabPackage(
     id: 'pkg-hair',

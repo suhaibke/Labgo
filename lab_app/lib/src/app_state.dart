@@ -143,6 +143,9 @@ class AppState extends ChangeNotifier {
       ..clear()
       ..addAll(b.packages);
     testIds = b.testIds;
+    kCatalogAliases
+      ..clear()
+      ..addAll(b.aliases);
     patients = b.patients;
     final userName = (b.user['name'] ?? '') as String;
     if (userName.isNotEmpty) {
@@ -278,6 +281,8 @@ class AppState extends ChangeNotifier {
       'password': ('كلمة المرور 6 أحرف على الأقل', 'وشەی نهێنی لانیکەم ٦ پیت', 'Password must be at least 6 characters'),
       'phone': ('أدخل رقم هاتف صحيح', 'ژمارەیەکی دروست بنووسە', 'Enter a valid phone number'),
       'roleInUse': ('انقل الموظفين من هذا الدور أولاً', 'سەرەتا کارمەندانی ئەم ڕۆڵە بگوازەرەوە', 'Move the staff using this role first'),
+      'duplicate': ('يوجد تحليل بنفس الاسم', 'پشکنینێک بەم ناوە هەیە', 'A test with this name already exists'),
+      'packageTests': ('الباقة تحتاج تحليلين على الأقل', 'پاکێج لانیکەم دوو پشکنینی دەوێت', 'A package needs at least 2 tests'),
       'self': ('لا يمكنك تغيير دورك أو إيقاف حسابك', 'ناتوانیت ڕۆڵی خۆت بگۆڕیت', 'You cannot change your own role or disable yourself'),
     };
     final m = msgs[code];
@@ -1189,11 +1194,34 @@ class AppState extends ChangeNotifier {
     final i = kCatalog.indexWhere((c) => c.name == updated.name);
     if (i >= 0) kCatalog[i] = updated;
     notifyListeners();
+    // The editor saves on every change: send once typing stops.
+    if (LabApi.enabled && testIds[updated.name] != null) {
+      _testTimers[updated.name]?.cancel();
+      _testTimers[updated.name] = Timer(const Duration(milliseconds: 900), () {
+        final latest = kCatalog.firstWhere((c) => c.name == updated.name, orElse: () => updated);
+        LabApi.instance
+            .saveTest(_testJson(latest, id: testIds[latest.name]))
+            .catchError((Object e) { _serverError(e); return <String, dynamic>{}; });
+      });
+    }
   }
 
   void addTest(CatalogTest test) {
     kCatalog.add(test);
-    toast(w('saved'));
+    if (!LabApi.enabled) {
+      toast(w('saved'));
+      return;
+    }
+    notifyListeners();
+    LabApi.instance.saveTest(_testJson(test)).then((data) {
+      final saved = data['test'] as Map?;
+      if (saved != null) testIds[test.name] = '${saved['id']}';
+      toast(w('saved'));
+    }).catchError((Object e) {
+      kCatalog.removeWhere((c) => identical(c, test));
+      notifyListeners();
+      _serverError(e);
+    });
   }
 
   void savePackage(LabPackage p) {
@@ -1203,14 +1231,68 @@ class AppState extends ChangeNotifier {
     } else {
       kPackages.add(p);
     }
-    toast(w('saved'));
+    if (!LabApi.enabled) {
+      toast(w('saved'));
+      return;
+    }
+    notifyListeners();
+    LabApi.instance.savePackage({
+      'id': p.id,
+      'name': p.name,
+      'category': p.category,
+      'tests': p.tests,
+      'price': p.price,
+      'active': p.active,
+    }).then((data) {
+      final id = '${data['id'] ?? p.id}';
+      if (id != p.id) {
+        final j = kPackages.indexWhere((x) => x.id == p.id);
+        if (j >= 0) {
+          kPackages[j] = LabPackage(
+            id: id, code: p.code, name: p.name, category: p.category, aliases: p.aliases, tests: p.tests,
+            price: p.price, priceB2B: p.priceB2B, active: p.active, isOffer: p.isOffer, oldPrice: p.oldPrice,
+            startDate: p.startDate, endDate: p.endDate,
+          );
+        }
+      }
+      toast(w('saved'));
+    }).catchError((Object e) {
+      if (i < 0) kPackages.removeWhere((x) => x.id == p.id);
+      notifyListeners();
+      _serverError(e);
+    });
   }
 
   void togglePackageActive(LabPackage p) {
     final i = kPackages.indexWhere((x) => x.id == p.id);
     if (i >= 0) kPackages[i] = p.copyWith(active: !p.active);
     notifyListeners();
+    if (LabApi.enabled) {
+      LabApi.instance.savePackage({'id': p.id, 'active': !p.active}).catchError((Object e) {
+        if (i >= 0) kPackages[i] = p;
+        notifyListeners();
+        _serverError(e);
+        return <String, dynamic>{};
+      });
+    }
   }
+
+  final Map<String, Timer> _testTimers = {};
+
+  Map<String, dynamic> _testJson(CatalogTest t, {String? id}) => {
+    if (id != null) 'id': id,
+    'name': t.name,
+    'price': t.price,
+    'priceB2B': t.priceB2B,
+    'category': t.category,
+    'on': t.on,
+    'units': t.units,
+    'normalText': t.normalText,
+    'ranges': [
+      for (final r in t.ranges)
+        {'ageFrom': r.ageFrom, 'ageTo': r.ageTo, 'ageUnit': r.ageUnit, 'gender': r.gender, 'min': r.min, 'max': r.max},
+    ],
+  };
 
   void addWasteTransfer(WasteTransfer t) {
     if (LabApi.enabled) {
@@ -1341,6 +1423,9 @@ class AppState extends ChangeNotifier {
     _toastTimer?.cancel();
     _labTimer?.cancel();
     _rolesTimer?.cancel();
+    for (final tm in _testTimers.values) {
+      tm.cancel();
+    }
     for (final t in _printTimers) {
       t.cancel();
     }

@@ -9,6 +9,8 @@ const ExternalTransfer = require('../../models/ExternalTransfer');
 const { summary: financeSummary, labShare } = require('../../services/labFinanceService');
 const { buildCommonFields, resolveOrderTests, ExternalTransferError } = require('../../services/externalTransferService');
 const { cleanLicenseHolders } = require('../../helpers/license-holders');
+const TEST_CATEGORIES = Lab.schema.path('tests').schema.path('category').enumValues;
+const PACKAGE_CATEGORIES = Package.schema.path('category').enumValues;
 const { decorateOrderWithPatientInfo } = require('../../helpers/order-patient-info');
 
 const router = express.Router();
@@ -78,7 +80,7 @@ function toCatalog(tests) {
     const out = [];
     for (const t of tests || []) {
         const base = {
-            id: String(t._id), name: t.name, price: t.price || 0, priceB2B: t.price || 0,
+            id: String(t._id), name: t.name, price: t.price || 0, priceB2B: t.priceB2B > 0 ? t.priceB2B : (t.price || 0),
             category: t.category || 'General', units: t.unit || '', normalText: t.normalText || '', ranges: rangeRows(t),
         };
         out.push({ ...base, on: t.isActive !== false });
@@ -257,6 +259,89 @@ router.post('/api/app/transfers', async (req, res) => {
         if (error instanceof ExternalTransferError) return res.status(error.statusCode).json({ success: false, message: error.message });
         console.error('App transfer error:', error);
         res.status(500).json({ success: false, message: 'Error saving the transfer' });
+    }
+});
+
+// ---------- tests and packages edited in the app ----------
+function num(v) {
+    if (v === null || v === undefined || String(v).trim() === '') return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+}
+
+// Create (no id) or update a lab test from the app's CatalogTest shape.
+router.put('/api/app/tests', async (req, res) => {
+    try {
+        const b = req.body || {};
+        const lab = await Lab.findById(req.lab._id);
+        let test = b.id ? lab.tests.id(b.id) : null;
+        if (b.id && !test) return res.status(404).json({ success: false, message: 'Test not found' });
+        const name = String(b.name || '').trim().slice(0, 120);
+        if (!test) {
+            if (!name) return res.status(400).json({ success: false, message: 'Test name is required' });
+            if (lab.tests.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
+                return res.status(409).json({ success: false, message: 'A test with this name already exists', code: 'duplicate' });
+            }
+            lab.tests.push({ name, code: `T-${Date.now().toString(36).toUpperCase()}`, price: Math.max(0, Math.round(num(b.price) || 0)), category: 'General' });
+            test = lab.tests[lab.tests.length - 1];
+        }
+        if (num(b.price) !== null) test.price = Math.max(0, Math.round(num(b.price)));
+        if (num(b.priceB2B) !== null) test.priceB2B = Math.max(0, Math.round(num(b.priceB2B)));
+        if (typeof b.category === 'string' && TEST_CATEGORIES.includes(b.category)) test.category = b.category;
+        if (typeof b.on === 'boolean') test.isActive = b.on;
+        if (typeof b.units === 'string') test.unit = b.units.trim().slice(0, 40);
+        if (typeof b.normalText === 'string') test.normalText = b.normalText.trim().slice(0, 200);
+        if (Array.isArray(b.ranges)) {
+            test.ranges = b.ranges.slice(0, 20).map((r) => ({
+                gender: ['Both', 'Male', 'Female'].includes(r.gender) ? r.gender : 'Both',
+                ageFrom: Math.max(0, num(r.ageFrom) ?? 0),
+                ageTo: Math.max(0, num(r.ageTo) ?? 120),
+                ageUnit: ['Y', 'M', 'D'].includes(r.ageUnit) ? r.ageUnit : 'Y',
+                min: num(r.min),
+                max: num(r.max),
+            }));
+        }
+        test.lastUpdatedBy = req.user._id;
+        await lab.save();
+        res.json({ success: true, data: { test: toCatalog([test.toObject ? test.toObject() : test])[0] } });
+    } catch (error) {
+        if (error.name === 'ValidationError') return res.status(400).json({ success: false, message: error.message });
+        console.error('App test save error:', error);
+        res.status(500).json({ success: false, message: 'Error saving the test' });
+    }
+});
+
+// Create (no id or a local id) or update a package; tests come as names.
+router.put('/api/app/packages', async (req, res) => {
+    try {
+        const b = req.body || {};
+        const byName = new Map((req.lab.tests || []).map((t) => [t.name, String(t._id)]));
+        (req.lab.tests || []).forEach((t) => { if (t.nameAr) byName.set(t.nameAr, String(t._id)); });
+        const testIds = [...new Set((Array.isArray(b.tests) ? b.tests : []).map((n) => byName.get(n)).filter(Boolean))];
+        const isServerId = /^[a-f0-9]{24}$/i.test(String(b.id || ''));
+        let pkg = isServerId ? await Package.findOne({ _id: b.id, labId: req.lab._id }) : null;
+        if (isServerId && !pkg) return res.status(404).json({ success: false, message: 'Package not found' });
+        if (!pkg) {
+            const name = String(b.name || '').trim();
+            if (!name || testIds.length < 2) {
+                return res.status(400).json({ success: false, message: 'A package needs a name and at least 2 tests', code: 'packageTests' });
+            }
+            pkg = new Package({ labId: req.lab._id, name: name.slice(0, 120), testIds, price: Math.max(0, Math.round(num(b.price) || 0)) });
+        }
+        if (typeof b.name === 'string' && b.name.trim()) pkg.name = b.name.trim().slice(0, 120);
+        if (Array.isArray(b.tests)) {
+            if (testIds.length < 2) return res.status(400).json({ success: false, message: 'A package needs at least 2 tests', code: 'packageTests' });
+            pkg.testIds = testIds;
+        }
+        if (num(b.price) !== null) pkg.price = Math.max(0, Math.round(num(b.price)));
+        if (typeof b.category === 'string' && PACKAGE_CATEGORIES.includes(b.category)) pkg.category = b.category;
+        if (typeof b.active === 'boolean') pkg.isActive = b.active;
+        await pkg.save();
+        res.json({ success: true, data: { id: String(pkg._id) } });
+    } catch (error) {
+        if (error.name === 'ValidationError') return res.status(400).json({ success: false, message: error.message });
+        console.error('App package save error:', error);
+        res.status(500).json({ success: false, message: 'Error saving the package' });
     }
 });
 
