@@ -76,9 +76,9 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.labgollc.labgolab
       vars:
-        # The LabGo server the app talks to (https://...). Empty = demo mode
+        # The LabGo server the app talks to (https://...). "demo" = demo mode
         # with sample data, handy for trying the screens before the server is ready.
-        LAB_API_BASE: ""
+        LAB_API_BASE: demo
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -89,9 +89,11 @@ workflows:
         script: xcode-project use-profiles
       - name: Flutter build ipa for distribution
         script: |
+          SERVER=""
+          if [ "$LAB_API_BASE" != "demo" ]; then SERVER="--dart-define=API_BASE=$LAB_API_BASE"; fi
           flutter build ipa --release \
             --build-number=$PROJECT_BUILD_NUMBER \
-            --dart-define=API_BASE=$LAB_API_BASE \
+            $SERVER \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       # Both forms, so the IPA is found whether paths start at the repo or lab_app/
