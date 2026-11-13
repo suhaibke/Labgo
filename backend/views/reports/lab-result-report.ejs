@@ -16,18 +16,25 @@ body {
 .auto { unicode-bidi: plaintext; }
 :root { --accent: <%= accent %>; --muted: #6b7280; --line: #e5e7eb; --soft: #f5f6f8; --high: #c81e1e; --low: #1d4ed8; }
 
-/* header */
-.head { display: flex; align-items: center; gap: 14px; padding-bottom: 9px; border-bottom: 2.5px solid var(--accent); }
-.logo { width: 54px; height: 54px; object-fit: contain; border-radius: 12px; }
-.logo-ph { width: 54px; height: 54px; border-radius: 12px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22pt; }
-.lab { flex: 1; min-width: 0; }
-.lab h1 { text-align: left; margin: 0; font-size: 17pt; font-weight: 800; letter-spacing: -.2px; }
-.lab .ar-name { font-size: 11pt; font-weight: 600; color: #374151; text-align: left; }
-.lab .meta { margin-top: 3px; font-size: 8.5pt; color: var(--muted); }
-.lab .meta span + span::before { content: "  •  "; }
-.title { text-align: right; }
-.title b { display: block; font-size: 12pt; letter-spacing: 1.5px; color: var(--accent); }
-.title .ar { display: block; font-size: 10pt; font-weight: 600; color: #374151; }
+/* header: lab identity on the left, contact details on the right */
+.head { display: flex; align-items: stretch; justify-content: space-between; gap: 18px; padding-bottom: 10px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1.25; }
+.logo-box { width: 66px; height: 66px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; background: #fff; }
+.logo { max-width: 58px; max-height: 58px; object-fit: contain; }
+.logo-ph { width: 100%; height: 100%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 24pt; }
+.lab h1 { text-align: left; margin: 0; font-size: 16pt; font-weight: 800; letter-spacing: -.2px; line-height: 1.15; }
+.lab .ar-name { font-size: 10.5pt; font-weight: 700; color: #374151; text-align: left; margin-top: 1px; }
+.lab .tagline { margin-top: 4px; font-size: 8pt; color: var(--accent); font-weight: 700; letter-spacing: .3px; }
+.contact { flex: 1; display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-content: center; font-size: 8pt; padding-left: 14px; border-left: 1px solid var(--line); }
+.contact dt { color: var(--muted); text-transform: uppercase; letter-spacing: .4px; font-size: 7pt; padding-top: 1px; }
+.contact dd { margin: 0; color: #1f2937; font-weight: 600; }
+/* title bar with the order barcode */
+.titlebar { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--soft); border-top: 2.5px solid var(--accent); border-radius: 0 0 10px 10px; padding: 8px 12px; }
+.titlebar .t b { display: block; font-size: 12.5pt; letter-spacing: 2px; color: #111; }
+.titlebar .t .ar { display: block; font-size: 9.5pt; font-weight: 600; color: #4b5563; text-align: left; }
+.barcode { text-align: center; }
+.barcode img { height: 34px; width: auto; display: block; }
+.barcode span { display: block; font-size: 7.5pt; letter-spacing: 2px; color: #374151; margin-top: 1px; font-weight: 600; }
 
 /* patient */
 .patient { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 10px 0 10px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -80,16 +87,24 @@ tr.cat td { background: var(--soft); font-weight: 800; font-size: 8.5pt; letter-
 <% if (!approved) { %><div class="draft">DRAFT</div><% } %>
 
 <header class="head">
-  <% if (logo) { %><img class="logo" src="<%= logo %>" alt=""><% } else { %><div class="logo-ph"><%= (lab.name || 'L').trim().charAt(0).toUpperCase() %></div><% } %>
-  <div class="lab">
-    <h1 class="auto"><%= lab.name %></h1>
-    <% if (lab.nameAr && lab.nameAr !== lab.name) { %><div class="ar ar-name"><%= lab.nameAr %></div><% } %>
-    <div class="meta">
-      <% [lab.address, lab.phone, lab.email, lab.licenseNumber ? 'License ' + lab.licenseNumber : '', lab.accreditation].filter(Boolean).forEach(function (m) { %><span class="auto"><%= m %></span><% }); %>
+  <div class="brand">
+    <div class="logo-box"><% if (logo) { %><img class="logo" src="<%= logo %>" alt=""><% } else { %><div class="logo-ph"><%= (lab.name || 'L').trim().charAt(0).toUpperCase() %></div><% } %></div>
+    <div class="lab">
+      <h1 class="auto"><%= lab.name %></h1>
+      <% if (lab.nameAr && lab.nameAr !== lab.name) { %><div class="ar ar-name"><%= lab.nameAr %></div><% } %>
+      <% if (lab.tagline) { %><div class="tagline"><%= lab.tagline %></div><% } %>
     </div>
   </div>
-  <div class="title"><b>LABORATORY REPORT</b><span class="ar">تقرير نتائج التحاليل</span></div>
+  <dl class="contact">
+    <% [['Address', lab.address], ['Phone', lab.phone], ['Email', lab.email], ['Website', lab.website], ['License', lab.licenseNumber], ['Accreditation', lab.accreditation]].filter(function (r) { return r[1]; }).forEach(function (r) { %>
+      <dt><%= r[0] %></dt><dd class="auto"><%= r[1] %></dd>
+    <% }); %>
+  </dl>
 </header>
+<div class="titlebar">
+  <div class="t"><b>LABORATORY REPORT</b><span class="ar">تقرير نتائج التحاليل</span></div>
+  <% if (barcode) { %><div class="barcode"><img src="<%= barcode %>" alt=""><span><%= order.code %></span></div><% } %>
+</div>
 
 <dl class="patient">
   <div class="main"><dt>Patient <span class="ar">المريض</span></dt><dd class="auto"><%= patient.name %></dd></div>

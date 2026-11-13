@@ -10,10 +10,12 @@ const path = require('path');
 const crypto = require('crypto');
 const ejs = require('ejs');
 const QRCode = require('qrcode');
+const bwipjs = require('bwip-js');
 
 const TEMPLATE = path.join(__dirname, '../views/reports/lab-result-report.ejs');
 const FONT_DIR = path.join(__dirname, '../assets/fonts');
 const PUBLIC_DIR = path.join(__dirname, '../public');
+const PLATFORM_LOGO = path.join(__dirname, '../assets/branding/labgo-logo.png');
 const SECRET = process.env.REPORT_SIGNING_SECRET || process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788';
 const CHROME_CANDIDATES = ['/usr/bin/chromium-browser', '/usr/bin/chromium', '/usr/bin/google-chrome', '/opt/pw-browsers/chromium'];
 const SAMPLE = { blood: 'Blood', urine: 'Urine', stool: 'Stool', swab: 'Swab', csf: 'CSF' };
@@ -39,6 +41,42 @@ function fontFaces() {
         return `@font-face{font-family:"${family}";font-weight:${weight};font-style:normal;src:url(data:font/ttf;base64,${data}) format("truetype");}`;
     }).join('\n');
     return fontCss;
+}
+
+// ---------- barcode (Code 128 of the order number) ----------
+function barcodeDataUrl(text) {
+    if (!text) return null;
+    try {
+        const svg = bwipjs.toSVG({ bcid: 'code128', text: String(text), height: 9, scale: 2, includetext: false, paddingwidth: 0, paddingheight: 0 });
+        return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+    } catch (error) {
+        console.warn('Report barcode not made:', error.message);
+        return null;
+    }
+}
+
+// ---------- platform footer ----------
+let platformLogo = null;
+function platformLogoDataUrl() {
+    if (platformLogo === null) {
+        try {
+            platformLogo = `data:image/png;base64,${fs.readFileSync(PLATFORM_LOGO).toString('base64')}`;
+        } catch (_) {
+            platformLogo = '';
+        }
+    }
+    return platformLogo;
+}
+
+// Shown on every page unless the platform admin hid it for this lab.
+function footerTemplate({ showPlatform, left }) {
+    const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const logo = platformLogoDataUrl();
+    const brand = showPlatform
+        ? `<span style="display:flex;align-items:center;gap:6px;color:#374151">Powered by${logo ? ` <img src="${logo}" style="height:13px">` : ' <b>LabGo</b>'}<span style="color:#9ca3af">|</span>LabGo laboratory platform<span style="color:#9ca3af">|</span><span dir="rtl" style="unicode-bidi:isolate">منصة LabGo لإدارة المختبرات</span></span>`
+        : `<span>${esc(left)}</span>`;
+    return `<div style="width:100%;font-size:8px;color:#6b7280;padding:0 12mm;display:flex;justify-content:space-between;align-items:center;font-family:sans-serif">
+        ${brand}<span>${showPlatform ? `${esc(left)} &nbsp;·&nbsp; ` : ''}Page <span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`;
 }
 
 // ---------- verification link ----------
@@ -139,8 +177,11 @@ async function buildHtml({ order, lab, rows, approvedBy, baseUrl }) {
         lab: {
             name: lab.name || '', nameAr: lab.nameAr || '',
             address: [lab.address, lab.city].filter(Boolean).join(' - '), phone: lab.phone || '', email: lab.email || '',
+            website: String(lab.website || '').replace(/^https?:\/\//, ''),
             licenseNumber: lab.licenseNumber || '', accreditation: lab.accreditation || '',
+            tagline: (Array.isArray(lab.specialization) ? lab.specialization : []).slice(0, 5).join('  ·  '),
         },
+        barcode: barcodeDataUrl(order.qrCode),
         logo: await logoDataUrl(lab.logo),
         patient: {
             name: info.name || '', no: info.patientNo || null, phone: info.phone || '',
@@ -219,7 +260,7 @@ async function withSlot(fn) {
     }
 }
 
-async function renderPdf(html, { footerLeft = '' } = {}) {
+async function renderPdf(html, { footerLeft = '', showPlatform = true } = {}) {
     return withSlot(async () => {
         const browser = await getBrowser();
         const page = await browser.newPage();
@@ -227,15 +268,13 @@ async function renderPdf(html, { footerLeft = '' } = {}) {
             await page.setJavaScriptEnabled(false);
             await page.setContent(html, { waitUntil: 'load', timeout: 20000 });
             await page.evaluateHandle('document.fonts.ready').catch(() => {});
-            const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
             const pdf = await page.pdf({
                 format: 'A4',
                 printBackground: true,
                 preferCSSPageSize: true,
                 displayHeaderFooter: true,
                 headerTemplate: '<span></span>',
-                footerTemplate: `<div style="width:100%;font-size:7.5px;color:#6b7280;padding:0 13mm;display:flex;justify-content:space-between;font-family:sans-serif">
-                    <span>${esc(footerLeft)}</span><span>Page <span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`,
+                footerTemplate: footerTemplate({ showPlatform, left: footerLeft }),
             });
             return Buffer.from(pdf);
         } finally {
@@ -255,12 +294,15 @@ async function closeBrowser() {
 async function buildReportPdf(args) {
     const html = await buildHtml(args);
     const footer = [args.lab?.name, args.order?.qrCode].filter(Boolean).join(' · ');
-    return renderPdf(html, { footerLeft: footer });
+    const showPlatform = !args.lab?.reportBranding?.hidePlatformFooter;
+    return renderPdf(html, { footerLeft: footer, showPlatform });
 }
 
 module.exports = {
     buildHtml,
     buildReportPdf,
+    footerTemplate,
+    barcodeDataUrl,
     renderPdf,
     closeBrowser,
     isAvailable,

@@ -166,6 +166,9 @@ function renderLabsTable(labs) {
                     <button class="action-btn featured ${lab.isFeatured ? 'active' : ''}" onclick="toggleFeatured('${lab._id}')" title="${lab.isFeatured ? 'Remove from Featured' : 'Add to Featured'}">
                         <i class="fas fa-star"></i>
                     </button>
+                    <button class="action-btn featured ${lab.reportBranding?.hidePlatformFooter ? '' : 'active'}" onclick="toggleReportBranding('${lab._id}', ${!lab.reportBranding?.hidePlatformFooter})" title="${lab.reportBranding?.hidePlatformFooter ? 'LabGo footer hidden on reports — click to show' : 'LabGo footer shown on reports — click to hide'}">
+                        <i class="fas fa-copyright"></i>
+                    </button>
                     <button class="action-btn view" onclick="viewLabDetails('${lab._id}')" title="View Details">
                         <i class="fas fa-eye"></i>
                     </button>
@@ -467,6 +470,30 @@ async function toggleFeatured(labId) {
     } catch (error) {
         console.error('Error toggling featured status:', error);
         showNotification('Failed to update featured status', 'error');
+    }
+}
+
+// "Powered by LabGo" footer on the lab's result reports (platform admins only).
+async function toggleReportBranding(labId, hide) {
+    try {
+        const response = await fetch(`/admin/api/labs/${labId}/report-branding`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ hidePlatformFooter: hide })
+        });
+        const data = await response.json();
+        if (data.success) {
+            loadLabs(currentPage, currentFilters);
+            showNotification(data.message, 'success');
+        } else {
+            showNotification(data.message || 'Failed to update report branding', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating report branding:', error);
+        showNotification('Failed to update report branding', 'error');
     }
 }
 

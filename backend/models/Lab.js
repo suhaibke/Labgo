@@ -183,6 +183,14 @@ const LabSchema = new mongoose.Schema({
         },
     }],
 
+    // Result report branding. The "Powered by LabGo" footer is shown unless
+    // the platform admin turns it off (e.g. a paid plan). Labs cannot change it.
+    reportBranding: {
+        hidePlatformFooter: { type: Boolean, default: false },
+        updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        updatedAt: Date,
+    },
+
     // Staff roles: overrides of the built-in roles plus the lab's own roles.
     staffRoles: [{
         _id: false,
