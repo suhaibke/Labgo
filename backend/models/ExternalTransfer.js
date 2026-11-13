@@ -64,7 +64,33 @@ const ExternalTransferSchema = new mongoose.Schema({
     resultFileUrl: String,
     // 'lab' = uploaded by this lab; 'external_link' = uploaded by the receiving
     // lab through the QR code on the label (reviewed before going to the patient).
-    resultSource: { type: String, enum: ['lab', 'external_link'], default: 'lab' },
+    resultSource: { type: String, enum: ['lab', 'external_link', 'receiving_lab'], default: 'lab' },
+
+    // ---- lab-to-lab on LabGo: the receiving lab is registered ----
+    toLabId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lab', default: null, index: true },
+    // Agreed price (IQD), by default the receiving lab's B2B prices; editable.
+    price: { type: Number, min: 0, default: null },
+    priceSource: { type: String, enum: ['b2b', 'manual', null], default: null },
+    receivedAt: Date,
+    receivedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    // Results entered by the receiving lab (same shape as Order.results).
+    receiverResults: {
+        values: [{
+            _id: false,
+            testName: { type: String, trim: true },
+            value: { type: String, trim: true, default: '' },
+            unit: { type: String, trim: true, default: '' },
+            min: { type: Number, default: null },
+            max: { type: Number, default: null },
+            normalText: { type: String, trim: true, default: '' },
+            flag: { type: String, enum: ['', 'normal', 'low', 'high'], default: '' },
+        }],
+        comment: { type: String, trim: true, default: '' },
+        entryStatus: { type: String, enum: ['none', 'draft', 'approved'], default: 'none' },
+        enteredAt: Date,
+        approvedAt: Date,
+        approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    },
     externalUpload: {
         uploadedAt: Date,
         uploaderName: { type: String, trim: true, maxlength: 120 },

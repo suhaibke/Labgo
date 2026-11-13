@@ -11,6 +11,7 @@ const {
 const { r2SingleUpload } = require('../../middleware/r2Upload');
 const r2Service = require('../../services/r2Service');
 const transferLabel = require('../../services/transferLabelService');
+const labTransfers = require('../../services/labTransferService');
 const { baseUrl } = require('../../helpers/base-url');
 
 const router = express.Router();
@@ -84,6 +85,8 @@ router.get('/external-transfers', async (req, res) => {
 router.post('/api/external-transfers', async (req, res) => {
     try {
         const { orderId } = req.body;
+        // A registered receiving lab fills its own name/contact and sets the price.
+        const targetLab = await labTransfers.resolveTargetLab(req.body, req.lab);
         const fields = buildCommonFields(req.body, { userId: req.user._id });
 
         if (orderId) {
@@ -128,7 +131,9 @@ router.post('/api/external-transfers', async (req, res) => {
             if (testsDescription) fields.testsDescription = testsDescription;
         }
 
+        labTransfers.applyTargetAndPrice(fields, req.body, targetLab);
         const transfer = await ExternalTransfer.create(fields);
+        await labTransfers.notifySent(transfer, req.lab);
 
         return res.status(201).json({
             success: true,

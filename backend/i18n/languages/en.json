@@ -685,7 +685,30 @@
     "viaQr": "Received via QR",
     "sendToPatient": "Send to patient",
     "sentToPatient": "Sent to patient",
-    "forwardDone": "Result sent to the patient"
+    "forwardDone": "Result sent to the patient",
+    "tabSent": "Sent samples",
+    "tabIncoming": "Received samples",
+    "registeredLab": "LabGo lab (optional)",
+    "registeredLabHint": "Pick a lab registered on LabGo: the price comes from its B2B prices and it is notified.",
+    "searchLabs": "Search labs by name or city",
+    "price": "Price",
+    "priceHint": "Filled from the receiving lab's B2B prices — you can change it.",
+    "priceMissing": "No price for",
+    "currency": "IQD",
+    "receiveTitle": "Receive a sample",
+    "receivePlaceholder": "Scan or type the sample barcode",
+    "receive": "Receive",
+    "received": "Received",
+    "onTheWay": "On the way",
+    "enterResults": "Enter results",
+    "uploadFile": "Upload file / photo",
+    "fromLabLabel": "From",
+    "noIncoming": "No samples were sent to your lab yet.",
+    "receiveDone": "Sample received — the sending lab was notified.",
+    "resultDone": "Result sent to the sending lab.",
+    "viaLab": "From the receiving lab",
+    "notFound": "No sample with this code was sent to your lab.",
+    "clearLab": "Clear"
   },
   "offers": {
     "title": "Offers & Discounts",
@@ -1983,5 +2006,10 @@
     "desc": "Shown in the result report header, in Arabic or English, e.g. Dr. Ahmed Hamdoon Ahmed · Bacteriologist",
     "add": "Add licence holder",
     "preview": "How it appears on the report"
+  },
+  "labNotifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "markAll": "Mark all as read"
   }
 }

@@ -7,6 +7,8 @@
   var editable = window.RS_EDITABLE;
   var orderId = data.order._id;
   var API = '/lab/api';
+  // Orders by default; incoming samples from other labs use their own path.
+  var BASE = window.RS_BASE || (API + '/orders/' + orderId);
   var $ = function (id) { return document.getElementById(id); };
   var toast = function (t) { if (window.laToast) window.laToast(t); };
 
@@ -98,7 +100,7 @@
   }
   function saveNow() {
     clearTimeout(saveTimer);
-    saving = fetch(API + '/orders/' + orderId + '/results', {
+    saving = fetch(BASE + '/results', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(valuesPayload()),
     }).then(function (r) { return r.json(); }).then(function (res) {
       if (!res.success) throw new Error(res.message);
@@ -185,7 +187,7 @@
       body: JSON.stringify({ unit: $('rgUnit').value, normalText: $('rgText').value, ranges: ranges }),
     }).then(function (r) { return r.json(); }).then(function (res) {
       if (!res.success) throw new Error(res.message);
-      return saveNow().then(function () { return fetch(API + '/orders/' + orderId + '/results'); });
+      return saveNow().then(function () { return fetch(BASE + '/results'); });
     }).then(function (r) { return r.json(); }).then(function (res) {
       data = res.data;
       renderRows();
@@ -210,7 +212,7 @@
   $('rsPrint').addEventListener('click', function () {
     var win = window.open('', '_blank');
     saveNow().then(function () {
-      return fetch(API + '/orders/' + orderId + '/report.pdf');
+      return fetch(BASE + '/report.pdf');
     }).then(function (r) {
       if (!r.ok) throw new Error(String(r.status));
       return r.blob();
@@ -244,7 +246,7 @@
       try {
         await saveNow();
         var approve = function (body) {
-          return fetch(API + '/orders/' + orderId + '/results/approve', {
+          return fetch(BASE + '/results/approve', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
           }).then(function (r) { return r.json(); });
         };
@@ -255,7 +257,7 @@
           var blob = await reportPdf();
           var form = new FormData();
           form.append('resultFile', new File([blob], 'result-' + (data.order.qrCode || orderId) + '.pdf', { type: 'application/pdf' }));
-          var up = await fetch(API + '/orders/' + orderId + '/upload-result', { method: 'POST', body: form }).then(function (r) { return r.json(); });
+          var up = await fetch(BASE + '/upload-result', { method: 'POST', body: form }).then(function (r) { return r.json(); });
           if (!up.success) throw new Error(up.message);
           var body = valuesPayload();
           body.reportUrl = up.data.fileUrl;

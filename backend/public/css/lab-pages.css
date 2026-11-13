@@ -183,3 +183,33 @@ html.la .lh-row > * { min-width: 0; }
 html.la .qr-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: var(--soft-accent); color: var(--accent); font-size: 12px; font-weight: 700; white-space: nowrap; }
 html.la .qr-badge.sent { background: var(--soft-green); color: var(--green-text); }
 html.la .qr-badge .ic { width: 14px; height: 14px; }
+
+/* transfers: sent / received tabs, LabGo lab picker, price */
+html.la .page-tabs { margin: 4px 0 16px; }
+html.la .page-tabs .custody-tab-btn { display: inline-flex; align-items: center; gap: 6px; }
+html.la .page-tabs .ic { width: 15px; height: 15px; }
+html.la .tab-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+html.la .tab-count[hidden] { display: none; }
+html.la .labgo-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; background: var(--soft-accent); color: var(--accent); font-size: 10.5px; font-weight: 800; vertical-align: middle; }
+html.la .price-tag { display: inline-block !important; width: auto !important; margin-top: 4px; padding: 2px 8px !important; border-radius: 999px; background: var(--soft-accent) !important; color: var(--accent) !important; font-weight: 700; }
+html.la .lab-picker { position: relative; }
+html.la .lab-results { position: absolute; z-index: 20; inset-inline: 0; top: 74px; max-height: 240px; overflow-y: auto; background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; box-shadow: var(--shadow-xl); padding: 4px; }
+html.la .lab-results[hidden] { display: none; }
+html.la .lab-results button { display: grid; width: 100%; text-align: start; padding: 9px 12px; border-radius: 12px; border: 0; background: none; font: inherit; color: var(--ink); cursor: pointer; }
+html.la .lab-results button:hover, html.la .lab-results button:focus { background: var(--chip-bg); outline: none; }
+html.la .lab-results b { font-size: 14px; }
+html.la .lab-results small, html.la .lab-results p { color: var(--muted); font-size: 12px; margin: 0; }
+html.la .lab-results p { padding: 10px 12px; }
+html.la .lab-chosen { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--chip-bg); }
+html.la .lab-chosen[hidden] { display: none; }
+html.la .lab-chosen strong { flex: 1; }
+html.la .link-btn { border: 0; background: none; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; padding: 0; }
+html.la .field-hint { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+html.la .field-hint.warn { color: var(--red); }
+html.la .receive-card { padding: 16px 18px; margin-bottom: 16px; }
+html.la .receive-form label { display: flex; align-items: center; gap: 6px; font-weight: 700; margin-bottom: 8px; }
+html.la .receive-row { display: flex; gap: 8px; }
+html.la .receive-row input { flex: 1; min-width: 0; direction: ltr; letter-spacing: 1px; font-weight: 600; }
+html.la .incoming-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+html.la .status-pill.on_the_way { background: var(--chip-bg); color: var(--muted); }
+html.la .status-pill.received { background: var(--soft-accent); color: var(--accent); }

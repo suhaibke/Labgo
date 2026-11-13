@@ -13,26 +13,29 @@
 html, body { margin: 0; padding: 0; background: #fff; }
 body { font-family: "Inter", "IBM Plex Sans Arabic", -apple-system, sans-serif; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .sheet { width: 100mm; height: 70mm; padding: 3mm; }
-.label { height: 100%; border: 2px dashed #FF5A00; border-radius: 16px; padding: 3.2mm 3.6mm; display: flex; flex-direction: column; }
+.label { height: 100%; border: 2px dashed #FF5A00; border-radius: 16px; padding: 2.6mm 3.4mm; display: flex; flex-direction: column; }
 .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.title { font-size: 15pt; font-weight: 800; line-height: 1.15; }
+.title { font-size: 13pt; font-weight: 800; line-height: 1.15; }
 .pill { background: #FFF0E6; color: #FF5A00; border-radius: 999px; padding: 2px 8px; font-size: 8pt; font-weight: 700; white-space: nowrap; direction: ltr; }
-.who { margin-top: 2.2mm; font-size: 9pt; }
+.who { margin-top: 1.4mm; font-size: 8.6pt; line-height: 1.3; }
 .who b { font-weight: 700; }
-.line { margin-top: 1mm; font-size: 8.5pt; color: #666; }
-.codes { flex: 1; display: flex; align-items: center; justify-content: space-around; gap: 4mm; margin-top: 2mm; }
+.line { margin-top: .6mm; font-size: 7.8pt; color: #666; line-height: 1.3; }
+.codes { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: space-around; gap: 4mm; margin-top: 1mm; }
 .code-col { display: flex; flex-direction: column; align-items: center; }
 .box { background: #fff; border: 1px solid #E5E5E5; border-radius: 6px; padding: 4px; display: flex; align-items: center; justify-content: center; }
-.qr { width: 20mm; height: 20mm; }
+.qr { width: 17mm; height: 17mm; }
 .qr svg { width: 100%; height: 100%; display: block; }
-.bar { height: 13mm; padding: 4px 6px; }
+.bar { height: 11mm; padding: 3px 6px; }
 .bar svg { height: 100%; width: auto; display: block; }
-.cap { margin-top: 1mm; font-size: 7pt; color: #8A8A8E; letter-spacing: 1.6px; direction: ltr; }
-.note { margin-top: 1.5mm; font-size: 6.8pt; color: #666; line-height: 1.45; }
+.cap { margin-top: .5mm; font-size: 7pt; color: #8A8A8E; letter-spacing: 1.6px; direction: ltr; }
+.demo { color: #666; font-weight: 500; }
+.price b { color: #FF5A00; font-weight: 800; }
+.note { margin-top: 1mm; font-size: 6.4pt; color: #666; line-height: 1.45; }
 .auto { unicode-bidi: plaintext; }
 html[dir="ltr"] .auto { text-align: left; }
 html[dir="rtl"] .auto { text-align: right; }
 bdi { unicode-bidi: isolate; direction: ltr; }
+bdi[dir="auto"] { direction: inherit; unicode-bidi: plaintext; }
 /* on screen: centred with a print button */
 @media screen {
   body { background: #EDEDED; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 16px; }
@@ -50,9 +53,11 @@ bdi { unicode-bidi: isolate; direction: ltr; }
       <div class="title"><%= t.title %></div>
       <span class="pill"><%= d.code %></span>
     </div>
-    <div class="who auto"><b><%= d.patient %></b><% if (d.tests) { %> • <%= d.tests %><% } %></div>
+    <% const demo = [d.gender === 'male' ? t.male : d.gender === 'female' ? t.female : '', d.age !== null && d.age !== undefined ? d.age + ' ' + t.years : ''].filter(Boolean).join(' · '); %>
+    <div class="who"><b><bdi dir="auto"><%= d.patient %></bdi></b><% if (demo) { %> <span class="demo">(<%= demo %>)</span><% } %><% if (d.tests) { %> • <bdi dir="auto"><%= d.tests %></bdi><% } %></div>
     <div class="line"><%= t.sending %>: <bdi><%= d.fromLab %></bdi> <%= t.dir === 'rtl' ? '←' : '→' %> <%= t.receiving %>: <bdi><%= d.toLab %></bdi></div>
     <div class="line"><%= t.date %>: <bdi><%= d.date %></bdi> • <%= t.eta %>: <bdi><%= d.eta %></bdi><% if (d.reference) { %> • <%= t.ref %>: <bdi><%= d.reference %></bdi><% } %></div>
+    <% if (d.priceText) { %><div class="line price"><%= t.price %>: <b><bdi><%= d.priceText %> <%= t.currency %></bdi></b></div><% } %>
     <div class="codes">
       <div class="code-col"><div class="box qr"><%- d.qrSvg %></div><div class="cap">QR</div></div>
       <div class="code-col"><div class="box bar"><%- d.barcodeSvg %></div><div class="cap"><%= d.code %></div></div>

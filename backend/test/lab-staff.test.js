@@ -17,7 +17,7 @@ const { canAccess, requiredFor, labRoles } = require('../helpers/lab-permissions
 const jwtSecret = process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788';
 
 test('every lab route has a permission rule (none left owner-only by accident)', () => {
-    const routers = ['dashboard', 'external-transfers', 'results', 'walk-in', 'staff', 'lab-finance-page', 'lab-waste-page', 'app-api'].map((f) => require(`../routes/lab/${f}`));
+    const routers = ['dashboard', 'external-transfers', 'results', 'walk-in', 'staff', 'lab-finance-page', 'lab-waste-page', 'app-api', 'transfers-in'].map((f) => require(`../routes/lab/${f}`));
     const paths = new Set();
     for (const r of routers) {
         for (const layer of r.stack) if (layer.route) paths.add(layer.route.path.replace(/:[a-zA-Z]+/g, 'x'));

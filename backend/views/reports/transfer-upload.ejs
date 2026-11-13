@@ -55,6 +55,7 @@
     <div class="row"><span>المختبر المرسل · From</span><b dir="auto"><%= sendingLab %></b></div>
     <div class="row"><span>المريض · Patient</span><b dir="auto"><%= patient %></b></div>
     <div class="row"><span>التحاليل · Tests</span><b dir="auto"><%= tests || '—' %></b></div>
+    <% if (typeof price !== 'undefined' && price) { %><div class="row"><span>السعر المتفق · Agreed price</span><b><%= price %> IQD</b></div><% } %>
   </div>
   <form method="post" enctype="multipart/form-data" id="f">
     <label for="lab">اسم مختبركم <span class="en">Your lab name</span></label>

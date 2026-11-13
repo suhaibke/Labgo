@@ -20,7 +20,7 @@
     %>
 
     <main class="la-main rs-page">
-        <a href="/lab/orders/<%= order._id %>" class="rs-back press-95">
+        <a href="<%= typeof backHref !== 'undefined' && backHref ? backHref : '/lab/orders/' + order._id %>" class="rs-back press-95">
             <svg class="ic flip-rtl"><use href="#i-arrow-left"/></svg>
             <%= __('results.backToOrder') %>
         </a>
@@ -146,7 +146,7 @@
         from: __('results.ageFrom'), to: __('results.ageTo'), min: __('results.min'), max: __('results.max'),
         rangeSaved: __('results.rangeSaved'), remove: __('common.delete')
     }).replace(/</g, '\\u003c') %></script>
-    <script>window.RS_EDITABLE = <%= editable ? 'true' : 'false' %>; window.RS_LANG = '<%= currentLang %>';</script>
+    <script>window.RS_EDITABLE = <%= editable ? 'true' : 'false' %>; window.RS_LANG = '<%= currentLang %>';<% if (typeof apiBase !== 'undefined' && apiBase) { %> window.RS_BASE = <%- JSON.stringify(apiBase) %>;<% } %></script>
     <script src="/js/lab-results.js"></script>
 </body>
 

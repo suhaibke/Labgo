@@ -31,6 +31,12 @@
                     </button>
                 </section>
 
+                <div class="custody-tabs page-tabs" id="pageTabs">
+                    <button type="button" class="custody-tab-btn active" data-pane="sent"><svg class="ic"><use href="#i-send"/></svg> <%= __('externalTransfers.tabSent') %></button>
+                    <button type="button" class="custody-tab-btn" data-pane="incoming"><svg class="ic"><use href="#i-inbox"/></svg> <%= __('externalTransfers.tabIncoming') %> <span class="tab-count" id="incomingCount" hidden></span></button>
+                </div>
+
+                <div id="sentPane">
                 <section class="transfer-stats" aria-label="<%= __('externalTransfers.title') %>">
                     <article class="transfer-stat total">
                         <span class="stat-icon"><svg class="ic"><use href="#i-book-open"/></svg></span>
@@ -97,9 +103,10 @@
                                         <td>
                                             <strong class="sample-code"><svg class="ic"><use href="#i-qr-code"/></svg> <%= transfer.sampleCode %></strong>
                                             <small class="tests-list"><%= testsText %></small>
+                                            <% if (typeof transfer.price === 'number') { %><small class="price-tag"><%= transfer.price.toLocaleString('en-US') %> <%= __('externalTransfers.currency') %></small><% } %>
                                         </td>
                                         <td>
-                                            <strong><%= externalLab.name %></strong>
+                                            <strong><%= externalLab.name %><% if (transfer.toLabId) { %> <span class="labgo-badge" title="LabGo">LabGo</span><% } %></strong>
                                             <% if (externalLab.contactName) { %><small><svg class="ic"><use href="#i-stethoscope"/></svg> <%= externalLab.contactName %></small><% } %>
                                             <% if (externalLab.phone) { %><small><svg class="ic"><use href="#i-phone"/></svg> <%= externalLab.phone %></small><% } %>
                                             <% if (externalLab.address) { %><small class="transfer-note" title="<%= externalLab.address %>"><svg class="ic"><use href="#i-map-pin"/></svg> <%= externalLab.address %></small><% } %>
@@ -166,8 +173,12 @@
                                                         <svg class="ic"><use href="#i-file-down"/></svg>
                                                         <%= __('labOrderDetails.viewResult') %>
                                                     </a>
-                                                    <% if (transfer.resultSource === 'external_link') { %>
+                                                    <% if (transfer.resultSource === 'external_link' || transfer.resultSource === 'receiving_lab') { %>
+                                                        <% if (transfer.resultSource === 'receiving_lab') { %>
+                                                        <span class="qr-badge"><svg class="ic"><use href="#i-flask-conical"/></svg><%= __('externalTransfers.viaLab') %></span>
+                                                        <% } else { %>
                                                         <span class="qr-badge" title="<%= (transfer.externalUpload && transfer.externalUpload.uploaderName) || '' %>"><svg class="ic"><use href="#i-qr-code"/></svg><%= __('externalTransfers.viaQr') %></span>
+                                                        <% } %>
                                                         <% if (transfer.orderId && !transfer.forwardedAt) { %>
                                                             <button type="button" class="result-action" data-action="forward-result" data-transfer-id="<%= transfer._id %>">
                                                                 <svg class="ic"><use href="#i-send"/></svg><%= __('externalTransfers.sendToPatient') %>
@@ -198,6 +209,41 @@
                         </div>
                     </div>
                 </section>
+                </div>
+
+                <div id="incomingPane" hidden>
+                    <section class="notebook-card receive-card">
+                        <form id="receiveForm" class="receive-form">
+                            <label for="receiveCode"><svg class="ic"><use href="#i-qr-code"/></svg> <%= __('externalTransfers.receiveTitle') %></label>
+                            <div class="receive-row">
+                                <input id="receiveCode" type="text" autocomplete="off" maxlength="60" placeholder="<%= __('externalTransfers.receivePlaceholder') %>">
+                                <button type="submit" class="primary-action"><svg class="ic"><use href="#i-check"/></svg> <%= __('externalTransfers.receive') %></button>
+                            </div>
+                        </form>
+                    </section>
+                    <section class="notebook-card">
+                        <div class="notebook-table-wrap">
+                            <table class="notebook-table">
+                                <thead>
+                                    <tr>
+                                        <th><%= __('externalTransfers.patientInfo') %></th>
+                                        <th><%= __('externalTransfers.sampleInfo') %></th>
+                                        <th><%= __('externalTransfers.fromLab') %></th>
+                                        <th><%= __('externalTransfers.sentAt') %></th>
+                                        <th><%= __('externalTransfers.status') %></th>
+                                        <th><%= __('common.actions') %></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="incomingRows"></tbody>
+                            </table>
+                            <div class="empty-state hidden" id="emptyIncoming">
+                                <span><svg class="ic"><use href="#i-inbox"/></svg></span>
+                                <h2><%= __('externalTransfers.noIncoming') %></h2>
+                            </div>
+                        </div>
+                    </section>
+                    <input type="file" id="incomingFile" accept="application/pdf,image/jpeg,image/png" hidden>
+                </div>
             </div>
         </main>
     </div>
@@ -309,6 +355,17 @@
                     <fieldset>
                         <legend><%= __('externalTransfers.externalLabInfo') %></legend>
                         <div class="form-grid">
+                            <div class="form-field span-2 lab-picker">
+                                <label for="labSearch"><%= __('externalTransfers.registeredLab') %></label>
+                                <div class="lab-chosen" id="labChosen" hidden>
+                                    <span class="labgo-badge">LabGo</span> <strong id="labChosenName"></strong>
+                                    <button type="button" class="link-btn" id="labClear"><%= __('externalTransfers.clearLab') %></button>
+                                </div>
+                                <input id="labSearch" type="search" autocomplete="off" placeholder="<%= __('externalTransfers.searchLabs') %>">
+                                <input type="hidden" id="toLabId" name="toLabId">
+                                <div class="lab-results" id="labResults" hidden></div>
+                                <small class="field-hint"><%= __('externalTransfers.registeredLabHint') %></small>
+                            </div>
                             <div class="form-field span-2">
                                 <label for="externalLabName"><%= __('externalTransfers.labName') %> *</label>
                                 <input id="externalLabName" name="labName" type="text" maxlength="160" required>
@@ -332,6 +389,11 @@
                             <div class="form-field">
                                 <label for="expectedResultAt"><%= __('externalTransfers.expectedResultDate') %></label>
                                 <input id="expectedResultAt" name="expectedResultAt" type="date">
+                            </div>
+                            <div class="form-field span-2">
+                                <label for="transferPrice"><%= __('externalTransfers.price') %> (<%= __('externalTransfers.currency') %>)</label>
+                                <input id="transferPrice" name="price" type="text" inputmode="numeric" maxlength="12">
+                                <small class="field-hint" id="priceHint"><%= __('externalTransfers.priceHint') %></small>
                             </div>
                             <div class="form-field span-2">
                                 <label for="transferNotes"><%= __('externalTransfers.notes') %></label>
@@ -426,7 +488,22 @@
             uploadSuccess: __('externalTransfers.uploadSuccess'),
             uploadError: __('externalTransfers.uploadError'),
             patientNameRequired: __('externalTransfers.patientNameRequired'),
-            confirmDeleteTransfer: __('externalTransfers.confirmDeleteTransfer')
+            confirmDeleteTransfer: __('externalTransfers.confirmDeleteTransfer'),
+            priceHint: __('externalTransfers.priceHint'),
+            priceMissing: __('externalTransfers.priceMissing'),
+            currency: __('externalTransfers.currency'),
+            searchLabs: __('externalTransfers.searchLabs'),
+            receive: __('externalTransfers.receive'),
+            received: __('externalTransfers.received'),
+            onTheWay: __('externalTransfers.onTheWay'),
+            completed: __('externalTransfers.statusCompleted'),
+            enterResults: __('externalTransfers.enterResults'),
+            uploadFile: __('externalTransfers.uploadFile'),
+            viewResult: __('labOrderDetails.viewResult'),
+            receiveDone: __('externalTransfers.receiveDone'),
+            resultDone: __('externalTransfers.resultDone'),
+            notFound: __('externalTransfers.notFound'),
+            noLabs: __('externalTransfers.noTransfers')
         }).replace(/</g, '\\u003c') %>;
         let resultTransferId = null;
         let transferMode = 'order';
@@ -527,6 +604,9 @@
             delete values.patientAge;
             delete values.sampleCode;
             delete values.testsDescription;
+            // An untouched price is left to the server (the receiving lab's B2B prices).
+            if (!priceEdited || !values.price) delete values.price;
+            if (!values.toLabId) delete values.toLabId;
 
             if (transferMode === 'order') {
                 const orderId = sampleSelect.value;
@@ -820,6 +900,181 @@
                 }
             });
         });
+
+        // ---- Registered (LabGo) receiving lab + price from its B2B prices ----
+        const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => '&#' + ch.charCodeAt(0) + ';');
+        const money = n => Number(n || 0).toLocaleString('en-US');
+        const labSearch = document.getElementById('labSearch');
+        const labResults = document.getElementById('labResults');
+        const toLabId = document.getElementById('toLabId');
+        const priceInput = document.getElementById('transferPrice');
+        const priceHint = document.getElementById('priceHint');
+        let priceEdited = false;
+        let labTimer = null;
+        let quoteTimer = null;
+
+        function chosenTestNames() {
+            if (transferMode === 'order') {
+                return [...document.querySelectorAll('#testSelectList input:checked')]
+                    .map(el => el.closest('label').querySelector('span').textContent.trim());
+            }
+            return document.getElementById('manualTestsDescription').value.split(/[,،\n]/).map(x => x.trim()).filter(Boolean);
+        }
+        async function refreshQuote() {
+            priceHint.classList.remove('warn');
+            priceHint.textContent = copy.priceHint;
+            if (!toLabId.value || priceEdited) return;
+            const names = chosenTestNames();
+            if (!names.length) { priceInput.value = ''; return; }
+            try {
+                const res = await fetch(`/lab/api/labs/${toLabId.value}/quote?tests=${encodeURIComponent(names.join(','))}`);
+                const data = await res.json();
+                if (!data.success) return;
+                priceInput.value = data.data.lines.length ? money(data.data.total) : '';
+                if (data.data.missing.length) {
+                    priceHint.classList.add('warn');
+                    priceHint.textContent = `${copy.priceMissing}: ${data.data.missing.join(', ')} — ${copy.priceHint}`;
+                }
+            } catch (e) { /* the lab can still type the price */ }
+        }
+        function scheduleQuote() { clearTimeout(quoteTimer); quoteTimer = setTimeout(refreshQuote, 300); }
+
+        function chooseLab(lab) {
+            toLabId.value = lab ? lab.id : '';
+            document.getElementById('labChosen').hidden = !lab;
+            labSearch.hidden = Boolean(lab);
+            labResults.hidden = true;
+            if (lab) {
+                document.getElementById('labChosenName').textContent = lab.name + (lab.city ? ` · ${lab.city}` : '');
+                document.getElementById('externalLabName').value = lab.name;
+                if (lab.phone) document.getElementById('externalLabPhone').value = lab.phone;
+                if (lab.address) document.getElementById('externalLabAddress').value = lab.address;
+                priceEdited = false;
+                refreshQuote();
+            } else {
+                labSearch.value = '';
+                labSearch.focus();
+            }
+        }
+        async function searchLabs() {
+            try {
+                const res = await fetch(`/lab/api/labs/directory?q=${encodeURIComponent(labSearch.value.trim())}`);
+                const data = await res.json();
+                const labs = (data.data && data.data.labs) || [];
+                labResults.innerHTML = labs.length
+                    ? labs.map((l, i) => `<button type="button" data-i="${i}"><b>${esc(l.name)}</b><small>${esc([l.city, l.phone].filter(Boolean).join(' · '))}</small></button>`).join('')
+                    : `<p>${esc(copy.noLabs)}</p>`;
+                labResults.querySelectorAll('button').forEach(b => b.addEventListener('click', () => chooseLab(labs[Number(b.dataset.i)])));
+                labResults.hidden = false;
+            } catch (e) { labResults.hidden = true; }
+        }
+        labSearch.addEventListener('input', () => { clearTimeout(labTimer); labTimer = setTimeout(searchLabs, 250); });
+        labSearch.addEventListener('focus', searchLabs);
+        document.addEventListener('click', e => { if (!e.target.closest('.lab-picker')) labResults.hidden = true; });
+        document.getElementById('labClear').addEventListener('click', () => chooseLab(null));
+        priceInput.addEventListener('input', () => {
+            priceEdited = true;
+            const digits = priceInput.value.replace(/[^0-9]/g, '');
+            priceInput.value = digits ? money(digits) : '';
+        });
+        document.getElementById('testSelectList').addEventListener('change', scheduleQuote);
+        document.getElementById('manualTestsDescription').addEventListener('input', scheduleQuote);
+        sampleSelect.addEventListener('change', scheduleQuote);
+        document.querySelectorAll('#transferModeTabs .custody-tab-btn').forEach(btn => btn.addEventListener('click', scheduleQuote));
+
+        // ---- Sent / received tabs ----
+        const sentPane = document.getElementById('sentPane');
+        const incomingPane = document.getElementById('incomingPane');
+        const newTransferBtn = document.getElementById('openTransferModal');
+        function showPane(name) {
+            document.querySelectorAll('#pageTabs .custody-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.pane === name));
+            sentPane.hidden = name !== 'sent';
+            incomingPane.hidden = name !== 'incoming';
+            newTransferBtn.hidden = name !== 'sent';
+            const url = new URL(window.location.href);
+            if (name === 'incoming') url.searchParams.set('tab', 'incoming'); else url.searchParams.delete('tab');
+            history.replaceState(null, '', url);
+            if (name === 'incoming') { loadIncoming(); document.getElementById('receiveCode').focus(); }
+        }
+        document.querySelectorAll('#pageTabs .custody-tab-btn').forEach(b => b.addEventListener('click', () => showPane(b.dataset.pane)));
+
+        // ---- Samples other LabGo labs sent to this lab ----
+        const statusText = { on_the_way: copy.onTheWay, received: copy.received, completed: copy.completed };
+        const statusIcon = { on_the_way: 'clock', received: 'flask-conical', completed: 'circle-check' };
+        let uploadFor = null;
+        function incomingRow(t) {
+            const demo = [t.gender ? copy[t.gender] : '', t.age !== null && t.age !== undefined ? `${t.age} ${copy.years}` : ''].filter(Boolean).join(' · ');
+            const base = `/lab/api/transfers/incoming/${t.id}`;
+            let actions = '';
+            if (t.status === 'on_the_way') {
+                actions = `<button type="button" class="result-action" data-receive="${esc(t.code)}"><svg class="ic"><use href="#i-check"/></svg>${esc(copy.receive)}</button>`;
+            } else if (t.status === 'received') {
+                actions = `<a class="result-action" href="/lab/transfers/incoming/${t.id}/results"><svg class="ic"><use href="#i-pencil"/></svg>${esc(copy.enterResults)}</a>`
+                    + `<button type="button" class="icon-action" data-upload="${t.id}" title="${esc(copy.uploadFile)}"><svg class="ic"><use href="#i-upload"/></svg></button>`;
+            } else {
+                actions = `<a class="result-link" href="${esc(t.fileUrl || base + '/report.pdf')}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-file-down"/></svg>${esc(copy.viewResult)}</a>`;
+            }
+            return `<tr>
+                <td><div class="patient-cell"><span class="patient-avatar">${esc((t.patient || '?').charAt(0).toUpperCase())}</span><div><strong>${esc(t.patient)}</strong><small>${esc(demo)}</small></div></div></td>
+                <td><strong class="sample-code"><svg class="ic"><use href="#i-qr-code"/></svg> ${esc(t.code)}</strong><small class="tests-list">${esc(t.tests.join(', '))}</small>${typeof t.price === 'number' ? `<small class="price-tag">${money(t.price)} ${esc(copy.currency)}</small>` : ''}</td>
+                <td><strong>${esc(t.fromLab)}</strong></td>
+                <td><strong>${esc(new Date(t.sentAt).toLocaleDateString(document.documentElement.lang))}</strong></td>
+                <td><span class="status-pill ${t.status}"><svg class="ic"><use href="#i-${statusIcon[t.status]}"/></svg>${esc(statusText[t.status])}</span></td>
+                <td><div class="row-actions incoming-actions">${actions}</div></td>
+            </tr>`;
+        }
+        async function loadIncoming() {
+            try {
+                const res = await fetch('/lab/api/transfers/incoming', { headers: { Accept: 'application/json' } });
+                const data = await res.json();
+                if (!data.success) return;
+                const items = data.data.items;
+                document.getElementById('incomingRows').innerHTML = items.map(incomingRow).join('');
+                document.getElementById('emptyIncoming').classList.toggle('hidden', items.length > 0);
+                const waiting = items.filter(t => t.status !== 'completed').length;
+                const badge = document.getElementById('incomingCount');
+                badge.hidden = !waiting;
+                badge.textContent = waiting;
+            } catch (e) { /* offline: keep the last list */ }
+        }
+        async function receive(code) {
+            try {
+                const res = await fetch('/lab/api/transfers/incoming/receive', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(res.status === 404 ? copy.notFound : (data.message || copy.transferError));
+                showToast(copy.receiveDone, 'success');
+                document.getElementById('receiveCode').value = '';
+                loadIncoming();
+            } catch (error) { showToast(error.message, 'error'); }
+        }
+        document.getElementById('receiveForm').addEventListener('submit', e => {
+            e.preventDefault();
+            const code = document.getElementById('receiveCode').value.trim();
+            if (code) receive(code);
+        });
+        const incomingFile = document.getElementById('incomingFile');
+        document.getElementById('incomingRows').addEventListener('click', e => {
+            const r = e.target.closest('[data-receive]');
+            if (r) { r.disabled = true; receive(r.dataset.receive); return; }
+            const u = e.target.closest('[data-upload]');
+            if (u) { uploadFor = u.dataset.upload; incomingFile.value = ''; incomingFile.click(); }
+        });
+        incomingFile.addEventListener('change', async () => {
+            if (!incomingFile.files[0] || !uploadFor) return;
+            const body = new FormData();
+            body.append('resultFile', incomingFile.files[0]);
+            try {
+                const res = await fetch(`/lab/api/transfers/incoming/${uploadFor}/upload-result?finish=1`, { method: 'POST', body });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || copy.uploadError);
+                showToast(copy.resultDone, 'success');
+                loadIncoming();
+            } catch (error) { showToast(error.message || copy.uploadError, 'error'); }
+        });
+        loadIncoming();
+        if (new URLSearchParams(window.location.search).get('tab') === 'incoming') showPane('incoming');
 
         updateAutoFill();
         if (<%- JSON.stringify(Boolean(selectedOrderId)) %>) {

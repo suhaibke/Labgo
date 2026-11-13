@@ -9,6 +9,7 @@ const ExternalTransfer = require('../../models/ExternalTransfer');
 const { summary: financeSummary, labShare } = require('../../services/labFinanceService');
 const { buildCommonFields, resolveOrderTests, ExternalTransferError } = require('../../services/externalTransferService');
 const { cleanLicenseHolders } = require('../../helpers/license-holders');
+const labTransfers = require('../../services/labTransferService');
 const TEST_CATEGORIES = Lab.schema.path('tests').schema.path('category').enumValues;
 const PACKAGE_CATEGORIES = Package.schema.path('category').enumValues;
 const { decorateOrderWithPatientInfo } = require('../../helpers/order-patient-info');
@@ -229,7 +230,11 @@ router.get('/api/app/transfers', async (req, res) => {
 router.post('/api/app/transfers', async (req, res) => {
     try {
         const b = req.body || {};
-        const fields = buildCommonFields({ labName: b.labName, notes: b.notes }, { userId: req.user._id });
+        const target = { labName: b.labName, notes: b.notes, toLabId: b.toLabId };
+        const targetLab = await labTransfers.resolveTargetLab(target, req.lab);
+        const fields = buildCommonFields(target, { userId: req.user._id });
+        if (target.phone) fields.externalLab.phone = target.phone;
+        if (target.address) fields.externalLab.address = target.address;
         fields.labId = req.lab._id;
         let order = null;
         if (b.orderId && /^[a-f0-9]{24}$/i.test(String(b.orderId))) {
@@ -253,7 +258,9 @@ router.post('/api/app/transfers', async (req, res) => {
             fields.patientName = name.slice(0, 120);
             if (b.testName) fields.testsDescription = String(b.testName).slice(0, 300);
         }
+        labTransfers.applyTargetAndPrice(fields, b, targetLab);
         const transfer = await ExternalTransfer.create(fields);
+        await labTransfers.notifySent(transfer, req.lab);
         res.status(201).json({ success: true, data: { referral: toReferral(transfer.toObject ? transfer.toObject() : transfer) } });
     } catch (error) {
         if (error instanceof ExternalTransferError) return res.status(error.statusCode).json({ success: false, message: error.message });

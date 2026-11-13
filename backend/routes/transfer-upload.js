@@ -41,6 +41,7 @@ async function pageModel(transfer, extra = {}) {
         patient: maskName(transfer.patientName),
         tests: (transfer.tests || []).map((t) => t.testName).filter(Boolean).join(', ') || transfer.testsDescription || '',
         toLab: transfer.externalLab?.name || '',
+        price: typeof transfer.price === 'number' ? transfer.price.toLocaleString('en-US') : '',
         error: null,
         ...extra,
     };

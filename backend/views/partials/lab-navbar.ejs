@@ -106,9 +106,15 @@
         <a href="/auth/logout" style="color:var(--red)"><svg class="ic flip-rtl"><use href="#i-log-out"/></svg><%= __('navigation.logout') %></a>
       </div>
     </div>
-    <a class="la-circle press-90" href="/lab/orders" aria-label="<%= __('navigation.orders') %>">
-      <svg class="ic"><use href="#i-bell"/></svg>
-    </a>
+    <div style="position:relative">
+      <button class="la-circle press-90 la-bell" id="laBellBtn" aria-label="<%= __('labNotifications.title') %>">
+        <svg class="ic"><use href="#i-bell"/></svg><span class="la-bell-dot" id="laBellDot" hidden></span>
+      </button>
+      <div class="la-menu la-notif" id="laNotifMenu" style="left:0;right:auto">
+        <div class="la-notif-head"><b><%= __('labNotifications.title') %></b><button type="button" id="laNotifAll"><%= __('labNotifications.markAll') %></button></div>
+        <div id="laNotifList"><p class="la-notif-empty"><%= __('labNotifications.empty') %></p></div>
+      </div>
+    </div>
     <button class="la-theme" id="laThemeBtn" aria-label="Theme">
       <svg class="ic sun"><use href="#i-sun"/></svg>
       <svg class="ic moon"><use href="#i-moon"/></svg>
@@ -139,6 +145,60 @@
     }
     document.getElementById('laUserBtn').addEventListener('click', function (e) { toggle('laUserMenu', e); });
     document.getElementById('laLangBtn').addEventListener('click', function (e) { toggle('laLangMenu', e); });
+    // Lab notifications (samples sent to / received by / results from other labs).
+    var bellCopy = { empty: <%- JSON.stringify(__('labNotifications.empty')) %> };
+    function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+    function notifHref(d) {
+      if (d.type === 'transfer_incoming') return '/lab/external-transfers?tab=incoming';
+      if (d.type === 'transfer_received' || d.type === 'transfer_result') return '/lab/external-transfers';
+      return '';
+    }
+    function ago(iso) {
+      var m = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+      try {
+        var f = new Intl.RelativeTimeFormat(document.documentElement.lang || 'en', { numeric: 'auto' });
+        if (m < 60) return f.format(-m, 'minute');
+        if (m < 1440) return f.format(-Math.round(m / 60), 'hour');
+        return f.format(-Math.round(m / 1440), 'day');
+      } catch (e) { return new Date(iso).toLocaleString(); }
+    }
+    var bellItems = [];
+    function loadBell() {
+      fetch('/lab/api/notifications', { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d || !d.success) return;
+          bellItems = d.data.items;
+          var dot = document.getElementById('laBellDot');
+          dot.hidden = !d.data.unread;
+          dot.textContent = d.data.unread > 9 ? '9+' : String(d.data.unread || '');
+          var list = document.getElementById('laNotifList');
+          list.innerHTML = bellItems.length ? bellItems.map(function (n) {
+            var href = notifHref(n.data || {});
+            return '<a class="la-notif-item' + (n.isRead ? '' : ' unread') + '" data-id="' + esc(n.id) + '" href="' + (href || '#') + '">'
+              + '<b>' + esc(n.title) + '</b><span>' + esc(n.body) + '</span><small>' + esc(ago(n.createdAt)) + '</small></a>';
+          }).join('') : '<p class="la-notif-empty">' + esc(bellCopy.empty) + '</p>';
+        }).catch(function () {});
+    }
+    function markRead(ids) {
+      return fetch('/lab/api/notifications/read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids ? { ids: ids } : {}) })
+        .then(loadBell).catch(function () {});
+    }
+    document.getElementById('laBellBtn').addEventListener('click', function (e) { toggle('laNotifMenu', e); });
+    document.getElementById('laNotifMenu').addEventListener('click', function (e) { e.stopPropagation(); });
+    document.getElementById('laNotifAll').addEventListener('click', function () { markRead(null); });
+    document.getElementById('laNotifList').addEventListener('click', function (e) {
+      var a = e.target.closest('.la-notif-item');
+      if (!a) return;
+      if (a.getAttribute('href') === '#') e.preventDefault();
+      if (a.classList.contains('unread')) {
+        var nav = a.getAttribute('href');
+        e.preventDefault();
+        markRead([a.dataset.id]).then(function () { if (nav !== '#') window.location.href = nav; });
+      }
+    });
+    loadBell();
+    setInterval(function () { if (!document.hidden) loadBell(); }, 60000);
     document.addEventListener('click', function () {
       document.querySelectorAll('.la-menu.open').forEach(function (m) { m.classList.remove('open'); });
     });

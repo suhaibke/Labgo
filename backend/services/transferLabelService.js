@@ -14,11 +14,14 @@ const SIZE = { width: '100mm', height: '70mm' };
 
 const TEXT = {
     en: { title: 'Shipping Label', sending: 'Sending Lab', receiving: 'Receiving Lab', date: 'Date', eta: 'ETA',
-        note: 'QR is used to upload result if receiving lab is NOT registered in system', ref: 'Ref.', dir: 'ltr' },
+        note: 'QR is used to upload result if receiving lab is NOT registered in system', ref: 'Ref.', dir: 'ltr',
+        male: 'Male', female: 'Female', years: 'y', price: 'Price', currency: 'IQD' },
     ar: { title: 'ملصق الشحن', sending: 'المختبر المرسل', receiving: 'المختبر المستلم', date: 'التاريخ', eta: 'الوصول المتوقع',
-        note: 'يُستخدم QR لرفع النتيجة إذا كان المختبر المستلم غير مسجل', ref: 'المرجع', dir: 'rtl' },
+        note: 'يُستخدم QR لرفع النتيجة إذا كان المختبر المستلم غير مسجل', ref: 'المرجع', dir: 'rtl',
+        male: 'ذكر', female: 'أنثى', years: 'سنة', price: 'السعر', currency: 'د.ع' },
     ku: { title: 'لەیبڵی ناردن', sending: 'تاقیگەی نێرەر', receiving: 'تاقیگەی وەرگر', date: 'بەروار', eta: 'کاتی گەیشتن',
-        note: 'QR بۆ بەرزکردنەوەی ئەنجام بەکاردێت ئەگەر تاقیگەی وەرگر نەچووەتە ناو سیستەم', ref: 'ژمارە', dir: 'rtl' },
+        note: 'QR بۆ بەرزکردنەوەی ئەنجام بەکاردێت ئەگەر تاقیگەی وەرگر نەچووەتە ناو سیستەم', ref: 'ژمارە', dir: 'rtl',
+        male: 'نێر', female: 'مێ', years: 'ساڵ', price: 'نرخ', currency: 'د.ع' },
 };
 
 // Per-transfer secret used in the QR link (and the public label link).
@@ -67,6 +70,10 @@ async function labelData({ transfer, lab, baseUrl, lang = 'en' }) {
         toLab: transfer.externalLab?.name || '',
         date: fmtDate(transfer.sentAt),
         eta: fmtDate(transfer.expectedResultAt),
+        gender: transfer.patientGender || null,
+        age: Number.isInteger(transfer.patientAge) ? transfer.patientAge : null,
+        price: typeof transfer.price === 'number' ? transfer.price : null,
+        priceText: typeof transfer.price === 'number' ? transfer.price.toLocaleString('en-US') : '',
         qrSvg,
         barcodeSvg,
         uploadUrl: uploadUrl(baseUrl, transfer),
