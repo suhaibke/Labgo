@@ -2,13 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'api.dart';
 import 'catalog_data.dart';
 import 'models.dart';
 import 'strings_data.dart';
 import 'theme.dart';
 
 /// Single app-wide state, mirroring the design's root component.
-/// Everything is local sample data (phase 1 — no server calls).
+/// Runs on the LabGo server when the app is built with API_BASE (see api.dart),
+/// otherwise on local sample data (demo mode).
 class AppState extends ChangeNotifier {
   // ---- appearance -------------------------------------------------------
   String lang = 'en';
@@ -91,6 +93,122 @@ class AppState extends ChangeNotifier {
   bool splashVisible = true;
   bool splashFading = false;
 
+  // ---- server connection -------------------------------------------------
+  /// Server ids of the lab's tests (by name), used when adding a patient.
+  Map<String, String> testIds = {};
+  bool loading = false;
+
+  /// On start: a saved session opens the app straight away.
+  Future<void> restoreSession() async {
+    if (!LabApi.enabled) return;
+    await LabApi.instance.restore();
+    if (!LabApi.instance.signedIn) return;
+    try {
+      await _loadFromServer();
+      auth = 'app';
+      tab = 'home';
+      notifyListeners();
+    } catch (_) {
+      await LabApi.instance.logout();
+    }
+  }
+
+  /// Login button: demo mode just opens the app.
+  Future<void> signIn(String id, String password, {void Function(String)? onError}) async {
+    if (!LabApi.enabled) {
+      enterApp();
+      return;
+    }
+    if (loading) return;
+    loading = true;
+    notifyListeners();
+    try {
+      await LabApi.instance.login(id, password);
+      await _loadFromServer();
+      enterApp();
+    } catch (e) {
+      onError?.call(e.toString());
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _loadFromServer() async {
+    final b = await LabApi.instance.bootstrap();
+    kCatalog
+      ..clear()
+      ..addAll(b.catalog);
+    kPackages
+      ..clear()
+      ..addAll(b.packages);
+    testIds = b.testIds;
+    patients = b.patients;
+    final userName = (b.user['name'] ?? '') as String;
+    if (userName.isNotEmpty) {
+      doctorName = userName;
+      profileInitial = userName.trim()[0].toUpperCase();
+    }
+    userPhone = (b.user['phone'] ?? userPhone) as String;
+    labName = (b.lab['name'] ?? labName) as String;
+    labDisplayName = labName;
+    labPhone = (b.lab['phone'] ?? labPhone) as String;
+    labAddress = (b.lab['address'] ?? labAddress) as String;
+    userAddress = labAddress;
+  }
+
+  /// Home card numbers for today / this week / this month:
+  /// (patients, completed, pending, sent). Demo mode keeps the design's numbers.
+  List<(int, int, int, int)> get periodStats {
+    if (!LabApi.enabled) {
+      return const [(24, 18, 4, 2), (142, 121, 4, 2), (586, 512, 4, 2)];
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final starts = [
+      today,
+      today.subtract(Duration(days: today.weekday % 7)),
+      DateTime(now.year, now.month),
+    ];
+    return [
+      for (final from in starts)
+        () {
+          final list = patients.where((p) => p.createdAt != null && !p.createdAt!.isBefore(from));
+          int count(String st) => list.where((p) => p.status == st).length;
+          return (list.length, count('Completed'), list.length - count('Completed') - count('Sent'), count('Sent'));
+        }(),
+    ];
+  }
+
+  /// Today's date for the home header ("Fri, 13 Nov").
+  String get todayLabel {
+    if (!LabApi.enabled) return w('date');
+    const en = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const ar = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+    const mEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const mAr = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
+    final n = DateTime.now();
+    return lang == 'en'
+        ? '${en[n.weekday - 1]}, ${n.day} ${mEn[n.month - 1]}'
+        : '${ar[n.weekday - 1]}، ${n.day} ${mAr[n.month - 1]}';
+  }
+
+  /// Fetches the latest patients (orders) from the server.
+  Future<void> refreshPatients() async {
+    if (!LabApi.enabled || !LabApi.instance.signedIn) return;
+    try {
+      final list = await LabApi.instance.patients();
+      patients = list;
+      final sp = selectedPatient;
+      if (sp != null) {
+        for (final p in list) {
+          if (p.id == sp.id) selectedPatient = p;
+        }
+      }
+      notifyListeners();
+    } catch (_) {/* keep what is on screen */}
+  }
+
   void startSplash() {
     Timer(const Duration(milliseconds: 1900), () {
       splashFading = true;
@@ -151,6 +269,7 @@ class AppState extends ChangeNotifier {
   }
 
   void logout() {
+    if (LabApi.enabled) LabApi.instance.logout();
     auth = 'login';
     tab = 'home';
     notifyListeners();
@@ -161,6 +280,8 @@ class AppState extends ChangeNotifier {
     wastePage = false;
     tab = id;
     notifyListeners();
+    // Pick up changes made on the web dashboard.
+    if (id == 'home' || id == 'results') refreshPatients();
   }
 
   // ---- lab profile ---------------------------------------------------------
@@ -198,7 +319,7 @@ class AppState extends ChangeNotifier {
   }
 
   // ---- patients ---------------------------------------------------------------
-  List<Patient> patients = List.of(kPatientsSeed);
+  List<Patient> patients = LabApi.enabled ? <Patient>[] : List.of(kPatientsSeed);
 
   // home
   String homeFilter = 'All';
@@ -304,6 +425,26 @@ class AppState extends ChangeNotifier {
   void saveResults() {
     final sp = selectedPatient;
     if (sp == null) return;
+    if (LabApi.enabled) {
+      // Only what changed here, so values entered on the web meanwhile stay.
+      final values = {
+        for (final e in draft.entries)
+          if (e.value != (sp.results[e.key] ?? '')) e.key: e.value,
+      };
+      if (values.isEmpty) {
+        toast(w('resultsSaved'));
+        return;
+      }
+      LabApi.instance.saveResults(sp.id, values).then((_) {
+        final updated = sp.copyWith(results: {...sp.results, ...values});
+        patients = patients.map((m) => m.id == updated.id ? updated : m).toList();
+        if (selectedPatient?.id == updated.id) selectedPatient = updated;
+        toast(w('resultsSaved'));
+      }).catchError((Object e) {
+        toast(e.toString());
+      });
+      return;
+    }
     final updated = sp.copyWith(results: {...sp.results, ...draft});
     patients = patients.map((m) => m.id == updated.id ? updated : m).toList();
     selectedPatient = updated;
@@ -477,6 +618,10 @@ class AppState extends ChangeNotifier {
       return;
     }
     if (addSaving) return;
+    if (LabApi.enabled) {
+      _submitPatientToServer(payLater: payLater);
+      return;
+    }
     final now = DateTime.now();
     final time =
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
@@ -520,6 +665,65 @@ class AppState extends ChangeNotifier {
       payLater: payLater,
       returnTab: tab == 'print' ? printReturnTab : tab,
     );
+  }
+
+  Future<void> _submitPatientToServer({required bool payLater}) async {
+    if (addPhone.replaceAll(RegExp(r'\D'), '').length < 10) {
+      toast(tr('أدخل رقم هاتف صحيح', 'ژمارەیەکی دروست بنووسە', 'Enter a valid phone number'));
+      return;
+    }
+    if (addTests.isEmpty) {
+      toast(tr('اختر تحليلاً واحداً على الأقل', 'لانیکەم یەک پشکنین هەڵبژێرە', 'Choose at least one test'));
+      return;
+    }
+    addSaving = true;
+    notifyListeners();
+    const samples = {'Blood': 'blood', 'Urine': 'urine', 'Stool': 'stool', 'Swab': 'swab', 'CSF': 'csf'};
+    try {
+      final orderId = await LabApi.instance.addPatient({
+        'name': addName.trim(),
+        'phone': LabApi.normalizePhone(addPhone),
+        'age': addAge,
+        'ageUnit': addAgeUnit,
+        'gender': addGender == 'Female' ? 'female' : 'male',
+        'doctor': addDoctor,
+        'company': addMode == 'B2B' ? addCompany : '',
+        'sampleType': samples[addSample] ?? 'blood',
+        'urgency': addUrgency == 'Urgent' ? 'urgent' : 'routine',
+        'notes': addNotes,
+        'testIds': [
+          for (final t in addLooseTests)
+            if (testIds[t] != null) testIds[t],
+        ],
+        'packageIds': List.of(addPackages),
+        'payLater': payLater,
+      });
+      await refreshPatients();
+      Patient? created;
+      for (final p in patients) {
+        if (p.id == orderId) created = p;
+      }
+      addName = '';
+      addAge = '';
+      addPhone = '';
+      addTests = [];
+      addNotes = '';
+      addDoctor = '';
+      addCompany = '';
+      addSearch = '';
+      addPackages = [];
+      addFormVersion++;
+      if (created != null) {
+        openReceipt(created, payLater: payLater, returnTab: tab == 'print' ? printReturnTab : tab);
+      } else {
+        toast(tr('تمت إضافة المريض', 'نەخۆش زیادکرا', 'Patient added'));
+      }
+    } catch (e) {
+      toast(e.toString());
+    } finally {
+      addSaving = false;
+      notifyListeners();
+    }
   }
 
   // send to other labs (design: V1, ve, qf, N1, Mu, _1, x2, Kf, dz, ru, Df, wl)

@@ -16,6 +16,8 @@ const DEFAULT_ROLES = [
 const RULES = [
     [/^\/(dashboard|overview)\/?$/, 'any'],
     [/^\/api\/stats$/, 'any'],
+    // The lab mobile app's start-up data; each screen's actions still check permissions.
+    [/^\/api\/app\/(bootstrap|patients)$/, 'any'],
     [/^\/profile\/?$/, 'any'],
     [/^\/api\/user\/profile$/, 'any'],
     [/^\/(api\/)?orders\/[^/]+\/results(\/approve)?$/, ['results']],

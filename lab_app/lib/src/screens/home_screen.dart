@@ -82,7 +82,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           Text(
-            app.w('date'),
+            app.todayLabel,
             style: ts(context, 14, weight: w500, color: pal.muted),
           ),
           Text(
@@ -270,7 +270,6 @@ class _StatsCardState extends State<_StatsCard>
   Offset _drag = Offset.zero;
 
   // animated counters (design: dh / Ae, 600ms ease-out-cubic)
-  static const _totals = [(24, 18), (142, 121), (586, 512)];
   late final AnimationController _count = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 600),
@@ -287,13 +286,14 @@ class _StatsCardState extends State<_StatsCard>
     super.dispose();
   }
 
-  void _syncPeriod(int period) {
-    if (period == _period) return;
+  void _syncPeriod(int period, List<(int, int, int, int)> stats) {
+    final target = stats[period];
+    if (period == _period && target.$1 == _toPatients && target.$2 == _toReports) return;
     final t = Curves.easeOutCubic.transform(_count.value);
     _fromPatients = (_fromPatients + (_toPatients - _fromPatients) * t).round();
     _fromReports = (_fromReports + (_toReports - _fromReports) * t).round();
-    _toPatients = _totals[period].$1;
-    _toReports = _totals[period].$2;
+    _toPatients = target.$1;
+    _toReports = target.$2;
     _period = period;
     _count.forward(from: 0);
   }
@@ -318,7 +318,7 @@ class _StatsCardState extends State<_StatsCard>
   Widget build(BuildContext context) {
     final app = context.app;
     final pal = app.palette;
-    _syncPeriod(app.period);
+    _syncPeriod(app.period, app.periodStats);
     final dragging = _start != null;
 
     final m = Matrix4.identity()..setEntry(3, 2, 1 / 900);
@@ -617,13 +617,13 @@ class _StatsCardState extends State<_StatsCard>
                               _legend(
                                 context,
                                 Fixed.orange,
-                                '${w('pending')} 4',
+                                '${w('pending')} ${context.app.periodStats[context.app.period].$3}',
                               ),
                               const SizedBox(height: 6),
                               _legend(
                                 context,
                                 pal.muted,
-                                '${w('sentShort')} 2',
+                                '${w('sentShort')} ${context.app.periodStats[context.app.period].$4}',
                               ),
                             ],
                           ),
@@ -637,8 +637,8 @@ class _StatsCardState extends State<_StatsCard>
             const SizedBox(height: 10),
             _pills(context, [
               '${w('completed')} $reports',
-              '${w('pending')} 4',
-              '${w('sentShort')} 2',
+              '${w('pending')} ${context.app.periodStats[context.app.period].$3}',
+              '${w('sentShort')} ${context.app.periodStats[context.app.period].$4}',
             ], 1),
           ],
         );

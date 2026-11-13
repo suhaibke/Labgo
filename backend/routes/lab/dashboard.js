@@ -33,6 +33,7 @@ router.use(require('./walk-in'));
 router.use(require('./staff'));
 router.use(require('./lab-finance-page'));
 router.use(require('./lab-waste-page'));
+router.use(require('./app-api'));
 
 // Get lab dashboard data
 router.get('/dashboard', async (req, res) => {

@@ -312,7 +312,10 @@ class ResultDetailScreen extends StatelessWidget {
           ),
           Text(p.name, style: ts(context, 26, weight: w700, height: 1.25)),
           Text(
-            'ID LG-$idTail • ${p.time} • 27 Sep • ${p.permanent}',
+            p.createdAt == null
+                ? 'ID LG-$idTail • ${p.time} • 27 Sep • ${p.permanent}'
+                // Server data: patient ID, time and the order's real date.
+                : 'ID ${p.permanent} • ${p.time} • ${p.createdAt!.day}/${p.createdAt!.month}/${p.createdAt!.year}',
             style: ts(context, 13, color: pal.muted),
           ),
           const SizedBox(height: 12),

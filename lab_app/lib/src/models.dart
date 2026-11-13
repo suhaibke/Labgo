@@ -129,6 +129,8 @@ class Patient {
   final List<String> packages;
   final int price;
   final Map<String, String> results;
+  /// When the order was made (server mode); null for the sample data.
+  final DateTime? createdAt;
   const Patient({
     required this.id,
     required this.name,
@@ -149,6 +151,7 @@ class Patient {
     this.company,
     this.packages = const [],
     this.packageCategory,
+    this.createdAt,
   });
 
   Patient copyWith({Map<String, String>? results, String? status}) => Patient(
@@ -170,6 +173,8 @@ class Patient {
     permanent: permanent,
     company: company,
     packages: packages,
+    packageCategory: packageCategory,
+    createdAt: createdAt,
   );
 }
 

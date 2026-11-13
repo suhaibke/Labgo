@@ -679,7 +679,13 @@ class _LoginState extends State<_Login> {
                     return;
                   }
                   setState(() => _error = '');
-                  app.enterApp();
+                  app.signIn(
+                    id,
+                    _pass.text,
+                    onError: (msg) {
+                      if (mounted) setState(() => _error = msg);
+                    },
+                  );
                 },
               ),
               const SizedBox(height: 14),
