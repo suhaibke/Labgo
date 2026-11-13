@@ -12,12 +12,7 @@
 
 const axios = require('axios');
 
-require('dotenv').config();
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-if (!BOT_TOKEN) {
-    console.error('Set TELEGRAM_BOT_TOKEN in .env first.');
-    process.exit(1);
-}
+const BOT_TOKEN = '8370600756:AAEbD3CvJaD4n2Mr-SLcF37SY9W4vA11uXY';
 const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 console.log('🤖 LabGo Telegram Bot Setup\n');
