@@ -1,6 +1,9 @@
 // Medical waste: collection requests and their log.
 const express = require('express');
 const LabWaste = require('../../models/LabWaste');
+const mongoose = require('mongoose');
+const Counter = require('../../models/Counter');
+const wasteReport = require('../../services/wasteReportService');
 
 const router = express.Router();
 
@@ -65,6 +68,7 @@ router.post('/api/waste', async (req, res) => {
         const date = pickupDate ? new Date(pickupDate) : new Date();
         if (Number.isNaN(date.getTime())) return res.status(400).json({ success: false, message: 'Invalid date', code: 'date' });
         const item = await LabWaste.create({
+            requestNo: await Counter.next('wasteRequest', 1000),
             labId: req.lab._id, type, weightKg: weight, pickupDate: date,
             company: String(company || '').trim().slice(0, 120), notes: String(notes || '').trim().slice(0, 500),
             createdBy: req.user._id,
@@ -73,6 +77,23 @@ router.post('/api/waste', async (req, res) => {
     } catch (error) {
         console.error('Waste create error:', error);
         res.status(500).json({ success: false, message: 'Error saving the request' });
+    }
+});
+
+// The pickup request as a printable PDF (handed over with the waste).
+router.get('/api/waste/:id/report.pdf', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).json({ success: false });
+        const item = await LabWaste.findOne({ _id: req.params.id, labId: req.lab._id });
+        if (!item) return res.status(404).json({ success: false, message: 'Not found' });
+        const pdf = await wasteReport.wasteReportPdf(item, req.lab);
+        res.set('Content-Type', 'application/pdf');
+        res.set('Content-Disposition', `inline; filename="waste-request-${item.requestNo || item._id}.pdf"`);
+        res.send(pdf);
+    } catch (error) {
+        if (error.code === 'pdfUnavailable') return res.status(503).json({ success: false, code: 'pdfUnavailable' });
+        console.error('Waste report error:', error);
+        res.status(500).json({ success: false, message: 'Error building the report' });
     }
 });
 

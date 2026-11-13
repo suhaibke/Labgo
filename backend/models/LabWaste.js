@@ -12,6 +12,9 @@ const LabWasteSchema = new mongoose.Schema({
     company: { type: String, trim: true, default: '', maxlength: 120 },
     notes: { type: String, trim: true, default: '', maxlength: 500 },
     status: { type: String, enum: ['pending', 'collected'], default: 'pending' },
+    // Request number shown on the pickup report, and when the LabGo admin saw it.
+    requestNo: { type: Number, index: true },
+    adminSeenAt: { type: Date, default: null },
     collectedAt: Date,
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });

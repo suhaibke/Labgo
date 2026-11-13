@@ -198,6 +198,7 @@ app.use('/api/admin/coupons', require('./routes/admin/coupons'));
 app.use('/api/admin/custody', require('./routes/admin/custody'));
 app.use('/api/admin/services', require('./routes/admin/services'));
 app.use('/api/admin/banners', require('./routes/admin/banners'));
+app.use('/api/admin/waste', require('./routes/admin/waste'));
 app.use('/api/nurse', require('./routes/nurse/applications'));
 app.use('/api/nurse/orders', require('./routes/nurse'));
 app.use('/api/nurse/finance', require('./routes/nurse/finance'));
@@ -344,6 +345,14 @@ app.get('/admin/banners', requireAdmin, (req, res) => {
   const direction = ['ar', 'ku'].includes(currentLang) ? 'rtl' : 'ltr';
   const font = currentLang === 'ar' ? 'Cairo, sans-serif' : 'Inter, sans-serif';
   res.render('dashboard/admin-banners', { page: 'banners', user: req.user, currentLang, direction, font });
+});
+
+// Medical waste pickup requests from the labs
+app.get('/admin/waste', requireAdmin, (req, res) => {
+  const currentLang = req.cookies?.lang || 'ar';
+  const direction = ['ar', 'ku'].includes(currentLang) ? 'rtl' : 'ltr';
+  const font = currentLang === 'ar' ? 'Cairo, sans-serif' : 'Inter, sans-serif';
+  res.render('dashboard/admin-waste', { page: 'waste', user: req.user, currentLang, direction, font });
 });
 
 // Patients Management page route
@@ -567,6 +576,8 @@ app.get('/test-translations', (req, res) => {
 });
 
 // Privacy Policy page route (public)
+app.get(['/terms', '/terms-of-use'], (req, res) => res.render('terms'));
+
 app.get('/privacy-policy', (req, res) => {
   res.render('privacy-policy');
 });

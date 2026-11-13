@@ -57,7 +57,6 @@
                     <span class="ws-weight"><input class="la-input" id="wsWeight" inputmode="decimal" dir="ltr" placeholder="0"><b><%= __('waste.kg') %></b></span></label>
                 <label><span class="la-label ws-mt"><%= __('waste.pickupDate') %></span><input class="la-input" id="wsDate" type="date"></label>
             </div>
-            <label><span class="la-label ws-mt"><%= __('waste.company') %></span><input class="la-input" id="wsCompany" list="wsCompanies" placeholder="<%= __('walkIn.companyPlaceholder') %>"><datalist id="wsCompanies"></datalist></label>
             <label><span class="la-label ws-mt"><%= __('walkIn.notes') %></span><input class="la-input" id="wsNotes" placeholder="<%= __('walkIn.companyPlaceholder') %>"></label>
             <p class="ws-error" id="wsError" role="alert" hidden></p>
             <button type="submit" class="la-btn block press-95 ws-save"><%= __('waste.submit') %></button>

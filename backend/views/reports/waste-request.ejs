@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Medical waste pickup request #<%= item.requestNo || '' %></title>
+<style>
+<%- fontFaces %>
+@page { size: A4; margin: 14mm 14mm 16mm; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "IBM Plex Sans Arabic", "Inter", sans-serif; color: #16181d; font-size: 10.5pt; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 10px; border-bottom: 2.5px solid #FF5A00; }
+.lab h1 { margin: 0; font-size: 16pt; }
+.lab div { color: #6b7280; font-size: 9pt; }
+.logo { width: 60px; height: 60px; border-radius: 12px; object-fit: contain; border: 1px solid #e5e7eb; }
+.title { margin: 14px 0 4px; display: flex; justify-content: space-between; align-items: baseline; }
+.title h2 { margin: 0; font-size: 14pt; }
+.title span { font-weight: 800; color: #FF5A00; direction: ltr; }
+.sub { color: #6b7280; font-size: 9pt; margin-bottom: 12px; }
+table { width: 100%; border-collapse: collapse; }
+td { border: 1px solid #e5e7eb; padding: 8px 10px; vertical-align: top; }
+td.k { width: 32%; background: #f5f6f8; color: #6b7280; font-weight: 700; font-size: 9pt; }
+.sign { display: flex; justify-content: space-between; gap: 30px; margin-top: 40px; }
+.sign div { flex: 1; text-align: center; }
+.sign .line { border-top: 1px solid #9ca3af; margin-bottom: 4px; }
+.sign small { color: #6b7280; }
+.note { margin-top: 18px; font-size: 8.5pt; color: #6b7280; }
+.ltr { direction: ltr; unicode-bidi: isolate; }
+</style>
+</head>
+<body>
+<header class="head">
+  <div class="lab">
+    <h1><%= lab.name %></h1>
+    <div><%= [lab.address, lab.phone].filter(Boolean).join(' · ') %></div>
+  </div>
+  <% if (lab.logo) { %><img class="logo" src="<%= lab.logo %>" alt=""><% } %>
+</header>
+<div class="title">
+  <h2>طلب نقل نفايات طبية <small style="font-weight:500;color:#6b7280">· Medical waste pickup request</small></h2>
+  <span>#<%= item.requestNo || '—' %></span>
+</div>
+<div class="sub">تاريخ الطلب · Requested: <span class="ltr"><%= created %></span></div>
+<table>
+  <tr><td class="k">المختبر · Lab</td><td><%= lab.name %></td></tr>
+  <tr><td class="k">العنوان · Address</td><td><%= lab.address || '—' %><%= lab.city ? ' — ' + lab.city : '' %></td></tr>
+  <tr><td class="k">الهاتف · Phone</td><td class="ltr"><%= lab.phone || '—' %></td></tr>
+  <tr><td class="k">نوع النفايات · Type</td><td><%= typeLabel %></td></tr>
+  <tr><td class="k">الوزن · Weight</td><td class="ltr"><%= item.weightKg %> kg</td></tr>
+  <tr><td class="k">موعد الاستلام · Pickup date</td><td class="ltr"><%= pickup %></td></tr>
+  <tr><td class="k">ملاحظات · Notes</td><td><%= item.notes || '—' %></td></tr>
+</table>
+<div class="sign">
+  <div><div class="line"></div><b>المختبر</b><br><small>Lab signature & stamp</small></div>
+  <div><div class="line"></div><b>جهة النقل</b><br><small>Collector signature</small></div>
+</div>
+<p class="note">يُسلَّم هذا التقرير مع النفايات عند الاستلام. · Hand this report over with the waste at pickup.</p>
+</body>
+</html>

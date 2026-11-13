@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>النفايات الطبية - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-nurses.css">
+    <style>
+        body { font-family: <%= font %>; }
+        .waste-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 14px; overflow: hidden; }
+        .waste-table th, .waste-table td { padding: 12px 14px; border-bottom: 1px solid #eef0f3; text-align: start; font-size: 14px; vertical-align: top; }
+        .waste-table th { background: #f7f8fa; color: #6b7280; font-size: 12px; font-weight: 700; }
+        .waste-table tr.new td { background: #fff7f1; }
+        .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+        .pill.pending { background: #FFF0E6; color: #FF5A00; }
+        .pill.collected { background: #E6F7ED; color: #0E7A3E; }
+        .pill.new { background: #FF5A00; color: #fff; margin-inline-start: 6px; }
+        .muted { color: #6b7280; font-size: 12px; }
+        .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .row-actions button { border: 0; border-radius: 999px; padding: 7px 12px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; background: #f1f2f4; }
+        .row-actions button.primary { background: #FF5A00; color: #fff; }
+        .filters { display: flex; gap: 8px; margin: 0 0 14px; }
+        .filters button { border: 1px solid #e5e7eb; background: #fff; border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 700; cursor: pointer; }
+        .filters button.on { background: #111; color: #fff; border-color: #111; }
+        .ltr { direction: ltr; unicode-bidi: isolate; }
+    </style>
+</head>
+<body>
+    <%- include('../partials/admin-navbar') %>
+    <main class="admin-dashboard">
+        <div class="nurse-management-container">
+            <div class="page-header">
+                <div class="header-left">
+                    <h1>طلبات نقل النفايات الطبية</h1>
+                    <p class="header-subtitle">الطلبات التي ترسلها المختبرات من التطبيق أو اللوحة. افتح التقرير لطباعته وتسليمه مع النفايات.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="modern-btn refresh-btn" onclick="load()"><i class="fas fa-sync-alt"></i><span>تحديث</span></button>
+                </div>
+            </div>
+            <div class="filters" id="filters">
+                <button data-s="" class="on">الكل</button>
+                <button data-s="pending">بانتظار النقل</button>
+                <button data-s="collected">تم النقل</button>
+            </div>
+            <section class="main-section">
+                <table class="waste-table">
+                    <thead><tr><th>رقم الطلب</th><th>المختبر</th><th>النوع / الوزن</th><th>موعد الاستلام</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                    <tbody id="rows"><tr><td colspan="6" style="text-align:center;padding:30px"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+    <script>
+        const API = '/api/admin/waste';
+        const TYPES = { biohazard: 'خطرة بيولوجياً', sharps: 'أدوات حادة', chemical: 'كيميائية', general: 'عامة' };
+        let status = '';
+        function token() { return localStorage.getItem('token') || (document.cookie.split('; ').find(r => r.startsWith('token=')) || '').split('=')[1]; }
+        const headers = () => ({ Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' });
+        const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';');
+        const day = (d) => d ? new Date(d).toLocaleDateString('en-GB') : '—';
+        async function load() {
+            const res = await fetch(API + (status ? `?status=${status}` : ''), { headers: headers() });
+            const data = await res.json();
+            const rows = document.getElementById('rows');
+            if (!data.success) { rows.innerHTML = '<tr><td colspan="6">تعذر التحميل</td></tr>'; return; }
+            rows.innerHTML = data.data.items.map((w) => `
+                <tr class="${w.seen ? '' : 'new'}">
+                    <td><b class="ltr">#${esc(w.requestNo || '—')}</b>${w.seen ? '' : '<span class="pill new">جديد</span>'}<div class="muted ltr">${day(w.createdAt)}</div></td>
+                    <td><b>${esc(w.lab ? w.lab.name : '—')}</b><div class="muted">${esc(w.lab ? [w.lab.city, w.lab.address].filter(Boolean).join(' — ') : '')}</div><div class="muted ltr">${esc(w.lab ? w.lab.phone : '')}</div></td>
+                    <td>${esc(TYPES[w.type] || w.type)}<div class="muted ltr">${esc(w.weightKg)} kg</div>${w.notes ? `<div class="muted">${esc(w.notes)}</div>` : ''}</td>
+                    <td class="ltr">${day(w.pickupDate)}</td>
+                    <td><span class="pill ${w.status}">${w.status === 'collected' ? 'تم النقل' : 'بانتظار النقل'}</span></td>
+                    <td><div class="row-actions">
+                        <button class="primary" onclick="openPdf('${w.id}')"><i class="fas fa-file-pdf"></i> التقرير</button>
+                        ${w.status === 'pending' ? `<button onclick="collected('${w.id}')"><i class="fas fa-truck"></i> تم النقل</button>` : ''}
+                    </div></td>
+                </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px" class="muted">لا توجد طلبات</td></tr>';
+            // Opening the page marks the listed requests as seen.
+            const unseen = data.data.items.filter((w) => !w.seen).map((w) => w.id);
+            if (unseen.length) fetch(API + '/seen', { method: 'POST', headers: headers(), body: JSON.stringify({ ids: unseen }) }).then(() => { const b = document.getElementById('wasteBadge'); if (b) b.style.display = 'none'; });
+        }
+        async function openPdf(id) {
+            const win = window.open('', '_blank');
+            const res = await fetch(`${API}/${id}/report.pdf`, { headers: headers() });
+            if (!res.ok) { if (win) win.close(); alert('تعذر إنشاء التقرير'); return; }
+            const url = URL.createObjectURL(await res.blob());
+            if (win) win.location.href = url; else window.location.href = url;
+        }
+        async function collected(id) {
+            await fetch(`${API}/${id}/collected`, { method: 'PATCH', headers: headers() });
+            load();
+        }
+        document.querySelectorAll('#filters button').forEach((b) => b.addEventListener('click', () => {
+            document.querySelectorAll('#filters button').forEach((x) => x.classList.toggle('on', x === b));
+            status = b.dataset.s; load();
+        }));
+        load();
+    </script>
+</body>
+</html>

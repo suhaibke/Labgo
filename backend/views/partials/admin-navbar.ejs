@@ -454,6 +454,21 @@
           <%= __('navigation.banners') || 'بانر الرئيسية' %>
         </span>
       </a>
+      <a href="/admin/waste"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'waste' ? 'active' : '' %>">
+        <i class="fas fa-biohazard"></i>
+        <span>النفايات الطبية</span>
+        <span id="wasteBadge" style="display:none;margin-inline-start:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#FF5A00;color:#fff;font-size:11px;font-weight:700;line-height:20px;text-align:center"></span>
+      </a>
+      <script>
+        (function () {
+          var t = localStorage.getItem('token') || (document.cookie.split('; ').find(function (r) { return r.indexOf('token=') === 0; }) || '').split('=')[1];
+          fetch('/api/admin/waste/unseen-count', { headers: { Authorization: 'Bearer ' + t } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) { var b = document.getElementById('wasteBadge'); if (d && d.success && d.data.unseen) { b.textContent = d.data.unseen; b.style.display = 'inline-block'; } })
+            .catch(function () {});
+        })();
+      </script>
       <a href="/admin/patients"
         class="nav-item <%= typeof page !== 'undefined' && page === 'patients' ? 'active' : '' %>">
         <i class="fas fa-users"></i>

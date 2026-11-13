@@ -106,8 +106,8 @@ router.get('/api/app/bootstrap', async (req, res) => {
         res.json({
             success: true,
             data: {
-                user: { name: req.user.name || '', phone: req.user.phone || '', isOwner: Boolean(req.isLabOwner), permissions: req.labPermissions || [] },
-                lab: { name: lab.name || '', phone: lab.phone || '', address: lab.address || '', city: lab.city || '', logo: lab.logo || '', licenseOwners: holdersToText(lab.licenseHolders) },
+                user: { name: req.user.name || '', phone: req.user.phone || '', photo: req.user.profilePicture || '', isOwner: Boolean(req.isLabOwner), permissions: req.labPermissions || [] },
+                lab: labForApp(lab),
                 catalog: toCatalog(lab.tests),
                 packages: packages.map((p) => ({
                     id: String(p._id), code: '', name: p.nameAr || p.name, category: p.category || 'General', aliases: [p.name, p.nameAr].filter(Boolean),
@@ -122,6 +122,19 @@ router.get('/api/app/bootstrap', async (req, res) => {
         res.status(500).json({ success: false, message: 'Error loading lab data' });
     }
 });
+
+// The lab's details as the app's "Lab data" and "Reports" sections show them
+// (the same fields as the web settings page).
+function labForApp(lab) {
+    return {
+        name: lab.name || '', nameAr: lab.nameAr || '', phone: lab.phone || '', email: lab.email || '', website: lab.website || '',
+        description: lab.description || '', address: lab.address || '', city: lab.city || '', logo: lab.logo || '',
+        licenseOwners: holdersToText(lab.licenseHolders),
+        licenseHolders: (lab.licenseHolders || []).map((h) => ({ title: h.title || '', name: h.name || '', specialty: h.specialty || '' })),
+        // The "Powered by LabGo" footer can only be removed from the LabGo admin panel.
+        platformFooter: !lab.reportBranding?.hidePlatformFooter,
+    };
+}
 
 // ---------- licence holders <-> the app's single text field ----------
 const TITLES = ['Assoc. Prof.', 'Asst. Prof.', 'Prof.', 'Dr.', 'Mr.', 'Ms.', 'أ.م.د.', 'أ.د.', 'م.د.', 'د.', 'السيدة', 'السيد'];
@@ -188,10 +201,14 @@ router.patch('/api/app/lab', async (req, res) => {
         if (typeof b.name === 'string' && clip(b.name, 120)) lab.name = clip(b.name, 120);
         if (typeof b.phone === 'string' && clip(b.phone, 30)) lab.phone = clip(b.phone, 30);
         if (typeof b.address === 'string' && clip(b.address, 200)) lab.address = clip(b.address, 200);
-        if (typeof b.licenseOwners === 'string') lab.licenseHolders = textToHolders(b.licenseOwners);
+        if (typeof b.email === 'string' && /^\S+@\S+\.\S+$/.test(b.email.trim())) lab.email = clip(b.email, 120).toLowerCase();
+        if (typeof b.website === 'string') lab.website = clip(b.website, 200);
+        if (typeof b.description === 'string') lab.description = String(b.description).trim().slice(0, 1000);
+        if (Array.isArray(b.licenseHolders)) lab.licenseHolders = cleanLicenseHolders(b.licenseHolders);
+        else if (typeof b.licenseOwners === 'string') lab.licenseHolders = textToHolders(b.licenseOwners);
         lab.lastUpdatedBy = req.user._id;
         await lab.save();
-        res.json({ success: true, data: { name: lab.name, phone: lab.phone, address: lab.address, licenseOwners: holdersToText(lab.licenseHolders) } });
+        res.json({ success: true, data: labForApp(lab) });
     } catch (error) {
         if (error.name === 'ValidationError') return res.status(400).json({ success: false, message: error.message });
         console.error('App lab update error:', error);
@@ -375,4 +392,5 @@ module.exports.toAppPatient = toAppPatient;
 module.exports.toCatalog = toCatalog;
 module.exports.textToHolders = textToHolders;
 module.exports.holdersToText = holdersToText;
+module.exports.labForApp = labForApp;
 module.exports.toReferral = toReferral;

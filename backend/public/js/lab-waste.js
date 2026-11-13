@@ -31,11 +31,12 @@
     $('wsList').innerHTML = items.length ? items.map(function (w) {
       var pending = w.status === 'pending';
       return '<div class="ws-item"><div class="ws-item-ic" style="background:' + COLOR[w.type] + '"><svg class="ic"><use href="#i-' + ICON[w.type] + '"/></svg></div>' +
-        '<div class="ws-item-text"><b>' + esc(S.types[w.type]) + '</b><small>' + esc([fmtDate(w.pickupDate), w.company, w.notes].filter(Boolean).join(' · ')) + '</small></div>' +
+        '<div class="ws-item-text"><b>' + esc(S.types[w.type]) + (w.requestNo ? ' <span dir="ltr">#' + esc(w.requestNo) + '</span>' : '') + '</b><small>' + esc([fmtDate(w.pickupDate), w.notes].filter(Boolean).join(' · ')) + '</small></div>' +
         '<span class="ws-kg" dir="ltr">' + esc(kg(w.weightKg)) + '</span>' +
         '<span class="ws-status ' + w.status + '">' + esc(pending ? S.pending : S.collected) + '</span>' +
-        (pending ? '<button type="button" class="la-btn sm press-95" data-collect="' + w._id + '"><svg class="ic"><use href="#i-check"/></svg>' + esc(S.markCollected) + '</button>' +
-          '<button type="button" class="ws-del" data-del="' + w._id + '" aria-label="' + esc(S.remove) + '"><svg class="ic"><use href="#i-trash-2"/></svg></button>' : '') +
+        // The report travels with the waste; collection is confirmed by LabGo.
+        '<a class="la-btn sm press-95" target="_blank" rel="noopener" href="/lab/api/waste/' + w._id + '/report.pdf"><svg class="ic"><use href="#i-file-text"/></svg>PDF</a>' +
+        (pending ? '<button type="button" class="ws-del" data-del="' + w._id + '" aria-label="' + esc(S.remove) + '"><svg class="ic"><use href="#i-trash-2"/></svg></button>' : '') +
         '</div>';
     }).join('') : '<div class="ws-empty"><svg class="ic"><use href="#i-truck"/></svg>' + esc(S.empty) + '</div>';
   }
@@ -77,9 +78,6 @@
   $('wsNew').addEventListener('click', function () {
     $('wsForm').reset();
     $('wsDate').value = new Date().toISOString().slice(0, 10);
-    $('wsCompanies').innerHTML = companies().map(function (c) { return '<option value="' + esc(c) + '">'; }).join('');
-    var last = companies()[0];
-    if (last) $('wsCompany').value = last;
     $('wsError').hidden = true;
     modal.classList.add('active');
     setTimeout(function () { $('wsWeight').focus(); }, 50);
@@ -96,7 +94,7 @@
     var weight = Number(String($('wsWeight').value).replace(',', '.'));
     if (!(weight > 0)) { $('wsError').textContent = S.needWeight; $('wsError').hidden = false; return; }
     var type = $('wsTypePick').querySelector('button.on').dataset.v;
-    var company = $('wsCompany').value.trim();
+    var company = '';
     fetch('/lab/api/waste', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: type, weightKg: weight, pickupDate: $('wsDate').value, company: company, notes: $('wsNotes').value }),
