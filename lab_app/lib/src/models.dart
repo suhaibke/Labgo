@@ -398,14 +398,17 @@ class LabRole {
 class WasteTransfer {
   final String id, date, type, status, driver, notes;
   final double weight;
+  /// Request number printed on the pickup report.
+  final int requestNo;
   const WasteTransfer({
     required this.id,
     required this.date,
     required this.type,
     required this.weight,
-    required this.status,
-    required this.driver,
+    this.status = 'Pending',
+    this.driver = '',
     this.notes = '',
+    this.requestNo = 0,
   });
 }
 
@@ -560,20 +563,16 @@ const kUsersSeed = <ManagedUser>[
 ];
 
 const kWasteSeed = <WasteTransfer>[
-  WasteTransfer(
-    id: 'tr-1',
-    date: '2026-09-26',
-    type: 'Biohazard',
-    weight: 2.4,
-    status: 'Completed',
-    driver: 'Al-Noor Waste Co.',
-  ),
-  WasteTransfer(
-    id: 'tr-2',
-    date: '2026-09-27',
-    type: 'Sharps',
-    weight: 1.2,
-    status: 'In Transit',
-    driver: 'Omar — Driver',
-  ),
+  WasteTransfer(id: 'tr-2', date: '2026-11-12', type: 'Sharps', weight: 1.2, requestNo: 1002),
+  WasteTransfer(id: 'tr-1', date: '2026-11-05', type: 'Biohazard', weight: 2.4, notes: 'Blood bags', requestNo: 1001),
 ];
+
+/// A licence holder printed in the report header ("Dr. Ahmed Hamdoon · Bacteriologist").
+class LicenseHolder {
+  String title, name, specialty;
+  LicenseHolder(this.title, this.name, this.specialty);
+
+  String get line => [[title, name].where((x) => x.trim().isNotEmpty).join(' '), specialty]
+      .where((x) => x.trim().isNotEmpty)
+      .join(' · ');
+}

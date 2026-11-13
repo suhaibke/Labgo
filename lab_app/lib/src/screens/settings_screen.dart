@@ -7,6 +7,11 @@ import '../models.dart';
 import '../theme.dart';
 import '../ui.dart';
 import 'add_screen.dart' show formatNumber;
+import 'dart:typed_data';
+import 'package:printing/printing.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../app_state.dart';
+import '../report_pdf.dart';
 
 // ---------------------------------------------------------------------------
 // small shared pieces
@@ -17,6 +22,9 @@ List<Widget> _gap(List<Widget> items, double gap) => [
     items[i],
   ],
 ];
+
+/// The LabGo website (privacy policy, terms of use).
+const kSiteUrl = 'https://www.labgo-iq.com';
 
 Widget _col(List<Widget> items, {double gap = 12}) => Column(
   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -500,11 +508,6 @@ class _EditProfileState extends State<_EditProfile> {
     final shown = avatar.isNotEmpty
         ? avatar
         : initials(name.isNotEmpty ? name : app.doctorName);
-    final note = app.tr(
-      'رفع الصور من الاستوديو غير متاح بعد',
-      'بەرزکردنەوە لە ستۆدیۆ هێشتا بەردەست نییە',
-      'Photo uploads from Studio are not available yet',
-    );
     return _sectionBody([
       Text(d('editUserData'), style: ts(context, 16, weight: w700)),
       Container(
@@ -519,11 +522,14 @@ class _EditProfileState extends State<_EditProfile> {
               width: 80,
               height: 80,
               alignment: Alignment.center,
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: pal.avatarBg,
                 shape: BoxShape.circle,
               ),
-              child: Text(shown, style: ts(context, 26, weight: w700)),
+              child: app.userPhoto != null
+                  ? Image.memory(app.userPhoto!, width: 80, height: 80, fit: BoxFit.cover)
+                  : Text(shown, style: ts(context, 26, weight: w700)),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -535,15 +541,11 @@ class _EditProfileState extends State<_EditProfile> {
                     style: ts(context, 14, weight: w700),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    note,
-                    style: ts(context, 11, color: pal.muted, height: 1.375),
-                  ),
                   const SizedBox(height: 8),
                   _pill(
                     context,
                     app.tr('تغيير الصورة', 'گۆڕینی وێنە', 'Change Image'),
-                    onTap: () => app.toast(note),
+                    onTap: app.pickUserPhoto,
                     color: pal.accent,
                     textColor: Colors.white,
                     vPad: 8,
@@ -594,66 +596,6 @@ class _EditProfileState extends State<_EditProfile> {
         initial: role,
         hint: w('labManager'),
         onChanged: (v) => role = v,
-      ),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            d('avatarLabel'),
-            style: ts(context, 12, weight: w700, color: pal.muted),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: pal.avatarBg,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(shown, style: ts(context, 18, weight: w700)),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: BoxField(
-                  key: ValueKey('avatar-$avatar'),
-                  controller: TextEditingController(text: avatar),
-                  hint: 'A',
-                  onChanged: (v) => setState(
-                    () => avatar = v.length > 2 ? v.substring(0, 2) : v,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              for (final l in const ['A', 'D', 'S', 'L']) ...[
-                if (l != 'A') const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: () => setState(() => avatar = l),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: avatar == l ? pal.accent : pal.chipBg,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      l,
-                      style: ts(
-                        context,
-                        13,
-                        weight: w700,
-                        color: avatar == l ? Colors.white : pal.ink,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
       ),
       _Field(
         label: d('passwordLabel'),
@@ -3314,7 +3256,7 @@ class _About extends StatelessWidget {
                       color: pal.chipBg,
                       vPad: 10,
                       fontSize: 12,
-                      onTap: () => app.toast(d('privacyLabel')),
+                      onTap: () => launchUrl(Uri.parse('$kSiteUrl/privacy-policy'), mode: LaunchMode.externalApplication),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -3325,7 +3267,7 @@ class _About extends StatelessWidget {
                       color: pal.chipBg,
                       vPad: 10,
                       fontSize: 12,
-                      onTap: () => app.toast(d('termsLabel')),
+                      onTap: () => launchUrl(Uri.parse('$kSiteUrl/terms'), mode: LaunchMode.externalApplication),
                     ),
                   ),
                 ],
@@ -3348,287 +3290,180 @@ class _Reports extends StatefulWidget {
   State<_Reports> createState() => _ReportsState();
 }
 
+/// Report management: a live preview of the result report (the same PDF the
+/// app and the server print), and what each part of it comes from.
 class _ReportsState extends State<_Reports> {
-  bool editLab = false;
+  Future<Uint8List?>? _preview;
+  String _sig = '';
+
+  Patient _sample(AppState app) {
+    final withResults = app.patients.where((p) => p.results.values.any((v) => v.trim().isNotEmpty));
+    final p = withResults.isNotEmpty ? withResults.first : (app.patients.isNotEmpty ? app.patients.first : kPatientsSeed.first);
+    return p.results.isEmpty ? p.copyWith(results: {for (final t in p.tests) t: '12'}) : p;
+  }
+
+  Future<Uint8List?> _render(AppState app) async {
+    try {
+      final bytes = await buildResultReportPdf(app, _sample(app));
+      await for (final page in Printing.raster(bytes, pages: const [0], dpi: 110)) {
+        return await page.toPng();
+      }
+    } catch (_) {}
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     final app = context.app;
     final pal = app.palette;
-    final d = app.d, w = app.w;
-    final ink = pal.dark ? Colors.white : const Color(0xFF111111);
-    final grey = pal.dark ? const Color(0xFFA1A1AA) : const Color(0xFF666666);
-
-    Widget preview(
-      String line, {
-      bool dashed = false,
-      bool footerPhone = true,
-    }) {
-      final content = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: pal.line)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: context.pal.accent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'L',
-                    style: ts(context, 16, weight: w900, color: Colors.white),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        app.labName,
-                        style: ts(context, 16, weight: w700, color: ink),
-                      ),
-                      Text(
-                        '${d('licensedBy')}: ${app.licenseOwners}',
-                        style: ts(context, 10, color: grey),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  '${app.labPhone}\n${app.labAddress}',
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.ltr,
-                  style: ts(context, 10, color: grey),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(line, style: ts(context, 12, color: ink)),
-          Container(
-            margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.only(top: 8),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: pal.line)),
-            ),
-            child: Text(
-              '${app.labFooter} • ${app.labAddress}${footerPhone ? ' • ${app.labPhone}' : ''}',
-              textAlign: TextAlign.center,
-              style: ts(context, 10, color: grey),
-            ),
-          ),
-        ],
-      );
-      final box = Container(
-        margin: const EdgeInsets.only(top: 4),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: pal.white,
-          borderRadius: BorderRadius.circular(16),
-          border: dashed ? null : Border.all(color: pal.line),
-        ),
-        child: content,
-      );
-      return dashed
-          ? CustomPaint(foregroundPainter: _Dashed(pal.line), child: box)
-          : box;
+    final sig = [app.labName, app.labPhone, app.labAddress, app.labEmail, app.labWebsite, ...app.holderLines, app.palette.accent.toARGB32(), app.labLogo?.length, app.platformFooter].join('|');
+    if (sig != _sig) {
+      _sig = sig;
+      _preview = _render(app);
     }
-
-    return _sectionBody([
-      _pill(
-        context,
-        d('editLabData'),
-        color: pal.accent,
-        textColor: Colors.white,
-        onTap: () => setState(() => editLab = !editLab),
-      ),
-      if (editLab) const LabDataCard(inner: true),
-      Text(d('headerFooter'), style: ts(context, 14, weight: w700)),
-      _LogoButton(label: '${d('logoLabel')} — LabGo', toastName: 'LabGo'),
-      _Field(
-        label: d('phoneLabel'),
-        initial: app.labPhone,
-        ltr: true,
-        fontSize: 14,
-        vPad: 10,
-        onChanged: (v) => app.updateSettings(() => app.labPhone = v),
-      ),
-      _Field(
-        label: d('addressLabel'),
-        initial: app.labAddress,
-        fontSize: 14,
-        vPad: 10,
-        onChanged: (v) => app.updateSettings(() => app.labAddress = v),
-      ),
-      _Field(
-        label: d('footerLabel'),
-        initial: app.labFooter,
-        fontSize: 14,
-        vPad: 10,
-        onChanged: (v) => app.updateSettings(() => app.labFooter = v),
-      ),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(d('resultPreview'), style: ts(context, 13, weight: w700)),
-          preview('CBC • 13.2 g/dL • ${w('normal')}'),
-        ],
-      ),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(d('receiptPreview'), style: ts(context, 13, weight: w700)),
-          preview(
-            'Ali Ahmed • CBC • 25,000 IQD • ${w('payLater')}',
-            dashed: true,
-            footerPhone: false,
-          ),
-        ],
-      ),
-      Text(w('templates'), style: ts(context, 13, weight: w700)),
-      for (final tpl in app.templates)
-        Container(
+    Widget row(String icon, String title, String text, {Widget? trailing}) => Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: pal.chipBg,
-            borderRadius: BorderRadius.circular(16),
-          ),
+          decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16)),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: pal.softAccent, shape: BoxShape.circle),
+                child: LIcon(icon, size: 16, color: pal.accent),
+              ),
+              const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  tpl.$1 == 'standard'
-                      ? w('standard')
-                      : tpl.$1 == 'hormonePanel'
-                      ? w('hormonePanel')
-                      : w('urgentReport'),
-                  style: ts(context, 14, weight: w700),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => app.toast(w('templateSaved')),
-                child: Text(
-                  w('editTemplate'),
-                  style: ts(context, 12, weight: w700, color: pal.accent),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Toggle(
-                value: tpl.$2,
-                onTap: () => app.updateSettings(
-                  () => app.templates = [
-                    for (final x in app.templates)
-                      x.$1 == tpl.$1 ? (x.$1, !x.$2) : x,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: ts(context, 13, weight: w700)),
+                    Text(text, style: ts(context, 12, color: pal.muted, height: 1.4)),
                   ],
                 ),
               ),
+              ?trailing,
             ],
           ),
+        );
+    return _sectionBody([
+      Text(app.tr('معاينة تقرير النتائج', 'پێشبینینی ڕاپۆرت', 'Result report preview'), style: ts(context, 14, weight: w700)),
+      Tap(
+        onTap: () => app.previewSampleReport(_sample(app)),
+        scale: .98,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 200),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: pal.line)),
+          child: FutureBuilder<Uint8List?>(
+            future: _preview,
+            builder: (context, snap) => snap.data != null
+                ? Image.memory(snap.data!, fit: BoxFit.fitWidth, gaplessPlayback: true)
+                : const SizedBox(height: 200, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+          ),
         ),
-      Text(
-        '${w('statuses')}: ${w('completed')} • ${w('pending')} • ${w('sent')}',
-        style: ts(context, 12, color: pal.muted),
+      ),
+      row(
+        'Building2',
+        app.tr('الترويسة', 'سەرپەڕە', 'Header'),
+        app.tr('شعار المختبر واسمه وأصحاب الإجازات والعنوان والهاتف والبريد — من «بيانات المختبر».', 'لۆگۆ و ناو و خاوەن مۆڵەتەکان و ناونیشان — لە «زانیاری تاقیگە».', 'Lab logo, name, licence holders, address, phone and email — from "Lab data".'),
+        trailing: Tap(
+          onTap: () => app.updateSettings(() => app.openSection = 'labData'),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(app.tr('تعديل', 'دەستکاری', 'Edit'), style: ts(context, 12, weight: w700, color: pal.accent)),
+          ),
+        ),
+      ),
+      row('Pencil', app.tr('لون التقرير', 'ڕەنگی ڕاپۆرت', 'Report colour'), app.tr('يتبع لون التطبيق الذي تختاره من «تغيير اللون».', 'ڕەنگی ئەپ بەکاردێنێت.', 'Follows the app colour you choose in "Change Color".'),
+          trailing: Container(width: 18, height: 18, margin: const EdgeInsets.only(top: 8), decoration: BoxDecoration(color: pal.accent, shape: BoxShape.circle))),
+      row('QrCode', app.tr('التحقق', 'پشتڕاستکردنەوە', 'Verification'), app.tr('باركود رقم الطلب في العنوان، ورمز QR للتحقق من صحة التقرير.', 'بارکۆد و QR بۆ پشتڕاستکردنەوە.', 'Order barcode in the title bar and a QR code to verify the report.')),
+      row(
+        'BadgeCheck',
+        app.tr('الذيل — منصة LabGo', 'پەراوێز — LabGo', 'Footer — LabGo platform'),
+        app.platformFooter
+            ? app.tr('يظهر «Powered by LabGo» مع الشعار. لا يمكن إزالته إلا من لوحة الإدارة العامة.', 'تەنها لە پانێڵی بەڕێوەبردن لادەبرێت.', 'Shows "Powered by LabGo" with the logo. Only the LabGo admin panel can remove it.')
+            : app.tr('أُزيل بواسطة إدارة LabGo.', 'لەلایەن LabGo لابرا.', 'Removed by the LabGo admin.'),
+      ),
+      _pill(
+        context,
+        app.tr('معاينة وطباعة PDF', 'پێشبینین و چاپی PDF', 'Preview & print PDF'),
+        color: pal.accent,
+        textColor: Colors.white,
+        icon: 'Printer',
+        onTap: () => app.previewSampleReport(_sample(app)),
       ),
     ]);
   }
 }
 
-class _Dashed extends CustomPainter {
-  final Color color;
-  _Dashed(this.color);
+/// One licence holder row (title, name, specialty) in "Lab data".
+class _HolderRow extends StatefulWidget {
+  final LicenseHolder holder;
+  final VoidCallback onRemove;
+  const _HolderRow({super.key, required this.holder, required this.onRemove});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final path = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(
-          (const Offset(0, 4) & Size(size.width, size.height - 4)).deflate(.5),
-          const Radius.circular(16),
-        ),
-      );
-    for (final m in path.computeMetrics()) {
-      for (double d = 0; d < m.length; d += 6) {
-        canvas.drawPath(m.extractPath(d, math.min(d + 3, m.length)), p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _Dashed old) => old.color != color;
+  State<_HolderRow> createState() => _HolderRowState();
 }
 
-/// Logo tile "L+n" (design: logo button; tapping bumps the counter).
-class _LogoButton extends StatelessWidget {
-  final String label;
-  final String toastName;
-  const _LogoButton({required this.label, required this.toastName});
+class _HolderRowState extends State<_HolderRow> {
+  late final _title = TextEditingController(text: widget.holder.title);
+  late final _name = TextEditingController(text: widget.holder.name);
+  late final _spec = TextEditingController(text: widget.holder.specialty);
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _name.dispose();
+    _spec.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final app = context.app;
     final pal = app.palette;
-    return GestureDetector(
-      onTap: () {
-        app.updateSettings(() => app.logoBumps++);
-        app.toast('${app.d('logoLabel')} • $toastName');
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: pal.chipBg,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: pal.accent,
-                borderRadius: BorderRadius.circular(16),
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: 76,
+                child: BoxField(controller: _title, hint: 'Dr.', ltr: true, fontSize: 13, vPad: 8, onChanged: (v) => app.updateLab(() => widget.holder.title = v)),
               ),
-              child: Text(
-                'L${app.logoBumps > 0 ? '+${app.logoBumps}' : ''}',
-                style: ts(context, 22, weight: w900, color: Colors.white),
+              const SizedBox(width: 6),
+              Expanded(
+                child: BoxField(controller: _name, hint: app.tr('الاسم', 'ناو', 'Name'), fontSize: 13, vPad: 8, onChanged: (v) => app.updateLab(() => widget.holder.name = v)),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: ts(context, 13, weight: w700)),
-                  Text(
-                    app.d('logoHint'),
-                    style: ts(context, 11, color: pal.muted),
-                  ),
-                ],
+              const SizedBox(width: 6),
+              Tap(
+                onTap: widget.onRemove,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: pal.card, shape: BoxShape.circle),
+                  child: const LIcon('X', size: 14, color: Color(0xFFFF3B30)),
+                ),
               ),
-            ),
-            LIcon('Pencil', size: 14, color: pal.muted),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          BoxField(controller: _spec, hint: app.tr('الاختصاص (مثلاً Bacteriologist)', 'پسپۆڕی', 'Specialty (e.g. Bacteriologist)'), fontSize: 13, vPad: 8, onChanged: (v) => app.updateLab(() => widget.holder.specialty = v)),
+        ],
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Lab data (design `Md`)
+// Lab data: the same fields as the web settings; saved to the server as you type.
 
 class LabDataCard extends StatelessWidget {
   final bool inner;
@@ -3638,212 +3473,83 @@ class LabDataCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = context.app;
     final pal = app.palette;
-    final d = app.d, w = app.w;
-    final note = app.tr(
-      'رفع الصور من الاستوديو غير متاح بعد',
-      'بەرزکردنەوە لە ستۆدیۆ هێشتا بەردەست نییە',
-      'Photo uploads from Studio are not available yet',
-    );
-    final card = CardBox(
+    final d = app.d;
+    final holders = app.licenseHolders;
+    return CardBox(
       child: _col([
         Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: pal.chipBg,
-            borderRadius: BorderRadius.circular(16),
-          ),
+          decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16)),
           child: Row(
             children: [
               Container(
-                width: 100,
-                height: 100,
+                width: 88,
+                height: 88,
                 alignment: Alignment.center,
                 clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: pal.cardBorder),
-                ),
-                child: Image.asset(
-                  'assets/images/logo.jpg',
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                ),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: pal.cardBorder)),
+                child: app.labLogo != null
+                    ? Image.memory(app.labLogo!, width: 88, height: 88, fit: BoxFit.contain)
+                    : Image.asset('assets/images/logo.jpg', width: 88, height: 88, fit: BoxFit.cover),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      app.tr('صورة المختبر', 'وێنەی تاقیگە', 'Lab Image'),
-                      style: ts(context, 14, weight: w700),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      note,
-                      style: ts(context, 11, color: pal.muted, height: 1.375),
-                    ),
+                    Text(app.tr('شعار المختبر', 'لۆگۆی تاقیگە', 'Lab logo'), style: ts(context, 14, weight: w700)),
+                    Text(app.tr('يظهر في رأس تقرير النتائج', 'لە سەرپەڕەی ڕاپۆرت دەردەکەوێت', 'Shown in the report header'), style: ts(context, 11, color: pal.muted)),
                     const SizedBox(height: 8),
                     _pill(
                       context,
-                      app.tr(
-                        'تغيير صورة المختبر',
-                        'گۆڕینی وێنەی تاقیگە',
-                        'Change Lab Image',
-                      ),
-                      onTap: () => app.toast(note),
+                      app.tr('تغيير الشعار', 'گۆڕینی لۆگۆ', 'Change logo'),
+                      onTap: app.pickLabLogo,
                       color: pal.accent,
                       textColor: Colors.white,
                       vPad: 8,
                       fontSize: 12,
                       shrink: true,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      app.tr(
-                        'اختر من الاستوديو',
-                        'لە ستۆدیۆ هەڵبژێرە',
-                        'Choose from Studio',
-                      ),
-                      style: ts(context, 11, color: pal.muted),
-                    ),
                   ],
                 ),
               ),
             ],
           ),
         ),
-        _LogoButton(
-          label: '${d('logoLabel')} — ${app.labName}',
-          toastName: app.labName,
-        ),
-        _Field(
-          label: d('labNameLabel'),
-          initial: app.labName,
-          hint: 'LabGo',
-          fontSize: 14,
-          onChanged: (v) => app.updateSettings(() => app.labName = v),
-        ),
-        _Field(
-          label: d('licenseOwnersLabel'),
-          initial: app.licenseOwners,
-          hint: d('licenseOwnersPh'),
-          fontSize: 14,
-          lines: 3,
-          onChanged: (v) => app.updateSettings(() => app.licenseOwners = v),
-        ),
-        _Field(
-          label: d('phoneLabel'),
-          initial: app.labPhone,
-          ltr: true,
-          fontSize: 14,
-          onChanged: (v) => app.updateSettings(() => app.labPhone = v),
-        ),
-        _Field(
-          label: d('addressLabel'),
-          initial: app.labAddress,
-          fontSize: 14,
-          onChanged: (v) => app.updateSettings(() => app.labAddress = v),
-        ),
-        _Field(
-          label: d('footerLabel'),
-          initial: app.labFooter,
-          fontSize: 14,
-          onChanged: (v) => app.updateSettings(() => app.labFooter = v),
-        ),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: pal.inputBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: pal.line),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: pal.line)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: context.pal.accent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'L',
-                        style: ts(
-                          context,
-                          16,
-                          weight: w900,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            app.labName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: ts(context, 16, weight: w700),
-                          ),
-                          Text(
-                            '${d('licensedBy')}: ${app.licenseOwners}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: ts(context, 10, color: pal.muted),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      '${app.labPhone}\n${app.labAddress}',
-                      textAlign: TextAlign.right,
-                      textDirection: TextDirection.ltr,
-                      style: ts(context, 10, color: pal.muted),
-                    ),
-                  ],
-                ),
+        _Field(label: d('labNameLabel'), initial: app.labName, fontSize: 14, vPad: 10, onChanged: (v) => app.updateLab(() {
+          app.labName = v;
+          app.labDisplayName = v.trim().isEmpty ? app.labDisplayName : v.trim();
+        })),
+        _Field(label: d('phoneLabel'), initial: app.labPhone, ltr: true, fontSize: 14, vPad: 10, keyboard: TextInputType.phone, onChanged: (v) => app.updateLab(() => app.labPhone = v)),
+        _Field(label: app.tr('البريد الإلكتروني', 'ئیمەیڵ', 'Email'), initial: app.labEmail, ltr: true, fontSize: 14, vPad: 10, keyboard: TextInputType.emailAddress, onChanged: (v) => app.updateLab(() => app.labEmail = v)),
+        _Field(label: app.tr('الموقع الإلكتروني', 'ماڵپەڕ', 'Website'), initial: app.labWebsite, hint: 'www.example.com', ltr: true, fontSize: 14, vPad: 10, keyboard: TextInputType.url, onChanged: (v) => app.updateLab(() => app.labWebsite = v)),
+        _Field(label: d('addressLabel'), initial: app.labAddress, fontSize: 14, vPad: 10, onChanged: (v) => app.updateLab(() => app.labAddress = v)),
+        _Field(label: app.tr('نبذة عن المختبر', 'دەربارەی تاقیگە', 'About the lab'), initial: app.labDescription, fontSize: 14, vPad: 10, lines: 3, onChanged: (v) => app.updateLab(() => app.labDescription = v)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(app.tr('أصحاب الإجازات', 'خاوەن مۆڵەتەکان', 'Licence holders'), style: ts(context, 13, weight: w700)),
+            Text(app.tr('تظهر في رأس التقرير — اللقب والاسم والاختصاص (6 كحد أقصى)', 'لە سەرپەڕەی ڕاپۆرت — نازناو، ناو، پسپۆڕی (تا 6)', 'Shown in the report header — title, name and specialty (up to 6)'), style: ts(context, 11, color: pal.muted)),
+            const SizedBox(height: 8),
+            for (var i = 0; i < holders.length; i++) ...[
+              _HolderRow(
+                key: ObjectKey(holders[i]),
+                holder: holders[i],
+                onRemove: () => app.updateLab(() => app.licenseHolders = [...holders]..removeAt(i)),
               ),
-              Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.only(top: 8),
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: pal.line)),
-                ),
-                child: Text(
-                  '${app.labFooter} • ${app.labAddress} • ${app.labPhone}',
-                  textAlign: TextAlign.center,
-                  style: ts(context, 10, color: pal.muted),
-                ),
-              ),
+              const SizedBox(height: 8),
             ],
-          ),
+            if (holders.length < 6)
+              _pill(
+                context,
+                app.tr('+ إضافة صاحب إجازة', '+ زیادکردن', '+ Add licence holder'),
+                color: pal.chipBg,
+                onTap: () => app.updateLab(() => app.licenseHolders = [...holders, LicenseHolder('Dr.', '', '')]),
+              ),
+          ],
         ),
-        _pill(
-          context,
-          w('save'),
-          color: pal.accent,
-          textColor: Colors.white,
-          onTap: () => app.toast(w('saved')),
-        ),
+        _Field(label: d('footerLabel'), initial: app.labFooter, fontSize: 14, vPad: 10, onChanged: (v) => app.updateSettings(() => app.labFooter = v)),
       ]),
-    );
-    return Padding(
-      padding: EdgeInsets.only(top: inner ? 0 : 12),
-      child: Entrance.pop(child: card),
     );
   }
 }
@@ -3924,12 +3630,8 @@ class _WastePage extends StatefulWidget {
 
 class _WastePageState extends State<_WastePage> {
   bool formOpen = false;
-  String type = 'Sharps',
-      weight = '',
-      date = '2026-09-27',
-      driver = '',
-      status = 'Pending',
-      notes = '';
+  String type = 'Sharps', weight = '', notes = '';
+  DateTime date = DateTime.now();
   int version = 0;
 
   @override
@@ -3969,11 +3671,6 @@ class _WastePageState extends State<_WastePage> {
       ],
     );
 
-    String statusText(String s) => s == 'Pending'
-        ? w('pending')
-        : s == 'Completed'
-        ? w('completed')
-        : s;
     String fmtWeight(double v) =>
         v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toString();
 
@@ -4037,38 +3734,32 @@ class _WastePageState extends State<_WastePage> {
                 keyboard: const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (v) => weight = v,
               ),
-              _Field(
-                key: ValueKey('dt-$version'),
-                label: d('pickupDate'),
-                initial: date,
-                fontSize: 14,
-                keyboard: TextInputType.datetime,
-                onChanged: (v) => date = v,
-              ),
-              _Field(
-                key: ValueKey('dr-$version'),
-                label: d('driverCompany'),
-                initial: driver,
-                hint: 'Al-Noor Waste Co.',
-                fontSize: 14,
-                onChanged: (v) => driver = v,
-              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    d('transferStatus'),
-                    style: ts(context, 12, weight: w700, color: pal.muted),
-                  ),
+                  Text(d('pickupDate'), style: ts(context, 12, weight: w700, color: pal.muted)),
                   const SizedBox(height: 4),
-                  chips(
-                    [
-                      ('Pending', w('pending')),
-                      ('In Transit', 'In Transit'),
-                      ('Completed', w('completed')),
-                    ],
-                    status,
-                    (v) => setState(() => status = v),
+                  Tap(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: date,
+                        firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                        lastDate: DateTime.now().add(const Duration(days: 90)),
+                      );
+                      if (picked != null) setState(() => date = picked);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(color: pal.inputBg, borderRadius: BorderRadius.circular(16), border: Border.all(color: pal.cardBorder)),
+                      child: Row(
+                        children: [
+                          LIcon('Clock', size: 16, color: pal.muted),
+                          const SizedBox(width: 8),
+                          Text('${date.day}/${date.month}/${date.year}', style: ts(context, 14, weight: w600)),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -4091,23 +3782,20 @@ class _WastePageState extends State<_WastePage> {
                     app.toast(w('weightLabel'));
                     return;
                   }
+                  final two = (int v) => v.toString().padLeft(2, '0');
                   app.addWasteTransfer(
                     WasteTransfer(
                       id: '${DateTime.now().microsecondsSinceEpoch}',
-                      date: date.isNotEmpty ? date : '2026-09-27',
+                      date: '${date.year}-${two(date.month)}-${two(date.day)}',
                       type: type,
                       weight: kg,
-                      status: status,
-                      driver: driver.trim().isNotEmpty
-                          ? driver.trim()
-                          : 'Al-Noor Waste Co.',
                       notes: notes,
                     ),
                   );
                   setState(() {
                     weight = '';
                     notes = '';
-                    driver = '';
+                    date = DateTime.now();
                     formOpen = false;
                     version++;
                   });
@@ -4118,67 +3806,44 @@ class _WastePageState extends State<_WastePage> {
           Text(d('transferLog'), style: ts(context, 16, weight: w700)),
           for (final t in app.wasteTransfers) ...[
             const SizedBox(height: 8),
-            CardBox(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: t.type,
-                                style: const TextStyle(fontWeight: w700),
-                              ),
-                              TextSpan(text: ' • ${t.date}'),
-                            ],
+            Tap(
+              onTap: () => app.openWasteReport(t),
+              scale: .98,
+              child: CardBox(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: pal.softAccent, shape: BoxShape.circle),
+                      child: LIcon('Trash2', size: 18, color: pal.accent),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${t.type == 'Sharps' ? w('sharps') : t.type == 'Biohazard' ? w('biohazard') : t.type == 'Chemical' ? w('chemical') : w('general')} • ${fmtWeight(t.weight)} ${w('kg')}',
+                            style: ts(context, 15, weight: w700),
                           ),
-                          style: ts(context, 16),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: t.status == 'Pending'
-                              ? pal.softAccent
-                              : pal.chipBg,
-                          borderRadius: BorderRadius.circular(999),
-                          border: t.status == 'Pending'
-                              ? null
-                              : Border.all(color: pal.line),
-                        ),
-                        child: Text(
-                          statusText(t.status),
-                          style: ts(
-                            context,
-                            11,
-                            weight: w700,
-                            color: t.status == 'Pending'
-                                ? pal.accent
-                                : pal.muted2,
-                            height: 1.45,
+                          Text(
+                            '${t.requestNo > 0 ? '#${t.requestNo} • ' : ''}${t.date}${t.notes.isNotEmpty ? ' • ${t.notes}' : ''}',
+                            style: ts(context, 12, color: pal.muted),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${fmtWeight(t.weight)} ${w('kg')} • ${d('driverCompany')}: ${t.driver}',
-                    style: ts(context, 13, color: pal.muted2),
-                  ),
-                  if (t.notes.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(t.notes, style: ts(context, 12, color: pal.muted)),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      children: [
+                        LIcon('FileText', size: 18, color: pal.accent),
+                        Text('PDF', style: ts(context, 10, weight: w700, color: pal.accent)),
+                      ],
+                    ),
                   ],
-                ],
+                ),
               ),
             ),
           ],

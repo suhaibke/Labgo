@@ -87,7 +87,7 @@ Future<Uint8List> buildResultReportPdf(AppState app, Patient p, {bool approved =
   final code = p.permanent.isNotEmpty ? p.permanent : 'LG-${p.id.length > 6 ? p.id.substring(p.id.length - 6) : p.id}'.toUpperCase();
   final now = DateTime.now();
   final collected = p.createdAt ?? now;
-  final holders = _holders(app.licenseOwners);
+  final holders = app.holderLines.isNotEmpty ? app.holderLines.take(6).toList() : _holders(app.licenseOwners);
   final groups = <String, List<ResultRow>>{};
   for (final r in rows) {
     groups.putIfAbsent(r.category, () => []).add(r);
@@ -110,6 +110,8 @@ Future<Uint8List> buildResultReportPdf(AppState app, Patient p, {bool approved =
   final contact = <(String, String)>[
     ('ADDRESS', app.labAddress),
     ('PHONE', app.labPhone),
+    ('EMAIL', app.labEmail),
+    ('WEBSITE', app.labWebsite),
   ].where((r) => r.$2.trim().isNotEmpty).toList();
 
   final doc = pw.Document(title: 'Lab report $code', author: app.labDisplayName);
@@ -121,9 +123,11 @@ Future<Uint8List> buildResultReportPdf(AppState app, Patient p, {bool approved =
         decoration: const pw.BoxDecoration(border: pw.Border(top: pw.BorderSide(color: _line, width: .6))),
         child: pw.Row(children: [
           pw.Expanded(child: t('${app.labDisplayName} · $code', size: 7, color: _muted)),
-          if (_labgoLogo != null) pw.Image(pw.MemoryImage(_labgoLogo!), height: 10),
-          pw.SizedBox(width: 4),
-          t('Powered by LabGo platform', size: 7, color: _muted),
+          if (app.platformFooter) ...[
+            if (_labgoLogo != null) pw.Image(pw.MemoryImage(_labgoLogo!), height: 10),
+            pw.SizedBox(width: 4),
+            t('Powered by LabGo platform', size: 7, color: _muted),
+          ],
           pw.SizedBox(width: 10),
           t('${ctx.pageNumber} / ${ctx.pagesCount}', size: 7, color: _muted),
         ]),
@@ -135,13 +139,21 @@ Future<Uint8List> buildResultReportPdf(AppState app, Patient p, {bool approved =
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
-            pw.Container(
-              width: 56,
-              height: 56,
-              alignment: pw.Alignment.center,
-              decoration: pw.BoxDecoration(color: accent, borderRadius: pw.BorderRadius.circular(12)),
-              child: t(app.labDisplayName.trim().isEmpty ? 'L' : app.labDisplayName.trim().substring(0, 1).toUpperCase(), size: 22, bold: true, color: PdfColors.white),
-            ),
+            app.labLogo != null
+                ? pw.Container(
+                    width: 56,
+                    height: 56,
+                    padding: const pw.EdgeInsets.all(3),
+                    decoration: pw.BoxDecoration(border: pw.Border.all(color: _line), borderRadius: pw.BorderRadius.circular(12)),
+                    child: pw.Image(pw.MemoryImage(app.labLogo!), fit: pw.BoxFit.contain),
+                  )
+                : pw.Container(
+                    width: 56,
+                    height: 56,
+                    alignment: pw.Alignment.center,
+                    decoration: pw.BoxDecoration(color: accent, borderRadius: pw.BorderRadius.circular(12)),
+                    child: t(app.labDisplayName.trim().isEmpty ? 'L' : app.labDisplayName.trim().substring(0, 1).toUpperCase(), size: 22, bold: true, color: PdfColors.white),
+                  ),
             pw.SizedBox(width: 10),
             pw.Expanded(
               flex: 5,
@@ -416,5 +428,87 @@ Future<Uint8List> buildLabelPdf(AppState app, LabelInfo l) async {
       ),
     ),
   );
+  return doc.save();
+}
+
+/// Medical waste pickup request (same content as the server's report).
+Future<Uint8List> buildWastePdf(AppState app, WasteTransfer w) async {
+  final fonts = await _fonts();
+  final t = _T(fonts);
+  const orange = PdfColor.fromInt(0xFFFF5A00);
+  const types = {
+    'Biohazard': 'نفايات خطرة بيولوجياً · Biohazard',
+    'Sharps': 'أدوات حادة · Sharps',
+    'Chemical': 'نفايات كيميائية · Chemical',
+    'General': 'نفايات عامة · General',
+  };
+  pw.TableRow row(String k, String v) => pw.TableRow(children: [
+        pw.Container(color: _soft, padding: const pw.EdgeInsets.all(7), child: t(k, size: 8.5, bold: true, color: _muted)),
+        pw.Padding(padding: const pw.EdgeInsets.all(7), child: t(v.isEmpty ? '—' : v, size: 10)),
+      ]);
+  final now = DateTime.now();
+  final doc = pw.Document(title: 'Waste request ${w.requestNo}');
+  doc.addPage(pw.Page(
+    pageFormat: PdfPageFormat.a4.copyWith(marginLeft: 40, marginRight: 40, marginTop: 40, marginBottom: 40),
+    build: (ctx) => pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Container(
+          padding: const pw.EdgeInsets.only(bottom: 8),
+          decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: orange, width: 2.5))),
+          child: pw.Row(children: [
+            pw.Expanded(
+              child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                t(app.labDisplayName, size: 16, bold: true),
+                t([app.labAddress, app.labPhone].where((x) => x.trim().isNotEmpty).join(' · '), size: 9, color: _muted),
+              ]),
+            ),
+            if (app.labLogo != null) pw.Image(pw.MemoryImage(app.labLogo!), width: 54, height: 54, fit: pw.BoxFit.contain),
+          ]),
+        ),
+        pw.SizedBox(height: 14),
+        pw.Row(children: [
+          pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            t('طلب نقل نفايات طبية', size: 14, bold: true),
+            t('Medical waste pickup request', size: 9, color: _muted),
+          ])),
+          t('#${w.requestNo}', size: 14, bold: true, color: orange),
+        ]),
+        pw.SizedBox(height: 12),
+        pw.Table(
+          border: pw.TableBorder.all(color: _line),
+          columnWidths: const {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(2)},
+          children: [
+            row('المختبر · Lab', app.labDisplayName),
+            row('العنوان · Address', app.labAddress),
+            row('الهاتف · Phone', app.labPhone),
+            row('نوع النفايات · Type', types[w.type] ?? w.type),
+            row('الوزن · Weight', '${w.weight} kg'),
+            row('موعد الاستلام · Pickup date', w.date),
+            row('ملاحظات · Notes', w.notes),
+            row('تاريخ الطباعة · Printed', '${now.day}/${now.month}/${now.year}'),
+          ],
+        ),
+        pw.SizedBox(height: 50),
+        pw.Row(children: [
+          for (final s in const [('المختبر', 'Lab signature & stamp'), ('جهة النقل', 'Collector signature')]) ...[
+            pw.Expanded(child: pw.Column(children: [
+              pw.Container(height: .8, color: const PdfColor.fromInt(0xFF9CA3AF)),
+              pw.SizedBox(height: 3),
+              t(s.$1, size: 10, bold: true),
+              t(s.$2, size: 8, color: _muted),
+            ])),
+            if (s.$1 == 'المختبر') pw.SizedBox(width: 30),
+          ],
+        ]),
+        pw.Spacer(),
+        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.center, children: [
+          if (_labgoLogo != null) pw.Image(pw.MemoryImage(_labgoLogo!), height: 10),
+          pw.SizedBox(width: 4),
+          t('Powered by LabGo platform', size: 7, color: _muted),
+        ]),
+      ],
+    ),
+  ));
   return doc.save();
 }

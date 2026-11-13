@@ -136,6 +136,36 @@ class LabApi {
     }
   }
 
+  /// Uploads one image (multipart) and returns the server's JSON.
+  Future<Map<String, dynamic>> uploadImage(String path, String field, List<int> bytes, String filename) async {
+    final req = http.MultipartRequest('POST', _uri(path))
+      ..headers.addAll({'Accept': 'application/json', if (_token != null) 'Authorization': 'Bearer $_token'})
+      ..files.add(http.MultipartFile.fromBytes(field, bytes, filename: filename));
+    final res = await http.Response.fromStream(await req.send().timeout(const Duration(seconds: 60)));
+    final json = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode >= 400 || json['success'] == false) throw ApiError(res.statusCode, '${json['message'] ?? 'Upload failed'}');
+    return json;
+  }
+
+  Future<void> uploadLabLogo(List<int> bytes) => uploadImage('/lab/api/profile/logo', 'logo', bytes, 'logo.jpg');
+  Future<void> uploadUserPhoto(List<int> bytes) => uploadImage('/api/auth/profile-picture', 'profilePicture', bytes, 'photo.jpg');
+
+  /// An image the server stores (logo, photo) as bytes, for PDFs and the UI.
+  Future<List<int>?> fetchBytes(String url) async {
+    if (url.isEmpty) return null;
+    try {
+      final res = await http.get(url.startsWith('http') ? Uri.parse(url) : _uri(url)).timeout(const Duration(seconds: 20));
+      return res.statusCode == 200 ? res.bodyBytes : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<int>?> wasteReportPdf(String id) async {
+    final res = await http.get(_uri('/lab/api/waste/$id/report.pdf'), headers: {if (_token != null) 'Authorization': 'Bearer $_token'}).timeout(const Duration(seconds: 40));
+    return res.statusCode == 200 ? res.bodyBytes : null;
+  }
+
   // ---------- settings sections ----------
   Future<Map<String, dynamic>> _data(String method, String path, [Object? body]) async =>
       ((await _send(method, path, body))['data'] ?? <String, dynamic>{}) as Map<String, dynamic>;

@@ -17,14 +17,30 @@ class LabGoLabApp extends StatefulWidget {
   State<LabGoLabApp> createState() => _LabGoLabAppState();
 }
 
-class _LabGoLabAppState extends State<LabGoLabApp> {
+class _LabGoLabAppState extends State<LabGoLabApp> with WidgetsBindingObserver {
   final _state = AppState()
     ..startSplash()
     ..restoreSession()
     ..loadMemory();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  // Back in the foreground: pick up what changed on the web dashboard.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _state.syncFromServer();
+      _state.loadNotifications();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _state.dispose();
     super.dispose();
   }

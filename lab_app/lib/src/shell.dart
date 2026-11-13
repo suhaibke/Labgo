@@ -151,10 +151,12 @@ class TopBar extends StatelessWidget {
                 onTap: () => app.selectTab('profile'),
                 color: pal.avatarBg,
                 border: false,
-                child: Text(
-                  app.profileInitial,
-                  style: ts(context, 14, weight: w700),
-                ),
+                child: app.userPhoto != null
+                    ? ClipOval(child: Image.memory(app.userPhoto!, width: 36, height: 36, fit: BoxFit.cover))
+                    : Text(
+                        app.profileInitial,
+                        style: ts(context, 14, weight: w700),
+                      ),
               ),
               const SizedBox(width: 8),
               Stack(

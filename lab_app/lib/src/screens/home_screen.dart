@@ -557,13 +557,21 @@ class _StatsCardState extends State<_StatsCard>
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
+                              // Fills up to the completed share, again on each period change.
                               Transform.flip(
                                 flipX: app.rtl,
-                                child: CustomPaint(
-                                  size: const Size(84, 84),
-                                  painter: _Donut(
-                                    track: pal.track,
-                                    color: pal.accent,
+                                child: TweenAnimationBuilder<double>(
+                                  key: ValueKey('ring-${app.period}'),
+                                  tween: Tween(begin: 0, end: patients == 0 ? 0 : (reports / patients).clamp(0.0, 1.0)),
+                                  duration: const Duration(milliseconds: 1100),
+                                  curve: Curves.easeOutCubic,
+                                  builder: (context, v, _) => CustomPaint(
+                                    size: const Size(84, 84),
+                                    painter: _Donut(
+                                      track: pal.track,
+                                      color: pal.accent,
+                                      value: v,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -903,7 +911,8 @@ class _StatsCardState extends State<_StatsCard>
 /// Donut ring: r=40, stroke 11 on a 100 viewBox, 75% filled, starting at 12 o'clock.
 class _Donut extends CustomPainter {
   final Color track, color;
-  _Donut({required this.track, required this.color});
+  final double value;
+  _Donut({required this.track, required this.color, this.value = .75});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -917,7 +926,7 @@ class _Donut extends CustomPainter {
     canvas.drawArc(
       Rect.fromCircle(center: c, radius: r),
       -math.pi / 2,
-      2 * math.pi * .75,
+      2 * math.pi * value,
       false,
       p
         ..color = color
@@ -927,7 +936,7 @@ class _Donut extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _Donut old) =>
-      old.track != track || old.color != color;
+      old.track != track || old.color != color || old.value != value;
 }
 
 /// Growth line from the design's SVG (viewBox 320x118, preserveAspectRatio none).

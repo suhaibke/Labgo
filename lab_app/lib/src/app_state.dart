@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pdf/pdf.dart' show PdfPageFormat;
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,7 +23,8 @@ import 'theme.dart';
 /// otherwise on local sample data (demo mode).
 class AppState extends ChangeNotifier {
   // ---- appearance -------------------------------------------------------
-  String lang = 'en';
+  /// Arabic first; the choice is remembered on the device.
+  String lang = 'ar';
   bool darkMode = false;
   String accentKey = 'orange';
 
@@ -68,6 +71,7 @@ class AppState extends ChangeNotifier {
   void cycleLanguage() {
     const order = ['en', 'ar', 'ku'];
     lang = order[(order.indexOf(lang) + 1) % 3];
+    SharedPreferences.getInstance().then((p) => p.setString('lab.lang', lang)).catchError((Object _) => false);
     final names = {
       'en': kDStrings['en']!['langEnglish']!,
       'ar': kDStrings['ar']!['langArabic']!,
@@ -142,7 +146,33 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Changes made on the web dashboard (tests and ranges, packages, roles,
+  /// lab details, patients…) reach the app when it comes back to the
+  /// foreground and every two minutes. Nothing typed here is lost: an open
+  /// result entry or an unsaved lab edit keeps its values.
+  DateTime _lastSync = DateTime.fromMillisecondsSinceEpoch(0);
+  Timer? _syncTimer;
+
+  Future<void> syncFromServer({bool force = false}) async {
+    if (!LabApi.enabled || !LabApi.instance.signedIn || auth != 'app') return;
+    if (!force && DateTime.now().difference(_lastSync) < const Duration(seconds: 20)) return;
+    if (_labKey != _labSaved) return; // a lab edit is still being saved
+    _lastSync = DateTime.now();
+    try {
+      final keep = selectedPatient;
+      await _loadFromServer();
+      if (keep != null) {
+        for (final p in patients) {
+          if (p.id == keep.id) selectedPatient = p;
+        }
+      }
+      notifyListeners();
+    } catch (_) {}
+  }
+
   Future<void> _loadFromServer() async {
+    _syncTimer ??= Timer.periodic(const Duration(minutes: 2), (_) => syncFromServer());
+    _lastSync = DateTime.now();
     final b = await LabApi.instance.bootstrap();
     kCatalog
       ..clear()
@@ -167,7 +197,28 @@ class AppState extends ChangeNotifier {
     labAddress = (b.lab['address'] ?? labAddress) as String;
     userAddress = labAddress;
     licenseOwners = (b.lab['licenseOwners'] ?? '') as String;
-    _labSaved = (labName, labPhone, labAddress, licenseOwners);
+    labEmail = '${b.lab['email'] ?? ''}';
+    labWebsite = '${b.lab['website'] ?? ''}';
+    labDescription = '${b.lab['description'] ?? ''}';
+    platformFooter = b.lab['platformFooter'] != false;
+    licenseHolders = [
+      for (final h in (b.lab['licenseHolders'] as List? ?? const []))
+        LicenseHolder('${h['title'] ?? ''}', '${h['name'] ?? ''}', '${h['specialty'] ?? ''}'),
+    ];
+    _labSaved = _labKey;
+    // The logo and photo stored on the server (used in the app and the report PDF).
+    LabApi.instance.fetchBytes('${b.lab['logo'] ?? ''}').then((v) {
+      if (v != null) {
+        labLogo = Uint8List.fromList(v);
+        notifyListeners();
+      }
+    });
+    LabApi.instance.fetchBytes('${b.user['photo'] ?? ''}').then((v) {
+      if (v != null) {
+        userPhoto = Uint8List.fromList(v);
+        notifyListeners();
+      }
+    });
     permissions = [for (final p in (b.user['permissions'] as List? ?? const [])) '$p'];
     isOwner = b.user['isOwner'] == true;
     if (!isOwner && !permissions.contains('users')) users = [];
@@ -184,7 +235,7 @@ class AppState extends ChangeNotifier {
   bool can(String p) => !LabApi.enabled || isOwner || permissions.contains(p);
   /// Finance card data (null = demo numbers).
   Map<String, dynamic>? finance;
-  (String, String, String, String) _labSaved = ('', '', '', '');
+  String _labSaved = '';
   Timer? _labTimer, _rolesTimer;
 
   static String _roleId(String key) => key.startsWith('c-') ? key : 'role-$key';
@@ -244,8 +295,8 @@ class AppState extends ChangeNotifier {
             type: cap('${w['type']}'),
             weight: ((w['weightKg'] ?? 0) as num).toDouble(),
             status: w['status'] == 'collected' ? 'Completed' : 'Pending',
-            driver: '${w['company'] ?? ''}',
             notes: '${w['notes'] ?? ''}',
+            requestNo: ((w['requestNo'] ?? 0) as num).toInt(),
           ),
       ];
     } catch (_) {}
@@ -590,20 +641,27 @@ class AppState extends ChangeNotifier {
     toast(m != null ? tr(m.$1, m.$2, m.$3) : e.toString());
   }
 
+  String get _labKey => [labName, labPhone, labAddress, labEmail, labWebsite, labDescription, for (final h in licenseHolders) '${h.title}|${h.name}|${h.specialty}'].join('\u0001');
+
   /// Lab details are edited without a Save button: save shortly after typing stops.
   void _scheduleLabSave() {
     if (!LabApi.enabled || !LabApi.instance.signedIn) return;
-    final now = (labName, labPhone, labAddress, licenseOwners);
-    if (now == _labSaved) return;
+    if (_labKey == _labSaved) return;
     _labTimer?.cancel();
     _labTimer = Timer(const Duration(milliseconds: 1200), () async {
-      final sent = (labName, labPhone, labAddress, licenseOwners);
+      final sent = _labKey;
       try {
         await LabApi.instance.saveLab({
           'name': labName,
           'phone': labPhone,
           'address': labAddress,
-          'licenseOwners': licenseOwners,
+          'email': labEmail,
+          'website': labWebsite,
+          'description': labDescription,
+          'licenseHolders': [
+            for (final h in licenseHolders)
+              if (h.name.trim().isNotEmpty) {'title': h.title, 'name': h.name, 'specialty': h.specialty},
+          ],
         });
         _labSaved = sent;
       } catch (e) {
@@ -638,9 +696,7 @@ class AppState extends ChangeNotifier {
   /// Home card numbers for today / this week / this month:
   /// (patients, completed, pending, sent). Demo mode keeps the design's numbers.
   List<(int, int, int, int)> get periodStats {
-    if (!LabApi.enabled) {
-      return const [(24, 18, 4, 2), (142, 121, 4, 2), (586, 512, 4, 2), (6940, 6812, 4, 2)];
-    }
+    // Counted from the patients themselves, so the card and the lists agree.
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final starts = [
@@ -652,7 +708,8 @@ class AppState extends ChangeNotifier {
     return [
       for (final from in starts)
         () {
-          final list = patients.where((p) => p.createdAt != null && !p.createdAt!.isBefore(from));
+          // Demo patients have no date: they count as today's.
+          final list = patients.where((p) => p.createdAt == null || !p.createdAt!.isBefore(from));
           int count(String st) => list.where((p) => p.status == st).length;
           return (list.length, count('Completed'), list.length - count('Completed') - count('Sent'), count('Sent'));
         }(),
@@ -824,6 +881,62 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     // Pick up changes made on the web dashboard.
     if (id == 'home' || id == 'results') refreshPatients();
+    if (id == 'profile' || id == 'add') syncFromServer();
+  }
+
+  // ---- photos (user and lab logo) ------------------------------------------
+  Uint8List? userPhoto;
+  Uint8List? labLogo;
+
+  Future<Uint8List?> _pickImage() async {
+    try {
+      final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 900, maxHeight: 900, imageQuality: 85);
+      return f == null ? null : await f.readAsBytes();
+    } catch (_) {
+      toast(tr('لا يمكن فتح الاستوديو. اسمح للتطبيق من الإعدادات.', 'ستۆدیۆ ناکرێتەوە.', 'Cannot open the photo library. Allow access in Settings.'));
+      return null;
+    }
+  }
+
+  Future<void> _keep(String key, Uint8List bytes) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, base64Encode(bytes));
+    } catch (_) {}
+  }
+
+  Future<void> pickUserPhoto() async {
+    final bytes = await _pickImage();
+    if (bytes == null) return;
+    userPhoto = bytes;
+    notifyListeners();
+    _keep('lab.userPhoto', bytes);
+    if (LabApi.enabled) {
+      try {
+        await LabApi.instance.uploadUserPhoto(bytes);
+      } catch (e) {
+        _serverError(e);
+        return;
+      }
+    }
+    toast(tr('تم تغيير الصورة ✓', 'وێنە گۆڕدرا ✓', 'Photo changed ✓'));
+  }
+
+  Future<void> pickLabLogo() async {
+    final bytes = await _pickImage();
+    if (bytes == null) return;
+    labLogo = bytes;
+    notifyListeners();
+    _keep('lab.logo', bytes);
+    if (LabApi.enabled) {
+      try {
+        await LabApi.instance.uploadLabLogo(bytes);
+      } catch (e) {
+        _serverError(e);
+        return;
+      }
+    }
+    toast(tr('تم تغيير شعار المختبر ✓', 'لۆگۆی تاقیگە گۆڕدرا ✓', 'Lab logo changed ✓'));
   }
 
   // ---- lab profile ---------------------------------------------------------
@@ -834,6 +947,24 @@ class AppState extends ChangeNotifier {
   String userRole = 'Lab Manager';
   String userAddress = 'Mosul, Al-Majmoua St.';
   String licenseOwners = 'Dr. Ahmed Al-Mosuli, Dr. Sara Ali';
+  String labEmail = 'info@labgo-mosul.iq';
+  String labWebsite = '';
+  String labDescription = '';
+  /// "Powered by LabGo" in the report footer; only the LabGo admin can remove it.
+  bool platformFooter = true;
+  List<LicenseHolder> licenseHolders = [
+    LicenseHolder('Dr.', 'Ahmed Al-Mosuli', 'Bacteriologist'),
+    LicenseHolder('Dr.', 'Sara Ali', 'Pathologist'),
+  ];
+
+  /// Licence holders as report lines.
+  List<String> get holderLines => licenseHolders.map((h) => h.line).where((l) => l.isNotEmpty).toList();
+
+  void updateLab(void Function() change) {
+    change();
+    notifyListeners();
+    _scheduleLabSave();
+  }
   int logoBumps = 0;
   String labName = 'LabGo';
   String labPhone = '+964 770 123 4567';
@@ -1062,6 +1193,16 @@ class AppState extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// Report management: the device's print preview of a sample report.
+  Future<void> previewSampleReport(Patient p) async {
+    try {
+      final bytes = await buildResultReportPdf(this, p);
+      await Printing.layoutPdf(name: 'report-preview', onLayout: (_) async => bytes);
+    } catch (_) {
+      toast(tr('تعذر فتح المعاينة', 'نەتوانرا پێشبینین بکرێتەوە', 'Could not open the preview'));
+    }
+  }
+
   /// "Print": the report as a PDF to print or share (AirPrint, WhatsApp, Files…).
   Future<void> sharePrintPdf() async {
     final p = printPatient;
@@ -1223,6 +1364,11 @@ class AppState extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       savedDoctors = prefs.getStringList('lab.doctors') ?? [];
+      lang = prefs.getString('lab.lang') ?? lang;
+      final photo = prefs.getString('lab.userPhoto');
+      final logo = prefs.getString('lab.logo');
+      if (photo != null) userPhoto = base64Decode(photo);
+      if (logo != null) labLogo = base64Decode(logo);
       savedCompanies = prefs.getStringList('lab.companies') ?? [];
       notifyListeners();
     } catch (_) {}
@@ -1944,13 +2090,12 @@ class AppState extends ChangeNotifier {
             'type': t.type.toLowerCase(),
             'weightKg': t.weight,
             'pickupDate': t.date,
-            'company': t.driver,
             'notes': t.notes,
           });
-          if (t.status == 'Completed' && created['_id'] != null) {
-            await LabApi.instance.wasteCollected('${created['_id']}');
-          }
           await _loadWaste();
+          notifyListeners();
+          final saved = wasteTransfers.where((w) => w.id == '${created['_id']}');
+          if (saved.isNotEmpty) openWasteReport(saved.first);
           toast(d('transferCreated'));
         } catch (e) {
           _serverError(e);
@@ -1958,8 +2103,25 @@ class AppState extends ChangeNotifier {
       }();
       return;
     }
-    wasteTransfers = [t, ...wasteTransfers];
+    final next = wasteTransfers.fold<int>(1000, (m, w) => w.requestNo > m ? w.requestNo : m) + 1;
+    final saved = WasteTransfer(id: t.id, date: t.date, type: t.type, weight: t.weight, notes: t.notes, requestNo: next);
+    wasteTransfers = [saved, ...wasteTransfers];
     toast(d('transferCreated'));
+    openWasteReport(saved);
+  }
+
+  /// The pickup request report (PDF) in the device's print preview: the
+  /// server's report when connected, otherwise one made on the phone.
+  Future<void> openWasteReport(WasteTransfer w) async {
+    try {
+      List<int>? bytes;
+      if (LabApi.enabled) bytes = await LabApi.instance.wasteReportPdf(w.id);
+      bytes ??= await buildWastePdf(this, w);
+      final data = Uint8List.fromList(bytes);
+      await Printing.layoutPdf(name: 'waste-request-${w.requestNo}', onLayout: (_) async => data);
+    } catch (_) {
+      toast(tr('تعذر فتح التقرير', 'ڕاپۆرت نەکرایەوە', 'Could not open the report'));
+    }
   }
 
   void addProductOrder(ProductOrder o) {
@@ -2069,6 +2231,7 @@ class AppState extends ChangeNotifier {
   void dispose() {
     _toastTimer?.cancel();
     _notifTimer?.cancel();
+    _syncTimer?.cancel();
     _demoNotifTimer?.cancel();
     _chime.dispose();
     _labTimer?.cancel();

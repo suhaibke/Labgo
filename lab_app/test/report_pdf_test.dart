@@ -18,8 +18,11 @@ void main() {
       code: 'LG-2026-4820', patient: 'سارة علي', demographic: 'أنثى · 31 سنة', tests: 'Vitamin D, Ferritin',
       fromLab: 'LabGo Mosul', toLab: 'Al-Hayat Lab', date: '13 Nov 2026', eta: '15 Nov 2026', reference: 'EXT-1042', price: '25,000', qr: 'https://labgo.iq/r/t/x?k=y'));
     expect(String.fromCharCodes(label.sublist(0, 4)), '%PDF');
+    final waste = await buildWastePdf(app, const WasteTransfer(id: 'w', date: '2026-11-14', type: 'Sharps', weight: 1.2, notes: 'Needles box', requestNo: 1003));
+    expect(String.fromCharCodes(waste.sublist(0, 4)), '%PDF');
     final out = Platform.environment['PDF_OUT'];
     if (out != null) {
+      File('$out/waste.pdf').writeAsBytesSync(waste);
       File('$out/report.pdf').writeAsBytesSync(report);
       File('$out/label.pdf').writeAsBytesSync(label);
     }

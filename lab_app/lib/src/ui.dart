@@ -658,6 +658,8 @@ class BoxField extends StatelessWidget {
         maxLines: lines,
         keyboardType: keyboard,
         textDirection: ltr ? TextDirection.ltr : null,
+        // Latin text (addresses, e-mails) lines up on the start side in Arabic too.
+        textAlign: ltr && Directionality.of(context) == TextDirection.rtl ? TextAlign.right : TextAlign.start,
         style: ts(context, fontSize),
         strutStyle: StrutStyle(
           fontSize: fontSize,
