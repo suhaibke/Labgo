@@ -267,6 +267,8 @@ String initials(String name) => name
 class Referral {
   final String id, patient, test, lab, status, eta, tracking;
   final int step;
+  /// 'Male' | 'Female' | '' and age in years ('' when unknown).
+  final String gender, age;
   const Referral({
     required this.id,
     required this.patient,
@@ -276,6 +278,8 @@ class Referral {
     required this.eta,
     required this.tracking,
     required this.step,
+    this.gender = '',
+    this.age = '',
   });
 }
 

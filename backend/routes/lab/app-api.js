@@ -206,6 +206,8 @@ function toReferral(t) {
     return {
         id: String(t._id),
         patient: t.patientName || '',
+        gender: t.patientGender || '',
+        age: Number.isInteger(t.patientAge) ? t.patientAge : null,
         test: (t.tests || []).map((x) => x.testName).filter(Boolean).join(', ') || t.testsDescription || '',
         lab: t.externalLab?.name || '',
         status: done ? 'Completed' : 'Sent',
@@ -258,6 +260,10 @@ router.post('/api/app/transfers', async (req, res) => {
             if (!name) return res.status(400).json({ success: false, message: 'Patient name is required' });
             fields.sampleCode = ExternalTransfer.generateSampleCode();
             fields.patientName = name.slice(0, 120);
+            const gender = String(b.patientGender || '').toLowerCase();
+            if (gender === 'male' || gender === 'female') fields.patientGender = gender;
+            const age = parseInt(b.patientAge, 10);
+            if (Number.isInteger(age) && age >= 0 && age <= 130) fields.patientAge = age;
             const typed = Array.isArray(b.testNames) && b.testNames.length ? b.testNames.join(', ') : b.testName;
             if (typed) fields.testsDescription = String(typed).slice(0, 300);
         }

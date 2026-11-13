@@ -17,6 +17,7 @@ class _SendScreenState extends State<SendScreen> {
   late final TextEditingController _test;
   late final TextEditingController _lab;
   late final TextEditingController _barcode;
+  late final TextEditingController _age = TextEditingController(text: AppScope.read(context).refAge);
   final _price = TextEditingController();
 
   @override
@@ -31,7 +32,7 @@ class _SendScreenState extends State<SendScreen> {
 
   @override
   void dispose() {
-    for (final c in [_patient, _test, _lab, _barcode, _price]) {
+    for (final c in [_patient, _test, _lab, _barcode, _price, _age]) {
       c.dispose();
     }
     super.dispose();
@@ -277,10 +278,9 @@ class _SendScreenState extends State<SendScreen> {
                     label: p.name,
                     onTap: () {
                       _patient.text = p.name;
-                      app.updateSend(() {
-                        app.refPatient = p.name;
-                        app.refPatientOpen = false;
-                      });
+                      app.pickRefPatient(p);
+                      _age.text = app.refAge;
+                      FocusScope.of(context).unfocus();
                     },
                   ),
               ],
@@ -292,6 +292,47 @@ class _SendScreenState extends State<SendScreen> {
                   app.refPatientOpen = true;
                 }),
               ),
+            ),
+            const SizedBox(height: 8),
+            // Gender and age (filled in from a saved patient; typed for a new name).
+            Row(
+              children: [
+                Text(w('age'), style: ts(context, 12, weight: w700, color: pal.muted)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: BoxField(
+                      controller: _age,
+                      hint: '25',
+                      vPad: 10,
+                      ltr: true,
+                      keyboard: TextInputType.number,
+                      onChanged: (v) => app.updateSend(() => app.refAge = v.replaceAll(RegExp(r'[^0-9]'), '')),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(app.tr('سنة', 'ساڵ', 'yrs'), style: ts(context, 12, weight: w700, color: pal.muted)),
+                const SizedBox(width: 10),
+                for (final g in const [('Male', 'Mars', Color(0xFF5B7A99)), ('Female', 'Venus', Color(0xFFB0708A))]) ...[
+                  GestureDetector(
+                    onTap: () => app.updateSend(() => app.refGender = g.$1),
+                    child: Container(
+                      width: 38,
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: app.refGender == g.$1 ? pal.accent : pal.chipBg,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: pal.cardBorder),
+                      ),
+                      child: LIcon(g.$2, size: 15, strokeWidth: 2.2, color: app.refGender == g.$1 ? Colors.white : g.$3),
+                    ),
+                  ),
+                  if (g.$1 == 'Male') const SizedBox(width: 6),
+                ],
+              ],
             ),
             const SizedBox(height: 16),
             stepTitle('2', w('chooseTest')),

@@ -274,6 +274,8 @@ class AppState extends ChangeNotifier {
             eta: '${r['eta']}',
             tracking: '${r['tracking']}',
             step: ((r['step'] ?? 0) as num).toInt(),
+            gender: r['gender'] == 'female' ? 'Female' : r['gender'] == 'male' ? 'Male' : '',
+            age: r['age'] == null ? '' : '${r['age']}',
           ),
       ];
       // Labs registered on LabGo first (price from their B2B prices), then
@@ -1395,6 +1397,19 @@ class AppState extends ChangeNotifier {
   // send to other labs (design: V1, ve, qf, N1, Mu, _1, x2, Kf, dz, ru, Df, wl)
   String sendTab = 'send';
   String refPatient = 'Sara Ali';
+  String refGender = 'Female';
+  String refAge = '28';
+
+  /// Choosing a saved patient fills in their gender and age.
+  void pickRefPatient(Patient p) {
+    refPatient = p.name;
+    refGender = p.gender == 'Female' ? 'Female' : 'Male';
+    final m = RegExp(r'(\d+)\s*([YMD]?)', caseSensitive: false).firstMatch(p.age);
+    final unit = (m?.group(2) ?? 'Y').toUpperCase();
+    refAge = m == null ? '' : unit == 'Y' || unit.isEmpty ? m.group(1)! : '0';
+    refPatientOpen = false;
+    notifyListeners();
+  }
   bool refPatientOpen = false;
   /// Tests chosen to send (removable chips).
   List<String> refTests = ['Vitamin D'];
@@ -1494,6 +1509,8 @@ class AppState extends ChangeNotifier {
       LabApi.instance.addTransfer({
         if (match != null) 'orderId': match.id,
         'patientName': refPatient.trim(),
+        'patientGender': refGender == 'Female' ? 'female' : 'male',
+        if (refAge.trim().isNotEmpty) 'patientAge': refAge.trim(),
         'testName': refTest,
         'testNames': List.of(refTests),
         'labName': refLab,
@@ -1510,6 +1527,8 @@ class AppState extends ChangeNotifier {
       Referral(
         id: '${DateTime.now().millisecondsSinceEpoch}',
         patient: refPatient.trim(),
+        gender: refGender,
+        age: refAge.trim(),
         test: refTest,
         lab: refLab,
         status: 'Sent',
@@ -1626,6 +1645,12 @@ class AppState extends ChangeNotifier {
           if (ld['gender'] == 'male') tr('ذكر', 'نێر', 'Male'),
           if (ld['gender'] == 'female') tr('أنثى', 'مێ', 'Female'),
           if (ld['age'] != null) '${ld['age']} ${tr('سنة', 'ساڵ', 'y')}',
+        ].join(' · ');
+      }
+      if (r.gender.isNotEmpty) {
+        return [
+          r.gender == 'Female' ? tr('أنثى', 'مێ', 'Female') : tr('ذكر', 'نێر', 'Male'),
+          if (r.age.isNotEmpty) '${r.age} ${tr('سنة', 'ساڵ', 'y')}',
         ].join(' · ');
       }
       if (match == null) return '';

@@ -605,6 +605,11 @@ class _ShippingLabel extends StatelessWidget {
             if (ld['gender'] == 'female') app.tr('أنثى', 'مێ', 'Female'),
             if (ld['age'] != null) '${ld['age']} ${app.tr('سنة', 'ساڵ', 'y')}',
           ].join(' · ')
+        : r.gender.isNotEmpty
+        ? [
+            r.gender == 'Female' ? app.tr('أنثى', 'مێ', 'Female') : app.tr('ذكر', 'نێر', 'Male'),
+            if (r.age.isNotEmpty) '${r.age} ${app.tr('سنة', 'ساڵ', 'y')}',
+          ].join(' · ')
         : match.isEmpty
         ? ''
         : '${match.first.gender == 'Female' ? app.tr('أنثى', 'مێ', 'Female') : app.tr('ذكر', 'نێر', 'Male')} · ${match.first.age}';
