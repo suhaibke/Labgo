@@ -620,6 +620,7 @@ class BoxField extends StatelessWidget {
   final int lines;
   final bool ltr;
   final TextInputType? keyboard;
+  final bool readOnly;
 
   const BoxField({
     super.key,
@@ -634,6 +635,7 @@ class BoxField extends StatelessWidget {
     this.lines = 1,
     this.ltr = false,
     this.keyboard,
+    this.readOnly = false,
   });
 
   @override
@@ -654,6 +656,7 @@ class BoxField extends StatelessWidget {
         focusNode: focusNode,
         onChanged: onChanged,
         onTap: onTap,
+        readOnly: readOnly,
         minLines: lines,
         maxLines: lines,
         keyboardType: keyboard,

@@ -216,7 +216,9 @@ router.post('/api/orders/:orderId/results/approve', async (req, res) => {
         const rows = buildRows(decorateOrderWithPatientInfo(order), req.lab);
         const values = applyValues(order, rows, req.body || {}, req.user._id);
         const missing = values.filter((v) => !v.value).map((v) => v.testName);
-        if (missing.length) {
+        // A result uploaded as a file (photo / PDF) can stand in for typed values.
+        const uploadedReport = typeof req.body?.reportUrl === 'string' && req.body.reportUrl;
+        if (missing.length && !uploadedReport) {
             return res.status(400).json({ success: false, message: 'Some tests have no value', missing });
         }
         order.results.entryStatus = 'approved';

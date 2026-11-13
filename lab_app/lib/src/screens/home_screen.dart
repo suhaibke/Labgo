@@ -262,6 +262,9 @@ class _StatsCard extends StatefulWidget {
 
 class _StatsCardState extends State<_StatsCard>
     with SingleTickerProviderStateMixin {
+  int _taps = 0;
+  DateTime _lastTap = DateTime.fromMillisecondsSinceEpoch(0);
+
   Offset? _start;
   Offset _drag = Offset.zero;
 
@@ -332,6 +335,16 @@ class _StatsCardState extends State<_StatsCard>
     }
 
     final card = GestureDetector(
+      // Three quick taps: print preview of this card's details.
+      onTap: () {
+        final now = DateTime.now();
+        _taps = now.difference(_lastTap) < const Duration(milliseconds: 500) ? _taps + 1 : 1;
+        _lastTap = now;
+        if (_taps >= 3) {
+          _taps = 0;
+          app.printStatsCard(app.card);
+        }
+      },
       onPanStart: (d) => setState(() {
         _start = d.globalPosition;
         _drag = Offset.zero;

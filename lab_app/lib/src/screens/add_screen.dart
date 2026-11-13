@@ -151,7 +151,7 @@ class AddScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 _KeepInput(
                   initial: app.addName,
-                  hint: 'Ali Ahmed',
+                  hint: app.tr('اسم المريض', 'ناوی نەخۆش', 'Patient name'),
                   onChanged: (v) => app.addName = v,
                 ),
               ],
@@ -168,7 +168,7 @@ class AddScreen extends StatelessWidget {
                         height: 44,
                         child: _KeepInput(
                           initial: app.addAge,
-                          hint: '25',
+                          hint: app.tr('العمر', 'تەمەن', 'Age'),
                           keyboard: TextInputType.number,
                           vPad: 10,
                           onChanged: (v) => app.updateAdd(() => app.addAge = v),
@@ -241,7 +241,7 @@ class AddScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 _KeepInput(
                   initial: app.addPhone,
-                  hint: '+964 770 000 0000',
+                  hint: app.tr('رقم الهاتف', 'ژمارەی تەلەفۆن', 'Phone number'),
                   forceLtr: true,
                   keyboard: TextInputType.phone,
                   onChanged: (v) => app.addPhone = v,

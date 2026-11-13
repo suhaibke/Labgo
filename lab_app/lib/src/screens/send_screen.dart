@@ -38,9 +38,17 @@ class _SendScreenState extends State<SendScreen> {
     super.dispose();
   }
 
+  int _formVersion = 0;
+
   @override
   Widget build(BuildContext context) {
     final app = context.app;
+    if (_formVersion != app.refFormVersion) {
+      _formVersion = app.refFormVersion;
+      for (final c in [_patient, _test, _lab, _price, _age]) {
+        c.clear();
+      }
+    }
     final pal = app.palette;
     final w = app.w, d = app.d;
     if (_barcode.text != app.barcode) _barcode.text = app.barcode;
@@ -304,7 +312,7 @@ class _SendScreenState extends State<SendScreen> {
                     height: 44,
                     child: BoxField(
                       controller: _age,
-                      hint: '25',
+                      hint: app.tr('العمر', 'تەمەن', 'Age'),
                       vPad: 10,
                       ltr: true,
                       keyboard: TextInputType.number,

@@ -512,3 +512,182 @@ Future<Uint8List> buildWastePdf(AppState app, WasteTransfer w) async {
   ));
   return doc.save();
 }
+
+/// Purchase order for lab supplies (to send to a supplier).
+Future<Uint8List> buildSupplyOrderPdf(AppState app, SupplyOrder o) async {
+  final fonts = await _fonts();
+  final t = _T(fonts);
+  final accent = _pdfColor(app.palette.accent.toARGB32());
+  final doc = pw.Document(title: 'Supply order ${o.no}');
+  pw.Widget cell(String v, {bool bold = false, PdfColor color = _ink, double size = 10}) =>
+      pw.Padding(padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6), child: t(v, size: size, bold: bold, color: color));
+  doc.addPage(pw.MultiPage(
+    pageFormat: PdfPageFormat.a4.copyWith(marginLeft: 40, marginRight: 40, marginTop: 36, marginBottom: 36),
+    footer: (ctx) => pw.Row(mainAxisAlignment: pw.MainAxisAlignment.center, children: [
+      if (_labgoLogo != null) pw.Image(pw.MemoryImage(_labgoLogo!), height: 10),
+      pw.SizedBox(width: 4),
+      t('Powered by LabGo platform', size: 7, color: _muted),
+    ]),
+    build: (ctx) => [
+      pw.Container(
+        padding: const pw.EdgeInsets.only(bottom: 8),
+        decoration: pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: accent, width: 2.5))),
+        child: pw.Row(children: [
+          pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            t(app.labDisplayName, size: 16, bold: true),
+            t([app.labAddress, app.labPhone, app.labEmail].where((x) => x.trim().isNotEmpty).join(' · '), size: 9, color: _muted),
+          ])),
+          if (app.labLogo != null) pw.Image(pw.MemoryImage(app.labLogo!), width: 54, height: 54, fit: pw.BoxFit.contain),
+        ]),
+      ),
+      pw.SizedBox(height: 14),
+      pw.Row(children: [
+        pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          t('طلبية مواد مختبرية', size: 15, bold: true),
+          t('Laboratory supplies order', size: 9, color: _muted),
+        ])),
+        pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+          t('#${o.no}', size: 14, bold: true, color: accent),
+          t(o.date, size: 9, color: _muted),
+        ]),
+      ]),
+      pw.SizedBox(height: 10),
+      pw.Container(
+        padding: const pw.EdgeInsets.all(10),
+        decoration: pw.BoxDecoration(color: _soft, borderRadius: pw.BorderRadius.circular(8)),
+        child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          t('إلى المورد · To: ${o.supplier.isEmpty ? '—' : o.supplier}', size: 10, bold: true),
+          if (o.supplierPhone.isNotEmpty) t(o.supplierPhone, size: 9, color: _muted),
+          if (o.neededBy.isNotEmpty) t('مطلوب قبل · Needed by: ${o.neededBy}', size: 9, color: _muted),
+        ]),
+      ),
+      pw.SizedBox(height: 10),
+      pw.Table(
+        border: pw.TableBorder.all(color: _line, width: .6),
+        columnWidths: const {0: pw.FixedColumnWidth(28), 1: pw.FlexColumnWidth(5), 2: pw.FlexColumnWidth(1.4), 3: pw.FlexColumnWidth(1.6)},
+        children: [
+          pw.TableRow(decoration: const pw.BoxDecoration(color: _soft), children: [
+            cell('#', bold: true, color: _muted, size: 8),
+            cell('المادة · Item', bold: true, color: _muted, size: 8),
+            cell('الكمية · Qty', bold: true, color: _muted, size: 8),
+            cell('الوحدة · Unit', bold: true, color: _muted, size: 8),
+          ]),
+          for (var i = 0; i < o.items.length; i++)
+            pw.TableRow(children: [
+              cell('${i + 1}', color: _muted),
+              cell(o.items[i].name, bold: true),
+              cell(o.items[i].qty),
+              cell(o.items[i].unit),
+            ]),
+        ],
+      ),
+      if (o.notes.trim().isNotEmpty) ...[
+        pw.SizedBox(height: 10),
+        t('ملاحظات · Notes', size: 8, bold: true, color: _muted),
+        t(o.notes, size: 10),
+      ],
+      pw.SizedBox(height: 40),
+      pw.Row(children: [
+        pw.Expanded(child: pw.Column(children: [
+          pw.Container(height: .8, color: const PdfColor.fromInt(0xFF9CA3AF)),
+          pw.SizedBox(height: 3),
+          t(app.doctorName, size: 10, bold: true),
+          t('توقيع المختبر · Lab signature', size: 8, color: _muted),
+        ])),
+        pw.SizedBox(width: 120),
+      ]),
+    ],
+  ));
+  return doc.save();
+}
+
+/// Home card details for printing (patients and reports per period, and the patients of the period).
+Future<Uint8List> buildStatsPdf(AppState app, String title) async {
+  final fonts = await _fonts();
+  final t = _T(fonts);
+  final accent = _pdfColor(app.palette.accent.toARGB32());
+  final stats = app.periodStats;
+  final periods = [
+    app.tr('اليوم', 'ئەمڕۆ', 'Today'),
+    app.tr('هذا الأسبوع', 'ئەم هەفتەیە', 'This week'),
+    app.tr('هذا الشهر', 'ئەم مانگە', 'This month'),
+    app.tr('هذه السنة', 'ئەمساڵ', 'This year'),
+  ];
+  final now = DateTime.now();
+  pw.Widget c(String v, {bool bold = false, PdfColor color = _ink}) =>
+      pw.Padding(padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5), child: t(v, size: 9.5, bold: bold, color: color));
+  final doc = pw.Document(title: title);
+  doc.addPage(pw.MultiPage(
+    pageFormat: PdfPageFormat.a4.copyWith(marginLeft: 36, marginRight: 36, marginTop: 34, marginBottom: 34),
+    footer: (ctx) => pw.Row(children: [
+      pw.Expanded(child: t('${app.labDisplayName} · ${now.day}/${now.month}/${now.year}', size: 7, color: _muted)),
+      if (_labgoLogo != null) pw.Image(pw.MemoryImage(_labgoLogo!), height: 10),
+      pw.SizedBox(width: 4),
+      t('Powered by LabGo platform', size: 7, color: _muted),
+    ]),
+    build: (ctx) => [
+      pw.Container(
+        padding: const pw.EdgeInsets.only(bottom: 8),
+        decoration: pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: accent, width: 2.5))),
+        child: pw.Row(children: [
+          pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            t(app.labDisplayName, size: 15, bold: true),
+            t(title, size: 11, color: accent, bold: true),
+          ])),
+          if (app.labLogo != null) pw.Image(pw.MemoryImage(app.labLogo!), width: 48, height: 48, fit: pw.BoxFit.contain),
+        ]),
+      ),
+      pw.SizedBox(height: 12),
+      pw.Table(
+        border: pw.TableBorder.all(color: _line, width: .6),
+        children: [
+          pw.TableRow(decoration: const pw.BoxDecoration(color: _soft), children: [
+            c(app.tr('الفترة', 'ماوە', 'Period'), bold: true, color: _muted),
+            c(app.tr('المرضى', 'نەخۆش', 'Patients'), bold: true, color: _muted),
+            c(app.tr('مكتمل', 'تەواو', 'Completed'), bold: true, color: _muted),
+            c(app.tr('قيد الانتظار', 'چاوەڕوان', 'Pending'), bold: true, color: _muted),
+            c(app.tr('مرسل', 'نێردراو', 'Sent'), bold: true, color: _muted),
+          ]),
+          for (var i = 0; i < stats.length && i < periods.length; i++)
+            pw.TableRow(children: [
+              c(periods[i], bold: true),
+              c('${stats[i].$1}'),
+              c('${stats[i].$2}'),
+              c('${stats[i].$3}'),
+              c('${stats[i].$4}'),
+            ]),
+        ],
+      ),
+      pw.SizedBox(height: 14),
+      t(app.tr('المرضى', 'نەخۆشەکان', 'Patients'), size: 11, bold: true),
+      pw.SizedBox(height: 6),
+      pw.Table(
+        border: pw.TableBorder.all(color: _line, width: .6),
+        columnWidths: const {0: pw.FlexColumnWidth(3), 1: pw.FlexColumnWidth(4), 2: pw.FlexColumnWidth(2), 3: pw.FlexColumnWidth(2)},
+        children: [
+          pw.TableRow(decoration: const pw.BoxDecoration(color: _soft), children: [
+            c(app.tr('الاسم', 'ناو', 'Name'), bold: true, color: _muted),
+            c(app.tr('التحاليل', 'پشکنین', 'Tests'), bold: true, color: _muted),
+            c(app.tr('الحالة', 'دۆخ', 'Status'), bold: true, color: _muted),
+            c(app.tr('السعر', 'نرخ', 'Price'), bold: true, color: _muted),
+          ]),
+          for (final p in app.patients.take(60))
+            pw.TableRow(children: [
+              c(p.name, bold: true),
+              c(p.tests.join(', ')),
+              c(p.status),
+              c('${p.price}'),
+            ]),
+        ],
+      ),
+    ],
+  ));
+  return doc.save();
+}
+
+/// A photo of a result as a one-page PDF (to share or print).
+Future<Uint8List> imageAsPdf(Uint8List img) async {
+  final doc = pw.Document();
+  doc.addPage(pw.Page(pageFormat: PdfPageFormat.a4, build: (_) => pw.Center(child: pw.Image(pw.MemoryImage(img), fit: pw.BoxFit.contain))));
+  return doc.save();
+}

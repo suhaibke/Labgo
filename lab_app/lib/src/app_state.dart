@@ -3,17 +3,21 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pdf/pdf.dart' show PdfPageFormat;
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'api.dart';
 import 'catalog_data.dart';
 import 'models.dart';
 import 'report_pdf.dart';
+import 'results_logic.dart';
 import 'screens/store_screen.dart';
 import 'strings_data.dart';
 import 'theme.dart';
@@ -234,7 +238,77 @@ class AppState extends ChangeNotifier {
   bool isOwner = false;
   bool can(String p) => !LabApi.enabled || isOwner || permissions.contains(p);
   /// Finance card data (null = demo numbers).
-  Map<String, dynamic>? finance;
+  Map<String, dynamic>? _serverFinance;
+
+  /// Expenses recorded on this device when not connected to the server.
+  List<Map<String, dynamic>> localExpenses = [];
+
+  /// Finance card data: the server's numbers, or worked out from this
+  /// device's patients and expenses — never sample figures.
+  Map<String, dynamic> get finance => _serverFinance ?? _localFinance();
+
+  Map<String, dynamic> _localFinance() {
+    num sum(Iterable<Patient> list) => list.fold<num>(0, (a, p) => a + p.price);
+    final unpaid = patients.where((p) => p.status == 'Payment Pending');
+    final paid = patients.where((p) => p.status != 'Payment Pending');
+    final income = sum(paid);
+    final byCategory = <String, num>{};
+    for (final e in localExpenses) {
+      byCategory['${e['category']}'] = (byCategory['${e['category']}'] ?? 0) + (e['amount'] as num);
+    }
+    final expenses = byCategory.values.fold<num>(0, (a, b) => a + b);
+    // Six bars = the last six months; patients without a date count this month.
+    final now = DateTime.now();
+    final inc = List<double>.filled(6, 0), exp = List<double>.filled(6, 0);
+    int slot(DateTime? d) {
+      if (d == null) return 5;
+      final m = (now.year - d.year) * 12 + now.month - d.month;
+      return m < 0 || m > 5 ? -1 : 5 - m;
+    }
+    for (final p in paid) {
+      final i = slot(p.createdAt);
+      if (i >= 0) inc[i] += p.price;
+    }
+    for (final e in localExpenses) {
+      final i = slot(DateTime.tryParse('${e['date']}'));
+      if (i >= 0) exp[i] += (e['amount'] as num).toDouble();
+    }
+    return {
+      'totals': {'income': income, 'expenses': expenses, 'profit': income - expenses, 'debts': sum(unpaid)},
+      'byCategory': byCategory,
+      'expenses': localExpenses,
+      'debts': [for (final p in unpaid) {'name': p.name, 'amount': p.price}],
+      'bars': {'income': inc, 'expenses': exp},
+      'invoices': [
+        for (final p in patients.take(6)) {'code': p.permanent.isEmpty ? p.id : p.permanent, 'name': p.name, 'amount': p.price, 'paid': p.status != 'Payment Pending'},
+      ],
+    };
+  }
+
+  Future<void> addExpense(String category, num amount, String note) async {
+    if (amount <= 0) {
+      toast(tr('اكتب المبلغ', 'بڕ بنووسە', 'Enter the amount'));
+      return;
+    }
+    final e = {'category': category, 'amount': amount, 'note': note, 'date': DateTime.now().toIso8601String()};
+    if (LabApi.enabled) {
+      try {
+        await LabApi.instance.addExpense(e);
+        await loadFinance();
+      } catch (err) {
+        _serverError(err);
+        return;
+      }
+    } else {
+      localExpenses = [e, ...localExpenses];
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('lab.expenses', jsonEncode(localExpenses));
+      } catch (_) {}
+      notifyListeners();
+    }
+    toast(tr('تمت إضافة المصروف ✓', 'خەرجی زیادکرا ✓', 'Expense added ✓'));
+  }
   String _labSaved = '';
   Timer? _labTimer, _rolesTimer;
 
@@ -305,7 +379,7 @@ class AppState extends ChangeNotifier {
   Future<void> loadFinance() async {
     if (!can('finance')) return;
     try {
-      finance = await LabApi.instance.finance();
+      _serverFinance = await LabApi.instance.finance();
       notifyListeners();
     } catch (_) {}
   }
@@ -352,7 +426,6 @@ class AppState extends ChangeNotifier {
         for (final n in names)
           if (!registered.any((l) => l.name.toLowerCase() == n.toLowerCase())) PartnerLab(n, '—', '—', '—', ''),
       ];
-      if (partnerLabs.isNotEmpty && !partnerLabs.any((l) => l.name == refLab)) refLab = partnerLabs.first.name;
       notifyListeners();
       _quoteLabs();
     } catch (_) {}
@@ -583,6 +656,8 @@ class AppState extends ChangeNotifier {
       final type = '${(n['data'] as Map?)?['type'] ?? ''}';
       if (type == 'transfer_incoming') return 'receive';
       if (type == 'transfer_received') return 'tracking';
+      if (type.startsWith('market_') || type.startsWith('auction_')) return 'store';
+      if (type == 'support_reply') return 'support';
       return 'results';
     }
     return 'results';
@@ -606,6 +681,13 @@ class AppState extends ChangeNotifier {
       case 'waste':
         tab = 'profile';
         wastePage = true;
+      case 'store':
+        storeOpen = true;
+        loadMarket();
+      case 'support':
+        tab = 'profile';
+        openSection = 'support';
+        loadSupport();
       default:
         tab = 'results';
         refreshPatients();
@@ -842,15 +924,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---- LabGo store ----------------------------------------------------------
+  // ---- LabGo store (labs' marketplace) ---------------------------------------
   bool storeOpen = false;
-  List<StoreProduct> storeProducts = List.of(kStoreProducts);
+  /// Approved listings of every lab plus this lab's own (any status).
+  List<MarketItem> marketItems = [];
   final List<StoreOrder> storeOrders = [];
 
   void openStore() {
     storeOpen = true;
     notificationsOpen = false;
     notifyListeners();
+    loadMarket();
   }
 
   void closeStore() {
@@ -858,14 +942,46 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addStoreProduct(StoreProduct p) {
-    storeProducts = [p, ...storeProducts];
-    notifyListeners();
+  Future<void> loadMarket() async {
+    if (!LabApi.enabled) return;
+    try {
+      marketItems = [for (final j in await LabApi.instance.marketList()) MarketItem.fromJson(Map<String, dynamic>.from(j as Map))];
+      notifyListeners();
+    } catch (_) {}
   }
 
-  void removeStoreProduct(String id) {
-    storeProducts = storeProducts.where((p) => p.id != id).toList();
-    notifyListeners();
+  /// A new listing waits for the LabGo admin before other labs see it.
+  Future<bool> addListing(MarketItem draft, List<Uint8List> images) async {
+    try {
+      if (LabApi.enabled) {
+        final created = await LabApi.instance.addListing(draft.toFields(), images);
+        marketItems = [MarketItem.fromJson(created), ...marketItems];
+      } else {
+        marketItems = [draft.copyWithLocal(images), ...marketItems];
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _serverError(e);
+      return false;
+    }
+  }
+
+  Future<MarketItem?> placeBid(MarketItem item, int amount) async {
+    if (!LabApi.enabled) {
+      toast(tr('المزايدة تعمل عند الاتصال بالسيرفر', 'مزایدە بە سێرڤەر کار دەکات', 'Bidding works when connected to the server'));
+      return null;
+    }
+    try {
+      final updated = MarketItem.fromJson(await LabApi.instance.bid(item.id, amount));
+      marketItems = [for (final m in marketItems) m.id == updated.id ? updated : m];
+      notifyListeners();
+      toast(tr('تمت المزايدة ✓', 'مزایدە کرا ✓', 'Bid placed ✓'));
+      return updated;
+    } catch (e) {
+      _serverError(e);
+      return null;
+    }
   }
 
   void addStoreOrder(StoreOrder o) {
@@ -1082,8 +1198,52 @@ class AppState extends ChangeNotifier {
   }
 
   /// Opens the result-entry screen for a patient (design `$1`).
+  /// Saved results are locked until "Edit results" is tapped.
+  bool resultsLocked = false;
+
+  void unlockResults() {
+    resultsLocked = false;
+    notifyListeners();
+  }
+
+  /// A result uploaded as a photo or PDF (per patient), shown and sent with the result.
+  final Map<String, (String, Uint8List)> resultFiles = {};
+  String? _resultFileUrl(String patientId) => _uploadedUrls[patientId];
+  final Map<String, String> _uploadedUrls = {};
+
+  Future<void> uploadResultFile() async {
+    final p = selectedPatient;
+    if (p == null) return;
+    try {
+      final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png']);
+      if (picked.isEmpty) return;
+      final f = picked.first;
+      final bytes = await f.readAsBytes();
+      resultFiles[p.id] = (f.name, bytes);
+      notifyListeners();
+      if (LabApi.enabled) {
+        final url = await LabApi.instance.uploadResultFile(p.id, bytes, f.name);
+        if (url != null) _uploadedUrls[p.id] = url;
+      }
+      toast(tr('تم إرفاق ملف النتيجة ✓', 'فایلی ئەنجام هاوپێچکرا ✓', 'Result file attached ✓'));
+    } catch (_) {
+      toast(tr('تعذر رفع الملف', 'فایل بار نەکرا', 'Could not upload the file'));
+    }
+  }
+
+  Future<void> openResultFile(String patientId) async {
+    final f = resultFiles[patientId];
+    if (f == null) return;
+    if (f.$1.toLowerCase().endsWith('.pdf')) {
+      await Printing.layoutPdf(name: f.$1, onLayout: (_) async => f.$2);
+    } else {
+      await Printing.sharePdf(bytes: await _imageToPdf(f.$2), filename: '${f.$1}.pdf');
+    }
+  }
+
   void openPatient(Patient p) {
     selectedPatient = p;
+    resultsLocked = p.status == 'Completed' || p.results.values.any((v) => v.trim().isNotEmpty);
     draft = {for (final t in p.tests) t: p.results[t] ?? ''};
     tab = 'results';
     notifyListeners();
@@ -1109,6 +1269,7 @@ class AppState extends ChangeNotifier {
           if (e.value != (sp.results[e.key] ?? '')) e.key: e.value,
       };
       if (values.isEmpty) {
+        resultsLocked = true;
         toast(w('resultsSaved'));
         return;
       }
@@ -1116,6 +1277,7 @@ class AppState extends ChangeNotifier {
         final updated = sp.copyWith(results: {...sp.results, ...values});
         patients = patients.map((m) => m.id == updated.id ? updated : m).toList();
         if (selectedPatient?.id == updated.id) selectedPatient = updated;
+        resultsLocked = true;
         toast(w('resultsSaved'));
       }).catchError((Object e) {
         toast(e.toString());
@@ -1125,7 +1287,8 @@ class AppState extends ChangeNotifier {
     final updated = sp.copyWith(results: {...sp.results, ...draft});
     patients = patients.map((m) => m.id == updated.id ? updated : m).toList();
     selectedPatient = updated;
-    toast(w('resultsSaved'));
+    resultsLocked = true;
+        toast(w('resultsSaved'));
   }
 
   // print (results report or receipt)
@@ -1193,6 +1356,25 @@ class AppState extends ChangeNotifier {
     } catch (_) {}
   }
 
+  Future<Uint8List> _imageToPdf(Uint8List img) async => imageAsPdf(img);
+
+  /// Home card triple-tap: print preview of the card's details.
+  Future<void> printStatsCard(int index) async {
+    final titles = [
+      periodReportsTitle,
+      tr('التقارير الشهرية', 'ڕاپۆرتی مانگانە', 'Monthly reports'),
+      tr('إجمالي التقارير', 'کۆی ڕاپۆرتەکان', 'Total reports'),
+      tr('النمو', 'گەشە', 'Growth'),
+    ];
+    HapticFeedback.mediumImpact();
+    try {
+      final bytes = await buildStatsPdf(this, titles[index.clamp(0, titles.length - 1)]);
+      await Printing.layoutPdf(name: 'lab-statistics', onLayout: (_) async => bytes);
+    } catch (_) {
+      toast(tr('تعذر فتح الطباعة', 'نەتوانرا چاپ بکرێت', 'Could not open printing'));
+    }
+  }
+
   /// Report management: the device's print preview of a sample report.
   Future<void> previewSampleReport(Patient p) async {
     try {
@@ -1230,14 +1412,14 @@ class AppState extends ChangeNotifier {
     final p = selectedPatient;
     if (p == null || approving) return;
     final values = <String, String>{...p.results, ...draft};
-    if (p.tests.any((t) => (values[t] ?? '').trim().isEmpty)) {
+    if (!resultFiles.containsKey(p.id) && p.tests.any((t) => (values[t] ?? '').trim().isEmpty)) {
       toast(tr('أكمل نتائج كل التحاليل أولاً', 'سەرەتا هەموو ئەنجامەکان پڕ بکەرەوە', 'Fill in every result first'));
       return;
     }
     approving = true;
     notifyListeners();
     try {
-      if (LabApi.enabled) await LabApi.instance.approveResults(p.id, values);
+      if (LabApi.enabled) await LabApi.instance.approveResults(p.id, values, reportUrl: _resultFileUrl(p.id));
       final updated = p.copyWith(results: values, status: 'Completed');
       patients = patients.map((m) => m.id == p.id ? updated : m).toList();
       selectedPatient = updated;
@@ -1364,6 +1546,9 @@ class AppState extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       savedDoctors = prefs.getStringList('lab.doctors') ?? [];
+      await _loadSupplyOrders();
+      final ex = prefs.getString('lab.expenses');
+      if (ex != null) localExpenses = [for (final e in (jsonDecode(ex) as List)) Map<String, dynamic>.from(e as Map)];
       lang = prefs.getString('lab.lang') ?? lang;
       final photo = prefs.getString('lab.userPhoto');
       final logo = prefs.getString('lab.logo');
@@ -1542,9 +1727,9 @@ class AppState extends ChangeNotifier {
 
   // send to other labs (design: V1, ve, qf, N1, Mu, _1, x2, Kf, dz, ru, Df, wl)
   String sendTab = 'send';
-  String refPatient = 'Sara Ali';
-  String refGender = 'Female';
-  String refAge = '28';
+  String refPatient = '';
+  String refGender = '';
+  String refAge = '';
 
   /// Choosing a saved patient fills in their gender and age.
   void pickRefPatient(Patient p) {
@@ -1558,7 +1743,7 @@ class AppState extends ChangeNotifier {
   }
   bool refPatientOpen = false;
   /// Tests chosen to send (removable chips).
-  List<String> refTests = ['Vitamin D'];
+  List<String> refTests = [];
   String get refTest => refTests.join(', ');
 
   void addRefTest(String name) {
@@ -1576,7 +1761,7 @@ class AppState extends ChangeNotifier {
   bool refTestOpen = false;
   String refLabSearch = '';
   bool refLabOpen = false;
-  String refLab = 'Al-Noor Lab';
+  String refLab = '';
   List<Referral> referrals = List.of(kReferralsSeed);
   List<PartnerLab> partnerLabs = List.of(kPartnerLabsSeed);
   String barcode = '';
@@ -1646,6 +1831,10 @@ class AppState extends ChangeNotifier {
       toast(tr('اختر المريض والتحاليل', 'نەخۆش و پشکنین هەڵبژێرە', 'Choose the patient and tests'));
       return;
     }
+    if (refLab.trim().isEmpty) {
+      toast(tr('اختر المختبر الوجهة', 'تاقیگەی مەبەست هەڵبژێرە', 'Choose the destination lab'));
+      return;
+    }
     if (LabApi.enabled) {
       Patient? match;
       for (final p in patients) {
@@ -1655,7 +1844,7 @@ class AppState extends ChangeNotifier {
       LabApi.instance.addTransfer({
         if (match != null) 'orderId': match.id,
         'patientName': refPatient.trim(),
-        'patientGender': refGender == 'Female' ? 'female' : 'male',
+        if (refGender.isNotEmpty) 'patientGender': refGender == 'Female' ? 'female' : 'male',
         if (refAge.trim().isNotEmpty) 'patientAge': refAge.trim(),
         'testName': refTest,
         'testNames': List.of(refTests),
@@ -1664,6 +1853,7 @@ class AppState extends ChangeNotifier {
         if (refPriceEdited && refPrice.isNotEmpty) 'price': refPrice.replaceAll(',', ''),
       }).then((_) async {
         refPriceEdited = false;
+        _clearSendForm();
         await _loadTransfers();
         toast(w('sentToast'));
       }).catchError((Object e) => _serverError(e));
@@ -1678,13 +1868,29 @@ class AppState extends ChangeNotifier {
         test: refTest,
         lab: refLab,
         status: 'Sent',
-        eta: 'Tomorrow 2pm',
-        tracking: 'LG-2026-${120 + referrals.length + 5}',
+        eta: tr('غداً', 'سبەینێ', 'Tomorrow'),
+        tracking: 'LG-${DateTime.now().year}-${120 + referrals.length + 5}',
         step: 0,
       ),
       ...referrals,
     ];
+    _clearSendForm();
     toast(w('sentToast'));
+  }
+
+  /// After sending, the form starts empty again.
+  int refFormVersion = 0;
+  void _clearSendForm() {
+    refPatient = '';
+    refGender = '';
+    refAge = '';
+    refTests = [];
+    refTestSearch = '';
+    refLab = '';
+    refLabSearch = '';
+    refPrice = '';
+    refFormVersion++;
+    notifyListeners();
   }
 
   void setBarcode(String v) {
@@ -1858,6 +2064,89 @@ class AppState extends ChangeNotifier {
   ];
   List<WasteTransfer> wasteTransfers = List.of(kWasteSeed);
   List<ProductOrder> productOrders = [];
+
+  // ---- support (messages to the LabGo team) ---------------------------------
+  List<Map<String, dynamic>> supportTickets = [];
+
+  Future<void> loadSupport() async {
+    if (!LabApi.enabled) return;
+    try {
+      supportTickets = [for (final t in await LabApi.instance.supportTickets()) Map<String, dynamic>.from(t as Map)];
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  /// Sends a suggestion / bug / problem with photos; returns the ticket number.
+  Future<int?> sendSupport(String type, String subject, String message, List<Uint8List> images) async {
+    if (message.trim().isEmpty) {
+      toast(tr('اكتب رسالتك', 'نامەکەت بنووسە', 'Write your message'));
+      return null;
+    }
+    try {
+      int no;
+      if (LabApi.enabled) {
+        final r = await LabApi.instance.sendSupport({'type': type, 'subject': subject, 'message': message}, images);
+        no = (r['ticketNo'] as num).toInt();
+        await loadSupport();
+      } else {
+        no = 5000 + supportTickets.length + 1;
+        supportTickets = [
+          {'ticketNo': no, 'type': type, 'subject': subject, 'message': message, 'status': 'open', 'adminReply': '', 'createdAt': DateTime.now().toIso8601String(), 'images': []},
+          ...supportTickets,
+        ];
+        notifyListeners();
+      }
+      return no;
+    } catch (e) {
+      _serverError(e);
+      return null;
+    }
+  }
+
+  Future<List<Uint8List>> pickImages({int max = 6}) async {
+    try {
+      final files = await ImagePicker().pickMultiImage(maxWidth: 1400, maxHeight: 1400, imageQuality: 80, limit: max);
+      return [for (final f in files.take(max)) await f.readAsBytes()];
+    } catch (_) {
+      toast(tr('لا يمكن فتح الاستوديو', 'ستۆدیۆ ناکرێتەوە', 'Cannot open the photo library'));
+      return [];
+    }
+  }
+
+  // ---- supplies orders (Create Order) ---------------------------------------
+  List<SupplyOrder> supplyOrders = [];
+
+  Future<void> _loadSupplyOrders() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('lab.supplyOrders');
+      if (raw != null) {
+        supplyOrders = [for (final j in (jsonDecode(raw) as List)) SupplyOrder.fromJson(Map<String, dynamic>.from(j as Map))];
+      }
+    } catch (_) {}
+  }
+
+  Future<void> saveSupplyOrder(SupplyOrder o) async {
+    supplyOrders = [o, ...supplyOrders];
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('lab.supplyOrders', jsonEncode([for (final x in supplyOrders.take(100)) x.toJson()]));
+    } catch (_) {}
+    await shareSupplyOrder(o);
+  }
+
+  int get nextSupplyOrderNo => supplyOrders.fold<int>(100, (m, o) => o.no > m ? o.no : m) + 1;
+
+  /// The order as a PDF in the share sheet (WhatsApp, e-mail, print…).
+  Future<void> shareSupplyOrder(SupplyOrder o) async {
+    try {
+      final bytes = await buildSupplyOrderPdf(this, o);
+      await Printing.sharePdf(bytes: bytes, filename: 'supply-order-${o.no}.pdf');
+    } catch (_) {
+      toast(tr('تعذر إنشاء ملف PDF', 'نەتوانرا PDF دروست بکرێت', 'Could not create the PDF'));
+    }
+  }
   bool deleteAccountOpen = false;
 
   void updateSettings(void Function() change) {
@@ -2171,8 +2460,75 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The message sent to the patient by WhatsApp / SMS: a greeting with
+  /// their name, each test's value, and that the result is ready to collect.
+  String resultMessage(Patient p) {
+    final merged = p.copyWith(results: {...p.results, if (selectedPatient?.id == p.id) ...draft});
+    final lines = [
+      for (final r in resultRows(merged))
+        if (r.value.trim().isNotEmpty)
+          '• ${r.label}: ${r.value} ${r.units}'.trimRight() +
+              switch (classify(r.value, r.normalRow)) {
+                'high' => ' (${tr('مرتفع', 'بەرز', 'high')})',
+                'low' => ' (${tr('منخفض', 'نزم', 'low')})',
+                'normal' => ' (${tr('طبيعي', 'ئاسایی', 'normal')})',
+                _ => '',
+              },
+    ];
+    final lab = labDisplayName;
+    return [
+      tr('مرحباً ${p.name}،', 'سڵاو ${p.name}،', 'Hello ${p.name},'),
+      tr('نتائج تحاليلك في $lab اكتملت:', 'ئەنجامی پشکنینەکانت لە $lab تەواو بوو:', 'Your test results at $lab are ready:'),
+      ...lines,
+      '',
+      tr('يرجى الحضور إلى المختبر لاستلام النتيجة. شكراً لاختياركم $lab.', 'تکایە بۆ وەرگرتنی ئەنجام سەردانی تاقیگە بکە. سوپاس.', 'Please come to the lab to collect your result. Thank you for choosing $lab.'),
+      if (labPhone.trim().isNotEmpty) '${tr('للاستفسار', 'پرسیار', 'Questions')}: $labPhone',
+    ].join('\n');
+  }
+
+  Future<void> shareResultPdf(Patient p) async {
+    try {
+      final file = resultFiles[p.id];
+      final bytes = file != null
+          ? (file.$1.toLowerCase().endsWith('.pdf') ? file.$2 : await imageAsPdf(file.$2))
+          : await buildResultReportPdf(this, p.copyWith(results: {...p.results, if (selectedPatient?.id == p.id) ...draft}));
+      await Printing.sharePdf(bytes: bytes, filename: 'result-${intlPhone(p.phone).isEmpty ? p.id : p.name.replaceAll(' ', '_')}.pdf');
+    } catch (_) {
+      toast(tr('تعذر إنشاء ملف PDF', 'نەتوانرا PDF دروست بکرێت', 'Could not create the PDF'));
+    }
+  }
+
+  /// "+964 770 123 4567" / "0770…" → "9647701234567".
+  static String intlPhone(String phone) {
+    var d = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (d.startsWith('00')) d = d.substring(2);
+    if (d.startsWith('0')) d = '964${d.substring(1)}';
+    if (d.length == 10 && d.startsWith('7')) d = '964$d';
+    return d;
+  }
+
   void sendResult() {
     if (sending || sendPatient == null) return;
+    final p = sendPatient!;
+    // WhatsApp and SMS open the patient's chat with the message ready to send.
+    if (sendChannel == 'WhatsApp' || sendChannel == 'SMS') {
+      final phone = intlPhone(sendPhone.isNotEmpty ? sendPhone : p.phone);
+      if (phone.length < 10) {
+        toast(tr('أدخل رقم هاتف صحيح', 'ژمارەیەکی دروست بنووسە', 'Enter a valid phone number'));
+        return;
+      }
+      final text = Uri.encodeComponent(resultMessage(p));
+      final uri = sendChannel == 'WhatsApp'
+          ? Uri.parse('https://wa.me/$phone?text=$text')
+          : Uri.parse('sms:+$phone${defaultTargetPlatform == TargetPlatform.iOS ? '&' : '?'}body=$text');
+      launchUrl(uri, mode: LaunchMode.externalApplication).then((ok) {
+        if (!ok) toast(tr('تعذر فتح التطبيق', 'ئەپ نەکرایەوە', 'Could not open the app'));
+        sent = ok;
+        notifyListeners();
+      });
+      return;
+    }
+    // In-app: the result goes to the patient's LabGo app (approved on the server).
     sending = true;
     notifyListeners();
     if (LabApi.enabled) {

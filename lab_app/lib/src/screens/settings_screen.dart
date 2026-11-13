@@ -300,6 +300,7 @@ class SettingsScreen extends StatelessWidget {
       ),
       ('packages', d('packagesManage'), 'ShoppingBag'),
       ('about', d('aboutTitle'), 'Globe'),
+      ('support', app.tr('الدعم والبلاغات', 'پشتگیری', 'Support'), 'MessageSquare'),
       ('reports', w('manageReports'), 'FileText'),
       ('labData', d('labData'), 'Building2'),
       ('color', w('changeColor'), 'Pencil'),
@@ -325,6 +326,8 @@ class SettingsScreen extends StatelessWidget {
           return const _Packages();
         case 'about':
           return const _About();
+        case 'support':
+          return const _Support();
         case 'reports':
           return const _Reports();
         case 'labData':
@@ -353,14 +356,17 @@ class SettingsScreen extends StatelessWidget {
                   width: 64,
                   height: 64,
                   alignment: Alignment.center,
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: pal.avatarBg,
                     shape: BoxShape.circle,
                   ),
-                  child: Text(
-                    app.profileInitial,
-                    style: ts(context, 22, weight: w700),
-                  ),
+                  child: app.userPhoto != null
+                      ? Image.memory(app.userPhoto!, width: 64, height: 64, fit: BoxFit.cover)
+                      : Text(
+                          app.profileInitial,
+                          style: ts(context, 22, weight: w700),
+                        ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1716,9 +1722,9 @@ class _Financial extends StatelessWidget {
     // Server numbers when connected; the design's sample numbers in demo mode.
     final f = app.finance;
     String money(num v) => v.round().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
-    num total(String k) => ((f?['totals'] as Map?)?[k] ?? 0) as num;
-    num cat(String k) => ((f?['byCategory'] as Map?)?[k] ?? 0) as num;
-    final income = f == null ? 0 : total('income');
+    num total(String k) => ((f['totals'] as Map?)?[k] ?? 0) as num;
+    num cat(String k) => ((f['byCategory'] as Map?)?[k] ?? 0) as num;
+    final income = total('income');
     double pctOf(num v) => income <= 0 ? (v > 0 ? 100 : 0) : (v / income * 100).clamp(0, 100).toDouble();
     const catNames = {
       'rent': ('إيجار', 'کرێ', 'Rent'),
@@ -1730,81 +1736,62 @@ class _Financial extends StatelessWidget {
       'other': ('أخرى', 'هیتر', 'Other'),
     };
     String catLabel(String k) => catNames[k] == null ? k : app.tr(catNames[k]!.$1, catNames[k]!.$2, catNames[k]!.$3);
-    List<(int, int)> bars = const [(80, 45), (90, 55), (70, 40), (95, 60), (85, 50), (100, 65)];
-    if (f != null) {
+    List<(int, int)> bars;
+    {
       final inc = [for (final v in ((f['bars'] as Map)['income'] as List)) (v as num).toDouble()];
       final exp = [for (final v in ((f['bars'] as Map)['expenses'] as List)) (v as num).toDouble()];
       final top = [...inc, ...exp, 1.0].reduce((a, b) => a > b ? a : b);
       bars = [for (var i = 0; i < inc.length; i++) ((inc[i] / top * 100).round(), (exp[i] / top * 100).round())];
     }
-    final invoices = f == null
-        ? [
-            ('INV-124', 'Ali Ahmed', '25,000', 'Paid'),
-            ('INV-125', 'Sara Ali', '40,000', 'Pending'),
-            ('INV-126', 'Layla Hassan', '10,000', 'Paid'),
-          ]
-        : [
+    final invoices = [
             for (final inv in (f['invoices'] as List))
               ('${inv['code']}', '${inv['name']}', money(inv['amount'] as num), inv['paid'] == true ? 'Paid' : 'Pending'),
           ];
-    final expenseList = (f?['expenses'] as List?) ?? const [];
+    final expenseList = (f['expenses'] as List?) ?? const [];
     final salaryLines = [
       for (final e in expenseList)
         if (e['category'] == 'salaries') ('${e['note']}'.isNotEmpty ? '${e['note']}' : catLabel('salaries'), money(e['amount'] as num)),
     ];
     final otherLines = [
-      for (final e in ((f?['byCategory'] as Map?) ?? const {}).entries)
+      for (final e in ((f['byCategory'] as Map?) ?? const {}).entries)
         if (e.key != 'salaries' && e.key != 'rent') (catLabel('${e.key}'), money(e.value as num)),
     ];
     final debtLines = [
-      for (final dbt in ((f?['debts'] as List?) ?? const [])) ('${dbt['name']}', money(dbt['amount'] as num)),
+      for (final dbt in ((f['debts'] as List?) ?? const [])) ('${dbt['name']}', money(dbt['amount'] as num)),
     ];
 
     return _sectionBody([
+      const _AddExpense(),
       Column(
         children: [
           Row(
             children: [
-              Expanded(child: stat('₫ ${d('debts')}', f == null ? '450,000' : money(total('debts')), f == null ? 30 : pctOf(total('debts')))),
+              Expanded(child: stat('₫ ${d('debts')}', money(total('debts')), pctOf(total('debts')))),
               const SizedBox(width: 8),
-              Expanded(child: stat('↗ ${d('profits')}', f == null ? '1,200,000' : money(total('profit')), f == null ? 85 : pctOf(total('profit') < 0 ? 0 : total('profit')))),
+              Expanded(child: stat('↗ ${d('profits')}', money(total('profit')), pctOf(total('profit') < 0 ? 0 : total('profit')))),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: stat('↓ ${d('expenses')}', f == null ? '680,000' : money(total('expenses')), f == null ? 55 : pctOf(total('expenses')))),
+              Expanded(child: stat('↓ ${d('expenses')}', money(total('expenses')), pctOf(total('expenses')))),
               const SizedBox(width: 8),
               Expanded(
-                child: stat('⌂ ${d('rent')} ${d('perMonth')}', f == null ? '500,000' : money(cat('rent')), f == null ? 40 : pctOf(cat('rent'))),
+                child: stat('⌂ ${d('rent')} ${d('perMonth')}', money(cat('rent')), pctOf(cat('rent'))),
               ),
             ],
           ),
         ],
       ),
-      stat(d('salaries'), f == null ? '2,100,000' : money(cat('salaries')), f == null ? 90 : pctOf(cat('salaries'))),
+      stat(d('salaries'), money(cat('salaries')), pctOf(cat('salaries'))),
       Text(d('breakdown'), style: ts(context, 13, weight: w700)),
       _col([
         sub(d('salaries')),
-        if (f == null) ...[
-          line(d('salaryAhmed'), '800,000'),
-          line(d('salarySara'), '700,000'),
-          line(d('salaryOmar'), '600,000'),
-        ] else
-          for (final l in salaryLines) line(l.$1, l.$2),
+        for (final l in salaryLines) line(l.$1, l.$2),
         sub(d('expenses')),
-        if (f == null) ...[
-          line(d('expReagents'), '300,000'),
-          line(d('expElectricity'), '120,000'),
-          line(d('expTransport'), '260,000'),
-        ] else
-          for (final l in otherLines) line(l.$1, l.$2),
+        for (final l in otherLines) line(l.$1, l.$2),
         sub(d('debts')),
-        if (f == null) ...[
-          line(d('debtAli'), '50,000', accent: true),
-          line(d('debtNoor'), '400,000', accent: true),
-        ] else
-          for (final l in debtLines) line(l.$1, l.$2, accent: true),
+        for (final l in debtLines) line(l.$1, l.$2, accent: true),
       ], gap: 8),
       Text(d('incomeVsExpenses'), style: ts(context, 13, weight: w700)),
       SizedBox(
@@ -1919,6 +1906,89 @@ class _Financial extends StatelessWidget {
 
 // ---------------------------------------------------------------------------
 // Manage tests
+
+/// Records an expense (rent, salaries, reagents…); income comes from patients.
+class _AddExpense extends StatefulWidget {
+  const _AddExpense();
+
+  @override
+  State<_AddExpense> createState() => _AddExpenseState();
+}
+
+class _AddExpenseState extends State<_AddExpense> {
+  bool open = false;
+  String cat = 'reagents';
+  final _amount = TextEditingController();
+  final _note = TextEditingController();
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    const cats = [
+      ('rent', 'إيجار', 'کرێ', 'Rent'),
+      ('salaries', 'رواتب', 'مووچە', 'Salaries'),
+      ('reagents', 'مواد ومحاليل', 'ماددە', 'Reagents'),
+      ('electricity', 'كهرباء', 'کارەبا', 'Electricity'),
+      ('transport', 'نقل', 'گواستنەوە', 'Transport'),
+      ('maintenance', 'صيانة', 'چاککردنەوە', 'Maintenance'),
+      ('other', 'أخرى', 'هیتر', 'Other'),
+    ];
+    if (!open) {
+      return _pill(context, app.tr('+ إضافة مصروف', '+ خەرجی', '+ Add expense'), color: pal.accent, textColor: Colors.white, onTap: () => setState(() => open = true));
+    }
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(app.tr('مصروف جديد', 'خەرجی نوێ', 'New expense'), style: ts(context, 14, weight: w700)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final c in cats)
+                FilterChipPill(label: app.tr(c.$2, c.$3, c.$4), selected: cat == c.$1, onTap: () => setState(() => cat = c.$1)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          BoxField(controller: _amount, hint: app.tr('المبلغ (د.ع)', 'بڕ (د.ع)', 'Amount (IQD)'), keyboard: TextInputType.number, ltr: true, fontSize: 14, vPad: 10),
+          const SizedBox(height: 8),
+          BoxField(controller: _note, hint: app.tr('ملاحظة (مثلاً اسم الموظف)', 'تێبینی', 'Note (e.g. employee name)'), fontSize: 14, vPad: 10),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(child: _pill(context, app.w('cancel'), color: pal.segmented, onTap: () => setState(() => open = false))),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _pill(context, app.tr('حفظ', 'پاشەکەوت', 'Save'), color: pal.accent, textColor: Colors.white, onTap: () async {
+                  final v = num.tryParse(_amount.text.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
+                  await app.addExpense(cat, v, _note.text.trim());
+                  if (v > 0 && mounted) {
+                    setState(() {
+                      open = false;
+                      _amount.clear();
+                      _note.clear();
+                    });
+                  }
+                }),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _ManageTests extends StatefulWidget {
   const _ManageTests();
@@ -2605,169 +2675,145 @@ class _CreateOrder extends StatefulWidget {
 }
 
 class _CreateOrderState extends State<_CreateOrder> {
-  String kind = 'Product';
-  String product = '',
-      qty = '1',
-      price = '',
-      supplier = '',
-      date = '2026-09-27',
-      notes = '';
+  final List<SupplyItem> items = [SupplyItem()];
+  String supplier = '', supplierPhone = '', notes = '';
+  DateTime? neededBy;
   int version = 0;
+
+  String _fmt(DateTime d) => '${d.day}/${d.month}/${d.year}';
 
   @override
   Widget build(BuildContext context) {
     final app = context.app;
     final pal = app.palette;
-    final ar = app.lang == 'ar';
-    final total = (int.tryParse(price) ?? 0) * (int.tryParse(qty) ?? 1);
+    Widget small(String hint, String initial, ValueChanged<String> on, {bool number = false, double? width}) {
+      final f = BoxField(
+        key: ValueKey('$hint-$version-${initial.hashCode}'),
+        controller: TextEditingController(text: initial),
+        hint: hint,
+        fontSize: 13,
+        vPad: 8,
+        keyboard: number ? TextInputType.number : null,
+        onChanged: on,
+      );
+      return width == null ? Expanded(child: f) : SizedBox(width: width, child: f);
+    }
+
     return _sectionBody([
+      Text(app.tr('طلبية مواد مختبرية', 'داواکاری کەرەستەی تاقیگە', 'Lab supplies order'), style: ts(context, 16, weight: w700)),
       Text(
-        ar ? 'انشاء طلبية / Create Order' : 'Create Order / انشاء طلبية',
-        style: ts(context, 16, weight: w700),
+        app.tr('اكتب المواد المطلوبة لتصير طلبية PDF ترسلها للمورد.', 'کەرەستەکان بنووسە بۆ PDF.', 'List the supplies you need; it becomes a PDF order for the supplier.'),
+        style: ts(context, 12, color: pal.muted),
       ),
-      Row(
-        children: [
-          for (final k in const ['Product', 'Lab']) ...[
-            if (k == 'Lab') const SizedBox(width: 8),
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => kind = k),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: kind == k ? pal.accent : pal.chipBg,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    k == 'Product'
-                        ? (ar
-                              ? 'منتج / جهاز / مستهلك'
-                              : 'Product / Device / Consumable')
-                        : (ar ? 'مختبر للبيع' : 'Lab for Sale'),
-                    textAlign: TextAlign.center,
-                    style: ts(
-                      context,
-                      13,
-                      weight: w700,
-                      color: kind == k ? Colors.white : pal.muted2,
-                    ),
-                  ),
-                ),
+      for (var i = 0; i < items.length; i++)
+        Row(
+          children: [
+            small(app.tr('المادة', 'کەرەستە', 'Item'), items[i].name, (v) => items[i].name = v),
+            const SizedBox(width: 6),
+            small(app.tr('الكمية', 'بڕ', 'Qty'), items[i].qty, (v) => items[i].qty = v, number: true, width: 64),
+            const SizedBox(width: 6),
+            small(app.tr('الوحدة', 'یەکە', 'Unit'), items[i].unit, (v) => items[i].unit = v, width: 74),
+            const SizedBox(width: 6),
+            Tap(
+              onTap: () => setState(() {
+                if (items.length > 1) {
+                  items.removeAt(i);
+                } else {
+                  items[0] = SupplyItem();
+                }
+                version++;
+              }),
+              child: Container(
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: pal.chipBg, shape: BoxShape.circle),
+                child: const LIcon('X', size: 13, color: Color(0xFFFF3B30)),
               ),
             ),
           ],
-        ],
-      ),
-      _Field(
-        key: ValueKey('p-$version'),
-        label: ar ? 'المنتج / المختبر' : 'Product / Lab',
-        initial: product,
-        hint: kind == 'Lab' ? 'Lab name' : 'Centrifuge',
-        fontSize: 14,
-        onChanged: (v) => product = v,
-      ),
-      Row(
+        ),
+      _pill(context, app.tr('+ إضافة مادة', '+ زیادکردن', '+ Add item'), color: pal.chipBg, onTap: () => setState(() => items.add(SupplyItem()))),
+      _Field(key: ValueKey('sup-$version'), label: app.tr('المورد', 'دابینکەر', 'Supplier'), initial: supplier, fontSize: 14, vPad: 10, onChanged: (v) => supplier = v),
+      _Field(key: ValueKey('sph-$version'), label: app.tr('هاتف المورد', 'تەلەفۆنی دابینکەر', 'Supplier phone'), initial: supplierPhone, ltr: true, keyboard: TextInputType.phone, fontSize: 14, vPad: 10, onChanged: (v) => supplierPhone = v),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: _Field(
-              key: ValueKey('q-$version'),
-              label: ar ? 'الكمية' : 'Quantity',
-              initial: qty,
-              fontSize: 14,
-              keyboard: TextInputType.number,
-              onChanged: (v) => setState(() => qty = v),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _Field(
-              key: ValueKey('pr-$version'),
-              label: ar ? 'السعر (د.ع)' : 'Price (IQD)',
-              initial: price,
-              fontSize: 14,
-              keyboard: TextInputType.number,
-              onChanged: (v) => setState(() => price = v),
+          Text(app.tr('مطلوب قبل', 'پێویستە پێش', 'Needed by'), style: ts(context, 12, weight: w700, color: pal.muted)),
+          const SizedBox(height: 4),
+          Tap(
+            onTap: () async {
+              final d = await showDatePicker(context: context, initialDate: neededBy ?? DateTime.now().add(const Duration(days: 3)), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
+              if (d != null) setState(() => neededBy = d);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(color: pal.inputBg, borderRadius: BorderRadius.circular(16), border: Border.all(color: pal.cardBorder)),
+              child: Row(children: [
+                LIcon('Clock', size: 16, color: pal.muted),
+                const SizedBox(width: 8),
+                Text(neededBy == null ? app.tr('اختر التاريخ (اختياري)', 'بەروار هەڵبژێرە', 'Pick a date (optional)') : _fmt(neededBy!),
+                    style: ts(context, 14, weight: w600, color: neededBy == null ? pal.muted : pal.ink)),
+              ]),
             ),
           ),
         ],
       ),
-      _Field(
-        key: ValueKey('s-$version'),
-        label: ar ? 'المورد / المختبر' : 'Supplier / Lab',
-        initial: supplier,
-        hint: 'Al-Noor Lab',
-        fontSize: 14,
-        onChanged: (v) => supplier = v,
-      ),
-      _Field(
-        key: ValueKey('d-$version'),
-        label: ar ? 'تاريخ التوصيل' : 'Delivery date',
-        initial: date,
-        fontSize: 14,
-        keyboard: TextInputType.datetime,
-        onChanged: (v) => date = v,
-      ),
-      _Field(
-        key: ValueKey('n-$version'),
-        label: ar ? 'ملاحظات' : 'Notes',
-        initial: notes,
-        fontSize: 14,
-        lines: 2,
-        onChanged: (v) => notes = v,
-      ),
-      Text(
-        '${ar ? 'الإجمالي' : 'Total'}: ${formatNumber(total)} IQD',
-        style: ts(context, 13, weight: w700),
-      ),
+      _Field(key: ValueKey('nts-$version'), label: app.tr('ملاحظات', 'تێبینی', 'Notes'), initial: notes, lines: 2, fontSize: 14, onChanged: (v) => notes = v),
       _pill(
         context,
-        ar ? 'إنشاء الطلبية' : 'Create Order',
+        app.tr('إنشاء PDF وإرسال', 'دروستکردنی PDF و ناردن', 'Create PDF & send'),
         color: pal.accent,
         textColor: Colors.white,
+        icon: 'FileText',
         onTap: () {
-          final now = DateTime.now();
-          final q = math.max(1, int.tryParse(qty) ?? 1);
-          final p = int.tryParse(price) ?? 0;
-          app.addProductOrder(
-            ProductOrder(
-              id: '${now.microsecondsSinceEpoch}',
-              productName: product.trim().isNotEmpty
-                  ? product.trim()
-                  : (kind == 'Lab' ? 'Lab for Sale' : 'Product'),
-              code: kind == 'Lab' ? 'LAB-ORDER' : 'CO-ORDER',
-              price: p,
-              quantity: q,
-              total: p * q,
-              address: app.userAddress,
-              phone: app.userPhone,
-              createdAt:
-                  '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
-            ),
-          );
+          final list = items.where((x) => x.name.trim().isNotEmpty).toList();
+          if (list.isEmpty) {
+            app.toast(app.tr('اكتب مادة واحدة على الأقل', 'لانیکەم یەک کەرەستە بنووسە', 'Add at least one item'));
+            return;
+          }
+          app.saveSupplyOrder(SupplyOrder(
+            no: app.nextSupplyOrderNo,
+            date: _fmt(DateTime.now()),
+            supplier: supplier.trim(),
+            supplierPhone: supplierPhone.trim(),
+            neededBy: neededBy == null ? '' : _fmt(neededBy!),
+            notes: notes.trim(),
+            items: [for (final x in list) SupplyItem(x.name.trim(), x.qty.trim(), x.unit.trim())],
+          ));
           setState(() {
-            product = '';
-            qty = '1';
-            price = '';
+            items
+              ..clear()
+              ..add(SupplyItem());
             supplier = '';
+            supplierPhone = '';
             notes = '';
+            neededBy = null;
             version++;
           });
         },
       ),
-      _pill(
-        context,
-        '${ar ? 'طلباتي' : 'My Orders'} (${app.productOrders.length})',
-        color: pal.chipBg,
-        border: pal.cardBorder,
-        onTap: () => app.toast(
-          app.tr(
-            'المتجر يأتي في الدفعة القادمة',
-            'فرۆشگا لە بەشی داهاتوودا دێت',
-            'The store arrives in the next batch',
+      if (app.supplyOrders.isNotEmpty) ...[
+        Text(app.tr('الطلبيات السابقة', 'داواکارییە پێشووەکان', 'Previous orders'), style: ts(context, 14, weight: w700)),
+        for (final o in app.supplyOrders.take(20))
+          Tap(
+            onTap: () => app.shareSupplyOrder(o),
+            scale: .98,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16)),
+              child: Row(children: [
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('#${o.no} • ${o.supplier.isEmpty ? app.tr('بدون مورد', 'بێ دابینکەر', 'No supplier') : o.supplier}', style: ts(context, 14, weight: w700)),
+                    Text('${o.date} • ${o.items.length} ${app.tr('مادة', 'کەرەستە', 'items')}', style: ts(context, 12, color: pal.muted)),
+                  ]),
+                ),
+                LIcon('FileText', size: 18, color: pal.accent),
+              ]),
+            ),
           ),
-        ),
-      ),
+      ],
     ]);
   }
 }
@@ -3243,9 +3289,17 @@ class _About extends StatelessWidget {
                 style: ts(context, 13, color: pal.muted2, height: 1.625),
               ),
               const SizedBox(height: 12),
-              info(d('developerLabel'), 'LabGo Team'),
+              info(d('developerLabel'), 'LabGo LLC'),
               const SizedBox(height: 8),
-              info(d('contactLabel'), '+964 770 123 4567', ltr: true),
+              Tap(
+                onTap: () => launchUrl(Uri.parse('tel:+9647777430067')),
+                child: info(d('contactLabel'), '+964 777 743 0067', ltr: true),
+              ),
+              const SizedBox(height: 8),
+              Tap(
+                onTap: () => launchUrl(Uri.parse('mailto:info@labgo-iq.com')),
+                child: info(app.tr('البريد', 'ئیمەیڵ', 'Email'), 'info@labgo-iq.com', ltr: true),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -3267,7 +3321,7 @@ class _About extends StatelessWidget {
                       color: pal.chipBg,
                       vPad: 10,
                       fontSize: 12,
-                      onTap: () => launchUrl(Uri.parse('$kSiteUrl/terms'), mode: LaunchMode.externalApplication),
+                      onTap: () => showTermsPage(context),
                     ),
                   ),
                 ],
@@ -3729,7 +3783,7 @@ class _WastePageState extends State<_WastePage> {
                 key: ValueKey('w-$version'),
                 label: w('weightLabel'),
                 initial: weight,
-                hint: '1.2',
+                hint: app.tr('الوزن بالكيلو', 'کیلۆ', 'Weight in kg'),
                 fontSize: 14,
                 keyboard: const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (v) => weight = v,
@@ -3850,5 +3904,207 @@ class _WastePageState extends State<_WastePage> {
         ],
       ),
     );
+  }
+}
+
+/// Terms of use, shown inside the app (works offline).
+void showTermsPage(BuildContext context) {
+  final app = AppScope.read(context);
+  final ar = app.lang != 'en';
+  final sections = ar
+      ? const [
+          ('1. القبول', 'باستخدامك تطبيق LabGo Lab أو لوحة المختبرات فإنك توافق على هذه الشروط. إذا لم توافق عليها فلا تستخدم المنصة.'),
+          ('2. حسابات المختبرات', 'المختبر مسؤول عن صحة بياناته وبيانات أصحاب الإجازات، وعن حسابات موظفيه وصلاحياتهم، وعن سرية كلمات المرور.'),
+          ('3. النتائج والتقارير', 'المختبر وحده مسؤول عن دقة النتائج المدخلة واعتمادها. LabGo منصة لإدارة البيانات ولا تقدم تشخيصاً طبياً. تحمل التقارير رمز تحقق ويُمنع تعديلها بعد الاعتماد خارج المنصة.'),
+          ('4. بيانات المرضى', 'تُستخدم بيانات المرضى لتقديم الخدمة فقط وفق سياسة الخصوصية، ويلتزم المختبر بعدم استخدامها لأي غرض آخر.'),
+          ('5. التحويل بين المختبرات والمتجر', 'الأسعار المتفق عليها بين المختبرات وطلبات المتجر والمزادات مسؤولية الأطراف المعنية. لا يُعرض أي منتج أو مزاد أو مختبر للبيع إلا بعد مراجعة إدارة LabGo.'),
+          ('6. النفايات الطبية', 'يلتزم المختبر بتصنيف النفايات الطبية ووزنها بدقة عند طلب النقل وتسليمها مع تقرير الطلب.'),
+          ('7. التعديلات والتواصل', 'قد نحدّث هذه الشروط، ويُعد استمرار الاستخدام موافقة عليها. للتواصل: info@labgo-iq.com — +964 777 743 0067 — LabGo LLC.'),
+        ]
+      : const [
+          ('1. Acceptance', 'By using LabGo Lab or the lab dashboard you agree to these terms. If you do not agree, do not use the platform.'),
+          ('2. Lab accounts', 'The lab is responsible for its details and licence holders, its staff accounts and permissions, and keeping passwords private.'),
+          ('3. Results and reports', 'The lab alone is responsible for the results it enters and approves. LabGo manages data and does not give medical diagnoses. Reports carry a verification code and may not be altered outside the platform after approval.'),
+          ('4. Patient data', 'Patient data is used only to provide the service, under the privacy policy, and the lab must not use it for anything else.'),
+          ('5. Transfers and the store', 'Prices agreed between labs, store orders and auctions are the parties\' responsibility. No product, auction or lab for sale is shown before LabGo reviews it.'),
+          ('6. Medical waste', 'The lab must classify and weigh medical waste accurately when requesting pickup and hand it over with the request report.'),
+          ('7. Changes and contact', 'We may update these terms; continued use means you accept them. Contact: info@labgo-iq.com — +964 777 743 0067 — LabGo LLC.'),
+        ];
+  Navigator.of(context).push(MaterialPageRoute(
+    fullscreenDialog: true,
+    builder: (ctx) {
+      final pal = app.palette;
+      return Directionality(
+        textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
+        child: Scaffold(
+          backgroundColor: pal.appBg,
+          appBar: AppBar(
+            backgroundColor: pal.appBg,
+            foregroundColor: pal.ink,
+            elevation: 0,
+            title: Text(ar ? 'شروط الاستخدام' : 'Terms of Use', style: ts(ctx, 17, weight: w700)),
+          ),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            children: [
+              for (final sct in sections)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: pal.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: pal.cardBorder)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(sct.$1, style: ts(ctx, 15, weight: w700, color: pal.accent)),
+                      const SizedBox(height: 4),
+                      Text(sct.$2, style: ts(ctx, 13.5, color: pal.ink, height: 1.7)),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  ));
+}
+
+/// Support: a suggestion, a bug report or a problem, with photos; the LabGo
+/// team receives it in the admin panel and the lab gets a ticket number.
+class _Support extends StatefulWidget {
+  const _Support();
+
+  @override
+  State<_Support> createState() => _SupportState();
+}
+
+class _SupportState extends State<_Support> {
+  String type = 'suggestion';
+  final _subject = TextEditingController();
+  final _message = TextEditingController();
+  final List<Uint8List> images = [];
+  bool sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AppScope.read(context).loadSupport();
+  }
+
+  @override
+  void dispose() {
+    _subject.dispose();
+    _message.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    final types = [
+      ('suggestion', app.tr('اقتراح تطوير', 'پێشنیار', 'Suggestion')),
+      ('bug', app.tr('خطأ في النظام', 'هەڵە', 'Bug')),
+      ('problem', app.tr('مشكلة', 'کێشە', 'Problem')),
+      ('other', app.tr('أخرى', 'هیتر', 'Other')),
+    ];
+    String typeName(String k) => types.firstWhere((t) => t.$1 == k, orElse: () => types.last).$2;
+    String statusName(String k) => switch (k) {
+          'in_progress' => app.tr('قيد المعالجة', 'لە کاردایە', 'In progress'),
+          'closed' => app.tr('مغلق', 'داخراو', 'Closed'),
+          _ => app.tr('مستلم', 'وەرگیرا', 'Received'),
+        };
+    return _sectionBody([
+      Text(app.tr('راسل فريق LabGo', 'نامە بۆ تیمی LabGo', 'Write to the LabGo team'), style: ts(context, 16, weight: w700)),
+      Wrap(spacing: 6, runSpacing: 6, children: [
+        for (final t in types) FilterChipPill(label: t.$2, selected: type == t.$1, onTap: () => setState(() => type = t.$1)),
+      ]),
+      BoxField(controller: _subject, hint: app.tr('العنوان (اختياري)', 'ناونیشان', 'Subject (optional)'), fontSize: 14, vPad: 10),
+      BoxField(controller: _message, hint: app.tr('اكتب التفاصيل…', 'وردەکاری بنووسە…', 'Describe it…'), lines: 5, fontSize: 14),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (var i = 0; i < images.length; i++)
+            Stack(children: [
+              ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(images[i], width: 72, height: 72, fit: BoxFit.cover)),
+              PositionedDirectional(
+                top: 2,
+                end: 2,
+                child: Tap(
+                  onTap: () => setState(() => images.removeAt(i)),
+                  child: Container(width: 22, height: 22, alignment: Alignment.center, decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle), child: const LIcon('X', size: 12, color: Colors.white)),
+                ),
+              ),
+            ]),
+          if (images.length < 6)
+            Tap(
+              onTap: () async {
+                final picked = await app.pickImages(max: 6 - images.length);
+                if (picked.isNotEmpty) setState(() => images.addAll(picked));
+              },
+              child: Container(
+                width: 72,
+                height: 72,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: pal.line)),
+                child: LIcon('ImagePlus', size: 22, color: pal.accent),
+              ),
+            ),
+        ],
+      ),
+      _pill(
+        context,
+        sending ? '…' : app.tr('إرسال البلاغ', 'ناردن', 'Send'),
+        color: pal.accent,
+        textColor: Colors.white,
+        icon: 'Send',
+        onTap: () async {
+          if (sending) return;
+          setState(() => sending = true);
+          final no = await app.sendSupport(type, _subject.text.trim(), _message.text.trim(), List.of(images));
+          if (!mounted) return;
+          setState(() => sending = false);
+          if (no == null) return;
+          _subject.clear();
+          _message.clear();
+          setState(() => images.clear());
+          showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: pal.card,
+              title: Text(app.tr('تم إرسال البلاغ ✓', 'نێردرا ✓', 'Sent ✓'), style: ts(ctx, 18, weight: w700)),
+              content: Text(
+                app.tr('رقم البلاغ: #$no\nسيصلك إشعار عند رد فريق LabGo.', 'ژمارە: #$no', 'Ticket number: #$no\nYou will be notified when the LabGo team replies.'),
+                style: ts(ctx, 14, height: 1.6),
+              ),
+              actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(app.tr('حسناً', 'باشە', 'OK'), style: ts(ctx, 14, weight: w700, color: pal.accent)))],
+            ),
+          );
+        },
+      ),
+      if (app.supportTickets.isNotEmpty) ...[
+        Text(app.tr('بلاغاتي', 'نامەکانم', 'My tickets'), style: ts(context, 14, weight: w700)),
+        for (final t in app.supportTickets.take(20))
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Expanded(child: Text('#${t['ticketNo']} • ${typeName('${t['type']}')}', style: ts(context, 14, weight: w700))),
+                  Text(statusName('${t['status']}'), style: ts(context, 12, weight: w700, color: pal.accent)),
+                ]),
+                Text('${t['message']}', maxLines: 2, overflow: TextOverflow.ellipsis, style: ts(context, 12, color: pal.muted)),
+                if ('${t['adminReply'] ?? ''}'.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text('${app.tr('رد LabGo', 'وەڵامی LabGo', 'LabGo reply')}: ${t['adminReply']}', style: ts(context, 12, weight: w600)),
+                ],
+              ],
+            ),
+          ),
+      ],
+    ]);
   }
 }

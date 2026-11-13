@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models.dart';
@@ -123,12 +124,13 @@ class LabApi {
 
   /// Approves the results: the server builds the PDF report, completes the
   /// order and notifies the patient. Every test needs a value.
-  Future<void> approveResults(String orderId, Map<String, String> values) async {
+  Future<void> approveResults(String orderId, Map<String, String> values, {String? reportUrl}) async {
     try {
       await _send('POST', '${_resultsBase(orderId)}/results/approve', {
         'values': [
           for (final e in values.entries) {'testName': e.key, 'value': e.value},
         ],
+        if (reportUrl != null) 'reportUrl': reportUrl,
       });
     } on ApiError catch (e) {
       if (e.status == 400 && e.message.contains('no value')) throw ApiError(400, 'missing');
@@ -146,6 +148,32 @@ class LabApi {
     if (res.statusCode >= 400 || json['success'] == false) throw ApiError(res.statusCode, '${json['message'] ?? 'Upload failed'}');
     return json;
   }
+
+  /// A result as a photo / PDF; returns its URL (used as the report when approving).
+  Future<String?> uploadResultFile(String orderId, List<int> bytes, String filename) async {
+    final json = await uploadImage('${_resultsBase(orderId)}/upload-result', 'resultFile', bytes, filename);
+    return (json['data'] as Map?)?['fileUrl']?.toString();
+  }
+
+  /// Multipart form with fields and several images (support, store listings).
+  Future<Map<String, dynamic>> sendForm(String path, Map<String, String> fields, List<List<int>> images) async {
+    final req = http.MultipartRequest('POST', _uri(path))
+      ..headers.addAll({'Accept': 'application/json', if (_token != null) 'Authorization': 'Bearer $_token'})
+      ..fields.addAll(fields);
+    for (var i = 0; i < images.length; i++) {
+      req.files.add(http.MultipartFile.fromBytes('images', images[i], filename: 'image-$i.jpg', contentType: MediaType('image', 'jpeg')));
+    }
+    final res = await http.Response.fromStream(await req.send().timeout(const Duration(seconds: 90)));
+    final json = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode >= 400 || json['success'] == false) throw ApiError(res.statusCode, '${json['message'] ?? 'Request failed'}', code: json['code']?.toString());
+    return (json['data'] ?? <String, dynamic>{}) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> sendSupport(Map<String, String> fields, List<List<int>> images) => sendForm('/lab/api/support', fields, images);
+  Future<List<dynamic>> supportTickets() async => ((await _data('GET', '/lab/api/support'))['items'] as List?) ?? const [];
+  Future<List<dynamic>> marketList() async => ((await _data('GET', '/lab/api/market'))['items'] as List?) ?? const [];
+  Future<Map<String, dynamic>> addListing(Map<String, String> fields, List<List<int>> images) => sendForm('/lab/api/market', fields, images);
+  Future<Map<String, dynamic>> bid(String id, int amount) => _data('POST', '/lab/api/market/$id/bid', {'amount': amount});
 
   Future<void> uploadLabLogo(List<int> bytes) => uploadImage('/lab/api/profile/logo', 'logo', bytes, 'logo.jpg');
   Future<void> uploadUserPhoto(List<int> bytes) => uploadImage('/api/auth/profile-picture', 'profilePicture', bytes, 'photo.jpg');
@@ -182,6 +210,7 @@ class LabApi {
   Future<void> wasteCollected(String id) => _send('PATCH', '/lab/api/waste/$id/collected');
 
   Future<Map<String, dynamic>> finance() => _data('GET', '/lab/api/app/finance');
+  Future<void> addExpense(Map<String, dynamic> body) => _send('POST', '/lab/api/finance/expenses', body);
   Future<Map<String, dynamic>> saveLab(Map<String, dynamic> body) => _data('PATCH', '/lab/api/app/lab', body);
 
   Future<Map<String, dynamic>> transfers() => _data('GET', '/lab/api/app/transfers');

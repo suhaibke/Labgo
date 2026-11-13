@@ -439,15 +439,26 @@ class _SendSheetState extends State<_SendSheet> {
                     Text(
                       app.sending
                           ? '…'
-                          : app.tr(
-                              'إرسال النتيجة PDF',
-                              'ناردنی ئەنجام PDF',
-                              'Send Result PDF',
-                            ),
+                          : app.sendChannel == 'WhatsApp'
+                          ? app.tr('فتح واتساب المريض', 'کردنەوەی واتسئاپ', "Open patient's WhatsApp")
+                          : app.sendChannel == 'SMS'
+                          ? app.tr('فتح الرسائل', 'کردنەوەی نامە', 'Open Messages')
+                          : app.tr('إرسال إلى تطبيق المريض', 'ناردن بۆ ئەپی نەخۆش', "Send to patient's app"),
                       style: ts(context, 16, weight: w700, color: Colors.white),
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // The report as a PDF file, to attach in WhatsApp or anywhere else.
+          Center(
+            child: GestureDetector(
+              onTap: () => app.shareResultPdf(app.sendPatient!),
+              child: Text(
+                app.tr('مشاركة ملف PDF', 'هاوبەشکردنی PDF', 'Share the PDF file'),
+                style: ts(context, 13, weight: w700, color: context.pal.accent),
               ),
             ),
           ),

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 /// Sample data copied from the design (patients, test catalog, packages).
 /// Phase 1 is UI-only: nothing here talks to the server.
 
@@ -575,4 +577,133 @@ class LicenseHolder {
   String get line => [[title, name].where((x) => x.trim().isNotEmpty).join(' '), specialty]
       .where((x) => x.trim().isNotEmpty)
       .join(' · ');
+}
+
+/// A lab supplies purchase order (Settings → Create Order), printed as a PDF.
+class SupplyItem {
+  String name, qty, unit;
+  SupplyItem([this.name = '', this.qty = '', this.unit = '']);
+  Map<String, String> toJson() => {'name': name, 'qty': qty, 'unit': unit};
+  static SupplyItem fromJson(Map<String, dynamic> j) => SupplyItem('${j['name'] ?? ''}', '${j['qty'] ?? ''}', '${j['unit'] ?? ''}');
+}
+
+class SupplyOrder {
+  final int no;
+  final String date, supplier, supplierPhone, neededBy, notes;
+  final List<SupplyItem> items;
+  const SupplyOrder({required this.no, required this.date, required this.supplier, required this.supplierPhone, required this.neededBy, required this.notes, required this.items});
+  Map<String, dynamic> toJson() => {'no': no, 'date': date, 'supplier': supplier, 'supplierPhone': supplierPhone, 'neededBy': neededBy, 'notes': notes, 'items': [for (final i in items) i.toJson()]};
+  static SupplyOrder fromJson(Map<String, dynamic> j) => SupplyOrder(
+        no: (j['no'] as num?)?.toInt() ?? 0,
+        date: '${j['date'] ?? ''}',
+        supplier: '${j['supplier'] ?? ''}',
+        supplierPhone: '${j['supplierPhone'] ?? ''}',
+        neededBy: '${j['neededBy'] ?? ''}',
+        notes: '${j['notes'] ?? ''}',
+        items: [for (final i in (j['items'] as List? ?? const [])) SupplyItem.fromJson(Map<String, dynamic>.from(i as Map))],
+      );
+}
+
+/// A listing in the labs' marketplace: product, auction (device or lab) or lab for sale.
+class MarketItem {
+  final String id, kind, title, description, category, condition, code, unit, location, area, equipment;
+  final int price, stock, currentBid, bids, durationDays;
+  final List<String> images;
+  final List<Uint8List> localImages;
+  final String approvalStatus, rejectReason, status, labName, topBidder;
+  final bool mine, youLead, won;
+  final DateTime? endsAt, startedAt, createdAt;
+
+  const MarketItem({
+    this.id = '',
+    required this.kind,
+    required this.title,
+    this.description = '',
+    this.category = '',
+    this.condition = '',
+    this.code = '',
+    this.unit = '',
+    this.location = '',
+    this.area = '',
+    this.equipment = '',
+    required this.price,
+    this.stock = 0,
+    this.currentBid = 0,
+    this.bids = 0,
+    this.durationDays = 3,
+    this.images = const [],
+    this.localImages = const [],
+    this.approvalStatus = 'pending',
+    this.rejectReason = '',
+    this.status = 'active',
+    this.labName = '',
+    this.topBidder = '',
+    this.mine = false,
+    this.youLead = false,
+    this.won = false,
+    this.endsAt,
+    this.startedAt,
+    this.createdAt,
+  });
+
+  bool get isAuction => kind == 'auction' || kind == 'lab_auction';
+  bool get isLab => kind == 'lab_sale' || kind == 'lab_auction';
+  bool get approved => approvalStatus == 'approved';
+
+  static MarketItem fromJson(Map<String, dynamic> j) {
+    int n(Object? v) => (v as num?)?.toInt() ?? 0;
+    DateTime? d(Object? v) => v == null ? null : DateTime.tryParse('$v')?.toLocal();
+    return MarketItem(
+      id: '${j['id'] ?? j['_id'] ?? ''}',
+      kind: '${j['kind'] ?? 'product'}',
+      title: '${j['title'] ?? ''}',
+      description: '${j['description'] ?? ''}',
+      category: '${j['category'] ?? ''}',
+      condition: '${j['condition'] ?? ''}',
+      code: '${j['code'] ?? ''}',
+      unit: '${j['unit'] ?? ''}',
+      location: '${j['location'] ?? ''}',
+      area: '${j['area'] ?? ''}',
+      equipment: '${j['equipment'] ?? ''}',
+      price: n(j['price']),
+      stock: n(j['stock']),
+      currentBid: n(j['currentBid']),
+      bids: j['bids'] is List ? (j['bids'] as List).length : n(j['bids']),
+      images: [for (final u in (j['images'] as List? ?? const [])) '$u'],
+      approvalStatus: '${j['approvalStatus'] ?? 'pending'}',
+      rejectReason: '${j['rejectReason'] ?? ''}',
+      status: '${j['status'] ?? 'active'}',
+      labName: '${(j['lab'] as Map?)?['name'] ?? ''}',
+      topBidder: '${j['topBidder'] ?? ''}',
+      mine: j['mine'] == true,
+      youLead: j['youLead'] == true,
+      won: j['won'] == true,
+      endsAt: d(j['endsAt']),
+      startedAt: d(j['startedAt']),
+      createdAt: d(j['createdAt']),
+    );
+  }
+
+  Map<String, String> toFields() => {
+        'kind': kind,
+        'title': title,
+        'description': description,
+        'category': category,
+        'condition': condition,
+        'code': code,
+        'price': '$price',
+        'stock': '$stock',
+        'unit': unit,
+        'location': location,
+        'area': area,
+        'equipment': equipment,
+        'days': '$durationDays',
+      };
+
+  MarketItem copyWithLocal(List<Uint8List> imgs) => MarketItem(
+        id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+        kind: kind, title: title, description: description, category: category, condition: condition, code: code,
+        unit: unit, location: location, area: area, equipment: equipment, price: price, stock: stock,
+        currentBid: price, durationDays: durationDays, localImages: imgs, mine: true, createdAt: DateTime.now(),
+      );
 }

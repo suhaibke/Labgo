@@ -360,18 +360,62 @@ class ResultDetailScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                 ],
                 const SizedBox(height: 4),
+                // Upload the result as a photo or PDF (instead of / with typed values).
                 Tap(
-                  onTap: app.saveResults,
+                  onTap: app.resultFiles.containsKey(p.id) ? () => app.openResultFile(p.id) : app.uploadResultFile,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: pal.chipBg,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: pal.line),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        LIcon(app.resultFiles.containsKey(p.id) ? 'FileText' : 'ImagePlus', size: 16, color: pal.accent),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            app.resultFiles.containsKey(p.id)
+                                ? '${app.tr('ملف النتيجة', 'فایلی ئەنجام', 'Result file')}: ${app.resultFiles[p.id]!.$1}'
+                                : app.tr('رفع النتيجة كصورة أو PDF', 'بارکردنی ئەنجام وەک وێنە یان PDF', 'Upload result as photo or PDF'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: ts(context, 13, weight: w700),
+                          ),
+                        ),
+                        if (app.resultFiles.containsKey(p.id)) ...[
+                          const SizedBox(width: 8),
+                          Tap(
+                            onTap: app.uploadResultFile,
+                            child: Text(app.tr('تغيير', 'گۆڕین', 'Change'), style: ts(context, 12, weight: w700, color: pal.accent)),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Tap(
+                  onTap: app.resultsLocked ? app.unlockResults : app.saveResults,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: pal.accent,
+                      color: app.resultsLocked ? pal.ink : pal.accent,
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: Text(
-                      app.w('saveResults'),
-                      style: ts(context, 16, weight: w700, color: Colors.white),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        LIcon(app.resultsLocked ? 'Pencil' : 'Check', size: 16, color: app.resultsLocked ? pal.appBg : Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          app.resultsLocked ? app.tr('تعديل النتائج', 'دەستکاریکردنی ئەنجام', 'Edit results') : app.w('saveResults'),
+                          style: ts(context, 16, weight: w700, color: app.resultsLocked ? pal.appBg : Colors.white),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -526,6 +570,8 @@ class _ResultEntryState extends State<_ResultEntry> {
               Expanded(
                 child: BoxField(
                   controller: _c,
+                  readOnly: app.resultsLocked,
+                  onTap: app.resultsLocked ? () => app.toast(app.tr('اضغط «تعديل النتائج» للتعديل', 'بۆ دەستکاری «دەستکاریکردنی ئەنجام» دابگرە', 'Tap "Edit results" to change them')) : null,
                   onChanged: (v) => app.setDraft(r.test, v),
                   keyboard: const TextInputType.numberWithOptions(
                     decimal: true,
