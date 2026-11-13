@@ -61,3 +61,44 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+
+  # Lab app (lab_app/): builds and uploads to TestFlight.
+  # Start it from Codemagic: Start new build > choose this workflow and the branch.
+  lab-ios-workflow:
+    name: Lab app - iOS TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    working_directory: lab_app
+    integrations:
+      app_store_connect: "LabGo LLC"
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.labgollc.labgolab
+      vars:
+        # The LabGo server the app talks to (https://...). Empty = demo mode
+        # with sample data, handy for trying the screens before the server is ready.
+        LAB_API_BASE: ""
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Set up code signing settings on Xcode project
+        script: xcode-project use-profiles
+      - name: Flutter build ipa for distribution
+        script: |
+          flutter build ipa --release \
+            --build-number=$PROJECT_BUILD_NUMBER \
+            --dart-define=API_BASE=$LAB_API_BASE \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      # Both forms, so the IPA is found whether paths start at the repo or lab_app/
+      - lab_app/build/ios/ipa/*.ipa
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

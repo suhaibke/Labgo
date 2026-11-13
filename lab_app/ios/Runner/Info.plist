@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Labgo Lab</string>
+	<string>LabGo Lab</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -68,6 +68,9 @@
 	</array>
 	<!-- Lets the app reach a test server on the local Wi-Fi over http;
 	     internet servers still need https -->
+	<!-- Only standard HTTPS: no export-compliance question on each TestFlight build -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
