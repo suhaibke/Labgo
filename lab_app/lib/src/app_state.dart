@@ -1567,7 +1567,9 @@ class AppState extends ChangeNotifier {
               !addTests.contains(c.name) &&
               c.name.toLowerCase().contains(q),
         )
-        .toList();
+        .toList()
+      // Names that start with what was typed come first.
+      ..sort((a, b) => (a.name.toLowerCase().startsWith(q) ? 0 : 1).compareTo(b.name.toLowerCase().startsWith(q) ? 0 : 1));
   }
 
   // Names typed before (doctors, companies / clinics / labs) are remembered on

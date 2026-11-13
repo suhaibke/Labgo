@@ -297,6 +297,39 @@ class AddScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
+                    for (final t in testMatches)
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => app.updateAdd(() {
+                          app.addTests = [...app.addTests, t.name];
+                          app.addSearch = '';
+                        }),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  t.name,
+                                  style: ts(context, 14, weight: w600),
+                                ),
+                              ),
+                              Text(
+                                formatNumber(testPrice(t.name, app.addMode)),
+                                style: ts(
+                                  context,
+                                  14,
+                                  weight: w600,
+                                  color: pal.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     for (final p in pkgMatches)
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
@@ -355,39 +388,6 @@ class AddScreen extends StatelessWidget {
                                 formatNumber(
                                   b2b ? packagePrice(p, 'B2B') : p.price,
                                 ),
-                                style: ts(
-                                  context,
-                                  14,
-                                  weight: w600,
-                                  color: pal.muted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    for (final t in testMatches)
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => app.updateAdd(() {
-                          app.addTests = [...app.addTests, t.name];
-                          app.addSearch = '';
-                        }),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  t.name,
-                                  style: ts(context, 14, weight: w600),
-                                ),
-                              ),
-                              Text(
-                                formatNumber(testPrice(t.name, app.addMode)),
                                 style: ts(
                                   context,
                                   14,
