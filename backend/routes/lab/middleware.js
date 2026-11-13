@@ -1,3 +1,4 @@
+const { jwtSecret } = require('../../config/secrets');
 const jwt = require('jsonwebtoken');
 const User = require('../../models/User');
 const Lab = require('../../models/Lab');
@@ -30,7 +31,7 @@ const auth = async (req, res, next) => {
             }
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788');
+        const decoded = jwt.verify(token, jwtSecret());
 
         // Include password field only for user profile update endpoint
         const includePassword = req.path === '/api/user/profile' && req.method === 'PUT';

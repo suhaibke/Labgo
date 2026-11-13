@@ -1,3 +1,4 @@
+const { jwtSecret } = require('../config/secrets');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const test = require('node:test');
@@ -14,7 +15,7 @@ const labRoutes = require('../routes/admin/labs');
 const adminId = '507f1f77bcf86cd799439011';
 const ownerId = '507f191e810c19729de860ea';
 const labId = '6ae4c754d9df1ab528c485c0';
-const secret = process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788';
+const secret = jwtSecret();
 const HEADER = ['NameAr', 'NameEn', 'Price', 'Category', 'Description', 'Instructions'];
 
 function queryResult(value) {

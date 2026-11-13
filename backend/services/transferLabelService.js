@@ -1,6 +1,7 @@
 // Shipping label for a sample sent to another lab: same design as the lab
 // app's label, with a real barcode (sample code) and a real QR code that lets
 // the receiving lab upload the result when it is not on LabGo.
+const { jwtSecret } = require('../config/secrets');
 const path = require('path');
 const crypto = require('crypto');
 const ejs = require('ejs');
@@ -9,7 +10,7 @@ const bwipjs = require('bwip-js');
 const { fontFaces, renderPdf } = require('./reportPdfService');
 
 const TEMPLATE = path.join(__dirname, '../views/reports/transfer-label.ejs');
-const SECRET = process.env.REPORT_SIGNING_SECRET || process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788';
+const SECRET = process.env.REPORT_SIGNING_SECRET || jwtSecret();
 const SIZE = { width: '100mm', height: '70mm' };
 
 const TEXT = {

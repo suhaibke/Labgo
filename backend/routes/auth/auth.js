@@ -1,3 +1,4 @@
+const { jwtSecret } = require('../../config/secrets');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -90,7 +91,7 @@ router.post('/register', [
         // Generate JWT token
         const token = jwt.sign(
             { userId: user._id, email: user.email, role: user.role },
-            process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788',
+            jwtSecret(),
             { expiresIn: process.env.JWT_EXPIRES_IN || '10y' }
         );
 
@@ -218,7 +219,7 @@ router.post('/login', [
         // Generate JWT token
         const token = jwt.sign(
             { userId: user._id, email: user.email, role: user.role },
-            process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788',
+            jwtSecret(),
             { expiresIn: process.env.JWT_EXPIRES_IN || '10y' }
         );
 
@@ -282,7 +283,7 @@ router.get('/me', async (req, res) => {
         // Verify token
         const decoded = jwt.verify(
             token,
-            process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788',
+            jwtSecret(),
         );
 
         // Get user from database
@@ -464,7 +465,7 @@ router.post('/register-with-otp', [
         // Generate JWT token
         const token = jwt.sign(
             { userId: user._id, email: user.email, role: user.role },
-            process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788',
+            jwtSecret(),
             { expiresIn: process.env.JWT_EXPIRES_IN || '10y' }
         );
 
@@ -658,7 +659,7 @@ router.post('/verify-otp', [
             // Generate JWT token
             const token = jwt.sign(
                 { userId: user._id, email: user.email, role: user.role },
-                process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788',
+                jwtSecret(),
                 { expiresIn: process.env.JWT_EXPIRES_IN || '10y' }
             );
 
@@ -921,7 +922,7 @@ router.post('/password-reset/verify-otp', [
             // Generate reset token (valid for 15 minutes)
             const resetToken = jwt.sign(
                 { userId: user._id, type: 'password_reset' },
-                process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788',
+                jwtSecret(),
                 { expiresIn: '15m' }
             );
 
@@ -984,7 +985,7 @@ router.post('/password-reset/confirm', [
         try {
             decoded = jwt.verify(
                 resetToken,
-                process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788'
+                jwtSecret()
             );
         } catch (err) {
             return res.status(401).json({
@@ -1068,7 +1069,7 @@ router.post('/change-password', [
         try {
             decoded = jwt.verify(
                 token,
-                process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788'
+                jwtSecret()
             );
         } catch (err) {
             return res.status(401).json({
@@ -1154,7 +1155,7 @@ router.put('/update-profile', [
         try {
             decoded = jwt.verify(
                 token,
-                process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788'
+                jwtSecret()
             );
         } catch (err) {
             return res.status(401).json({
@@ -1337,7 +1338,7 @@ router.post('/send-phone-change-otp', [
         try {
             decoded = jwt.verify(
                 token,
-                process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788'
+                jwtSecret()
             );
         } catch (err) {
             return res.status(401).json({
@@ -1462,7 +1463,7 @@ router.post('/verify-phone-change', [
         try {
             decoded = jwt.verify(
                 token,
-                process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788'
+                jwtSecret()
             );
         } catch (err) {
             return res.status(401).json({
@@ -1582,7 +1583,7 @@ router.delete('/delete-account', [
         try {
             decoded = jwt.verify(
                 token,
-                process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788'
+                jwtSecret()
             );
         } catch (err) {
             return res.status(401).json({

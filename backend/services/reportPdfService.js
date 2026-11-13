@@ -5,6 +5,7 @@
 // Chromium: set PUPPETEER_EXECUTABLE_PATH (the Docker image installs
 // /usr/bin/chromium-browser). Without it the common install paths are tried;
 // if none exists, PdfUnavailableError is thrown and callers can fall back.
+const { jwtSecret } = require('../config/secrets');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -16,7 +17,7 @@ const TEMPLATE = path.join(__dirname, '../views/reports/lab-result-report.ejs');
 const FONT_DIR = path.join(__dirname, '../assets/fonts');
 const PUBLIC_DIR = path.join(__dirname, '../public');
 const PLATFORM_LOGO = path.join(__dirname, '../assets/branding/labgo-logo.png');
-const SECRET = process.env.REPORT_SIGNING_SECRET || process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788';
+const SECRET = process.env.REPORT_SIGNING_SECRET || jwtSecret();
 const CHROME_CANDIDATES = ['/usr/bin/chromium-browser', '/usr/bin/chromium', '/usr/bin/google-chrome', '/opt/pw-browsers/chromium'];
 const SAMPLE = { blood: 'Blood', urine: 'Urine', stool: 'Stool', swab: 'Swab', csf: 'CSF' };
 

@@ -1,3 +1,4 @@
+const secrets = require('../config/secrets');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const test = require('node:test');
@@ -9,7 +10,7 @@ const User = require('../models/User');
 const Lab = require('../models/Lab');
 const { footerTemplate, barcodeDataUrl } = require('../services/reportPdfService');
 
-const jwtSecret = process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788';
+const jwtSecret = secrets.jwtSecret();
 
 test('the LabGo footer is shown unless the platform hides it', () => {
     const shown = footerTemplate({ showPlatform: true, left: 'Lab · LG-1' });

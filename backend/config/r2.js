@@ -14,13 +14,13 @@
  */
 
 const r2Config = {
-    accountId: process.env.R2_ACCOUNT_ID || '7a5737a4271e198bc39ab3c30343afe1',
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || '286cea50f93e841afcbcd29dea8d2df0',
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '30f177ee72a60853fd4a4ddc761587c0e3912ef5ce756b2a868ac1a20ee92c96',
+    accountId: process.env.R2_ACCOUNT_ID || '',
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
     bucketName: process.env.R2_BUCKET_NAME || 'labgo',
     
     // S3-compatible endpoint
-    endpoint: process.env.R2_ENDPOINT || 'https://7a5737a4271e198bc39ab3c30343afe1.r2.cloudflarestorage.com',
+    endpoint: process.env.R2_ENDPOINT || (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : ''),
     
     // Public URL for serving files (configure this in R2 dashboard if using custom domain)
     // If using R2 public bucket or custom domain, set this

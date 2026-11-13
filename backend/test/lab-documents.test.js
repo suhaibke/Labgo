@@ -1,3 +1,4 @@
+const { jwtSecret } = require('../config/secrets');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
@@ -70,7 +71,7 @@ async function startRouterServer(t) {
 function adminToken() {
     return jwt.sign(
         { userId: adminId, role: 'admin' },
-        process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788'
+        jwtSecret()
     );
 }
 

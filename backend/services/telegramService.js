@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 // Telegram Bot Configuration
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8370600756:AAEbD3CvJaD4n2Mr-SLcF37SY9W4vA11uXY';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
 // List of chat IDs or usernames to notify when a new order is created
 // Use chat IDs for reliability (usernames can change)
@@ -23,6 +23,7 @@ class TelegramService {
      * @returns {Promise<boolean>} - Success status
      */
     async sendMessage(chatId, message, options = {}) {
+        if (!TELEGRAM_BOT_TOKEN) return false; // not configured on this server
         try {
             const response = await axios.post(`${this.apiBaseUrl}/sendMessage`, {
                 chat_id: chatId,

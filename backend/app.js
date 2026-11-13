@@ -1,4 +1,8 @@
 require('dotenv').config();
+const { jwtSecret, assertSecrets } = require('./config/secrets');
+
+// Stop early with a clear message when a required secret is missing.
+assertSecrets();
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
@@ -33,7 +37,7 @@ const requireAdmin = async (req, res, next) => {
     }
 
     const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788');
+    const decoded = jwt.verify(token, jwtSecret());
 
     const user = await User.findById(decoded.userId || decoded.id).select('-password');
 
@@ -65,7 +69,7 @@ const requireLab = async (req, res, next) => {
     }
 
     const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788');
+    const decoded = jwt.verify(token, jwtSecret());
 
     const user = await User.findById(decoded.userId || decoded.id).select('-password');
     const Lab = require('./models/Lab');

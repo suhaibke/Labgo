@@ -1,3 +1,4 @@
+const secrets = require('../config/secrets');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
@@ -20,7 +21,7 @@ const adminId = '507f1f77bcf86cd799439011';
 const patientId = '507f191e810c19729de860ea';
 const labId = '507f1f77bcf86cd799439012';
 const testId = '507f191e810c19729de860eb';
-const jwtSecret = process.env.JWT_SECRET || 'b668e17f80f60ae673dada6b29fb1b3c3350f52bcca47a919504c2f9713ef761d9776f53afa38581b3b9e1f0954e9f39a8fd8c7ac21596464e56c1a98a583788';
+const jwtSecret = secrets.jwtSecret();
 
 function queryResult(value) {
     const query = {
