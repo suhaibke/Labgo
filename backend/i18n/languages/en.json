@@ -1976,7 +1976,7 @@
   },
   "licenseHolders": {
     "title": "Licence holders",
-    "desc": "Shown in English in the result report header, e.g. Dr. Ahmed Hamdoon Ahmed · Bacteriologist",
+    "desc": "Shown in the result report header, in Arabic or English, e.g. Dr. Ahmed Hamdoon Ahmed · Bacteriologist",
     "add": "Add licence holder",
     "preview": "How it appears on the report"
   }

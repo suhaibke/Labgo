@@ -1706,7 +1706,7 @@
   },
   "licenseHolders": {
     "title": "Ruhsat sahipleri",
-    "desc": "Sonuç raporunun başlığında İngilizce gösterilir",
+    "desc": "Sonuç raporunun başlığında Arapça veya İngilizce gösterilir",
     "add": "Ruhsat sahibi ekle",
     "preview": "Raporda görünümü"
   }

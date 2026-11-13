@@ -747,7 +747,7 @@
         // Handle form submission
         // ---- licence holders ----
         (function () {
-            var TITLES = ['Dr.', 'Prof.', 'Assoc. Prof.', 'Asst. Prof.', 'Mr.', 'Ms.'];
+            var TITLES = ['Dr.', 'Prof.', 'Assoc. Prof.', 'Asst. Prof.', 'Mr.', 'Ms.', 'د.', 'أ.د.', 'أ.م.د.', 'م.د.', 'السيد', 'السيدة'];
             var rows = <%- JSON.stringify((lab.licenseHolders || []).map(function (h) { return { title: h.title, name: h.name, specialty: h.specialty }; })).replace(/</g, '\\u003c') %>;
             var box = document.getElementById('lhRows');
             var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -759,15 +759,15 @@
             function preview() {
                 var list = rows.filter(function (h) { return h.name; });
                 document.getElementById('lhPreview').innerHTML = list.length
-                    ? list.map(function (h) { return '<span><b>' + esc([h.title, h.name].filter(Boolean).join(' ')) + '</b>' + (h.specialty ? ' · ' + esc(h.specialty) : '') + '</span>'; }).join('')
+                    ? list.map(function (h) { return '<span dir="auto"><b>' + esc([h.title, h.name].filter(Boolean).join(' ')) + '</b>' + (h.specialty ? ' · ' + esc(h.specialty) : '') + '</span>'; }).join('')
                     : '<span class="lh-empty">—</span>';
             }
             function render() {
                 box.innerHTML = rows.map(function (h, i) {
                     return '<div class="lh-row" data-i="' + i + '">' +
                         '<select class="form-select" data-k="title" aria-label="Title">' + TITLES.concat(TITLES.indexOf(h.title) === -1 && h.title ? [h.title] : []).map(function (t) { return '<option' + (t === h.title ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '<option value=""' + (h.title === '' ? ' selected' : '') + '>—</option></select>' +
-                        '<input class="form-input" data-k="name" dir="ltr" maxlength="80" placeholder="Ahmed Hamdoon Ahmed" value="' + esc(h.name) + '">' +
-                        '<input class="form-input" data-k="specialty" dir="ltr" maxlength="60" placeholder="Bacteriologist" value="' + esc(h.specialty) + '">' +
+                        '<input class="form-input" data-k="name" dir="auto" maxlength="80" placeholder="Ahmed Hamdoon Ahmed / أحمد حمدون أحمد" value="' + esc(h.name) + '">' +
+                        '<input class="form-input" data-k="specialty" dir="auto" maxlength="60" placeholder="Bacteriologist / بكتريولوجي" value="' + esc(h.specialty) + '">' +
                         '<button type="button" class="icon-action" data-del="' + i + '" aria-label="<%= __('common.delete') %>"><svg class="ic"><use href="#i-trash-2"/></svg></button></div>';
                 }).join('');
                 document.getElementById('lhAdd').style.display = rows.length >= 6 ? 'none' : '';
