@@ -113,6 +113,21 @@ class LabApi {
     });
   }
 
+  /// Approves the results: the server builds the PDF report, completes the
+  /// order and notifies the patient. Every test needs a value.
+  Future<void> approveResults(String orderId, Map<String, String> values) async {
+    try {
+      await _send('POST', '/lab/api/orders/$orderId/results/approve', {
+        'values': [
+          for (final e in values.entries) {'testName': e.key, 'value': e.value},
+        ],
+      });
+    } on ApiError catch (e) {
+      if (e.status == 400 && e.message.contains('no value')) throw ApiError(400, 'missing');
+      rethrow;
+    }
+  }
+
   /// 10-digit Iraqi mobiles typed without the leading 0 get it back.
   static String normalizePhone(String v) {
     final t = v.trim();

@@ -1031,11 +1031,44 @@ class AppState extends ChangeNotifier {
     if (sending || sendPatient == null) return;
     sending = true;
     notifyListeners();
+    if (LabApi.enabled) {
+      _approveOnServer(sendPatient!);
+      return;
+    }
     Timer(const Duration(milliseconds: 700), () {
       sending = false;
       sent = true;
       toast(tr('تم إرسال النتيجة ✓', 'ئەنجام نێردرا ✓', 'Result sent ✓'));
     });
+  }
+
+  /// Server mode: approve (PDF + patient notification), then show "sent".
+  Future<void> _approveOnServer(Patient p) async {
+    final values = <String, String>{
+      ...p.results,
+      if (selectedPatient?.id == p.id) ...draft,
+    };
+    try {
+      await LabApi.instance.approveResults(p.id, values);
+      sent = true;
+      patients = patients
+          .map((m) => m.id == p.id ? m.copyWith(results: values, status: 'Completed') : m)
+          .toList();
+      if (selectedPatient?.id == p.id) {
+        selectedPatient = selectedPatient!.copyWith(results: values, status: 'Completed');
+      }
+      toast(tr('تم اعتماد النتيجة وإرسالها للمريض ✓', 'ئەنجام پەسەندکرا و نێردرا ✓', 'Result approved and sent to the patient ✓'));
+      refreshPatients();
+    } on ApiError catch (e) {
+      toast(e.message == 'missing'
+          ? tr('أكمل نتائج كل التحاليل أولاً', 'سەرەتا هەموو ئەنجامەکان پڕ بکەرەوە', 'Fill in every result first')
+          : e.message);
+    } catch (_) {
+      toast(tr('تعذر الإرسال، تحقق من الاتصال', 'نەنێردرا، پەیوەندی بپشکنە', 'Could not send, check the connection'));
+    } finally {
+      sending = false;
+      notifyListeners();
+    }
   }
 
   // logout confirmation

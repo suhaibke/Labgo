@@ -53,8 +53,9 @@ class Shell extends StatelessWidget {
                 ],
               ),
               if (inApp && app.tab != 'print') const BottomNav(),
-              if (inApp && app.toastText != null) const _Toast(),
               if (inApp) const Overlays(),
+              // Above sheets, so messages from a sheet's action are visible.
+              if (inApp && app.toastText != null) const _Toast(),
               if (app.splashVisible) const SplashOverlay(),
             ],
           ),
