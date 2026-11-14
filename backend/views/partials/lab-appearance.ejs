@@ -5,7 +5,7 @@
         <h2 class="la-h2"><%= __('labApp.appearance') %></h2>
         <p class="la-sub"><%= __('labApp.sameAsApp') %></p>
       </div>
-      <div class="la-seg" style="width:auto">
+      <div class="la-seg">
         <button type="button" class="la-theme-opt" data-theme-opt="light"><%= __('labApp.light') %></button>
         <button type="button" class="la-theme-opt" data-theme-opt="dark"><%= __('labApp.dark') %></button>
       </div>
@@ -13,9 +13,8 @@
     <p class="la-label" style="margin-top:14px"><%= __('labApp.accent') %></p>
     <div style="display:flex;gap:12px;flex-wrap:wrap" id="laAccents">
       <% [['#FF5A00','#FF7A33'],['#007AFF','#3395FF'],['#34C759','#4CD964'],['#AF52DE','#BF5AF2'],['#FF3B30','#FF6961'],['#00C7BE','#40D9D1']].forEach(function (c) { %>
-        <button type="button" class="press-90" data-light="<%= c[0] %>" data-dark="<%= c[1] %>" aria-label="<%= c[0] %>"
-                style="width:44px;height:44px;border-radius:50%;background:<%= c[0] %>;display:grid;place-items:center;color:#fff">
-          <svg class="ic" style="width:20px;height:20px;display:none"><use href="#i-check"/></svg>
+        <button type="button" class="la-swatch" data-light="<%= c[0] %>" data-dark="<%= c[1] %>" aria-label="<%= c[0] %>" style="background:<%= c[0] %>;color:<%= c[0] %>">
+          <svg class="ic"><use href="#i-check"/></svg>
         </button>
       <% }); %>
     </div>
@@ -28,9 +27,10 @@
         document.querySelectorAll('.la-theme-opt').forEach(function (b) { b.classList.toggle('on', (b.dataset.themeOpt === 'dark') === dark()); });
         var cur = (getComputedStyle(d).getPropertyValue('--accent') || '').trim().toUpperCase();
         document.querySelectorAll('#laAccents button').forEach(function (b) {
-          b.style.background = dark() ? b.dataset.dark : b.dataset.light;
+          b.style.background = b.style.color = dark() ? b.dataset.dark : b.dataset.light;
           var on = cur === b.dataset.light.toUpperCase() || cur === b.dataset.dark.toUpperCase();
-          b.querySelector('svg').style.display = on ? 'block' : 'none';
+          b.classList.toggle('on', on);
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
         });
       }
       document.querySelectorAll('.la-theme-opt').forEach(function (b) {

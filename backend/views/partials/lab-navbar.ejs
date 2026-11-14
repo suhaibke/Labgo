@@ -1,6 +1,7 @@
 <%#
   Lab dashboard shell — side bar (desktop), floating bottom bar (mobile) and top bar.
-  Grouped navigation, user block, breadcrumb top bar. Styles: /css/lab-app.css.
+  One identity with the lab app: floating side bar, round white chips in the top bar,
+  the app's theme switch and bottom bar on phones. Styles: /css/lab-app.css.
 %>
 <%
   const _active = (typeof activeSection !== 'undefined' && activeSection) ||
@@ -48,7 +49,7 @@
   const _current = _nav.concat(_navEndOk).filter(_isActive)[0];
 %>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/lab-app.css">
 <script>
   // Apply theme + accent before paint (kept per browser, same keys as before).
@@ -105,8 +106,8 @@
 
 <nav class="la-bottom" aria-label="<%= __('navigation.dashboard') %>">
   <% _nav.concat(_navEndOk).filter(function (n) { return _bottom.indexOf(n.id) !== -1; }).forEach(function (n) { %>
-    <a href="<%= n.href %>" class="<%= _isActive(n) ? 'active' : '' %>" aria-label="<%= n.label %>">
-      <svg class="ic"><use href="#i-<%= n.icon %>"/></svg>
+    <a href="<%= n.href %>" class="<%= n.id === 'add-patient' ? 'primary' : (_isActive(n) ? 'active' : '') %>" aria-label="<%= n.label %>">
+      <svg class="ic"><use href="#i-<%= n.id === 'add-patient' ? 'plus' : n.icon %>"/></svg>
     </a>
   <% }); %>
 </nav>
@@ -128,6 +129,11 @@
         <a href="/auth/logout" class="danger"><svg class="ic flip-rtl"><use href="#i-log-out"/></svg><%= __('navigation.logout') %></a>
       </div>
     </div>
+    <% if (_can('/lab/market')) { %>
+    <a class="la-circle press-90" href="/lab/market" aria-label="<%= __('labWeb.market') %>" title="<%= __('labWeb.market') %>">
+      <svg class="ic" style="width:19px;height:19px;stroke-width:1.8"><use href="#i-store"/></svg>
+    </a>
+    <% } %>
     <div style="position:relative">
       <button class="la-circle la-lang" id="laLangBtn" aria-label="<%= __('labWeb.language') %>">
         <svg class="ic"><use href="#i-globe"/></svg><span><%= _langBadge %></span>
@@ -138,7 +144,8 @@
         <% }); %>
       </div>
     </div>
-    <button class="la-circle la-theme" id="laThemeBtn" aria-label="<%= __('labWeb.theme') %>" title="<%= __('labWeb.theme') %>">
+    <button class="la-theme" id="laThemeBtn" aria-label="<%= __('labWeb.theme') %>" title="<%= __('labWeb.theme') %>">
+      <span class="knob"></span>
       <svg class="ic sun"><use href="#i-sun"/></svg>
       <svg class="ic moon"><use href="#i-moon"/></svg>
     </button>
