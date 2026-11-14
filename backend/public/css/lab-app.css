@@ -85,7 +85,10 @@
   --content-max: 1320px;
 
   /* type */
-  --font: "Inter", "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Latin: Inter. Arabic: SF Arabic on Apple devices (the system font there,
+     reached by name or through -apple-system; it is not shipped with the
+     site), IBM Plex Sans Arabic everywhere else. */
+  --font: "Inter", "SF Arabic", -apple-system, BlinkMacSystemFont, "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
   --fs-xs: 11.5px;
   --fs-sm: 12.5px;
   --fs-base: 14px;
