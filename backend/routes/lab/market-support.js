@@ -8,6 +8,8 @@ const SupportTicket = require('../../models/SupportTicket');
 const Counter = require('../../models/Counter');
 const r2Service = require('../../services/r2Service');
 const market = require('../../services/marketService');
+const Banner = require('../../models/Banner');
+const AppSettings = require('../../models/AppSettings');
 
 const router = express.Router();
 const upload = multer({
@@ -58,7 +60,16 @@ router.get('/api/market', async (req, res) => {
             status: { $ne: 'removed' },
             $or: [{ approvalStatus: 'approved' }, { labId: req.lab._id }],
         }).sort({ createdAt: -1 }).limit(300).populate('labId', 'name city phone').lean();
-        res.json({ success: true, data: { items: list.map((l) => view(l, req.lab._id)) } });
+        // Store banner slides the admin uploaded for the labs' store.
+        const [banners, settings] = await Promise.all([
+            Banner.find({ isActive: true, placement: 'lab_store' }).sort({ order: 1, createdAt: 1 }).lean().catch(() => []),
+            AppSettings.getSingleton().catch(() => null),
+        ]);
+        res.json({ success: true, data: {
+            items: list.map((l) => view(l, req.lab._id)),
+            banners: banners.map((b) => ({ id: String(b._id), imageUrl: b.imageUrl })),
+            bannerSeconds: settings?.bannerDurationSeconds || 5,
+        } });
     } catch (error) {
         console.error('Market list error:', error);
         res.status(500).json({ success: false, message: 'Error loading the store' });

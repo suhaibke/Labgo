@@ -67,9 +67,10 @@ router.post('/', auth.verifyToken, requireAdmin, uploadBannerImage, async (req, 
             return res.status(400).json({ success: false, message: 'image is required' });
         }
 
-        const { order } = req.body;
+        const { order, placement } = req.body;
         const banner = new Banner({
             imageUrl: req.file.r2Url,
+            placement: Banner.PLACEMENTS.includes(placement) ? placement : 'home',
             order: order ? Number(order) : 0,
             createdBy: req.user._id,
         });
@@ -90,8 +91,9 @@ router.put('/:id', auth.verifyToken, requireAdmin, uploadBannerImage, async (req
             return res.status(404).json({ success: false, message: 'Banner not found' });
         }
 
-        const { order, isActive } = req.body;
+        const { order, isActive, placement } = req.body;
         if (order !== undefined) banner.order = Number(order);
+        if (Banner.PLACEMENTS.includes(placement)) banner.placement = placement;
         if (isActive !== undefined) banner.isActive = isActive === true || isActive === 'true';
 
         if (req.file && req.file.r2Url) {

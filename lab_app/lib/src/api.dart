@@ -171,7 +171,8 @@ class LabApi {
 
   Future<Map<String, dynamic>> sendSupport(Map<String, String> fields, List<List<int>> images) => sendForm('/lab/api/support', fields, images);
   Future<List<dynamic>> supportTickets() async => ((await _data('GET', '/lab/api/support'))['items'] as List?) ?? const [];
-  Future<List<dynamic>> marketList() async => ((await _data('GET', '/lab/api/market'))['items'] as List?) ?? const [];
+  /// Store listings plus the banner slides the admin set for the labs' store.
+  Future<Map<String, dynamic>> market() => _data('GET', '/lab/api/market');
   Future<Map<String, dynamic>> addListing(Map<String, String> fields, List<List<int>> images) => sendForm('/lab/api/market', fields, images);
   Future<Map<String, dynamic>> bid(String id, int amount) => _data('POST', '/lab/api/market/$id/bid', {'amount': amount});
 

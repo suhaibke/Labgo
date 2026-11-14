@@ -29,6 +29,10 @@ test('a new listing waits for the admin; others see only approved ones', async (
     let query = null;
     t.mock.method(MarketListing, 'find', (q) => { query = q; return { sort() { return this; }, limit() { return this; }, populate() { return this; }, lean: async () => [] }; });
     t.mock.method(market, 'settleDue', async () => {});
+    // Store banners come from the admin's banner list (lab_store placement only).
+    let bannerQuery = null;
+    t.mock.method(require('../models/Banner'), 'find', (q) => { bannerQuery = q; return { sort() { return this; }, lean: async () => [{ _id: new mongoose.Types.ObjectId(), imageUrl: 'https://cdn.test/b.jpg' }] }; });
+    t.mock.method(require('../models/AppSettings'), 'getSingleton', async () => ({ bannerDurationSeconds: 7 }));
     const base = await start(t);
     const post = (fields) => {
         const fd = new FormData();
@@ -40,8 +44,11 @@ test('a new listing waits for the admin; others see only approved ones', async (
     assert.equal(res.status, 201);
     assert.equal((await res.json()).data.approvalStatus, 'pending');
     assert.equal(created[0].durationDays, 5);
-    await fetch(`${base}/api/market`);
+    const listed = await (await fetch(`${base}/api/market`)).json();
     assert.deepEqual(query.$or, [{ approvalStatus: 'approved' }, { labId: lab._id }]);
+    assert.deepEqual(bannerQuery, { isActive: true, placement: 'lab_store' });
+    assert.equal(listed.data.banners[0].imageUrl, 'https://cdn.test/b.jpg');
+    assert.equal(listed.data.bannerSeconds, 7);
 });
 
 test('an ended auction goes to the highest bidder and both labs are told', async (t) => {

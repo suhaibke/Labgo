@@ -942,10 +942,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Banner slides at the top of the store (uploaded by the LabGo admin).
+  List<String> storeBanners = [];
+  int storeBannerSeconds = 5;
+
   Future<void> loadMarket() async {
     if (!LabApi.enabled) return;
     try {
-      marketItems = [for (final j in await LabApi.instance.marketList()) MarketItem.fromJson(Map<String, dynamic>.from(j as Map))];
+      final data = await LabApi.instance.market();
+      marketItems = [for (final j in (data['items'] as List? ?? const [])) MarketItem.fromJson(Map<String, dynamic>.from(j as Map))];
+      storeBanners = [for (final b in (data['banners'] as List? ?? const [])) '${(b as Map)['imageUrl'] ?? ''}'].where((u) => u.isNotEmpty).toList();
+      storeBannerSeconds = ((data['bannerSeconds'] as num?) ?? 5).toInt().clamp(2, 30);
       notifyListeners();
     } catch (_) {}
   }

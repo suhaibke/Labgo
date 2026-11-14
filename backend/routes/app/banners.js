@@ -11,7 +11,7 @@ const AppSettings = require('../../models/AppSettings');
 router.get('/', async (req, res) => {
     try {
         const [banners, settings] = await Promise.all([
-            Banner.find({ isActive: true }).sort({ order: 1, createdAt: 1 }),
+            Banner.find({ isActive: true, placement: { $ne: 'lab_store' } }).sort({ order: 1, createdAt: 1 }),
             AppSettings.getSingleton(),
         ]);
 

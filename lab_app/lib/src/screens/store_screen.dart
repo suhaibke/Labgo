@@ -39,7 +39,7 @@ class StoreScreen extends StatefulWidget {
 }
 
 class _StoreScreenState extends State<StoreScreen> {
-  String view = 'main'; // main | add | detail | checkout | orders | mine
+  String view = 'main'; // main | add | detail | checkout | orders | mine | auction
   String search = '';
   String category = 'All';
   MarketItem? item;
@@ -54,13 +54,16 @@ class _StoreScreenState extends State<StoreScreen> {
     super.dispose();
   }
 
+  String _from = 'main';
   void go(String v, {MarketItem? it}) => setState(() {
+        if (v == 'detail') _from = view == 'auction' ? 'auction' : 'main';
         view = v;
         if (it != null) item = it;
       });
 
   void back(AppState app) {
     if (view == 'checkout') return go('detail');
+    if (view == 'detail' && _from == 'auction') return go('auction');
     if (view != 'main') return go('main');
     app.closeStore();
   }
@@ -74,6 +77,7 @@ class _StoreScreenState extends State<StoreScreen> {
       'checkout' => app.tr('إتمام الطلب', 'تەواوکردنی داواکاری', 'Checkout'),
       'orders' => app.tr('طلباتي', 'داواکارییەکانم', 'My Orders'),
       'mine' => app.tr('معروضاتي', 'بەرهەمەکانم', 'My listings'),
+      'auction' => app.tr('المزاد', 'مزایدە', 'Auction'),
       'detail' => item?.title ?? '',
       _ => app.d('storeTitle'),
     };
@@ -105,6 +109,7 @@ class _StoreScreenState extends State<StoreScreen> {
             'checkout' => _checkout(context),
             'orders' => _orders(context),
             'mine' => _mine(context),
+            'auction' => _auctionView(context),
             _ => _main(context),
           },
         ],
@@ -140,21 +145,31 @@ class _StoreScreenState extends State<StoreScreen> {
         hint: app.tr('ابحث بالاسم أو الكود أو المختبر…', 'بگەڕێ…', 'Search by name, code or lab…'),
         onChanged: (v) => setState(() => search = v),
       ),
+      if (app.storeBanners.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        _StoreBanner(images: app.storeBanners, seconds: app.storeBannerSeconds),
+      ],
       const SizedBox(height: 12),
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
             _pill(context, 'Plus', app.d('storeAdd'), () => go('add'), filled: true),
+            _pill(context, 'Gavel', '${app.tr('المزاد', 'مزایدە', 'Auction')}${auctions.isEmpty ? '' : ' (${auctions.length})'}', () => go('auction')),
             _pill(context, 'Package', '${app.tr('معروضاتي', 'بەرهەمەکانم', 'My listings')}${mineCount > 0 ? ' ($mineCount)' : ''}', () => go('mine')),
             _pill(context, 'ShoppingCart', '${app.tr('طلباتي', 'داواکارییەکانم', 'My Orders')}${app.storeOrders.isEmpty ? '' : ' (${app.storeOrders.length})'}', () => go('orders')),
           ],
         ),
       ),
-      if (auctions.isNotEmpty) ...[
-        const SizedBox(height: 18),
-        _sectionTitle(context, app.tr('المزادات', 'مزایدەکان', 'Auctions'), auctions.length),
-        const SizedBox(height: 8),
+      const SizedBox(height: 18),
+      Tap(
+        onTap: () => go('auction'),
+        child: _sectionTitle(context, app.tr('المزاد', 'مزایدە', 'Auction'), auctions.length, more: app.tr('عرض الكل', 'هەموو', 'View all')),
+      ),
+      const SizedBox(height: 8),
+      if (auctions.isEmpty)
+        _empty(context, app.tr('لا توجد مزادات جارية الآن — أضف مزادك من «إضافة»', 'ئێستا هیچ مزایدەیەک نییە', 'No live auctions right now — add yours from “Add”'))
+      else
         SizedBox(
           height: 236,
           child: ListView.separated(
@@ -164,7 +179,6 @@ class _StoreScreenState extends State<StoreScreen> {
             itemBuilder: (_, i) => SizedBox(width: 220, child: _AuctionCard(item: auctions[i], onTap: () => go('detail', it: auctions[i]))),
           ),
         ),
-      ],
       const SizedBox(height: 18),
       _sectionTitle(context, app.tr('المنتجات', 'بەرهەمەکان', 'Products'), products.length),
       const SizedBox(height: 8),
@@ -191,12 +205,40 @@ class _StoreScreenState extends State<StoreScreen> {
     ];
   }
 
-  Widget _sectionTitle(BuildContext context, String t, int n) => Row(
+  Widget _sectionTitle(BuildContext context, String t, int n, {String? more}) => Row(
         children: [
           Expanded(child: Text(t, style: ts(context, 20, weight: w900))),
-          Text('$n', style: ts(context, 12, weight: w700, color: context.pal.muted)),
+          if (more != null)
+            Text(more, style: ts(context, 13, weight: w700, color: context.pal.accent))
+          else
+            Text('$n', style: ts(context, 12, weight: w700, color: context.pal.muted)),
         ],
       );
+
+  // ------------------------------------------------------------- auction
+  /// Every approved auction (devices and labs): live ones first, then ended.
+  List<Widget> _auctionView(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    final all = app.marketItems.where((m) => m.approved && m.isAuction && m.status != 'removed').toList()
+      ..sort((a, b) {
+        final la = a.status == 'active' ? 0 : 1, lb = b.status == 'active' ? 0 : 1;
+        if (la != lb) return la - lb;
+        return (a.endsAt ?? DateTime(2100)).compareTo(b.endsAt ?? DateTime(2100));
+      });
+    return [
+      Text(app.tr('المزاد', 'مزایدە', 'Auction'), style: ts(context, 26, weight: w700, height: 1.25)),
+      Text(app.tr('زايد على أجهزة ومختبرات معروضة من مختبرات أخرى', 'نرخ بدە لەسەر ئامێر و تاقیگەکان', 'Bid on devices and labs listed by other labs'), style: ts(context, 13, color: pal.muted)),
+      const SizedBox(height: 12),
+      if (all.isEmpty) _empty(context, app.tr('لا توجد مزادات بعد', 'هێشتا مزایدە نییە', 'No auctions yet')),
+      for (final a in all) ...[
+        SizedBox(height: 236, child: _AuctionCard(item: a, onTap: () => go('detail', it: a))),
+        const SizedBox(height: 12),
+      ],
+      const SizedBox(height: 4),
+      _pill(context, 'Plus', app.tr('أضف مزاداً', 'مزایدە زیاد بکە', 'Add an auction'), () => go('add'), filled: true),
+    ];
+  }
 
   Widget _empty(BuildContext context, String t) => Container(
         padding: const EdgeInsets.symmetric(vertical: 22),
@@ -1105,6 +1147,84 @@ class _AddListingState extends State<_AddListing> {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+/// The store's banner: slides uploaded by the LabGo admin, changing on a timer.
+class _StoreBanner extends StatefulWidget {
+  final List<String> images;
+  final int seconds;
+  const _StoreBanner({required this.images, required this.seconds});
+
+  @override
+  State<_StoreBanner> createState() => _StoreBannerState();
+}
+
+class _StoreBannerState extends State<_StoreBanner> {
+  final _page = PageController();
+  Timer? _timer;
+  int at = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(Duration(seconds: widget.seconds), (_) {
+      if (!mounted || widget.images.length < 2 || !_page.hasClients) return;
+      _page.animateToPage((at + 1) % widget.images.length, duration: const Duration(milliseconds: 450), curve: Curves.easeOutCubic);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _page.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: AspectRatio(
+            aspectRatio: 5 / 2,
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: PageView.builder(
+                controller: _page,
+                itemCount: widget.images.length,
+                onPageChanged: (i) => setState(() => at = i),
+                itemBuilder: (_, i) => Image.network(
+                  widget.images[i],
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => ColoredBox(color: pal.chipBg, child: Center(child: LIcon('ImagePlus', size: 28, color: pal.muted))),
+                  loadingBuilder: (_, child, p) => p == null ? child : ColoredBox(color: pal.chipBg),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (widget.images.length > 1) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 0; i < widget.images.length; i++)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: at == i ? 18 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(color: at == i ? pal.accent : pal.track, borderRadius: BorderRadius.circular(999)),
+                ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }

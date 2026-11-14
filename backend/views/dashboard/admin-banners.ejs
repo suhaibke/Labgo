@@ -194,6 +194,7 @@
                             <thead>
                                 <tr>
                                     <th>الصورة</th>
+                                    <th>مكان الظهور</th>
                                     <th>الترتيب</th>
                                     <th>الحالة</th>
                                     <th>إجراءات</th>
@@ -221,6 +222,13 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="editingId" value="" />
+                    <div class="form-group">
+                        <label>مكان الظهور</label>
+                        <select id="fieldPlacement" class="form-control">
+                            <option value="home">الرئيسية (تطبيق المرضى)</option>
+                            <option value="lab_store">متجر المختبرات</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label>الترتيب</label>
                         <input type="number" id="fieldOrder" class="form-control" value="0" />
@@ -265,13 +273,14 @@
                     document.getElementById('durationInput').value = data.data.bannerDurationSeconds;
 
                     if (data.data.banners.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color:#888;">لا توجد بانرات بعد</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 30px; color:#888;">لا توجد بانرات بعد</td></tr>';
                         return;
                     }
 
                     tbody.innerHTML = data.data.banners.map(b => `
                     <tr>
                         <td><img src="${b.imageUrl}" alt="banner" /></td>
+                        <td>${b.placement === 'lab_store' ? 'متجر المختبرات' : 'الرئيسية'}</td>
                         <td>${b.order}</td>
                         <td><span class="status-pill ${b.isActive ? 'active' : 'inactive'}">${b.isActive ? 'مفعّل' : 'معطّل'}</span></td>
                         <td>
@@ -313,6 +322,7 @@
                 document.getElementById('modalTitle').textContent = 'إضافة بانر جديد';
                 document.getElementById('editingId').value = '';
                 document.getElementById('fieldOrder').value = '0';
+                document.getElementById('fieldPlacement').value = 'home';
                 document.getElementById('fieldImage').value = '';
                 document.getElementById('bannerModal').classList.add('show');
             }
@@ -321,6 +331,7 @@
                 document.getElementById('modalTitle').textContent = 'تعديل البانر';
                 document.getElementById('editingId').value = banner._id;
                 document.getElementById('fieldOrder').value = banner.order || 0;
+                document.getElementById('fieldPlacement').value = banner.placement || 'home';
                 document.getElementById('fieldImage').value = '';
                 document.getElementById('bannerModal').classList.add('show');
             }
@@ -341,6 +352,7 @@
 
                 const formData = new FormData();
                 formData.append('order', document.getElementById('fieldOrder').value || 0);
+                formData.append('placement', document.getElementById('fieldPlacement').value);
                 if (imageFile) formData.append('image', imageFile);
 
                 try {
