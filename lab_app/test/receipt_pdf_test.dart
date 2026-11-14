@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:labgo_lab/src/app_state.dart';
 import 'package:labgo_lab/src/models.dart';
@@ -6,6 +7,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // The app's sound player talks to a native plugin that tests do not have.
+  for (final name in ['xyz.luan/audioplayers.global', 'xyz.luan/audioplayers']) {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(MethodChannel(name), (_) async => null);
+  }
   test('receipt and report PDFs carry the order number', () async {
     SharedPreferences.setMockInitialValues({});
     final app = AppState();
