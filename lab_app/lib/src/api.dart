@@ -211,6 +211,18 @@ class LabApi {
 
   Future<Map<String, dynamic>> finance() => _data('GET', '/lab/api/app/finance');
   Future<void> addExpense(Map<String, dynamic> body) => _send('POST', '/lab/api/finance/expenses', body);
+
+  // ---- supplies orders (same list as the web dashboard) ----
+  Future<List<Map<String, dynamic>>> supplyOrders() async {
+    final json = await _send('GET', '/lab/api/supplies');
+    return [for (final o in ((json['data'] as Map)['orders'] as List? ?? const [])) Map<String, dynamic>.from(o as Map)];
+  }
+
+  /// Saves an order; the server numbers it and returns the saved copy.
+  Future<Map<String, dynamic>> addSupplyOrder(Map<String, dynamic> body) async {
+    final json = await _send('POST', '/lab/api/supplies', body);
+    return Map<String, dynamic>.from(json['data'] as Map);
+  }
   Future<Map<String, dynamic>> saveLab(Map<String, dynamic> body) => _data('PATCH', '/lab/api/app/lab', body);
 
   Future<Map<String, dynamic>> transfers() => _data('GET', '/lab/api/app/transfers');

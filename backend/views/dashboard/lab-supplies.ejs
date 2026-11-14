@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('labWeb.supplies') %> · <%= title %></title>
+</head>
+
+<body>
+    <%- include('../partials/lab-navbar') %>
+    <% const W = (k) => __('labWeb.' + k); %>
+
+    <main class="la-main screen-enter">
+        <div class="la-page-head">
+            <div>
+                <h1 class="la-h1"><%= W('supplies') %></h1>
+                <p class="la-sub"><%= W('suppliesSub') %></p>
+            </div>
+            <div class="la-page-actions">
+                <button type="button" class="la-btn" id="spNew"><svg class="ic"><use href="#i-plus"/></svg><%= W('newOrder') %></button>
+            </div>
+        </div>
+
+        <section class="la-card flush" style="margin-top:20px">
+            <div class="la-card-head">
+                <h2 class="la-h2"><%= W('supplies') %> <span class="la-count" id="spCount">0</span></h2>
+                <div class="la-search" style="height:34px;width:260px;max-width:100%">
+                    <svg class="ic"><use href="#i-search"/></svg>
+                    <input id="spSearch" placeholder="<%= W('supplier') %>, <%= W('item') %>…">
+                </div>
+            </div>
+            <div style="overflow-x:auto">
+                <table class="la-table" id="spTable">
+                    <thead><tr>
+                        <th><%= W('orderNo') %></th><th><%= W('supplier') %></th><th><%= W('items') %></th>
+                        <th><%= W('neededBy') %></th><th><%= W('date') %></th><th style="text-align:end"><%= W('colActions') %></th>
+                    </tr></thead>
+                    <tbody id="spRows"></tbody>
+                </table>
+            </div>
+            <div class="la-empty-box" id="spEmpty" hidden>
+                <svg class="ic"><use href="#i-boxes"/></svg><b><%= W('noOrders') %></b><%= W('noOrdersSub') %>
+            </div>
+        </section>
+    </main>
+
+    <!-- New order -->
+    <div class="la-modal" id="spModal" role="dialog" aria-modal="true" aria-labelledby="spModalTitle">
+        <div class="la-modal-bg" data-close></div>
+        <form class="la-modal-card wide" id="spForm" novalidate>
+            <div class="la-between" style="margin-bottom:18px">
+                <h2 class="la-h2" id="spModalTitle" style="font-size:17px"><%= W('newOrder') %></h2>
+                <button type="button" class="la-icon-btn" data-close aria-label="<%= W('cancel') %>"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <div class="la-form-grid">
+                <div><label class="la-label" for="spSupplier"><%= W('supplier') %></label><input class="la-input" id="spSupplier" maxlength="160"></div>
+                <div><label class="la-label" for="spPhone"><%= W('supplierPhone') %></label><input class="la-input" id="spPhone" dir="ltr" inputmode="tel" maxlength="40"></div>
+                <div><label class="la-label" for="spNeeded"><%= W('neededBy') %> <span class="la-faint">(<%= W('optional') %>)</span></label><input class="la-input" id="spNeeded" type="date"></div>
+            </div>
+
+            <div class="la-section-head" style="margin-top:20px;margin-bottom:8px">
+                <span class="la-label" style="margin:0"><%= W('items') %></span>
+                <button type="button" class="la-btn ghost sm" id="spAddItem"><svg class="ic"><use href="#i-plus"/></svg><%= W('addItem') %></button>
+            </div>
+            <div class="sp-items" id="spItems"></div>
+            <p class="la-hint" id="spItemsErr" style="color:var(--red)" hidden><%= W('itemsRequired') %></p>
+
+            <div style="margin-top:16px"><label class="la-label" for="spNotes"><%= W('notes') %></label><textarea class="la-textarea" id="spNotes" maxlength="1000"></textarea></div>
+
+            <div class="la-modal-actions">
+                <button type="button" class="la-btn secondary" data-close><%= W('cancel') %></button>
+                <button type="submit" class="la-btn" id="spSave"><svg class="ic"><use href="#i-printer"/></svg><%= W('saveAndPrint') %></button>
+            </div>
+        </form>
+    </div>
+
+    <style>
+        html.la .sp-items { display: grid; gap: 8px; }
+        html.la .sp-item { display: grid; grid-template-columns: minmax(0, 1fr) 90px 110px 32px; gap: 8px; align-items: center; }
+        html.la .sp-items-head { font-size: 12px; color: var(--muted); }
+        html.la #spRows tr td:first-child { font-weight: 600; }
+        html.la .sp-actions { display: inline-flex; gap: 4px; }
+        @media (max-width: 600px) { html.la .sp-item { grid-template-columns: minmax(0, 1fr) 70px 32px; } html.la .sp-item [data-k=unit] { display: none; } }
+    </style>
+
+    <script>
+    (function () {
+        var T = <%- JSON.stringify({ item: W('item'), qty: W('qty'), unit: W('unit'), saved: W('saved'), deleted: W('deleted'), confirmDelete: W('confirmDelete'), error: W('error'), print: W('print'), del: W('delete'), supplyOrder: W('supplyOrder'), orderNo: W('orderNo'), supplier: W('supplier'), supplierPhone: W('supplierPhone'), neededBy: W('neededBy'), notes: W('notes'), date: W('date'), issuedBy: W('issuedBy'), signature: W('signature'), items: W('items') }) %>;
+        var LAB = <%- JSON.stringify({ name: lab.name || '', phone: lab.phone || '', address: [lab.address, lab.city].filter(Boolean).join(' - '), logo: lab.logo || '' }).replace(/</g, '\\u003c') %>;
+        var orders = (<%- dataJson %>).orders || [];
+        var q = '';
+        var lang = document.documentElement.lang || 'ar';
+        function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+        function fmtDate(d) { if (!d) return '—'; try { return new Date(d).toLocaleDateString(lang === 'ar' ? 'ar-IQ' : lang, { year: 'numeric', month: 'short', day: 'numeric' }); } catch (e) { return String(d).slice(0, 10); } }
+
+        function render() {
+            var list = orders.filter(function (o) {
+                if (!q) return true;
+                var hay = (o.no + ' ' + o.supplier + ' ' + o.items.map(function (i) { return i.name; }).join(' ')).toLowerCase();
+                return hay.indexOf(q) !== -1;
+            });
+            document.getElementById('spCount').textContent = orders.length;
+            document.getElementById('spEmpty').hidden = list.length > 0;
+            document.getElementById('spTable').style.display = list.length ? '' : 'none';
+            document.getElementById('spRows').innerHTML = list.map(function (o) {
+                return '<tr><td class="num" dir="ltr" style="text-align:start">#' + o.no + '</td>'
+                    + '<td>' + (esc(o.supplier) || '<span class="la-faint">—</span>') + (o.supplierPhone ? '<div class="la-muted" dir="ltr" style="font-size:12px;text-align:start">' + esc(o.supplierPhone) + '</div>' : '') + '</td>'
+                    + '<td><span class="la-pill neutral">' + o.items.length + '</span> <span class="la-muted-2" style="font-size:12.5px">' + esc(o.items.slice(0, 3).map(function (i) { return i.name; }).join('، ')) + (o.items.length > 3 ? '…' : '') + '</span></td>'
+                    + '<td>' + (o.neededBy ? fmtDate(o.neededBy) : '<span class="la-faint">—</span>') + '</td>'
+                    + '<td class="la-muted">' + fmtDate(o.createdAt) + '</td>'
+                    + '<td style="text-align:end"><span class="sp-actions">'
+                    + '<button class="la-btn secondary sm" data-print="' + o.id + '"><svg class="ic"><use href="#i-printer"/></svg>' + esc(T.print) + '</button>'
+                    + '<button class="la-icon-btn danger" data-del="' + o.id + '" aria-label="' + esc(T.del) + '"><svg class="ic"><use href="#i-trash-2"/></svg></button>'
+                    + '</span></td></tr>';
+            }).join('');
+        }
+
+        // ---- printable order (browser print preview → paper or PDF) ----
+        function printOrder(o) {
+            var dir = document.documentElement.dir || 'rtl';
+            var rows = o.items.map(function (i, k) {
+                return '<tr><td>' + (k + 1) + '</td><td>' + esc(i.name) + '</td><td>' + esc(i.qty) + '</td><td>' + esc(i.unit) + '</td></tr>';
+            }).join('');
+            var html = '<!doctype html><html lang="' + lang + '" dir="' + dir + '"><head><meta charset="utf-8"><title>' + esc(T.supplyOrder) + ' #' + o.no + '</title>'
+                + '<style>@page{size:A4;margin:16mm}body{font-family:"IBM Plex Sans Arabic","Inter",system-ui,sans-serif;color:#17191E;margin:0;font-size:13px}'
+                + '.hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #17191E;padding-bottom:12px}'
+                + '.hd img{height:44px}.hd h1{margin:0;font-size:20px}.mut{color:#5D626B;font-size:12px}'
+                + '.ttl{display:flex;justify-content:space-between;align-items:baseline;margin:18px 0 10px}.ttl h2{margin:0;font-size:18px}'
+                + 'dl{display:grid;grid-template-columns:max-content 1fr max-content 1fr;gap:6px 14px;margin:0 0 16px}dt{color:#5D626B}dd{margin:0;font-weight:600}'
+                + 'table{width:100%;border-collapse:collapse}th,td{border:1px solid #DAD9D3;padding:8px 10px;text-align:start}th{background:#F3F3EF;font-size:12px}'
+                + 'td:first-child,th:first-child{width:32px;text-align:center}.notes{margin-top:14px;padding:10px 12px;border:1px solid #DAD9D3;border-radius:6px}'
+                + '.sig{margin-top:56px;display:flex;justify-content:flex-end}.sig div{width:220px;border-top:1px solid #17191E;padding-top:6px;text-align:center;color:#5D626B;font-size:12px}</style></head><body>'
+                + '<div class="hd"><div><h1>' + esc(LAB.name) + '</h1><div class="mut">' + esc(LAB.address) + '</div><div class="mut" dir="ltr">' + esc(LAB.phone) + '</div></div>'
+                + (LAB.logo ? '<img src="' + esc(LAB.logo) + '" alt="">' : '') + '</div>'
+                + '<div class="ttl"><h2>' + esc(T.supplyOrder) + '</h2><span class="mut">' + esc(T.orderNo) + ' <b dir="ltr">#' + o.no + '</b></span></div>'
+                + '<dl><dt>' + esc(T.supplier) + '</dt><dd>' + (esc(o.supplier) || '—') + '</dd><dt>' + esc(T.date) + '</dt><dd>' + fmtDate(o.createdAt) + '</dd>'
+                + '<dt>' + esc(T.supplierPhone) + '</dt><dd dir="ltr">' + (esc(o.supplierPhone) || '—') + '</dd><dt>' + esc(T.neededBy) + '</dt><dd>' + (o.neededBy ? fmtDate(o.neededBy) : '—') + '</dd></dl>'
+                + '<table><thead><tr><th>#</th><th>' + esc(T.item) + '</th><th>' + esc(T.qty) + '</th><th>' + esc(T.unit) + '</th></tr></thead><tbody>' + rows + '</tbody></table>'
+                + (o.notes ? '<div class="notes"><b>' + esc(T.notes) + ':</b> ' + esc(o.notes) + '</div>' : '')
+                + '<div class="sig"><div>' + esc(T.signature) + '</div></div>'
+                + '<script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>';
+            var w = window.open('', '_blank');
+            if (!w) { window.laToast(T.error); return; }
+            w.document.open(); w.document.write(html); w.document.close();
+        }
+
+        // ---- new order form ----
+        var modal = document.getElementById('spModal'), itemsBox = document.getElementById('spItems');
+        function addItemRow(v) {
+            v = v || {};
+            var row = document.createElement('div');
+            row.className = 'sp-item';
+            row.innerHTML = '<input class="la-input" data-k="name" maxlength="160" placeholder="' + esc(T.item) + '" value="' + esc(v.name) + '">'
+                + '<input class="la-input" data-k="qty" maxlength="20" inputmode="decimal" placeholder="' + esc(T.qty) + '" value="' + esc(v.qty) + '">'
+                + '<input class="la-input" data-k="unit" maxlength="20" placeholder="' + esc(T.unit) + '" value="' + esc(v.unit) + '">'
+                + '<button type="button" class="la-icon-btn danger" aria-label="' + esc(T.del) + '"><svg class="ic"><use href="#i-x"/></svg></button>';
+            row.querySelector('button').addEventListener('click', function () { row.remove(); if (!itemsBox.children.length) addItemRow(); });
+            itemsBox.appendChild(row);
+            return row;
+        }
+        function openModal() {
+            document.getElementById('spForm').reset();
+            itemsBox.innerHTML = ''; addItemRow(); addItemRow();
+            document.getElementById('spItemsErr').hidden = true;
+            modal.classList.add('active');
+            setTimeout(function () { document.getElementById('spSupplier').focus(); }, 50);
+        }
+        function closeModal() { modal.classList.remove('active'); }
+        document.getElementById('spNew').addEventListener('click', openModal);
+        document.getElementById('spAddItem').addEventListener('click', function () { addItemRow().querySelector('input').focus(); });
+        modal.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', closeModal); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal.classList.contains('active')) closeModal(); });
+
+        document.getElementById('spForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var items = Array.prototype.map.call(itemsBox.children, function (r) {
+                return { name: r.querySelector('[data-k=name]').value.trim(), qty: r.querySelector('[data-k=qty]').value.trim(), unit: r.querySelector('[data-k=unit]').value.trim() };
+            }).filter(function (i) { return i.name; });
+            if (!items.length) { document.getElementById('spItemsErr').hidden = false; itemsBox.querySelector('input').focus(); return; }
+            var btn = document.getElementById('spSave'); btn.disabled = true;
+            fetch('/lab/api/supplies', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ supplier: document.getElementById('spSupplier').value, supplierPhone: document.getElementById('spPhone').value,
+                    neededBy: document.getElementById('spNeeded').value, notes: document.getElementById('spNotes').value, items: items })
+            }).then(function (r) { return r.json(); }).then(function (res) {
+                if (!res.success) throw new Error(res.message);
+                orders.unshift(res.data); render(); closeModal(); window.laToast(T.saved);
+                printOrder(res.data);
+            }).catch(function () { window.laToast(T.error); }).finally(function () { btn.disabled = false; });
+        });
+
+        document.getElementById('spRows').addEventListener('click', function (e) {
+            var p = e.target.closest('[data-print]'), d = e.target.closest('[data-del]');
+            if (p) printOrder(orders.find(function (o) { return o.id === p.dataset.print; }));
+            if (d && confirm(T.confirmDelete)) {
+                fetch('/lab/api/supplies/' + d.dataset.del, { method: 'DELETE' }).then(function (r) { return r.json(); }).then(function (res) {
+                    if (!res.success) throw new Error();
+                    orders = orders.filter(function (o) { return o.id !== d.dataset.del; }); render(); window.laToast(T.deleted);
+                }).catch(function () { window.laToast(T.error); });
+            }
+        });
+        document.getElementById('spSearch').addEventListener('input', function (e) { q = e.target.value.trim().toLowerCase(); render(); });
+        render();
+    })();
+    </script>
+</body>
+
+</html>

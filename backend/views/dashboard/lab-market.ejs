@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('labWeb.market') %> · <%= title %></title>
+</head>
+
+<body>
+    <%- include('../partials/lab-navbar') %>
+    <% const W = (k) => __('labWeb.' + k); %>
+
+    <main class="la-main screen-enter">
+        <div class="la-page-head">
+            <div>
+                <h1 class="la-h1"><%= W('market') %></h1>
+                <p class="la-sub"><%= W('marketSub') %></p>
+            </div>
+            <div class="la-page-actions">
+                <button type="button" class="la-btn" id="mkNew"><svg class="ic"><use href="#i-plus"/></svg><%= W('addListing') %></button>
+            </div>
+        </div>
+
+        <div class="la-page-tabs" id="mkTabs" role="tablist">
+            <a href="#" data-k="all" class="on"><%= W('kindAll') %></a>
+            <a href="#" data-k="product"><%= W('kindProduct') %></a>
+            <a href="#" data-k="auction"><%= W('kindAuction') %></a>
+            <a href="#" data-k="lab_sale"><%= W('kindLabSale') %></a>
+            <a href="#" data-k="lab_auction"><%= W('kindLabAuction') %></a>
+            <a href="#" data-k="mine"><%= W('myListings') %></a>
+        </div>
+
+        <div class="la-toolbar" style="margin-top:16px">
+            <div class="la-search"><svg class="ic"><use href="#i-search"/></svg><input id="mkSearch" placeholder="<%= W('searchMarket') %>"></div>
+        </div>
+
+        <div class="la-spinner" id="mkLoading"></div>
+        <div class="mk-grid" id="mkGrid"></div>
+        <div class="la-empty-box la-card" id="mkEmpty" hidden style="margin-top:16px">
+            <svg class="ic"><use href="#i-store"/></svg><b><%= W('noListings') %></b><%= W('noListingsSub') %>
+        </div>
+    </main>
+
+    <!-- Details -->
+    <div class="la-modal" id="mkDetail" role="dialog" aria-modal="true">
+        <div class="la-modal-bg" data-close></div>
+        <div class="la-modal-card wide" id="mkDetailBody"></div>
+    </div>
+
+    <!-- New listing -->
+    <div class="la-modal" id="mkAdd" role="dialog" aria-modal="true" aria-labelledby="mkAddTitle">
+        <div class="la-modal-bg" data-close></div>
+        <form class="la-modal-card wide" id="mkForm" novalidate>
+            <div class="la-between" style="margin-bottom:18px">
+                <h2 class="la-h2" id="mkAddTitle" style="font-size:17px"><%= W('addListing') %></h2>
+                <button type="button" class="la-icon-btn" data-close aria-label="<%= W('cancel') %>"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <label class="la-label"><%= W('kind') %></label>
+            <div class="la-seg block" id="mkKind" style="margin-bottom:16px">
+                <button type="button" data-k="product" class="on"><%= W('kindProduct') %></button>
+                <button type="button" data-k="auction"><%= W('kindAuction') %></button>
+                <button type="button" data-k="lab_sale"><%= W('kindLabSale') %></button>
+                <button type="button" data-k="lab_auction"><%= W('kindLabAuction') %></button>
+            </div>
+            <div class="la-form-grid">
+                <div style="grid-column:1/-1"><label class="la-label" for="mkTitle"><%= W('title') %> *</label><input class="la-input" id="mkTitle" maxlength="160" required></div>
+                <div><label class="la-label" for="mkPrice" id="mkPriceLabel"><%= W('price') %> (IQD) *</label><input class="la-input" id="mkPrice" inputmode="numeric" dir="ltr" required></div>
+                <div data-for="product"><label class="la-label" for="mkStock"><%= W('stock') %> *</label><input class="la-input" id="mkStock" inputmode="numeric" dir="ltr"></div>
+                <div data-for="product"><label class="la-label" for="mkUnit"><%= W('unit') %></label><input class="la-input" id="mkUnit" maxlength="20"></div>
+                <div data-for="product auction"><label class="la-label" for="mkCategory"><%= W('category') %></label><input class="la-input" id="mkCategory" maxlength="40"></div>
+                <div data-for="product auction"><label class="la-label" for="mkCondition"><%= W('condition') %></label>
+                    <select class="la-select" id="mkCondition"><option value=""></option><option value="New"><%= W('condNew') %></option><option value="Used"><%= W('condUsed') %></option></select></div>
+                <div data-for="product"><label class="la-label" for="mkCode"><%= W('code') %></label><input class="la-input" id="mkCode" maxlength="40" dir="ltr"></div>
+                <div data-for="lab_sale lab_auction"><label class="la-label" for="mkLocation"><%= W('location') %></label><input class="la-input" id="mkLocation" maxlength="200"></div>
+                <div data-for="lab_sale lab_auction"><label class="la-label" for="mkArea"><%= W('area') %></label><input class="la-input" id="mkArea" maxlength="40"></div>
+                <div data-for="lab_sale lab_auction" style="grid-column:1/-1"><label class="la-label" for="mkEquipment"><%= W('equipment') %></label><input class="la-input" id="mkEquipment" maxlength="600"></div>
+                <div data-for="auction lab_auction"><label class="la-label" for="mkDays"><%= W('days') %></label><input class="la-input" id="mkDays" type="number" min="1" max="30" value="3" dir="ltr"></div>
+                <div style="grid-column:1/-1"><label class="la-label" for="mkDesc"><%= W('description') %></label><textarea class="la-textarea" id="mkDesc" maxlength="3000"></textarea></div>
+                <div style="grid-column:1/-1">
+                    <label class="la-label"><%= W('images') %></label>
+                    <label class="la-drop" for="mkImages"><svg class="ic" style="width:20px;height:20px"><use href="#i-image"/></svg> <%= W('addImages') %></label>
+                    <input type="file" id="mkImages" accept="image/*" multiple hidden>
+                    <div class="la-gallery" id="mkThumbs" style="margin-top:10px"></div>
+                </div>
+            </div>
+            <p class="la-hint" id="mkErr" style="color:var(--red)" hidden></p>
+            <div class="la-modal-actions">
+                <button type="button" class="la-btn secondary" data-close><%= W('cancel') %></button>
+                <button type="submit" class="la-btn" id="mkSave"><svg class="ic"><use href="#i-send"/></svg><%= W('send') %></button>
+            </div>
+        </form>
+    </div>
+
+    <style>
+        html.la .mk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; margin-top: 16px; }
+        html.la .mk-card { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--card-border); border-radius: var(--r-lg); overflow: hidden; text-align: start; box-shadow: var(--shadow-sm); transition: border-color .15s ease, box-shadow .15s ease; }
+        html.la .mk-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-md); }
+        html.la .mk-img { aspect-ratio: 4 / 3; background: var(--chip-bg); display: grid; place-items: center; color: var(--placeholder); position: relative; }
+        html.la .mk-img img { width: 100%; height: 100%; object-fit: cover; }
+        html.la .mk-img .ic { width: 28px; height: 28px; }
+        html.la .mk-img .la-pill { position: absolute; top: 10px; inset-inline-start: 10px; background: var(--card); box-shadow: var(--shadow-sm); }
+        html.la .mk-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        html.la .mk-title { font-weight: 600; font-size: 14px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        html.la .mk-meta { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+        html.la .mk-meta .ic { width: 13px; height: 13px; }
+        html.la .mk-foot { margin-top: auto; padding-top: 8px; display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+        html.la .mk-price small { display: block; font-size: 11.5px; color: var(--muted); }
+        html.la .mk-price b { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        html.la .mk-time { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--amber); font-variant-numeric: tabular-nums; white-space: nowrap; }
+        html.la .mk-time .ic { width: 13px; height: 13px; }
+        html.la .mk-time.over { color: var(--muted); }
+        html.la .mk-detail { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; }
+        html.la .mk-hero { aspect-ratio: 4 / 3; border-radius: var(--r-md); overflow: hidden; background: var(--chip-bg); display: grid; place-items: center; color: var(--placeholder); }
+        html.la .mk-hero img { width: 100%; height: 100%; object-fit: contain; background: #000; }
+        html.la .mk-thumbs { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        html.la .mk-thumbs button { width: 56px; height: 56px; border-radius: var(--r-sm); overflow: hidden; border: 2px solid transparent; padding: 0; }
+        html.la .mk-thumbs button.on { border-color: var(--accent); }
+        html.la .mk-thumbs img { width: 100%; height: 100%; object-fit: cover; }
+        html.la .mk-ring { display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+        html.la .mk-ring .la-eyebrow { display: block; margin-bottom: 2px; }
+        html.la .mk-ring svg { width: 56px; height: 56px; transform: rotate(-90deg); flex-shrink: 0; }
+        html.la .mk-bid { display: flex; gap: 8px; margin-top: 12px; }
+        html.la .mk-bid input { flex: 1; }
+        html.la .la-gallery .mk-thumb { position: relative; }
+        html.la .la-gallery .mk-thumb button { position: absolute; top: 4px; inset-inline-end: 4px; width: 22px; height: 22px; border-radius: var(--r-xs); background: rgba(0,0,0,.6); color: #fff; display: grid; place-items: center; }
+        html.la .la-gallery .mk-thumb .ic { width: 12px; height: 12px; }
+        @media (max-width: 760px) { html.la .mk-detail { grid-template-columns: minmax(0, 1fr); } }
+    </style>
+
+    <script>
+    (function () {
+        var T = <%- JSON.stringify({ product: W('kindProduct'), auction: W('kindAuction'), lab_sale: W('kindLabSale'), lab_auction: W('kindLabAuction'), price: W('price'), startPrice: W('startPrice'), currentBid: W('currentBid'), bids: W('bids'), endsIn: W('endsIn'), ended: W('ended'), pending: W('pendingApproval'), approved: W('approved'), rejected: W('rejected'), youLead: W('youLead'), youWon: W('youWon'), placeBid: W('placeBid'), yourBid: W('yourBid'), minBid: W('minBid'), bidPlaced: W('bidPlaced'), seller: W('seller'), details: W('details'), description: W('description'), category: W('category'), condition: W('condition'), New: W('condNew'), Used: W('condUsed'), stock: W('stock'), unit: W('unit'), code: W('code'), location: W('location'), area: W('area'), equipment: W('equipment'), del: W('delete'), confirmDelete: W('confirmDelete'), deleted: W('deleted'), error: W('error'), sent: W('listingSent'), rejectReason: W('rejectReason'), close: W('cancel') }) %>;
+        var items = [], tab = 'all', q = '', files = [];
+        var lang = document.documentElement.lang || 'ar';
+        function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+        function money(n) { return (Number(n) || 0).toLocaleString('en-US'); }
+        function isAuction(l) { return l.kind === 'auction' || l.kind === 'lab_auction'; }
+        function left(l) {
+            var ms = new Date(l.endsAt) - Date.now();
+            if (!l.endsAt || ms <= 0) return null;
+            var s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60;
+            function p(x) { return String(x).padStart(2, '0'); }
+            return (d ? d + 'd ' : '') + p(h) + ':' + p(m) + ':' + p(sec);
+        }
+        function statusPill(l) {
+            if (!l.mine) return '';
+            if (l.approvalStatus === 'pending') return '<span class="la-pill amber">' + esc(T.pending) + '</span>';
+            if (l.approvalStatus === 'rejected') return '<span class="la-pill red">' + esc(T.rejected) + '</span>';
+            return '<span class="la-pill green">' + esc(T.approved) + '</span>';
+        }
+        function card(l) {
+            var auction = isAuction(l), t = auction ? left(l) : '';
+            var img = l.images && l.images[0] ? '<img src="' + esc(l.images[0]) + '" alt="" loading="lazy">' : '<svg class="ic"><use href="#i-' + (l.kind.indexOf('lab') === 0 ? 'hospital' : 'package') + '"/></svg>';
+            var badge = l.won ? '<span class="la-pill green">' + esc(T.youWon) + '</span>' : l.youLead ? '<span class="la-pill blue">' + esc(T.youLead) + '</span>' : statusPill(l);
+            return '<button type="button" class="mk-card" data-id="' + l.id + '">'
+                + '<div class="mk-img">' + img + '<span class="la-pill neutral">' + esc(T[l.kind]) + '</span></div>'
+                + '<div class="mk-body"><div class="mk-title">' + esc(l.title) + '</div>'
+                + '<div class="mk-meta"><svg class="ic"><use href="#i-hospital"/></svg>' + esc(l.lab ? l.lab.name + (l.lab.city ? ' · ' + l.lab.city : '') : '') + '</div>'
+                + (badge ? '<div>' + badge + '</div>' : '')
+                + '<div class="mk-foot"><div class="mk-price"><small>' + esc(auction ? T.currentBid : T.price) + (auction && l.bids ? ' · ' + l.bids + ' ' + esc(T.bids) : '') + '</small><b>' + money(auction ? l.currentBid : l.price) + ' <span class="la-muted" style="font-size:11.5px;font-weight:500">IQD</span></b></div>'
+                + (auction ? '<span class="mk-time' + (t ? '' : ' over') + '" data-ends="' + esc(l.endsAt || '') + '"><svg class="ic"><use href="#i-clock"/></svg><span>' + (t || esc(T.ended)) + '</span></span>' : '')
+                + '</div></div></button>';
+        }
+        function visible() {
+            return items.filter(function (l) {
+                if (tab === 'mine' ? !l.mine : (tab !== 'all' && l.kind !== tab)) return false;
+                if (tab !== 'mine' && l.approvalStatus !== 'approved') return false;
+                if (q && (l.title + ' ' + (l.description || '') + ' ' + (l.lab ? l.lab.name : '')).toLowerCase().indexOf(q) === -1) return false;
+                return true;
+            });
+        }
+        function render() {
+            var list = visible();
+            document.getElementById('mkGrid').innerHTML = list.map(card).join('');
+            document.getElementById('mkEmpty').hidden = list.length > 0;
+        }
+        function load() {
+            return fetch('/lab/api/market', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (res) {
+                items = (res.data && res.data.items) || [];
+                render();
+            }).catch(function () { window.laToast(T.error); }).finally(function () { document.getElementById('mkLoading').hidden = true; });
+        }
+        // live countdowns (cards and the open detail)
+        setInterval(function () {
+            document.querySelectorAll('[data-ends]').forEach(function (el) {
+                var ms = new Date(el.dataset.ends) - Date.now();
+                var t = left({ endsAt: el.dataset.ends });
+                var span = el.querySelector('span') || el;
+                span.textContent = t || T.ended;
+                el.classList.toggle('over', !t);
+                var ring = el.closest('.mk-ring');
+                if (ring && ring.dataset.total) {
+                    var c = ring.querySelector('circle.prog'), total = Number(ring.dataset.total);
+                    c.style.strokeDashoffset = 2 * Math.PI * 24 * (1 - Math.max(0, Math.min(1, ms / total)));
+                }
+            });
+        }, 1000);
+
+        // tabs + search
+        document.querySelectorAll('#mkTabs a').forEach(function (a) {
+            a.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelectorAll('#mkTabs a').forEach(function (x) { x.classList.toggle('on', x === a); });
+                tab = a.dataset.k; render();
+            });
+        });
+        document.getElementById('mkSearch').addEventListener('input', function (e) { q = e.target.value.trim().toLowerCase(); render(); });
+
+        // ---- details ----
+        var detail = document.getElementById('mkDetail');
+        function openDetail(id) {
+            var l = items.find(function (x) { return x.id === id; });
+            if (!l) return;
+            var auction = isAuction(l), t = auction ? left(l) : '';
+            var imgs = l.images || [];
+            var facts = [['category', l.category], ['condition', l.condition ? T[l.condition] : ''], ['stock', l.stock ? l.stock + (l.unit ? ' ' + l.unit : '') : ''], ['code', l.code], ['location', l.location], ['area', l.area], ['equipment', l.equipment]]
+                .filter(function (f) { return f[1]; });
+            var total = auction && l.endsAt ? (new Date(l.endsAt) - new Date(l.startedAt || l.createdAt)) : 0;
+            var min = (l.currentBid || l.price) + 1;
+            var canBid = auction && !l.mine && t && l.approvalStatus === 'approved';
+            var canDelete = l.mine && !(l.bids > 0);
+            document.getElementById('mkDetailBody').innerHTML =
+                '<div class="la-between" style="margin-bottom:16px"><div><span class="la-pill neutral">' + esc(T[l.kind]) + '</span> ' + statusPill(l) + '</div>'
+                + '<button type="button" class="la-icon-btn" data-close aria-label="' + esc(T.close) + '"><svg class="ic"><use href="#i-x"/></svg></button></div>'
+                + '<div class="mk-detail"><div><div class="mk-hero" id="mkHero">' + (imgs[0] ? '<img src="' + esc(imgs[0]) + '" alt="">' : '<svg class="ic" style="width:36px;height:36px"><use href="#i-image"/></svg>') + '</div>'
+                + (imgs.length > 1 ? '<div class="mk-thumbs">' + imgs.map(function (u, k) { return '<button type="button" class="' + (k ? '' : 'on') + '" data-img="' + esc(u) + '"><img src="' + esc(u) + '" alt=""></button>'; }).join('') + '</div>' : '')
+                + '</div><div>'
+                + '<h2 class="la-h2" style="font-size:19px;line-height:1.35">' + esc(l.title) + '</h2>'
+                + '<p class="la-sub" style="margin-top:4px">' + esc(T.seller) + ': ' + esc(l.lab ? l.lab.name + (l.lab.city ? ' · ' + l.lab.city : '') : '') + '</p>'
+                + '<div style="margin:16px 0"><span class="la-eyebrow">' + esc(auction ? T.currentBid : T.price) + '</span><div style="font-size:26px;font-weight:700;font-variant-numeric:tabular-nums">' + money(auction ? l.currentBid : l.price) + ' <span class="la-muted" style="font-size:13px;font-weight:500">IQD</span></div>'
+                + (auction ? '<span class="la-muted" style="font-size:12.5px">' + esc(T.startPrice) + ' ' + money(l.price) + ' · ' + (l.bids || 0) + ' ' + esc(T.bids) + (l.topBidder ? ' · ' + esc(l.topBidder) : '') + '</span>' : '') + '</div>'
+                + (auction ? '<div class="mk-ring" data-total="' + total + '"><svg viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="var(--track)" stroke-width="5"/><circle class="prog" cx="28" cy="28" r="24" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-dasharray="' + (2 * Math.PI * 24) + '" stroke-dashoffset="0" style="transition:stroke-dashoffset 1s linear"/></svg>'
+                    + '<div><span class="la-eyebrow">' + esc(T.endsIn) + '</span><div class="mk-time' + (t ? '' : ' over') + '" data-ends="' + esc(l.endsAt || '') + '" style="font-size:18px"><span>' + (t || esc(T.ended)) + '</span></div></div></div>' : '')
+                + (l.won ? '<div class="la-alert ok" style="margin-top:12px"><svg class="ic"><use href="#i-badge-check"/></svg>' + esc(T.youWon) + '</div>' : '')
+                + (canBid ? '<form class="mk-bid" id="mkBidForm"><input class="la-input" id="mkBidAmount" inputmode="numeric" dir="ltr" placeholder="' + esc(T.minBid) + ' ' + money(min) + '"><button class="la-btn" type="submit"><svg class="ic"><use href="#i-gavel"/></svg>' + esc(T.placeBid) + '</button></form>' : '')
+                + (l.rejectReason && l.approvalStatus === 'rejected' ? '<div class="la-alert error" style="margin-top:12px">' + esc(T.rejectReason) + ': ' + esc(l.rejectReason) + '</div>' : '')
+                + (facts.length ? '<dl class="la-kv" style="margin-top:18px">' + facts.map(function (f) { return '<dt>' + esc(T[f[0]]) + '</dt><dd>' + esc(f[1]) + '</dd>'; }).join('') + '</dl>' : '')
+                + (l.description ? '<p style="margin:16px 0 0;white-space:pre-line;color:var(--ink-2);font-size:13.5px;line-height:1.7">' + esc(l.description) + '</p>' : '')
+                + (canDelete ? '<div class="la-modal-actions"><button type="button" class="la-btn danger-soft" id="mkDelete"><svg class="ic"><use href="#i-trash-2"/></svg>' + esc(T.del) + '</button></div>' : '')
+                + '</div></div>';
+            detail.classList.add('active');
+            detail.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', function () { detail.classList.remove('active'); }); });
+            detail.querySelectorAll('[data-img]').forEach(function (b) {
+                b.addEventListener('click', function () {
+                    document.getElementById('mkHero').innerHTML = '<img src="' + esc(b.dataset.img) + '" alt="">';
+                    detail.querySelectorAll('[data-img]').forEach(function (x) { x.classList.toggle('on', x === b); });
+                });
+            });
+            var bf = document.getElementById('mkBidForm');
+            if (bf) bf.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var amount = Number(String(document.getElementById('mkBidAmount').value).replace(/[^0-9]/g, ''));
+                if (!(amount >= min)) { window.laToast(T.minBid + ' ' + money(min)); return; }
+                fetch('/lab/api/market/' + l.id + '/bid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amount }) })
+                    .then(function (r) { return r.json(); }).then(function (res) {
+                        if (!res.success) { window.laToast(res.message || T.error); return; }
+                        items = items.map(function (x) { return x.id === l.id ? res.data : x; });
+                        render(); openDetail(l.id); window.laToast(T.bidPlaced);
+                    }).catch(function () { window.laToast(T.error); });
+            });
+            var del = document.getElementById('mkDelete');
+            if (del) del.addEventListener('click', function () {
+                if (!confirm(T.confirmDelete)) return;
+                fetch('/lab/api/market/' + l.id, { method: 'DELETE' }).then(function (r) { return r.json(); }).then(function (res) {
+                    if (!res.success) throw new Error();
+                    items = items.filter(function (x) { return x.id !== l.id; }); render(); detail.classList.remove('active'); window.laToast(T.deleted);
+                }).catch(function () { window.laToast(T.error); });
+            });
+        }
+        document.getElementById('mkGrid').addEventListener('click', function (e) {
+            var c = e.target.closest('.mk-card'); if (c) openDetail(c.dataset.id);
+        });
+
+        // ---- new listing ----
+        var add = document.getElementById('mkAdd'), kind = 'product';
+        function setKind(k) {
+            kind = k;
+            document.querySelectorAll('#mkKind button').forEach(function (b) { b.classList.toggle('on', b.dataset.k === k); });
+            document.querySelectorAll('#mkForm [data-for]').forEach(function (el) { el.hidden = el.dataset.for.split(' ').indexOf(k) === -1; });
+            document.getElementById('mkPriceLabel').textContent = (isAuction({ kind: k }) ? T.startPrice : T.price) + ' (IQD) *';
+        }
+        document.querySelectorAll('#mkKind button').forEach(function (b) { b.addEventListener('click', function () { setKind(b.dataset.k); }); });
+        function thumbs() {
+            document.getElementById('mkThumbs').innerHTML = files.map(function (f, k) {
+                return '<div class="mk-thumb"><img src="' + URL.createObjectURL(f) + '" alt=""><button type="button" data-rm="' + k + '"><svg class="ic"><use href="#i-x"/></svg></button></div>';
+            }).join('');
+        }
+        document.getElementById('mkImages').addEventListener('change', function (e) {
+            files = files.concat(Array.prototype.slice.call(e.target.files)).slice(0, 6); e.target.value = ''; thumbs();
+        });
+        document.getElementById('mkThumbs').addEventListener('click', function (e) {
+            var b = e.target.closest('[data-rm]'); if (b) { files.splice(Number(b.dataset.rm), 1); thumbs(); }
+        });
+        document.getElementById('mkNew').addEventListener('click', function () {
+            document.getElementById('mkForm').reset(); files = []; thumbs(); setKind('product');
+            document.getElementById('mkErr').hidden = true; add.classList.add('active');
+            setTimeout(function () { document.getElementById('mkTitle').focus(); }, 50);
+        });
+        add.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', function () { add.classList.remove('active'); }); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { add.classList.remove('active'); detail.classList.remove('active'); } });
+
+        document.getElementById('mkForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var err = document.getElementById('mkErr');
+            var v = function (id) { return document.getElementById(id).value.trim(); };
+            if (!v('mkTitle')) { err.textContent = <%- JSON.stringify(W('title')) %> + ' *'; err.hidden = false; return; }
+            if (!(Number(v('mkPrice').replace(/[^0-9]/g, '')) > 0)) { err.textContent = document.getElementById('mkPriceLabel').textContent; err.hidden = false; return; }
+            if (kind === 'product' && !(Number(v('mkStock').replace(/[^0-9]/g, '')) > 0)) { err.textContent = T.stock + ' *'; err.hidden = false; return; }
+            err.hidden = true;
+            var fd = new FormData();
+            fd.append('kind', kind);
+            [['title', 'mkTitle'], ['price', 'mkPrice'], ['stock', 'mkStock'], ['unit', 'mkUnit'], ['category', 'mkCategory'], ['condition', 'mkCondition'], ['code', 'mkCode'],
+             ['location', 'mkLocation'], ['area', 'mkArea'], ['equipment', 'mkEquipment'], ['days', 'mkDays'], ['description', 'mkDesc']].forEach(function (p) {
+                var el = document.getElementById(p[1]);
+                if (!el.closest('[data-for]') || !el.closest('[data-for]').hidden) fd.append(p[0], el.value.trim());
+            });
+            files.forEach(function (f) { fd.append('images', f); });
+            var btn = document.getElementById('mkSave'); btn.disabled = true;
+            fetch('/lab/api/market', { method: 'POST', body: fd }).then(function (r) { return r.json(); }).then(function (res) {
+                if (!res.success) { err.textContent = res.message || T.error; err.hidden = false; return; }
+                items.unshift(res.data); add.classList.remove('active');
+                document.querySelector('#mkTabs a[data-k="mine"]').click();
+                window.laToast(T.sent);
+            }).catch(function () { window.laToast(T.error); }).finally(function () { btn.disabled = false; });
+        });
+
+        load();
+    })();
+    </script>
+</body>
+
+</html>

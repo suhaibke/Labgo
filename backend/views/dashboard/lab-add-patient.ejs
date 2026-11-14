@@ -141,8 +141,9 @@
             </div>
             <p class="la-sub"><span id="apDoneName"></span> · <span dir="ltr" id="apDoneCode"></span></p>
             <div class="ap-done-actions">
-                <a class="la-btn press-95" id="apGoResults"><svg class="ic"><use href="#i-file-text"/></svg><%= __('results.enterResults') %></a>
-                <a class="la-btn soft press-95" id="apGoOrder"><svg class="ic"><use href="#i-printer"/></svg><%= __('walkIn.printReceipt') %></a>
+                <a class="la-btn press-95" id="apPrintReceipt" target="_blank" rel="noopener"><svg class="ic"><use href="#i-printer"/></svg><%= __('walkIn.printReceipt') %></a>
+                <a class="la-btn soft press-95" id="apGoResults"><svg class="ic"><use href="#i-file-text"/></svg><%= __('results.enterResults') %></a>
+                <a class="la-btn soft press-95" id="apGoOrder"><svg class="ic"><use href="#i-clipboard-list"/></svg><%= __('orders.orderDetails') %></a>
                 <button type="button" class="la-btn chip press-95" id="apAnother"><svg class="ic"><use href="#i-plus"/></svg><%= __('walkIn.addAnother') %></button>
             </div>
         </section>

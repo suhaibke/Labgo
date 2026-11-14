@@ -120,7 +120,7 @@ html, body {
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: linear-gradient(135deg, var(--gray-50) 0%, var(--primary-50) 100%);
+  background: var(--surface-2);
   color: var(--gray-800);
   line-height: 1.6;
   min-height: 100vh;
@@ -183,7 +183,7 @@ body {
 .logo-placeholder {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+  background: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -338,11 +338,11 @@ body {
 }
 
 .stat-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+  background: var(--accent);
   backdrop-filter: blur(20px);
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-md);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   position: relative;
@@ -355,14 +355,14 @@ body {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--primary-500), var(--primary-600));
+  background: var(--accent);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.08);
+  transform: none;
+  box-shadow: var(--shadow-md);
 }
 
 .stat-card:hover::before {
@@ -383,17 +383,17 @@ body {
 .stat-icon-wrapper {
   width: 52px;
   height: 52px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--primary-50) 0%, var(--primary-100) 100%);
+  border-radius: var(--r-md);
+  background: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(107, 33, 168, 0.12);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-icon-wrapper .stat-icon {
   font-size: 22px;
-  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  background: var(--accent);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -416,23 +416,23 @@ body {
   justify-content: center;
   font-size: var(--font-size-xl);
   color: var(--white);
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  background: var(--accent);
 }
 
 .stat-card.primary .stat-icon {
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  background: var(--accent);
 }
 
 .stat-card.secondary .stat-icon {
-  background: linear-gradient(135deg, var(--secondary-500), var(--secondary-600));
+  background: var(--accent);
 }
 
 .stat-card.success .stat-icon {
-  background: linear-gradient(135deg, var(--success), #059669);
+  background: var(--green);
 }
 
 .stat-card.accent .stat-icon {
-  background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
+  background: var(--accent);
 }
 
 .stat-card > .stat-content {
@@ -459,19 +459,19 @@ body {
   align-items: center;
   gap: 4px;
   padding: 6px 12px;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   font-size: 13px;
   font-weight: 600;
   font-family: 'Inter', -apple-system, sans-serif;
 }
 
 .stat-trend-indicator.positive {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+  background: var(--surface-2);
   color: #059669;
 }
 
 .stat-trend-indicator.negative {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+  background: var(--surface-2);
   color: #dc2626;
 }
 
@@ -596,7 +596,7 @@ body {
   background: var(--primary-50);
   border-color: var(--primary-200);
   color: var(--primary-700);
-  transform: translateY(-2px);
+  transform: none;
 }
 
 .action-btn i {
@@ -1027,7 +1027,7 @@ main {
 
 @keyframes slideIn {
   from {
-    transform: translateY(-20px);
+    transform: none;
     opacity: 0;
   }
   to {
@@ -1037,7 +1037,7 @@ main {
 }
 
 .loading {
-  background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%);
+  background: var(--accent);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }

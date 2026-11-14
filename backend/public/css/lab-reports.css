@@ -8,11 +8,11 @@ html.la .page-header-left p { margin: 2px 0 0; font-size: 13px; color: var(--mut
 
 /* period chips (the app's Day / Week / Month pills) */
 html.la .date-filter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-html.la .filter-btn { padding: 8px 16px; border-radius: 999px; background: var(--chip-bg); color: var(--muted-2); font-size: 13px; font-weight: 700; transition: transform .15s var(--ease-ui); }
+html.la .filter-btn { padding: 8px 16px; border-radius: var(--r-sm); background: var(--chip-bg); color: var(--muted-2); font-size: 13px; font-weight: 700; transition: transform .15s var(--ease-ui); }
 html.la .filter-btn:active { transform: scale(.95); }
 html.la .filter-btn.active { background: var(--ink); color: var(--app-bg); }
 html.la[data-theme="dark"] .filter-btn.active { color: #0B0B0D; }
-html.la .date-inputs { display: flex; align-items: center; gap: 6px; background: var(--chip-bg); border-radius: 999px; padding: 4px 4px 4px 12px; }
+html.la .date-inputs { display: flex; align-items: center; gap: 6px; background: var(--chip-bg); border-radius: var(--r-sm); padding: 4px 4px 4px 12px; }
 html.la[dir="rtl"] .date-inputs { padding: 4px 12px 4px 4px; }
 html.la .date-inputs input { border: 0; background: transparent; font-size: 13px; color: var(--ink); outline: none; }
 html.la .apply-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; }
@@ -24,47 +24,47 @@ html.la .stats-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); ma
 @media (max-width: 1200px) { html.la .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) { html.la .stats-grid.three { grid-template-columns: minmax(0, 1fr); } }
 html.la .stat-card {
-  background: var(--card); border: 1px solid var(--card-border); border-radius: 28px; padding: 18px; box-shadow: var(--shadow-sm);
+  background: var(--card); border: 1px solid var(--card-border); border-radius: var(--r-lg); padding: 18px; box-shadow: var(--shadow-sm);
   animation: fadeUp .38s var(--ease-out-soft) both;
 }
 html.la .stat-card:nth-child(2) { animation-delay: .04s; } html.la .stat-card:nth-child(3) { animation-delay: .08s; } html.la .stat-card:nth-child(4) { animation-delay: .12s; }
 html.la .stat-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-html.la .stat-icon-wrapper { width: 44px; height: 44px; border-radius: 16px; background: var(--soft-accent); color: var(--accent); display: grid; place-items: center; }
+html.la .stat-icon-wrapper { width: 44px; height: 44px; border-radius: var(--r-lg); background: var(--soft-accent); color: var(--accent); display: grid; place-items: center; }
 html.la .stat-icon-wrapper .ic { width: 20px; height: 20px; }
 html.la .stat-trend-indicator { display: inline-flex; align-items: center; gap: 2px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 html.la .stat-trend-indicator .ic { width: 13px; height: 13px; }
 html.la .stat-trend-indicator.positive { background: var(--soft-green); color: var(--green-text); }
 html.la .stat-trend-indicator.negative { background: rgba(255, 59, 48, .12); color: var(--red); }
-html.la .stat-value { font-size: 32px; line-height: 1.1; font-weight: 900; }
+html.la .stat-value { font-size: 32px; line-height: 1.1; font-weight: 700; }
 html.la .stat-label { margin-top: 4px; font-size: 13px; color: var(--muted); }
 html.la .stat-sublabel { font-size: 11px; color: var(--muted); opacity: .8; }
 
 /* charts */
 html.la .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 12px; }
 @media (max-width: 1000px) { html.la .charts-grid { grid-template-columns: minmax(0, 1fr); } }
-html.la .chart-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 28px; padding: 18px; box-shadow: var(--shadow-sm); animation: fadeUp .38s var(--ease-out-soft) .14s both; }
+html.la .chart-card { background: var(--card); border: 1px solid var(--card-border); border-radius: var(--r-lg); padding: 18px; box-shadow: var(--shadow-sm); animation: fadeUp .38s var(--ease-out-soft) .14s both; }
 html.la .chart-card h3, html.la .table-card-header h3 { margin: 0 0 12px; font-size: 15px; font-weight: 700; }
 html.la .chart-container { position: relative; height: 280px; }
 
 /* lists */
 html.la .tables-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
 @media (max-width: 900px) { html.la .tables-grid { grid-template-columns: minmax(0, 1fr); } }
-html.la .table-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 28px; padding: 18px; box-shadow: var(--shadow-sm); margin-top: 12px; animation: fadeUp .38s var(--ease-out-soft) .18s both; }
+html.la .table-card { background: var(--card); border: 1px solid var(--card-border); border-radius: var(--r-lg); padding: 18px; box-shadow: var(--shadow-sm); margin-top: 12px; animation: fadeUp .38s var(--ease-out-soft) .18s both; }
 html.la .tables-grid .table-card { margin-top: 0; }
 html.la .popular-tests-list { list-style: none; margin: 0; padding: 0; }
-html.la .popular-tests-list li:not(.la-empty-box) { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--chip-bg); border-radius: 16px; padding: 10px 12px; }
+html.la .popular-tests-list li:not(.la-empty-box) { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--chip-bg); border-radius: var(--r-lg); padding: 10px 12px; }
 html.la .popular-tests-list li + li { margin-top: 8px; }
 html.la .test-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
-html.la .test-rank { width: 28px; height: 28px; border-radius: 50%; background: var(--segmented); display: grid; place-items: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+html.la .test-rank { width: 28px; height: 28px; border-radius: 50%; background: var(--segmented); display: grid; place-items: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
 html.la .test-rank.top { background: var(--accent); color: #fff; }
 html.la .test-name { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html.la .test-stats { text-align: end; }
 html.la .test-count { display: block; font-size: 12px; color: var(--muted); }
-html.la .test-revenue { font-size: 13px; font-weight: 800; color: var(--accent); white-space: nowrap; }
-html.la .status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--chip-bg); border-radius: 16px; padding: 10px 12px; }
+html.la .test-revenue { font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+html.la .status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--chip-bg); border-radius: var(--r-lg); padding: 10px 12px; }
 html.la .status-row + .status-row { margin-top: 8px; }
-html.la .status-count { font-size: 16px; font-weight: 900; }
-html.la .status-badge { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--card); color: var(--muted-2); }
+html.la .status-count { font-size: 16px; font-weight: 700; }
+html.la .status-badge { display: inline-block; padding: 3px 12px; border-radius: var(--r-sm); font-size: 12px; font-weight: 700; background: var(--card); color: var(--muted-2); }
 html.la .status-badge.pending, html.la .status-badge.confirmed, html.la .status-badge.nurse_assigned, html.la .status-badge.sample_collected { background: var(--soft-accent); color: var(--accent); }
 html.la .status-badge.at_lab { background: rgba(0, 122, 255, .12); color: var(--blue); }
 html.la .status-badge.completed { background: var(--soft-green); color: var(--green-text); }
@@ -73,7 +73,7 @@ html.la .status-badge.cancelled { background: rgba(255, 59, 48, .12); color: var
 /* rating */
 html.la .rating-overview { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 html.la .rating-big { text-align: center; min-width: 140px; }
-html.la .rating-big .value { font-size: 48px; line-height: 1.1; font-weight: 900; }
+html.la .rating-big .value { font-size: 48px; line-height: 1.1; font-weight: 700; }
 html.la .rating-big .stars { display: flex; justify-content: center; gap: 2px; margin-top: 4px; }
 html.la .rating-big .count { font-size: 12px; color: var(--muted); margin-top: 4px; }
 html.la .ic.star { width: 16px; height: 16px; color: var(--track); }

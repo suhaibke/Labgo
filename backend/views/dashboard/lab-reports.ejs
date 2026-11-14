@@ -339,15 +339,21 @@
                 Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
                 Chart.defaults.color = appMuted;
             }
+            // Calm, distinguishable status palette (same hues as the status pills)
             const statusColors = {
-                pending: '#FF9F0A',
-                confirmed: '#007AFF',
-                nurse_assigned: '#AF52DE',
+                pending: '#E0A23A',
+                confirmed: '#5B8DF6',
+                nurse_assigned: '#A37BF3',
                 sample_collected: appAccent,
-                at_lab: '#00C7BE',
-                completed: '#34C759',
-                cancelled: '#FF3B30'
+                at_lab: '#2563EB',
+                completed: '#12A150',
+                cancelled: '#D92D20'
             };
+            const statusNames = <%- JSON.stringify({
+                pending: __('orders.statusValues.pending'), confirmed: __('orders.statusValues.confirmed'),
+                nurse_assigned: __('orders.statusValues.nurseAssigned'), sample_collected: __('orders.statusValues.sampleCollected'),
+                at_lab: __('orders.statusValues.atLab'), completed: __('orders.statusValues.completed'), cancelled: __('orders.statusValues.cancelled')
+            }) %>;
 
             // Helper function to show empty state for charts
             function showEmptyChartState(canvasId, message) {
@@ -445,7 +451,7 @@
                         new Chart(statusCtx, {
                             type: 'doughnut',
                             data: {
-                                labels: statusData.map(s => s._id),
+                                labels: statusData.map(s => statusNames[s._id] || s._id),
                                 datasets: [{
                                     data: statusData.map(s => s.count),
                                     backgroundColor: statusData.map(s => statusColors[s._id] || appMuted),
@@ -456,9 +462,9 @@
                                 responsive: true,
                                 maintainAspectRatio: false,
                                 plugins: {
-                                    legend: { position: 'bottom' }
+                                    legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'rectRounded', padding: 14 } }
                                 },
-                                cutout: '60%'
+                                cutout: '72%'
                             }
                         });
                     } catch (error) {

@@ -343,16 +343,16 @@
         }
 
         .test-icon.emergency {
-            background: linear-gradient(135deg, var(--error), #b91c1c);
+            background: var(--red);
             animation: pulse 2s infinite;
         }
 
         .test-icon.urgent {
-            background: linear-gradient(135deg, var(--warning), #d97706);
+            background: var(--amber);
         }
 
         .test-icon.normal {
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+            background: var(--accent);
         }
 
         .header-text h1 {
@@ -435,7 +435,7 @@
         .card-header {
             padding: var(--spacing-lg);
             border-bottom: 1px solid var(--gray-100);
-            background: linear-gradient(to bottom, var(--gray-50), var(--white));
+            background: var(--surface-2);
         }
 
         .card-header h3 {
@@ -470,7 +470,7 @@
             width: 60px;
             height: 60px;
             border-radius: var(--radius-lg);
-            background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+            background: var(--accent);
             color: var(--white);
             display: flex;
             align-items: center;
@@ -713,7 +713,7 @@
             background: var(--primary-50);
             border-color: var(--primary-200);
             color: var(--primary-700);
-            transform: translateY(-2px);
+            transform: none;
         }
 
         .action-card-btn.active {
@@ -779,7 +779,7 @@
             width: 50px;
             height: 50px;
             border-radius: var(--radius-md);
-            background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+            background: var(--accent);
             display: flex;
             align-items: center;
             justify-content: center;

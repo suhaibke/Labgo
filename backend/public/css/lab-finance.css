@@ -21,13 +21,13 @@ html.la .fn-bar i { display: block; height: 100%; border-radius: 999px; backgrou
 html.la .fn-bar-row b { font-variant-numeric: tabular-nums; }
 
 html.la .fn-list { display: flex; flex-direction: column; gap: 8px; }
-html.la .fn-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; background: var(--chip-bg); animation: popIn .28s ease both; }
-html.la .fn-item-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--segmented); flex-shrink: 0; }
+html.la .fn-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r-lg); background: var(--chip-bg); animation: popIn .28s ease both; }
+html.la .fn-item-ic { width: 38px; height: 38px; border-radius: var(--r-sm); display: grid; place-items: center; background: var(--segmented); flex-shrink: 0; }
 html.la .fn-item-ic .ic { width: 18px; height: 18px; }
 html.la .fn-item-text { flex: 1; min-width: 0; }
 html.la .fn-item-text b { display: block; font-size: 14px; }
 html.la .fn-item-text small { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-html.la .fn-amt { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html.la .fn-amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 html.la .fn-amt.neg { color: var(--red); }
 html.la .fn-del { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
 html.la .fn-del:hover { background: var(--segmented); color: var(--red); }
@@ -37,7 +37,7 @@ html.la .fn-empty { text-align: center; color: var(--muted); font-size: 13px; pa
 html.la .fn-mt { margin-top: 12px; }
 html.la .fn-cats { flex-wrap: wrap; overflow: visible; }
 html.la .fn-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-html.la .fn-amount { font-size: 20px; font-weight: 800; text-align: center; }
+html.la .fn-amount { font-size: 20px; font-weight: 700; text-align: center; }
 html.la .fn-error { color: var(--red); font-size: 13px; font-weight: 700; margin: 10px 0 0; }
 html.la .fn-save { margin-top: 14px; height: 50px; }
 

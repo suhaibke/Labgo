@@ -39,10 +39,10 @@
         /* Settings Header */
         .settings-header {
             background: white;
-            border-radius: 16px;
+            border-radius: var(--r-lg);
             padding: 2rem;
             margin-bottom: 2rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
             border: 1px solid #e5e7eb;
             display: flex;
             justify-content: space-between;
@@ -82,9 +82,9 @@
         /* Settings Sections */
         .settings-section {
             background: white;
-            border-radius: 16px;
+            border-radius: var(--r-lg);
             padding: 2rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
             border: 1px solid #e5e7eb;
         }
 
@@ -100,13 +100,13 @@
         .section-icon {
             width: 48px;
             height: 48px;
-            border-radius: 12px;
+            border-radius: var(--r-sm);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.25rem;
             color: white;
-            background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(79, 70, 229) 100%);
+            background: var(--accent);
         }
 
         .section-title {
@@ -174,7 +174,7 @@
         .form-textarea:focus {
             outline: none;
             border-color: rgb(102, 126, 234);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            box-shadow: var(--shadow-sm);
         }
 
         .form-textarea {
@@ -264,7 +264,7 @@
         .logo-preview {
             width: 120px;
             height: 120px;
-            border-radius: 12px;
+            border-radius: var(--r-sm);
             border: 2px dashed #d1d5db;
             display: flex;
             align-items: center;
@@ -288,9 +288,9 @@
         /* Save Button */
         .save-section {
             background: white;
-            border-radius: 16px;
+            border-radius: var(--r-lg);
             padding: 2rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
             border: 1px solid #e5e7eb;
             display: flex;
             justify-content: space-between;
@@ -322,21 +322,21 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(79, 70, 229) 100%);
+            background: var(--accent);
             color: white;
-            box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.3);
+            box-shadow: var(--shadow-md);
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px 0 rgba(102, 126, 234, 0.4);
+            transform: none;
+            box-shadow: var(--shadow-md);
         }
 
         .btn-secondary {
             background: white;
             color: #374151;
             border: 1px solid #e5e7eb;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-secondary:hover {
@@ -353,7 +353,7 @@
             color: white;
             padding: 1rem 1.5rem;
             border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--shadow-md);
             z-index: 9999;
             display: flex;
             align-items: center;
@@ -486,7 +486,7 @@
                     <!-- Images Section -->
                     <div class="settings-section">
                         <div class="section-header">
-                            <div class="section-icon" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">
+                            <div class="section-icon" style="background: var(--accent);">
                                 <svg class="ic"><use href="#i-image"/></svg>
                             </div>
                             <div>
@@ -519,7 +519,7 @@
                                 <label class="form-label"><%= __('profile.coverImage') %></label>
                                 <p class="section-description" style="margin: 0 0 12px;"><%= __('profile.coverImageDesc') %></p>
                                 <div class="logo-upload-container">
-                                    <div class="logo-preview" id="coverPreview" style="width: 220px; height: 100px; border-radius: 12px;">
+                                    <div class="logo-preview" id="coverPreview" style="width: 220px; height: 100px; border-radius: var(--r-sm);">
                                         <% if (lab.coverImage) { %>
                                             <img src="<%= lab.coverImage %>" alt="cover">
                                         <% } else { %>
@@ -540,7 +540,7 @@
                     <!-- Address Section -->
                     <div class="settings-section">
                         <div class="section-header">
-                            <div class="section-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                            <div class="section-icon" style="background: var(--amber);">
                                 <svg class="ic"><use href="#i-map-pin"/></svg>
                             </div>
                             <div>
@@ -605,7 +605,7 @@
                     <!-- Specializations Section -->
                     <div class="settings-section">
                         <div class="section-header">
-                            <div class="section-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                            <div class="section-icon" style="background: var(--green);">
                                 <svg class="ic"><use href="#i-stethoscope"/></svg>
                             </div>
                             <div>
@@ -627,7 +627,7 @@
                     <!-- Operating Hours Section -->
                     <div class="settings-section">
                         <div class="section-header">
-                            <div class="section-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                            <div class="section-icon" style="background: var(--blue);">
                                 <svg class="ic"><use href="#i-clock"/></svg>
                             </div>
                             <div>

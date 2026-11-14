@@ -57,6 +57,9 @@
                                             </span>
                                         </button>
                                         <% } %>
+                                            <a class="modern-btn print-btn" href="/lab/orders/<%= order._id %>/receipt" target="_blank" rel="noopener" title="<%= __('walkIn.printReceipt') %>">
+                                                <svg class="ic"><use href="#i-receipt"/></svg><span><%= __('walkIn.printReceipt') %></span>
+                                            </a>
                                             <button class="modern-btn print-btn" onclick="window.print()">
                                                 <svg class="ic"><use href="#i-printer"/></svg>
                                             </button>
@@ -161,7 +164,7 @@
                                 <% if (patientInfo.patientNo) { %>
                                 <div class="info-row">
                                     <span class="label"><%= __('walkIn.patientNo') %></span>
-                                    <span class="value" dir="ltr" style="color:var(--accent);font-weight:800">#<%= patientInfo.patientNo %></span>
+                                    <span class="value" dir="ltr" style="color:var(--accent);font-weight: 700">#<%= patientInfo.patientNo %></span>
                                 </div>
                                 <% } %>
                                 <div class="info-row">

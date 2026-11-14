@@ -37,6 +37,8 @@ router.use(require('./lab-waste-page'));
 router.use(require('./app-api'));
 router.use(require('./transfers-in'));
 router.use(require('./market-support'));
+router.use(require('./supplies'));
+router.use(require('./market-support-pages'));
 
 // Get lab dashboard data
 router.get('/dashboard', async (req, res) => {

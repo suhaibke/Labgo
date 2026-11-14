@@ -187,7 +187,8 @@
       }
       var id = res.body.data.orderId;
       $('apDoneName').textContent = name;
-      $('apDoneCode').textContent = res.body.data.qrCode;
+      $('apDoneCode').textContent = res.body.data.orderNo || res.body.data.qrCode;
+      $('apPrintReceipt').href = '/lab/orders/' + id + '/receipt';
       var no = res.body.data.patientNo;
       $('apDoneNo').textContent = no ? '#' + no : '';
       $('apDoneNoWrap').hidden = !no;

@@ -10,6 +10,8 @@ const reportPdf = require('../../services/reportPdfService');
 const { decorateOrderWithPatientInfo } = require('../../helpers/order-patient-info');
 const { pickRange, classify } = require('../../helpers/result-ranges');
 
+const receiptPrint = require('../../services/receiptPrintService');
+
 const router = express.Router();
 const patientFields = 'name phone gender birthDate patientNo';
 const EDITABLE = ['at_lab', 'completed'];
@@ -149,6 +151,20 @@ function payload(order, lab) {
         rows: buildRows(decorated, lab),
     };
 }
+
+// The reception receipt (80 mm), opened in the browser's print preview.
+router.get('/orders/:orderId/receipt', async (req, res) => {
+    try {
+        if (!/^[a-f0-9]{24}$/i.test(req.params.orderId)) return res.status(404).send('Not found');
+        const order = await Order.findOne({ _id: req.params.orderId, labId: req.lab._id }).populate('patientId', patientFields).lean();
+        if (!order) return res.status(404).send('Not found');
+        const lang = req.cookies?.lang || 'ar';
+        res.type('html').send(await receiptPrint.receiptHtml({ order, lab: req.lab, baseUrl: baseUrl(req), lang, autoPrint: req.query.print !== '0' }));
+    } catch (error) {
+        console.error('Receipt error:', error);
+        res.status(500).send('Error');
+    }
+});
 
 router.get('/orders/:orderId/results', async (req, res) => {
     try {

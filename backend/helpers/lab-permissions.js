@@ -18,6 +18,8 @@ const RULES = [
     [/^\/api\/stats$/, 'any'],
     [/^\/api\/notifications(\/read)?$/, 'any'],
     [/^\/api\/(support|market)(\/|$)/, 'any'],
+    [/^\/(support|market)\/?$/, 'any'],
+    [/^\/(api\/)?supplies(\/|$)/, ['store', 'finance']],
     [/^\/api\/labs\/(directory|[^/]+\/quote)$/, ['patients', 'results']],
     [/^\/(api\/)?transfers\/incoming(\/|$)/, ['results', 'patients']],
     // The lab mobile app's start-up data; each screen's actions still check permissions.

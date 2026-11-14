@@ -1,6 +1,6 @@
 <%#
   Lab dashboard shell — side bar (desktop), floating bottom bar (mobile) and top bar.
-  Same look and motion as the LabGo Lab mobile app. Styles: /css/lab-app.css.
+  Grouped navigation, user block, breadcrumb top bar. Styles: /css/lab-app.css.
 %>
 <%
   const _active = (typeof activeSection !== 'undefined' && activeSection) ||
@@ -10,20 +10,29 @@
   const _u = (typeof user !== 'undefined' && user) || {};
   const _labName = (typeof lab !== 'undefined' && lab && lab.name) || 'LabGo';
   const _initial = (_u.name || _labName || 'L').trim().charAt(0).toUpperCase();
-  let _nav = [
-    { id: 'overview', href: '/lab/dashboard', icon: 'house', label: __('navigation.dashboard') },
-    { id: 'orders', href: '/lab/orders', icon: 'clipboard-list', label: __('navigation.orders') },
-    { id: 'add-patient', href: '/lab/patients/new', icon: 'user-plus', label: __('labApp.addPatient') },
-    { id: 'patient-tests', href: '/lab/patient-tests', icon: 'test-tube', label: __('navigation.patientTests') },
-    { id: 'external-transfers', href: '/lab/external-transfers', icon: 'arrow-left-right', label: __('navigation.externalTransfers') },
-    { id: 'tests', href: '/lab/tests', icon: 'flask-conical', label: __('navigation.tests') },
-    { id: 'offers', also: ['packages'], href: '/lab/offers', icon: 'tag', label: __('labApp.offersPackages') },
-    { id: 'services', href: '/lab/services', icon: 'zap', label: __('navigation.quickServices') },
-    { id: 'reports', href: '/lab/reports', icon: 'chart-line', label: __('navigation.reports') },
-    { id: 'waste', href: '/lab/waste', icon: 'trash-2', label: __('waste.title') },
+  const _groups = [
+    { label: __('labWeb.groupDaily'), items: [
+      { id: 'overview', href: '/lab/dashboard', icon: 'layout-dashboard', label: __('navigation.dashboard') },
+      { id: 'orders', href: '/lab/orders', icon: 'clipboard-list', label: __('navigation.orders') },
+      { id: 'add-patient', href: '/lab/patients/new', icon: 'user-plus', label: __('labApp.addPatient') },
+      { id: 'patient-tests', href: '/lab/patient-tests', icon: 'test-tube', label: __('navigation.patientTests') },
+      { id: 'external-transfers', href: '/lab/external-transfers', icon: 'arrow-left-right', label: __('navigation.externalTransfers') },
+    ] },
+    { label: __('labWeb.groupCatalog'), items: [
+      { id: 'tests', href: '/lab/tests', icon: 'flask-conical', label: __('navigation.tests') },
+      { id: 'offers', also: ['packages'], href: '/lab/offers', icon: 'tag', label: __('labApp.offersPackages') },
+      { id: 'services', href: '/lab/services', icon: 'zap', label: __('navigation.quickServices') },
+    ] },
+    { label: __('labWeb.groupManage'), items: [
+      { id: 'reports', also: ['finance'], href: '/lab/reports', icon: 'chart-line', label: __('navigation.reports') },
+      { id: 'waste', href: '/lab/waste', icon: 'trash-2', label: __('waste.title') },
+      { id: 'market', href: '/lab/market', icon: 'store', label: __('labWeb.market') },
+      { id: 'supplies', href: '/lab/supplies', icon: 'boxes', label: __('labWeb.supplies') },
+    ] },
   ];
   const _navEnd = [
     { id: 'settings', also: ['profile', 'users'], href: '/lab/settings', icon: 'settings', label: __('navigation.settings') },
+    { id: 'support', href: '/lab/support', icon: 'life-buoy', label: __('labWeb.support') },
   ];
   const _bottom = ['overview', 'orders', 'add-patient', 'patient-tests', 'settings'];
   // Only pages this account may open (staff permissions). Settings opens the first allowed tab.
@@ -31,14 +40,17 @@
   _navEnd.forEach(function (n) {
     if (n.id === 'settings') n.href = ['/lab/settings', '/lab/users', '/lab/profile'].filter(_can)[0];
   });
-  _nav = _nav.filter(function (n) { return _can(n.href); });
+  const _navEndOk = _navEnd.filter(function (n) { return n.href && _can(n.href); });
+  _groups.forEach(function (g) { g.items = g.items.filter(function (n) { return _can(n.href); }); });
+  const _nav = [].concat.apply([], _groups.map(function (g) { return g.items; }));
   const _isActive = function (n) { return _active === n.id || (n.also || []).indexOf(_active) !== -1; };
+  const _current = _nav.concat(_navEndOk).filter(_isActive)[0];
 %>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/lab-app.css">
 <script>
-  // Apply the app look before paint: theme + accent are kept per browser.
+  // Apply theme + accent before paint (kept per browser, same keys as before).
   (function () {
     var d = document.documentElement;
     d.classList.add('la');
@@ -54,83 +66,88 @@
 
 <aside class="la-side" aria-label="<%= __('navigation.dashboard') %>">
   <a href="/lab/dashboard" class="la-brand">
-    <span class="la-brand-logo"><img src="/images/logo.png" alt="LabGo"></span>
-    <span><b>LabGo</b><span><%= _labName %></span></span>
+    <span class="la-brand-logo"><img src="<%= (typeof lab !== 'undefined' && lab && lab.logo) || '/images/logo.png' %>" alt=""></span>
+    <span><b><%= _labName %></b><span>LabGo · <%= __('labWeb.workspace') %></span></span>
   </a>
   <nav class="la-nav">
-    <% _nav.forEach(function (n) { %>
-      <a href="<%= n.href %>" class="la-nav-item press <%= _isActive(n) ? 'active' : '' %>">
-        <span class="la-nav-ic"><svg class="ic"><use href="#i-<%= n.icon %>"/></svg></span>
-        <span><%= n.label %></span>
-      </a>
+    <% _groups.forEach(function (g) { if (!g.items.length) return; %>
+      <div class="la-nav-group"><%= g.label %></div>
+      <% g.items.forEach(function (n) { %>
+        <a href="<%= n.href %>" class="la-nav-item press <%= _isActive(n) ? 'active' : '' %>" title="<%= n.label %>">
+          <span class="la-nav-ic"><svg class="ic"><use href="#i-<%= n.icon %>"/></svg></span>
+          <span><%= n.label %></span>
+        </a>
+      <% }); %>
     <% }); %>
     <div class="la-nav-sep"></div>
-    <% _navEnd.forEach(function (n) { %>
-      <a href="<%= n.href %>" class="la-nav-item press <%= _isActive(n) ? 'active' : '' %>">
+    <% _navEndOk.forEach(function (n) { %>
+      <a href="<%= n.href %>" class="la-nav-item press <%= _isActive(n) ? 'active' : '' %>" title="<%= n.label %>">
         <span class="la-nav-ic"><svg class="ic"><use href="#i-<%= n.icon %>"/></svg></span>
         <span><%= n.label %></span>
       </a>
     <% }); %>
   </nav>
-  <div class="la-side-foot">
-    <a href="/auth/logout" class="la-btn gradient block press" style="border-radius:16px;height:52px">
-      <svg class="ic flip-rtl"><use href="#i-log-out"/></svg><span><%= __('navigation.logout') %></span>
-    </a>
+  <div class="la-side-foot" style="position:relative">
+    <button type="button" class="la-user" id="laUserBtn" aria-label="<%= __('navigation.profile') %>">
+      <span class="la-user-av"><% if (_u.profileImage) { %><img src="<%= _u.profileImage %>" alt=""><% } else { %><%= _initial %><% } %></span>
+      <span class="la-user-txt"><b><%= _u.name || _labName %></b><span><%= _u.email || _u.phone || '' %></span></span>
+      <svg class="ic"><use href="#i-chevrons-up-down"/></svg>
+    </button>
+    <div class="la-menu up" id="laUserMenu" style="min-width:220px">
+      <a href="/lab/profile"><svg class="ic"><use href="#i-user"/></svg><%= __('navigation.profile') %></a>
+      <% if (_can('/lab/settings')) { %><a href="/lab/settings"><svg class="ic"><use href="#i-settings"/></svg><%= __('navigation.settings') %></a><% } %>
+      <hr>
+      <a href="/auth/logout" class="danger"><svg class="ic flip-rtl"><use href="#i-log-out"/></svg><%= __('navigation.logout') %></a>
+    </div>
   </div>
 </aside>
 
 <nav class="la-bottom" aria-label="<%= __('navigation.dashboard') %>">
-  <% _nav.concat(_navEnd).filter(function (n) { return _bottom.indexOf(n.id) !== -1; }).forEach(function (n) { %>
-    <a href="<%= n.href %>" class="press-90 <%= _isActive(n) ? 'active' : '' %>" aria-label="<%= n.label %>">
+  <% _nav.concat(_navEndOk).filter(function (n) { return _bottom.indexOf(n.id) !== -1; }).forEach(function (n) { %>
+    <a href="<%= n.href %>" class="<%= _isActive(n) ? 'active' : '' %>" aria-label="<%= n.label %>">
       <svg class="ic"><use href="#i-<%= n.icon %>"/></svg>
     </a>
   <% }); %>
 </nav>
 
 <header class="la-top">
-  <div class="la-top-group">
-    <div style="position:relative">
-      <button class="la-circle avatar press-90" id="laUserBtn" aria-label="<%= __('navigation.profile') %>">
-        <% if (_u.profileImage) { %><img src="<%= _u.profileImage %>" alt=""><% } else { %><%= _initial %><% } %>
-      </button>
-      <div class="la-menu" id="laUserMenu" style="left:0;right:auto">
-        <div style="padding:8px 12px 10px">
-          <b style="display:block;font-size:14px"><%= _u.name || _labName %></b>
-          <span style="font-size:12px;color:var(--muted)"><%= _u.email || '' %></span>
-        </div>
-        <% _nav.concat(_navEnd).filter(function (n) { return _bottom.indexOf(n.id) === -1; }).forEach(function (n) { %>
-          <a href="<%= n.href %>" class="la-only-phone"><svg class="ic"><use href="#i-<%= n.icon %>"/></svg><%= n.label %></a>
-        <% }); %>
-        <a href="/lab/profile"><svg class="ic"><use href="#i-user"/></svg><%= __('navigation.profile') %></a>
-        <a href="/lab/settings"><svg class="ic"><use href="#i-settings"/></svg><%= __('navigation.settings') %></a>
-        <a href="/auth/logout" style="color:var(--red)"><svg class="ic flip-rtl"><use href="#i-log-out"/></svg><%= __('navigation.logout') %></a>
-      </div>
-    </div>
-    <div style="position:relative">
-      <button class="la-circle press-90 la-bell" id="laBellBtn" aria-label="<%= __('labNotifications.title') %>">
-        <svg class="ic"><use href="#i-bell"/></svg><span class="la-bell-dot" id="laBellDot" hidden></span>
-      </button>
-      <div class="la-menu la-notif" id="laNotifMenu" style="left:0;right:auto">
-        <div class="la-notif-head"><b><%= __('labNotifications.title') %></b><button type="button" id="laNotifAll"><%= __('labNotifications.markAll') %></button></div>
-        <div id="laNotifList"><p class="la-notif-empty"><%= __('labNotifications.empty') %></p></div>
-      </div>
-    </div>
-    <button class="la-theme" id="laThemeBtn" aria-label="Theme">
-      <svg class="ic sun"><use href="#i-sun"/></svg>
-      <svg class="ic moon"><use href="#i-moon"/></svg>
-      <span class="knob"></span>
-    </button>
+  <div class="la-crumbs">
+    <span class="la-crumb-root"><%= _labName %></span>
+    <svg class="ic flip-ltr la-crumb-sep"><use href="#i-chevron-left"/></svg>
+    <b><%= _current ? _current.label : (typeof title !== 'undefined' ? title : '') %></b>
   </div>
   <div class="la-top-group">
-    <a class="la-circle press-90" href="/shop" aria-label="Store"><svg class="ic" style="width:19px;height:19px;stroke-width:1.8"><use href="#i-store"/></svg></a>
+    <div style="position:relative" class="la-only-phone-menu">
+      <button class="la-circle" id="laMoreBtn" aria-label="Menu"><svg class="ic"><use href="#i-menu"/></svg></button>
+      <div class="la-menu" id="laMoreMenu">
+        <% _nav.concat(_navEndOk).filter(function (n) { return _bottom.indexOf(n.id) === -1; }).forEach(function (n) { %>
+          <a href="<%= n.href %>"><svg class="ic"><use href="#i-<%= n.icon %>"/></svg><%= n.label %></a>
+        <% }); %>
+        <hr>
+        <a href="/auth/logout" class="danger"><svg class="ic flip-rtl"><use href="#i-log-out"/></svg><%= __('navigation.logout') %></a>
+      </div>
+    </div>
     <div style="position:relative">
-      <button class="la-circle la-lang press-90" id="laLangBtn" aria-label="Language">
+      <button class="la-circle la-lang" id="laLangBtn" aria-label="<%= __('labWeb.language') %>">
         <svg class="ic"><use href="#i-globe"/></svg><span><%= _langBadge %></span>
       </button>
       <div class="la-menu" id="laLangMenu">
         <% [['ar','العربية'],['en','English'],['ku','کوردی'],['tr','Türkçe']].forEach(function (l) { %>
-          <button class="la-lang-opt <%= _lang === l[0] ? 'on' : '' %>" data-lang="<%= l[0] %>"><svg class="ic"><use href="#i-globe"/></svg><%= l[1] %></button>
+          <button class="la-lang-opt <%= _lang === l[0] ? 'on' : '' %>" data-lang="<%= l[0] %>"><%= l[1] %></button>
         <% }); %>
+      </div>
+    </div>
+    <button class="la-circle la-theme" id="laThemeBtn" aria-label="<%= __('labWeb.theme') %>" title="<%= __('labWeb.theme') %>">
+      <svg class="ic sun"><use href="#i-sun"/></svg>
+      <svg class="ic moon"><use href="#i-moon"/></svg>
+    </button>
+    <div style="position:relative">
+      <button class="la-circle la-bell" id="laBellBtn" aria-label="<%= __('labNotifications.title') %>">
+        <svg class="ic"><use href="#i-bell"/></svg><span class="la-bell-dot" id="laBellDot" hidden></span>
+      </button>
+      <div class="la-menu la-notif" id="laNotifMenu">
+        <div class="la-notif-head"><b><%= __('labNotifications.title') %></b><button type="button" id="laNotifAll"><%= __('labNotifications.markAll') %></button></div>
+        <div id="laNotifList"><p class="la-notif-empty"><%= __('labNotifications.empty') %></p></div>
       </div>
     </div>
   </div>
@@ -144,6 +161,7 @@
       document.getElementById(menuId).classList.toggle('open');
     }
     document.getElementById('laUserBtn').addEventListener('click', function (e) { toggle('laUserMenu', e); });
+    document.getElementById('laMoreBtn').addEventListener('click', function (e) { toggle('laMoreMenu', e); });
     document.getElementById('laLangBtn').addEventListener('click', function (e) { toggle('laLangMenu', e); });
     // Lab notifications (samples sent to / received by / results from other labs).
     var bellCopy = { empty: <%- JSON.stringify(__('labNotifications.empty')) %> };
@@ -170,6 +188,10 @@
           if (!d || !d.success) return;
           bellItems = d.data.items;
           var dot = document.getElementById('laBellDot');
+          if (d.data.unread > (window.__laUnread || 0) && window.__laUnread !== undefined) {
+            var bb = document.getElementById('laBellBtn'); bb.classList.remove('ring'); void bb.offsetWidth; bb.classList.add('ring');
+          }
+          window.__laUnread = d.data.unread || 0;
           dot.hidden = !d.data.unread;
           dot.textContent = d.data.unread > 9 ? '9+' : String(d.data.unread || '');
           var list = document.getElementById('laNotifList');

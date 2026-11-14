@@ -17,13 +17,13 @@
             </div>
             <div style="display:flex;gap:8px;align-items:center">
             <a class="la-btn md press-95" href="/lab/patients/new"><svg class="ic"><use href="#i-user-plus"/></svg><%= __('labApp.addPatient') %></a>
-            <button class="la-circle press-90" onclick="loadOrders()" aria-label="refresh" style="width:44px;height:44px">
-                <svg class="ic" style="width:18px;height:18px"><use href="#i-refresh-cw"/></svg>
+            <button class="la-btn secondary" onclick="loadOrders()" aria-label="refresh" style="width:38px;padding:0">
+                <svg class="ic"><use href="#i-refresh-cw"/></svg>
             </button>
             </div>
         </section>
 
-        <section class="la-grid c3" style="margin-top:16px">
+        <section class="la-grid c3" style="margin-top:20px">
             <div class="la-card la-kpi stagger">
                 <span class="la-kpi-ic"><svg class="ic"><use href="#i-circle-check"/></svg></span>
                 <div><b id="statTotal">-</b><span><%= __('ordersHistory.stats.totalCompleted') %></span></div>
@@ -38,7 +38,7 @@
             </div>
         </section>
 
-        <section class="la-card stagger pt-filters" style="margin-top:12px;animation-delay:.12s">
+        <section class="la-card stagger pt-filters" style="margin-top:16px;animation-delay:.12s;padding:16px">
             <div class="la-search pt-search">
                 <svg class="ic"><use href="#i-search"/></svg>
                 <input type="text" id="searchInput" placeholder="<%= __('ordersHistory.filters.searchPlaceholder') %>">
@@ -50,7 +50,7 @@
             </button>
         </section>
 
-        <section class="la-card stagger" style="margin-top:12px;animation-delay:.16s;padding-top:6px">
+        <section class="la-card flush stagger" style="margin-top:16px;animation-delay:.16s">
             <div class="pt-table-wrap">
                 <table class="pt-table" id="ordersTable">
                     <thead>

@@ -35,184 +35,151 @@
       const initials = (n) => String(n || '?').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
     %>
 
+    <%
+      const W = (k) => __('labWeb.' + k);
+      const delta = (v, suffix) => { const n = Number(v) || 0; return { cls: n > 0 ? 'green' : n < 0 ? 'red' : 'neutral', txt: (n > 0 ? '+' : '') + n + (suffix || '%') }; };
+      const pillFor = (s) => (s === 'Completed' ? 'green' : s === 'In Progress' ? 'blue' : 'amber');
+      const kpis = [
+        { label: W('patientsServed'), value: stats.totalPatientsServed, icon: 'users', d: delta(stats.patientGrowth) },
+        { label: W('testsDone'), value: total, icon: 'flask-conical', d: delta(stats.testsGrowth) },
+        { label: W('pendingNow'), value: pending, icon: 'hourglass', d: delta(stats.pendingChange), invert: true },
+        { label: W('avgRating'), value: stats.averageRating.toFixed(1), icon: 'star', d: delta(stats.ratingChange, '') },
+      ];
+    %>
     <main class="la-main screen-enter">
-        <!-- Header (same as the app's Reports screen) -->
-        <header style="padding-top:12px">
-            <p style="margin:0;font-size:14px;font-weight:500;color:var(--muted)"><%= dateText %></p>
-            <h1 class="la-h1-xl"><%= lab.name %> — <%= L('reportsWord') %></h1>
-            <p style="margin:4px 0 0;font-size:15px;color:var(--muted-2)"><%= greeting %> • <%= user.name %></p>
-        </header>
+        <div class="la-page-head">
+            <div>
+                <p class="la-eyebrow" style="margin:0 0 6px"><%= dateText %></p>
+                <h1 class="la-h1"><%= greeting %><%= ['ar', 'ku'].includes(currentLang) ? '،' : ',' %> <%= user.name %></h1>
+                <p class="la-sub" style="margin-top:4px"><%= W('overviewSub') %></p>
+            </div>
+            <div class="la-page-actions">
+                <a href="/lab/orders" class="la-btn secondary"><svg class="ic"><use href="#i-clipboard-list"/></svg><%= W('openOrders') %></a>
+                <% if (typeof labCan !== 'function' || labCan('/lab/patients/new')) { %>
+                <a href="/lab/patients/new" class="la-btn"><svg class="ic"><use href="#i-user-plus"/></svg><%= L('addPatient') %></a>
+                <% } %>
+            </div>
+        </div>
 
-        <!-- Stat cards: the app's four swipeable cards, side by side on wide screens -->
-        <div class="la-stat-scroller" id="statCards">
-            <!-- 1. Patients / tests -->
-            <section class="la-card la-stat stagger">
-                <div class="la-stat-head">
-                    <span class="la-chip-sm"><svg class="ic" style="color:var(--accent)"><use href="#i-flask-conical"/></svg><%= L('totalPatients') %></span>
+        <!-- KPIs -->
+        <div class="dash-kpis">
+            <% kpis.forEach(function (k, i) { const dc = k.invert ? (k.d.cls === 'green' ? 'red' : k.d.cls === 'red' ? 'green' : 'neutral') : k.d.cls; %>
+            <section class="la-card dash-kpi stagger" style="animation-delay:<%= (i * .04).toFixed(2) %>s">
+                <div class="la-between">
+                    <span class="dash-kpi-label"><%= k.label %></span>
+                    <span class="dash-kpi-ic"><svg class="ic"><use href="#i-<%= k.icon %>"/></svg></span>
                 </div>
-                <div class="la-stat-body">
-                    <div class="la-stat-text">
-                        <p class="la-stat-label"><%= L('patients') %></p>
-                        <p class="la-stat-big" data-count="<%= stats.totalPatientsServed %>"><%= stats.totalPatientsServed.toLocaleString('en-US') %></p>
-                        <p class="la-stat-label"><span data-count="<%= total %>"><%= total.toLocaleString('en-US') %></span> <%= L('tests') %></p>
-                    </div>
-                    <div class="la-donut-wrap">
-                        <div class="la-donut">
-                            <svg viewBox="0 0 100 100" class="la-donut-svg">
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--track)" stroke-width="11"/>
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--accent)" stroke-width="11" stroke-linecap="round"
-                                        stroke-dasharray="<%= circ %>" stroke-dashoffset="<%= circ * (1 - donePct) %>"/>
-                            </svg>
-                            <div class="la-donut-center">
-                                <b><%= Math.round(donePct * 100) %>%</b>
-                                <span><%= L('completed') %></span>
-                            </div>
-                        </div>
-                        <div class="la-legend">
-                            <p><i style="background:var(--muted)"></i><%= L('completed') %> <%= (total - pending).toLocaleString('en-US') %></p>
-                            <p><i style="background:#FF5A00"></i><%= L('pending') %> <%= pending %></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="la-stat-pills">
-                    <span><%= L('completed') %> <%= (total - pending).toLocaleString('en-US') %></span>
-                    <span class="on"><%= L('pending') %> <%= pending %></span>
-                    <span>★ <%= stats.averageRating.toFixed(1) %></span>
+                <b class="dash-kpi-value num" <% if (typeof k.value === 'number') { %>data-count="<%= k.value %>"<% } %>><%= typeof k.value === 'number' ? k.value.toLocaleString('en-US') : k.value %></b>
+                <div class="dash-kpi-foot">
+                    <span class="la-pill <%= dc %>" dir="ltr"><%= k.d.txt %></span>
+                    <span><%= L('vsLastMonth') %></span>
                 </div>
             </section>
+            <% }); %>
+        </div>
 
-            <!-- 2. Tests per day this month -->
-            <section class="la-card la-stat stagger" style="animation-delay:.05s">
-                <div class="la-stat-head">
-                    <h2 class="la-stat-title"><%= L('monthTests') %></h2>
-                    <span class="la-faint"><%= L('perDay') %></span>
-                </div>
-                <div class="la-stat-body">
-                    <div class="la-stat-text">
-                        <p class="la-stat-label"><%= L('monthTests') %></p>
-                        <p class="la-stat-big" data-count="<%= monthTests %>"><%= monthTests.toLocaleString('en-US') %></p>
-                        <p class="la-stat-label"><%= L('perDay') %></p>
+        <!-- Charts -->
+        <div class="dash-charts">
+            <section class="la-card flush">
+                <div class="la-card-head">
+                    <div>
+                        <h2 class="la-h2"><%= W('dailyVolume') %></h2>
+                        <p class="la-sub"><%= W('testsThisMonth') %>: <b style="color:var(--ink)" class="num"><%= monthTests.toLocaleString('en-US') %></b></p>
                     </div>
-                    <div class="la-bars">
+                    <span class="la-pill dot accent"><%= W('today') %></span>
+                </div>
+                <div class="la-card-body">
+                    <div class="dash-bars" dir="ltr">
                         <% days.forEach(function (d, i) { %>
-                            <span class="bar-grow <%= (i + 1) === today ? 'on' : '' %>" title="<%= d.month %>: <%= d.tests %>"
-                                  style="height:<%= Math.max(4, (d.tests || 0) / maxDay * 84) %>px;animation-delay:<%= (i * 0.015).toFixed(3) %>s"></span>
+                            <div class="dash-bar-col <%= (i + 1) === today ? 'on' : '' %>" title="<%= d.month %>: <%= d.tests %>">
+                                <span class="bar-grow" style="height:<%= Math.max(2, (d.tests || 0) / maxDay * 100) %>%;animation-delay:<%= (i * 0.012).toFixed(3) %>s"></span>
+                            </div>
                         <% }); %>
                     </div>
-                </div>
-                <div class="la-stat-pills">
-                    <span><%= L('totalTests') %></span>
-                    <span class="on"><%= monthTests.toLocaleString('en-US') %></span>
-                    <span><%= stats.testsGrowth >= 0 ? '+' : '' %><%= stats.testsGrowth %>%</span>
+                    <div class="dash-axis" dir="ltr">
+                        <span>1</span><span><%= Math.ceil(days.length / 2) || 15 %></span><span><%= days.length || 30 %></span>
+                    </div>
                 </div>
             </section>
 
-            <!-- 3. Growth -->
-            <section class="la-card la-stat stagger" style="animation-delay:.1s">
-                <div class="la-stat-head">
-                    <h2 class="la-stat-title"><%= L('growth') %></h2>
-                    <span class="la-pill neutral"><%= L('vsLastMonth') %></span>
-                </div>
-                <div class="la-stat-body">
-                    <div class="la-stat-text">
-                        <p class="la-stat-label"><%= L('growth') %></p>
-                        <p class="la-stat-big"><%= stats.patientGrowth >= 0 ? '+' : '' %><%= stats.patientGrowth %>%</p>
-                        <p class="la-stat-label"><%= L('patients') %></p>
-                    </div>
-                    <div class="la-line">
-                        <svg viewBox="0 0 320 118" preserveAspectRatio="none">
-                            <polyline points="<%= pts.join(' ') %>" fill="none" stroke="var(--accent)" stroke-width="3"
-                                      stroke-linecap="round" stroke-linejoin="round" class="chart-line"/>
+            <section class="la-card flush">
+                <div class="la-card-head"><h2 class="la-h2"><%= W('completion') %></h2></div>
+                <div class="la-card-body dash-donut-body">
+                    <div class="la-donut">
+                        <svg viewBox="0 0 100 100" class="la-donut-svg">
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="var(--track)" stroke-width="9"/>
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round"
+                                    stroke-dasharray="<%= circ %>" stroke-dashoffset="<%= circ * (1 - donePct) %>"/>
                         </svg>
+                        <div class="la-donut-center"><b class="num"><%= Math.round(donePct * 100) %>%</b><span><%= W('done') %></span></div>
                     </div>
-                </div>
-                <div class="la-stat-pills">
-                    <span><%= L('patients') %> <%= stats.patientGrowth >= 0 ? '+' : '' %><%= stats.patientGrowth %>%</span>
-                    <span class="on"><%= L('tests') %> <%= stats.testsGrowth >= 0 ? '+' : '' %><%= stats.testsGrowth %>%</span>
-                    <span><%= L('pending') %> <%= stats.pendingChange > 0 ? '+' : '' %><%= stats.pendingChange %>%</span>
-                </div>
-            </section>
-
-            <!-- 4. Rating -->
-            <section class="la-card la-stat stagger" style="animation-delay:.15s">
-                <div class="la-stat-head">
-                    <h2 class="la-stat-title"><%= L('rating') %></h2>
-                    <span class="la-faint"><%= lab.totalReviews || 0 %> <%= L('reviews') %></span>
-                </div>
-                <div class="la-stat-body">
-                    <div class="la-stat-text">
-                        <p class="la-stat-label"><%= L('rating') %></p>
-                        <p class="la-stat-big"><%= stats.averageRating.toFixed(1) %></p>
-                        <p class="la-stat-label"><%= stats.ratingChange >= 0 ? '+' : '' %><%= stats.ratingChange %> <%= L('vsLastMonth') %></p>
-                    </div>
-                    <div class="la-stars-bars">
-                        <% [1, 2, 3, 4, 5].forEach(function (n) { const full = stats.averageRating >= n - 0.25; %>
-                            <span class="bar-grow" style="height:<%= 20 + n * 13 %>%;opacity:<%= full ? 1 : .35 %>;animation-delay:<%= (n * .05).toFixed(2) %>s"></span>
-                        <% }); %>
-                    </div>
-                </div>
-                <div class="la-stat-pills">
-                    <% [1, 2, 3, 4, 5].forEach(function (n) { %>
-                        <span class="<%= Math.round(stats.averageRating) === n ? 'on ink' : '' %>"><%= n %>★</span>
-                    <% }); %>
+                    <dl class="dash-legend">
+                        <div><dt><i style="background:var(--accent)"></i><%= L('completed') %></dt><dd class="num"><%= (total - pending).toLocaleString('en-US') %></dd></div>
+                        <div><dt><i style="background:var(--track)"></i><%= L('pending') %></dt><dd class="num"><%= pending.toLocaleString('en-US') %></dd></div>
+                        <div><dt><i style="background:var(--blue)"></i><%= L('tests') %></dt><dd class="num"><%= total.toLocaleString('en-US') %></dd></div>
+                    </dl>
                 </div>
             </section>
         </div>
-        <div class="la-dots" id="statDots" aria-hidden="true" dir="ltr">
-            <span class="on"></span><span></span><span></span><span></span>
-        </div>
 
-        <div class="la-dash-grid">
-            <!-- Recent reports (same rows as the app) -->
-            <section>
-                <div class="la-search" style="margin-top:12px">
-                    <svg class="ic"><use href="#i-search"/></svg>
-                    <input id="recentSearch" placeholder="<%= L('search') %>" aria-label="<%= L('search') %>">
-                </div>
-                <div class="la-chips" style="margin-top:12px" id="recentFilters">
-                    <button class="la-chip on press-95" data-f="all"><%= L('all') %></button>
-                    <button class="la-chip press-95" data-f="Pending"><%= L('pending') %></button>
-                    <button class="la-chip press-95" data-f="In Progress"><%= L('inProgress') %></button>
-                    <button class="la-chip press-95" data-f="Completed"><%= L('completed') %></button>
-                </div>
-                <div class="la-between" style="margin-top:16px">
+        <div class="dash-grid">
+            <!-- Recent reports -->
+            <section class="la-card flush">
+                <div class="la-card-head" style="flex-wrap:wrap">
                     <h2 class="la-h2"><%= L('recentReports') %></h2>
-                    <a href="/lab/orders" style="font-size:13px;font-weight:700;color:var(--accent)"><%= L('viewAll') %></a>
+                    <div class="la-toolbar">
+                        <div class="la-search" style="height:34px;min-width:200px">
+                            <svg class="ic"><use href="#i-search"/></svg>
+                            <input id="recentSearch" placeholder="<%= L('search') %>" aria-label="<%= L('search') %>">
+                        </div>
+                        <div class="la-seg" id="recentFilters">
+                            <button class="la-chip on" data-f="all"><%= L('all') %></button>
+                            <button class="la-chip" data-f="Pending"><%= L('pending') %></button>
+                            <button class="la-chip" data-f="In Progress"><%= L('inProgress') %></button>
+                            <button class="la-chip" data-f="Completed"><%= L('completed') %></button>
+                        </div>
+                    </div>
                 </div>
-                <div class="la-grid c2" style="margin-top:12px" id="recentList">
-                    <% recentTests.forEach(function (t, i) { %>
-                        <a href="/lab/orders/<%= t._id %>" class="la-row press stagger" style="animation-delay:<%= (i * .03).toFixed(2) %>s"
-                           data-status="<%= t.status %>" data-search="<%= ((t.patientInfo && t.patientInfo.name) || '') + ' ' + (t.testName || '') %>">
-                            <span class="la-avatar"><%= initials(t.patientInfo && t.patientInfo.name) %></span>
-                            <span class="main">
-                                <span class="name"><%= (t.patientInfo && t.patientInfo.name) || __('common.notAvailable') %></span>
-                                <span class="meta"><%= t.testName %></span>
-                            </span>
-                            <span class="end">
-                                <span class="time"><%= new Date(t.requestDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) %></span>
-                                <span class="la-pill <%= pillClass(t.status) %>"><%= L(statusKey(t.status)) %></span>
-                            </span>
-                        </a>
-                    <% }); %>
+                <div style="overflow-x:auto">
+                    <table class="la-table">
+                        <thead><tr><th><%= W('colPatient') %></th><th><%= W('colTest') %></th><th><%= W('colTime') %></th><th><%= W('colStatus') %></th><th></th></tr></thead>
+                        <tbody id="recentList">
+                        <% recentTests.forEach(function (t) { const nm = (t.patientInfo && t.patientInfo.name) || __('common.notAvailable'); %>
+                            <tr class="dash-row" data-href="/lab/orders/<%= t._id %>" data-status="<%= t.status %>" data-search="<%= nm + ' ' + (t.testName || '') %>">
+                                <td><span class="la-row-flex" style="gap:10px"><span class="la-avatar" style="width:30px;height:30px;font-size:11.5px"><%= initials(nm) %></span><b style="font-weight:600"><%= nm %></b></span></td>
+                                <td class="la-muted-2"><%= t.testName %></td>
+                                <td class="la-muted num" dir="ltr" style="text-align:start"><%= new Date(t.requestDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) %></td>
+                                <td><span class="la-pill dot <%= pillFor(t.status) %>"><%= L(statusKey(t.status)) %></span></td>
+                                <td style="text-align:end"><svg class="ic flip-rtl" style="width:16px;height:16px;color:var(--muted)"><use href="#i-chevron-right"/></svg></td>
+                            </tr>
+                        <% }); %>
+                        </tbody>
+                    </table>
                 </div>
-                <p class="la-empty" id="recentEmpty" style="<%= recentTests.length ? 'display:none' : '' %>"><%= L('noResults') %></p>
+                <div class="la-empty-box" id="recentEmpty" style="<%= recentTests.length ? 'display:none' : '' %>">
+                    <svg class="ic"><use href="#i-inbox"/></svg><b><%= L('noResults') %></b>
+                </div>
+                <div class="la-card-foot" style="text-align:center">
+                    <a href="/lab/orders" style="font-size:13px;font-weight:600;color:var(--accent)"><%= L('viewAll') %></a>
+                </div>
             </section>
 
-            <!-- Quick actions (web extra) -->
-            <aside>
-                <h2 class="la-h2" style="margin-top:16px"><%= L('quickActions') %></h2>
-                <div class="la-stack" style="margin-top:12px">
+            <!-- Quick actions -->
+            <aside class="la-card flush">
+                <div class="la-card-head"><h2 class="la-h2"><%= L('quickActions') %></h2></div>
+                <div class="dash-actions">
                     <% [
+                        ['/lab/patients/new', 'user-plus', L('addPatient')],
                         ['/lab/tests', 'flask-conical', L('addTest')],
                         ['/lab/patient-tests', 'test-tube', L('viewTests')],
+                        ['/lab/external-transfers', 'arrow-left-right', __('navigation.externalTransfers')],
                         ['/lab/reports', 'chart-line', L('reports')],
                         ['/lab/settings', 'settings', L('settings')],
-                       ].forEach(function (a) { %>
-                        <a href="<%= a[0] %>" class="la-card la-between press" style="display:flex">
-                            <span class="la-row-flex" style="font-weight:700">
-                                <span class="la-icon-circle"><svg class="ic"><use href="#i-<%= a[1] %>"/></svg></span><%= a[2] %>
-                            </span>
-                            <svg class="ic flip-rtl" style="width:18px;height:18px;color:var(--muted)"><use href="#i-chevron-right"/></svg>
+                       ].filter(function (a) { return typeof labCan !== 'function' || labCan(a[0]); }).forEach(function (a) { %>
+                        <a href="<%= a[0] %>" class="dash-action">
+                            <span class="la-icon-circle"><svg class="ic"><use href="#i-<%= a[1] %>"/></svg></span>
+                            <span><%= a[2] %></span>
+                            <svg class="ic flip-rtl chev"><use href="#i-chevron-right"/></svg>
                         </a>
                     <% }); %>
                 </div>
@@ -221,78 +188,66 @@
     </main>
 
     <style>
-        html.la .la-stat-scroller { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
-        @media (min-width: 1880px) { html.la .la-stat-scroller { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-        html.la .la-stat { height: 230px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-        html.la .la-stat-head { height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; }
-        html.la .la-stat-title { margin: 0; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        html.la .la-faint { font-size: 11px; color: var(--muted); opacity: .7; white-space: nowrap; }
-        html.la .la-chip-sm { display: inline-flex; align-items: center; gap: 6px; background: var(--chip-bg); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; }
-        html.la .la-chip-sm .ic { width: 13px; height: 13px; }
-        html.la .la-stat-body { height: 110px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-        html.la .la-stat-text { flex: 1; min-width: 0; }
-        html.la .la-stat-label { margin: 0; font-size: 13px; line-height: 1.1; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        html.la .la-stat-label + .la-stat-big { margin-top: 0; }
-        html.la .la-stat-big { margin: 0 0 4px; font-size: 48px; line-height: 1.1; font-weight: 900; white-space: nowrap; }
-        html.la .la-donut-wrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
-        html.la .la-donut { width: 84px; height: 84px; display: grid; flex-shrink: 0; }
+        html.la .dash-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+        html.la .dash-kpi { padding: 18px 20px; }
+        html.la .dash-kpi-label { font-size: 13px; color: var(--muted-2); font-weight: 500; }
+        html.la .dash-kpi-ic { width: 30px; height: 30px; border-radius: var(--r-sm); display: grid; place-items: center; background: var(--chip-bg); color: var(--muted-2); }
+        html.la .dash-kpi-ic .ic { width: 16px; height: 16px; }
+        html.la .dash-kpi-value { display: block; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-top: 10px; }
+        html.la .dash-kpi-foot { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+        html.la .dash-charts { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; margin-top: 16px; }
+        html.la .dash-bars { height: 180px; display: flex; align-items: flex-end; gap: 4px; }
+        html.la .dash-bar-col { flex: 1; height: 100%; display: flex; align-items: flex-end; border-radius: 4px; }
+        html.la .dash-bar-col:hover { background: var(--chip-bg); }
+        html.la .dash-bar-col span { width: 100%; background: color-mix(in srgb, var(--accent) 22%, var(--track)); border-radius: 4px 4px 1px 1px; }
+        html.la .dash-bar-col.on span { background: var(--accent); }
+        html.la .dash-axis { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+        html.la .dash-donut-body { display: flex; align-items: center; gap: 24px; }
+        html.la .la-donut { width: 132px; height: 132px; display: grid; flex-shrink: 0; }
         html.la .la-donut > * { grid-area: 1 / 1; }
         html.la .la-donut-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
         html.la[dir="rtl"] .la-donut-svg { transform: scaleX(-1) rotate(-90deg); }
         html.la .la-donut-center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        html.la .la-donut-center b { font-size: 18px; line-height: 1; font-weight: 900; }
-        html.la .la-donut-center span { font-size: 10px; color: var(--muted); margin-top: 4px; }
-        html.la .la-legend p { margin: 0 0 6px; font-size: 12px; line-height: 1.25; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-        html.la .la-legend i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-        html.la .la-bars { flex: 1; min-width: 0; height: 84px; display: flex; align-items: flex-end; gap: 2px; }
-        html.la .la-bars span { flex: 1; background: var(--track); border-radius: 6px 6px 0 0; }
-        html.la .la-bars span.on { background: var(--accent); }
-        html.la .la-line { flex: 1; min-width: 0; height: 84px; }
-        html.la .la-line svg { width: 100%; height: 100%; overflow: hidden; }
-        html.la .la-stars-bars { flex: 1; min-width: 0; height: 84px; display: flex; align-items: flex-end; justify-content: center; gap: 8px; }
-        html.la .la-stars-bars span { width: 26px; background: var(--accent); border-radius: 6px 6px 0 0; }
-        html.la .la-stat-pills { height: 28px; display: flex; gap: 6px; flex-shrink: 0; }
-        html.la .la-stat-pills span { flex: 1; min-width: 0; display: grid; place-items: center; font-size: 11px; font-weight: 700; border-radius: 999px; background: var(--chip-bg); color: var(--muted-2); border: 1px solid var(--line); white-space: nowrap; overflow: hidden; }
-        html.la .la-stat-pills span.on { background: #FF5A00; color: #fff; border: 0; }
-        html.la .la-stat-pills span.on.ink { background: var(--ink); color: var(--app-bg); }
-        html.la .la-dots { display: none; justify-content: center; gap: 6px; margin-top: 8px; }
-        html.la .la-dots span { width: 8px; height: 8px; border-radius: 999px; background: var(--track); transition: width .15s var(--ease-ui), background-color .15s; }
-        html.la .la-dots span.on { width: 24px; background: var(--accent); }
-        html.la .la-dash-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
-        @media (max-width: 1100px) {
-            html.la .la-dash-grid { grid-template-columns: minmax(0, 1fr); }
-        }
-        /* phone: the four cards become one swipeable card, like the app */
-        @media (max-width: 700px) {
-            html.la .la-stat-scroller { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; gap: 12px; }
-            html.la .la-stat-scroller::-webkit-scrollbar { display: none; }
-            html.la .la-stat { min-width: 100%; scroll-snap-align: center; }
-            html.la .la-dots { display: flex; }
-            html.la .la-grid.c2 { grid-template-columns: minmax(0, 1fr); }
-        }
+        html.la .la-donut-center b { font-size: 24px; line-height: 1; font-weight: 700; }
+        html.la .la-donut-center span { font-size: 12px; color: var(--muted); margin-top: 4px; }
+        html.la .dash-legend { flex: 1; margin: 0; display: grid; gap: 10px; }
+        html.la .dash-legend div { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+        html.la .dash-legend div:last-child { border-bottom: 0; padding-bottom: 0; }
+        html.la .dash-legend dt { display: flex; align-items: center; gap: 8px; color: var(--muted-2); }
+        html.la .dash-legend dd { margin: 0; font-weight: 600; }
+        html.la .dash-legend i { width: 8px; height: 8px; border-radius: 2px; }
+        html.la .dash-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; margin-top: 16px; }
+        html.la .dash-row { cursor: pointer; }
+        html.la #recentFilters .la-chip { height: 28px; border: 0; background: transparent; padding: 0 10px; font-size: 12.5px; }
+        html.la #recentFilters .la-chip.on { background: var(--card); color: var(--ink); box-shadow: var(--shadow-md); }
+        html.la .dash-actions { padding: 6px; }
+        html.la .dash-action { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: var(--r-sm); font-size: 13.5px; font-weight: 500; }
+        html.la .dash-action:hover { background: var(--chip-bg); }
+        html.la .dash-action > span:nth-child(2) { flex: 1; }
+        html.la .dash-action .chev { width: 16px; height: 16px; color: var(--muted); }
+        @media (max-width: 1280px) { html.la .dash-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 1100px) { html.la .dash-grid, html.la .dash-charts { grid-template-columns: minmax(0, 1fr); } }
+        @media (max-width: 560px) { html.la .dash-kpis { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; } html.la .dash-kpi-value { font-size: 22px; } html.la .dash-donut-body { flex-direction: column; } }
     </style>
 
     <script>
         (function () {
-            // Count-up like the app (600ms, ease-out cubic)
             document.querySelectorAll('[data-count]').forEach(function (el) {
                 var end = parseInt(el.getAttribute('data-count'), 10) || 0, t0 = performance.now();
                 function step(t) {
-                    var p = Math.min(1, (t - t0) / 600), e = 1 - Math.pow(1 - p, 3);
+                    var p = Math.min(1, (t - t0) / 500), e = 1 - Math.pow(1 - p, 3);
                     el.textContent = Math.round(end * e).toLocaleString('en-US');
                     if (p < 1) requestAnimationFrame(step);
                 }
                 requestAnimationFrame(step);
             });
-
-            // Search + status filter on the recent list
             var filter = 'all', q = '';
-            var rows = Array.prototype.slice.call(document.querySelectorAll('#recentList .la-row'));
+            var rows = Array.prototype.slice.call(document.querySelectorAll('#recentList tr'));
+            rows.forEach(function (r) { r.addEventListener('click', function () { window.location.href = r.dataset.href; }); });
             function apply() {
                 var shown = 0;
                 rows.forEach(function (r) {
-                    var ok = (filter === 'all' || r.dataset.status === filter) &&
-                             (!q || r.dataset.search.toLowerCase().indexOf(q) !== -1);
+                    var ok = (filter === 'all' || r.dataset.status === filter) && (!q || r.dataset.search.toLowerCase().indexOf(q) !== -1);
                     r.style.display = ok ? '' : 'none';
                     if (ok) shown++;
                 });
@@ -305,19 +260,6 @@
                     b.classList.add('on'); filter = b.dataset.f; apply();
                 });
             });
-
-            // Dots follow the swipeable cards on phones
-            var sc = document.getElementById('statCards'), dots = document.querySelectorAll('#statDots span');
-            sc.addEventListener('scroll', function () {
-                // index of the card closest to the centre (works in LTR and RTL)
-                var mid = sc.getBoundingClientRect().left + sc.clientWidth / 2, best = 0, bestD = 1e9;
-                Array.prototype.forEach.call(sc.children, function (c, k) {
-                    var r = c.getBoundingClientRect(), dd = Math.abs(r.left + r.width / 2 - mid);
-                    if (dd < bestD) { bestD = dd; best = k; }
-                });
-                dots.forEach(function (d, k) { d.classList.toggle('on', k === best); });
-            }, { passive: true });
-
         })();
     </script>
 </body>

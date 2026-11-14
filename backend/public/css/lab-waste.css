@@ -20,14 +20,14 @@ html.la .ws-general { background: #8E8E93; }
 html.la .ws-log-head { margin-bottom: 12px; flex-wrap: wrap; }
 html.la .ws-filter { min-width: 280px; }
 html.la .ws-list { display: flex; flex-direction: column; gap: 8px; }
-html.la .ws-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: var(--chip-bg); animation: popIn .28s ease both; }
-html.la .ws-item-ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; flex-shrink: 0; color: #fff; }
+html.la .ws-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--r-lg); background: var(--chip-bg); animation: popIn .28s ease both; }
+html.la .ws-item-ic { width: 44px; height: 44px; border-radius: var(--r-md); display: grid; place-items: center; flex-shrink: 0; color: #fff; }
 html.la .ws-item-ic .ic { width: 20px; height: 20px; }
 html.la .ws-item-text { flex: 1; min-width: 0; }
 html.la .ws-item-text b { display: block; font-size: 14px; }
 html.la .ws-item-text small { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-html.la .ws-kg { font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-html.la .ws-status { padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+html.la .ws-kg { font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html.la .ws-status { padding: 5px 10px; border-radius: var(--r-sm); font-size: 12px; font-weight: 700; white-space: nowrap; }
 html.la .ws-status.pending { background: var(--soft-accent); color: var(--accent); }
 html.la .ws-status.collected { background: var(--soft-green); color: var(--green-text); }
 html.la .ws-del { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
@@ -38,11 +38,11 @@ html.la .ws-empty .ic { width: 34px; height: 34px; display: block; margin: 0 aut
 
 html.la .ws-mt { margin-top: 12px; }
 html.la .ws-type-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-html.la .ws-type-pick button { display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: 14px; background: var(--chip-bg); border: 2px solid transparent; font-weight: 700; font-size: 13px; color: var(--ink); }
+html.la .ws-type-pick button { display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: var(--r-md); background: var(--chip-bg); border: 2px solid transparent; font-weight: 700; font-size: 13px; color: var(--ink); }
 html.la .ws-type-pick button.on { border-color: var(--accent); background: var(--soft-accent); }
 html.la .ws-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 html.la .ws-weight { position: relative; display: block; }
-html.la .ws-weight input { font-size: 20px; font-weight: 800; text-align: center; padding-inline-end: 40px; }
+html.la .ws-weight input { font-size: 20px; font-weight: 700; text-align: center; padding-inline-end: 40px; }
 html.la .ws-weight b { position: absolute; inset-inline-end: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; }
 html.la .ws-error { color: var(--red); font-size: 13px; font-weight: 700; margin: 10px 0 0; }
 html.la .ws-save { margin-top: 14px; height: 50px; }

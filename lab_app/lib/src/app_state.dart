@@ -2176,6 +2176,13 @@ class AppState extends ChangeNotifier {
   List<SupplyOrder> supplyOrders = [];
 
   Future<void> _loadSupplyOrders() async {
+    if (LabApi.enabled) {
+      try {
+        supplyOrders = [for (final j in await LabApi.instance.supplyOrders()) _supplyFromServer(j)];
+        notifyListeners();
+        return;
+      } catch (_) {/* fall back to this device's copy */}
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString('lab.supplyOrders');
@@ -2185,7 +2192,41 @@ class AppState extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// A server order in the app's shape (date as shown on the PDF).
+  SupplyOrder _supplyFromServer(Map<String, dynamic> j) {
+    final d = DateTime.tryParse('${j['createdAt'] ?? ''}')?.toLocal() ?? DateTime.now();
+    final need = DateTime.tryParse('${j['neededBy'] ?? ''}');
+    return SupplyOrder.fromJson({
+      ...j,
+      'date': '${d.day}/${d.month}/${d.year}',
+      'neededBy': need == null ? '' : '${need.day}/${need.month}/${need.year}',
+    });
+  }
+
+  /// d/m/yyyy (as typed in the app) → yyyy-mm-dd (as stored on the server).
+  static String _isoDay(String dmy) {
+    final m = RegExp(r'^(\d{1,2})/(\d{1,2})/(\d{4})$').firstMatch(dmy.trim());
+    if (m == null) return '';
+    return '${m.group(3)}-${m.group(2)!.padLeft(2, '0')}-${m.group(1)!.padLeft(2, '0')}';
+  }
+
   Future<void> saveSupplyOrder(SupplyOrder o) async {
+    if (LabApi.enabled) {
+      // The server gives the order its number, so the web and the app share one sequence.
+      try {
+        final saved = await LabApi.instance.addSupplyOrder({
+          'supplier': o.supplier, 'supplierPhone': o.supplierPhone, 'neededBy': _isoDay(o.neededBy), 'notes': o.notes,
+          'items': [for (final i in o.items) i.toJson()],
+        });
+        o = _supplyFromServer(saved);
+      } on ApiError catch (e) {
+        toast(e.message);
+        return;
+      } catch (_) {
+        toast(tr('تعذر حفظ الطلب، تحقق من الاتصال', 'داواکاری پاشەکەوت نەکرا، پەیوەندی بپشکنە', 'Could not save the order, check the connection'));
+        return;
+      }
+    }
     supplyOrders = [o, ...supplyOrders];
     notifyListeners();
     try {

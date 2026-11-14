@@ -2,54 +2,55 @@
 
 html.la .pt-filters { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
 html.la .pt-search { flex: 1 1 260px; }
-html.la .pt-date { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: var(--muted); }
+html.la .pt-date { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; font-weight: 500; color: var(--ink-2); }
 html.la .pt-date input {
-  height: 45px; border-radius: 16px; border: 1px solid var(--card-border); background: var(--input-bg); padding: 0 12px;
+  height: 38px; border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--input-bg); padding: 0 12px;
   font-size: 14px; color: var(--ink); outline: none;
 }
-html.la .pt-filters .la-btn { height: 45px; }
+html.la .pt-filters .la-btn { height: 38px; }
 
-/* table: rows look like the app's list tiles */
+/* table: standard data table */
 html.la .pt-table-wrap { overflow-x: auto; }
-html.la .pt-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; font-size: 14px; }
-html.la .pt-table th { text-align: start; font-size: 12px; font-weight: 700; color: var(--muted); padding: 8px 12px 0; white-space: nowrap; }
-html.la .pt-table td { background: var(--chip-bg); padding: 12px; vertical-align: middle; white-space: nowrap; }
-html.la .pt-table td:first-child { border-start-start-radius: 16px; border-end-start-radius: 16px; }
-html.la .pt-table td:last-child { border-start-end-radius: 16px; border-end-end-radius: 16px; text-align: end; }
+html.la .pt-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; }
+html.la .pt-table th { text-align: start; font-size: 12px; font-weight: 600; color: var(--muted); padding: 10px 16px; white-space: nowrap; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+html.la .pt-table td { padding: 12px 16px; vertical-align: middle; white-space: nowrap; border-bottom: 1px solid var(--line); }
+html.la .pt-table tbody tr:last-child td { border-bottom: 0; }
+html.la .pt-table tbody tr:hover td { background: var(--surface-2); }
+html.la .pt-table td:last-child { text-align: end; }
 html.la .pt-table tr.order-row { animation: popIn .28s ease both; }
 html.la .pt-table .order-id { font-size: 12px; font-weight: 700; color: var(--muted-2); direction: ltr; display: inline-block; }
 html.la .pt-table .patient-cell { display: flex; align-items: center; gap: 10px; }
 html.la .pt-table .patient-avatar {
-  width: 40px; height: 40px; border-radius: 50%; background: var(--segmented); display: grid; place-items: center;
-  font-size: 12px; font-weight: 700; flex-shrink: 0;
+  width: 32px; height: 32px; border-radius: 50%; background: var(--avatar-bg); display: grid; place-items: center;
+  font-size: 11.5px; font-weight: 600; flex-shrink: 0;
 }
-html.la .pt-table .patient-name { font-weight: 700; }
+html.la .pt-table .patient-name { font-weight: 600; }
 html.la .pt-table .patient-phone { font-size: 12px; color: var(--muted); }
-html.la .pt-table .tests-count { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--card); font-size: 12px; font-weight: 700; }
-html.la .pt-table .amount { font-weight: 800; color: var(--accent); }
-html.la .pt-table .result-link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: var(--accent); }
+html.la .pt-table .tests-count { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: var(--r-xs); background: var(--chip-bg); color: var(--muted-2); font-size: 11.5px; font-weight: 600; }
+html.la .pt-table .amount { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+html.la .pt-table .result-link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--accent); }
 html.la .pt-table .result-link .ic, html.la .btn-view-details .ic { width: 15px; height: 15px; }
 html.la .pt-table .no-results { font-size: 12px; color: var(--muted); }
 html.la .btn-view-details {
-  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: var(--accent);
-  color: #fff; font-size: 12px; font-weight: 700; transition: transform .15s var(--ease-ui);
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: var(--r-sm); background: var(--card);
+  color: var(--ink); border: 1px solid var(--line-strong); font-size: 12.5px; font-weight: 600;
 }
-html.la .btn-view-details:active { transform: scale(.95); }
+html.la .btn-view-details:hover { background: var(--surface-2); }
 
 html.la .pt-pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding-top: 8px; }
 html.la .pt-pagination .la-circle:disabled { opacity: .4; }
 
 /* modal content built by the page script */
-html.la #modalBody .modal-section { background: var(--chip-bg); border-radius: 16px; padding: 12px; }
+html.la #modalBody .modal-section { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; }
 html.la #modalBody .modal-section + .modal-section { margin-top: 8px; }
 html.la #modalBody h4 { margin: 0 0 6px; font-size: 12px; font-weight: 700; color: var(--muted); }
 html.la #modalBody p { margin: 2px 0; font-size: 14px; }
 html.la #modalBody .test-item { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 14px; }
 html.la #modalBody .test-item + .test-item { border-top: 1px solid var(--line); }
 html.la #modalBody .test-name { font-weight: 700; }
-html.la #modalBody .test-price { color: var(--accent); font-weight: 700; }
+html.la #modalBody .test-price { color: var(--ink); font-weight: 600; }
 html.la #modalBody .btn-download-result {
-  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; border-radius: 999px; background: var(--accent);
+  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; border-radius: var(--r-sm); background: var(--accent);
   color: #fff; font-weight: 700; font-size: 14px;
 }
 html.la #modalBody .btn-download-result .ic { width: 16px; height: 16px; }
@@ -57,10 +58,11 @@ html.la #modalBody .no-result { color: var(--muted); }
 
 /* phones: the table becomes stacked tiles */
 @media (max-width: 760px) {
+  html.la .pt-table-wrap { margin: 0; }
   html.la .pt-table thead { display: none; }
   html.la .pt-table, html.la .pt-table tbody, html.la .pt-table tr, html.la .pt-table td { display: block; width: 100%; }
-  html.la .pt-table tr.order-row { background: var(--chip-bg); border-radius: 20px; padding: 12px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; }
-  html.la .pt-table td { background: none; padding: 0; border-radius: 0 !important; white-space: normal; }
+  html.la .pt-table tr.order-row { background: var(--card); border: 1px solid var(--card-border); border-radius: var(--r-lg); padding: 12px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; }
+  html.la .pt-table td { background: none; padding: 0; border: 0; border-radius: 0 !important; white-space: normal; }
   html.la .pt-table td:nth-child(2) { grid-column: 1 / -1; order: -1; }
   html.la .pt-table td:last-child { grid-column: 1 / -1; text-align: start; }
   html.la .btn-view-details { width: 100%; justify-content: center; }

@@ -1,6 +1,18 @@
-/* Shared app look for the remaining lab pages (transfers, offers, packages,
-   services, profile, settings, test catalogue details). Each page keeps its
-   own layout CSS; this file only re-skins it with the app's tokens. */
+/* Bridge: re-skins the older lab pages (transfers, offers, packages,
+   services, profile, settings, test catalogue details) with design system v2.
+   Each page keeps its own layout CSS; this file maps it onto the shared tokens. */
+
+/* the old purple palette in lab-dashboard.css now follows the lab accent */
+html.la {
+  --primary-50: var(--soft-accent); --primary-100: var(--soft-accent); --primary-200: color-mix(in srgb, var(--accent) 30%, transparent);
+  --primary-300: color-mix(in srgb, var(--accent) 50%, transparent); --primary-400: var(--accent); --primary-500: var(--accent);
+  --primary-600: var(--accent); --primary-700: var(--accent); --primary-800: var(--accent); --primary-900: var(--accent);
+  --accent-50: var(--soft-accent); --accent-100: var(--soft-accent); --accent-500: var(--accent); --accent-600: var(--accent); --accent-700: var(--accent);
+  --gray-50: var(--surface-2); --gray-100: var(--chip-bg); --gray-200: var(--line); --gray-300: var(--line-strong);
+  --gray-400: var(--placeholder); --gray-500: var(--muted); --gray-600: var(--muted-2); --gray-700: var(--ink-2); --gray-800: var(--ink); --gray-900: var(--ink);
+  --success: var(--green); --warning: var(--amber); --error: var(--red); --info: var(--blue); --urgent: var(--red);
+  --radius-sm: var(--r-xs); --radius-md: var(--r-sm); --radius-lg: var(--r-md); --radius-xl: var(--r-lg); --radius-2xl: var(--r-lg);
+}
 
 /* page frame */
 html.la .lab-wrapper { background: transparent !important; }
@@ -15,9 +27,9 @@ html.la .external-transfers-container, html.la .test-catalog-details-wrapper {
 }
 html.la body h1, html.la body h2, html.la body h3, html.la body h4,
 html.la .modal h2, html.la .modal h3, html.la .modal-panel h2 { color: var(--ink) !important; letter-spacing: inherit; }
-html.la body h1 { font-size: 26px !important; font-weight: 700 !important; line-height: 1.25; }
-html.la body h2 { font-size: 18px !important; font-weight: 700 !important; }
-html.la body h3 { font-size: 15px !important; font-weight: 700 !important; }
+html.la body h1 { font-size: var(--fs-2xl) !important; font-weight: 700 !important; line-height: 1.25; letter-spacing: -0.02em; }
+html.la body h2 { font-size: 16px !important; font-weight: 600 !important; }
+html.la body h3 { font-size: 14.5px !important; font-weight: 600 !important; }
 html.la .page-header, html.la .settings-header, html.la .profile-header, html.la .transfer-page-header { background: transparent !important; box-shadow: none !important; border: 0 !important; padding: 12px 0 0 !important; }
 html.la .page-header p, html.la .settings-subtitle, html.la .section-description, html.la .page-eyebrow, html.la .form-hint, html.la .form-note { color: var(--muted) !important; }
 
@@ -27,10 +39,10 @@ html.la .settings-section, html.la .form-section, html.la .lab-card, html.la .re
 html.la .instructions-card, html.la .category-card, html.la .test-info-card, html.la .patient-info-card, html.la .notebook-card,
 html.la .quick-actions-card, html.la .transfer-stat, html.la .print-label-section, html.la .password-section, html.la .save-section {
   background: var(--card) !important; background-image: none !important; border: 1px solid var(--card-border) !important;
-  border-radius: 28px !important; box-shadow: var(--shadow-sm) !important; color: var(--ink);
-  animation: fadeUp .38s var(--ease-out-soft) both;
+  border-radius: var(--r-lg) !important; box-shadow: var(--shadow-sm) !important; color: var(--ink);
+  animation: fadeUp .26s var(--ease-out-soft) both;
 }
-html.la .offer-card:hover, html.la .package-card:hover, html.la .service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm) !important; }
+html.la .offer-card:hover, html.la .package-card:hover, html.la .service-card:hover { transform: none; box-shadow: var(--shadow-sm) !important; }
 html.la .card-header, html.la .section-header, html.la .offer-header, html.la .package-header, html.la .password-header {
   background: transparent !important; border-bottom: 0 !important; color: var(--ink);
 }
@@ -39,26 +51,30 @@ html.la .card-footer, html.la .offer-footer, html.la .package-footer { backgroun
 /* icon circles */
 html.la .stat-icon, html.la .section-icon, html.la .stat-icon-small {
   background: var(--soft-accent) !important; background-image: none !important; color: var(--accent) !important;
-  border-radius: 16px !important; box-shadow: none !important;
+  border-radius: var(--r-md) !important; box-shadow: none !important;
 }
-html.la .stat-number { color: var(--ink) !important; font-weight: 900 !important; }
+html.la .stat-number { color: var(--ink) !important; font-weight: 700 !important; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 html.la .stat-label, html.la .info-label { color: var(--muted) !important; }
-html.la .info-value { color: var(--ink) !important; font-weight: 700; }
+html.la .info-value { color: var(--ink) !important; font-weight: 600; }
 html.la .info-row, html.la .test-item, html.la .request-item, html.la .action-item, html.la .patient-detail-item, html.la .test-select-item, html.la .day-schedule {
-  background: var(--chip-bg) !important; border: 0 !important; border-radius: 16px !important;
+  background: var(--surface-2) !important; border: 1px solid var(--line) !important; border-radius: var(--r-md) !important;
 }
 
 /* buttons */
 html.la .btn, html.la .service-adopt-btn, html.la .logo-upload-btn {
-  border-radius: 999px !important; font-weight: 700 !important; box-shadow: none !important; background-image: none;
+  border-radius: var(--r-sm) !important; font-weight: 700 !important; box-shadow: none !important; background-image: none;
   transition: transform .15s var(--ease-ui), opacity .15s ease !important;
 }
-html.la .btn:active, html.la .service-adopt-btn:active { transform: scale(.97); }
+html.la .btn:active, html.la .service-adopt-btn:active { transform: translateY(1px); }
+html.la .btn-primary:hover, html.la .primary-action:hover { filter: brightness(.95); }
 html.la .btn-primary, html.la .primary-action, html.la .service-adopt-btn, html.la .logo-upload-btn { background: var(--accent) !important; color: #fff !important; border: 0 !important; }
-html.la .btn-secondary, html.la .secondary-action { background: var(--segmented) !important; color: var(--ink) !important; border: 0 !important; }
-html.la .btn-danger { background: var(--red) !important; color: #fff !important; border: 0 !important; }
-html.la .icon-action { border-radius: 50% !important; background: var(--chip-bg) !important; color: var(--ink) !important; border: 1px solid var(--line) !important; }
-html.la .view-all-link, html.la .back-link { color: var(--accent) !important; font-weight: 700; }
+html.la .btn-secondary, html.la .secondary-action { background: var(--card) !important; color: var(--ink) !important; border: 1px solid var(--line-strong) !important; }
+html.la .btn-outline { background: var(--card) !important; color: var(--ink) !important; border: 1px solid var(--line-strong) !important; }
+html.la .btn-danger { background: var(--card) !important; color: var(--red) !important; border: 1px solid color-mix(in srgb, var(--red) 30%, var(--line-strong)) !important; }
+html.la .btn-danger:hover { background: var(--soft-red) !important; }
+html.la .icon-action { border-radius: var(--r-sm) !important; background: var(--card) !important; color: var(--muted-2) !important; border: 1px solid var(--line-strong) !important; }
+html.la .icon-action:hover { color: var(--ink) !important; background: var(--surface-2) !important; }
+html.la .view-all-link, html.la .back-link { color: var(--accent) !important; font-weight: 600; }
 
 /* inputs */
 html.la .form-input, html.la .form-select, html.la .form-textarea, html.la .time-input, html.la .test-discount-input,
@@ -66,46 +82,47 @@ html.la .service-test-select, html.la .search-field input, html.la body input[ty
 html.la body input[type="email"], html.la body input[type="tel"], html.la body input[type="password"],
 html.la body input[type="date"], html.la body select, html.la body textarea,
 html.la .modal input[type="text"], html.la .modal input[type="number"], html.la .modal input[type="date"], html.la .modal select, html.la .modal textarea {
-  background: var(--input-bg) !important; border: 1px solid var(--card-border) !important; border-radius: 16px !important;
+  background: var(--input-bg) !important; border: 1px solid var(--line-strong) !important; border-radius: var(--r-sm) !important; min-height: 38px;
   color: var(--ink) !important; box-shadow: none !important; font-family: inherit;
 }
 html.la body input:focus, html.la body select:focus, html.la body textarea:focus,
-html.la .modal input:focus, html.la .modal select:focus, html.la .modal textarea:focus { border-color: var(--accent) !important; outline: none !important; }
-html.la .form-label, html.la .form-section-title { color: var(--muted) !important; font-size: 12px !important; font-weight: 700 !important; }
-html.la .form-section-title { font-size: 13px !important; color: var(--ink) !important; }
+html.la .modal input:focus, html.la .modal select:focus, html.la .modal textarea:focus { border-color: var(--accent) !important; outline: none !important; box-shadow: var(--ring) !important; }
+html.la .form-label, html.la .form-section-title { color: var(--ink-2) !important; font-size: 12.5px !important; font-weight: 500 !important; }
+html.la .form-section-title { font-size: 13.5px !important; font-weight: 600 !important; color: var(--ink) !important; }
 html.la .required { color: var(--red) !important; }
 
 /* toggles: same as the app switch */
-html.la .switch-slider { background: #D9D9DD !important; border-radius: 999px !important; }
+html.la .switch-slider { background: var(--line-strong) !important; border-radius: 999px !important; }
 html.la .switch input:checked + .switch-slider { background: var(--accent) !important; }
-html.la .switch-slider::before { background: #fff !important; box-shadow: 0 1px 3px rgba(0,0,0,.1) !important; }
+html.la .switch-slider::before { background: #fff !important; box-shadow: var(--shadow-sm) !important; }
 
 /* pills */
 html.la .offer-badge, html.la .package-category-badge, html.la .adopted-badge, html.la .role-badge, html.la .most-requested-badge,
 html.la .code-tag, html.la .price-tag, html.la .request-status, html.la .package-test-count {
   background: var(--soft-accent) !important; background-image: none !important; color: var(--accent) !important;
-  border: 0 !important; border-radius: 999px !important; font-weight: 700 !important;
+  border: 0 !important; border-radius: var(--r-xs) !important; font-weight: 600 !important;
 }
 html.la .package-price, html.la .price-value, html.la .discounted-price, html.la .price { color: var(--accent) !important; }
 
 /* segmented tabs (custody tabs etc.) */
-html.la .custody-tabs { background: var(--segmented) !important; border-radius: 999px !important; padding: 4px !important; border: 0 !important; }
-html.la .custody-tab-btn { border-radius: 999px !important; color: var(--muted-2) !important; background: transparent !important; border: 0 !important; }
-html.la .custody-tab-btn.active { background: var(--ink) !important; color: var(--app-bg) !important; }
+html.la .custody-tabs { background: var(--segmented) !important; border-radius: var(--r-sm) !important; padding: 4px !important; border: 0 !important; }
+html.la .custody-tab-btn { border-radius: var(--r-sm) !important; color: var(--muted-2) !important; background: transparent !important; border: 0 !important; }
+html.la .custody-tab-btn.active { background: var(--card) !important; color: var(--ink) !important; box-shadow: var(--shadow-md) !important; font-weight: 600 !important; }
 
 /* modals */
-html.la .modal-overlay, html.la .modal { background: rgba(0, 0, 0, .4); }
+html.la .modal-overlay, html.la .modal { background: rgba(15, 16, 19, .45); }
 html.la .modal-content, html.la .modal-panel {
-  background: var(--card) !important; border-radius: 28px !important; box-shadow: var(--shadow-2xl) !important; border: 0 !important; color: var(--ink);
+  background: var(--card) !important; border-radius: var(--r-lg) !important; box-shadow: var(--shadow-2xl) !important; border: 0 !important; color: var(--ink);
   animation: popIn .28s ease both;
 }
 html.la .modal-header, html.la .modal-heading, html.la .modal-footer { background: transparent !important; border-color: var(--line) !important; }
-html.la .modal-close { border-radius: 50% !important; background: var(--segmented) !important; color: var(--ink) !important; border: 0 !important; }
+html.la .modal-close { border-radius: var(--r-sm) !important; background: transparent !important; color: var(--muted-2) !important; border: 0 !important; }
+html.la .modal-close:hover { background: var(--chip-bg) !important; color: var(--ink) !important; }
 
 /* tables */
-html.la body table th { color: var(--muted) !important; background: transparent !important; font-size: 12px; }
+html.la body table th { color: var(--muted) !important; background: var(--surface-2) !important; font-size: 12px; font-weight: 600 !important; border-bottom: 1px solid var(--line) !important; }
 html.la body table td { border-color: var(--line) !important; color: var(--ink); }
-html.la .notebook-table-wrap { border-radius: 16px; }
+html.la .notebook-table-wrap { border-radius: var(--r-lg); }
 
 /* empty states */
 html.la .empty-state { color: var(--muted) !important; background: transparent !important; }
@@ -113,7 +130,7 @@ html.la .empty-state-icon { background: var(--chip-bg) !important; color: var(--
 
 /* toasts */
 html.la .transfer-toast, html.la .toast-container .toast {
-  background: var(--toast-bg) !important; color: var(--toast-text) !important; border-radius: 999px !important; border: 0 !important;
+  background: var(--toast-bg) !important; color: var(--toast-text) !important; border-radius: var(--r-sm) !important; border: 0 !important;
   box-shadow: var(--shadow-xl) !important; font-weight: 700;
 }
 
@@ -130,32 +147,32 @@ html.la .settings-container { display: grid !important; gap: 16px !important; ma
 html.la .settings-section { max-width: none !important; width: 100% !important; margin: 0 !important; }
 
 /* button sizes (the shell's button reset strips the old padding) */
-html.la .btn { display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; height: 44px; padding: 0 20px !important; font-size: 14px !important; white-space: nowrap; }
-html.la .btn-sm { height: 36px; padding: 0 14px !important; font-size: 13px !important; }
-html.la .btn .ic { width: 18px; height: 18px; }
+html.la .btn { display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 16px !important; font-size: 13.5px !important; white-space: nowrap; }
+html.la .btn-sm { height: 32px; padding: 0 12px !important; font-size: 12.5px !important; }
+html.la .btn .ic { width: 16px; height: 16px; }
 html.la .btn-sm .ic { width: 16px; height: 16px; }
 
 /* transfers page: drop the old grey page panel so the app background shows */
 html.la .external-transfers-page { background: transparent !important; padding: 8px 24px 48px !important; min-height: 0 !important; }
-html.la .primary-action, html.la .secondary-action { border-radius: 999px !important; min-height: 44px; padding: 0 20px !important; white-space: nowrap; box-shadow: none !important; }
+html.la .primary-action, html.la .secondary-action { border-radius: var(--r-sm) !important; min-height: 38px; padding: 0 16px !important; white-space: nowrap; box-shadow: none !important; font-size: 13.5px; font-weight: 600; }
 @media (max-width: 900px) { html.la .external-transfers-page { padding: 4px 16px 32px !important; } }
-html.la .service-adopt-btn { height: 42px; padding: 0 16px !important; font-size: 14px !important; width: 100%; }
+html.la .service-adopt-btn { height: 36px; padding: 0 16px !important; font-size: 14px !important; width: 100%; }
 html.la .service-adopt-btn.remove { background: var(--segmented) !important; color: var(--red) !important; }
-html.la .result-action, html.la .result-link { border-radius: 999px !important; min-height: 36px; padding: 0 14px !important; background: var(--soft-accent) !important; color: var(--accent) !important; font-size: 13px !important; font-weight: 700; }
+html.la .result-action, html.la .result-link { border-radius: var(--r-sm) !important; min-height: 32px; padding: 0 12px !important; background: var(--card) !important; color: var(--ink) !important; border: 1px solid var(--line-strong) !important; font-size: 12.5px !important; font-weight: 600; }
 
 /* test catalogue details */
-html.la .test-header { background: var(--card) !important; background-image: none !important; border: 1px solid var(--card-border) !important; border-radius: 28px !important; box-shadow: var(--shadow-sm) !important; }
+html.la .test-header { background: var(--card) !important; background-image: none !important; border: 1px solid var(--card-border) !important; border-radius: var(--r-lg) !important; box-shadow: var(--shadow-sm) !important; }
 html.la .test-badge, html.la .category-badge { background: var(--soft-accent) !important; background-image: none !important; color: var(--accent) !important; box-shadow: none !important; }
-html.la .test-header .btn-primary, html.la .header-actions .btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 20px !important; border-radius: 999px !important; white-space: nowrap; }
-html.la .action-item { display: flex !important; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px !important; margin-bottom: 8px; color: var(--ink) !important; font-weight: 600; }
+html.la .test-header .btn-primary, html.la .header-actions .btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 20px !important; border-radius: var(--r-sm) !important; white-space: nowrap; }
+html.la .action-item { display: flex !important; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px !important; margin-bottom: 6px; color: var(--ink) !important; font-weight: 500; }
 html.la .action-item.danger { color: var(--red) !important; }
-html.la .instructions-content { background: var(--chip-bg) !important; border: 0 !important; border-radius: 16px !important; color: var(--ink) !important; }
-html.la .category-badge { border-radius: 999px !important; padding: 8px 18px !important; }
+html.la .instructions-content { background: var(--chip-bg) !important; border: 0 !important; border-radius: var(--r-lg) !important; color: var(--ink) !important; }
+html.la .category-badge { border-radius: var(--r-sm) !important; padding: 8px 18px !important; }
 
 /* stat numbers on offers/packages are h3s: keep them large */
-html.la .stat-info h3 { font-size: 28px !important; font-weight: 800 !important; color: var(--ink) !important; }
+html.la .stat-info h3 { font-size: 24px !important; font-weight: 700 !important; color: var(--ink) !important; letter-spacing: -0.02em; }
 html.la .stat-info p { color: var(--muted) !important; }
-html.la .test-discount-item, html.la .offer-tests-list > * { background: var(--chip-bg) !important; border: 0 !important; border-radius: 12px !important; color: var(--ink) !important; }
+html.la .test-discount-item, html.la .offer-tests-list > * { background: var(--chip-bg) !important; border: 0 !important; border-radius: var(--r-sm) !important; color: var(--ink) !important; }
 html.la .offer-header h3, html.la .package-card h3, html.la .offer-card h3 { color: var(--ink) !important; }
 
 /* offers/packages: their inline styles hard-code grey text and borders */
@@ -172,7 +189,7 @@ html.la .lh-rows { display: flex; flex-direction: column; gap: 8px; margin: 12px
 html.la .lh-row { display: grid; grid-template-columns: 120px 1.4fr 1fr 40px; gap: 8px; align-items: center; }
 html.la .lh-row .icon-action { width: 40px; height: 40px; display: grid; place-items: center; color: var(--red) !important; }
 html.la .lh-preview-label { margin-top: 14px !important; }
-html.la .lh-preview { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 10px 12px; border-radius: 14px; background: var(--chip-bg); font-size: 13px; color: var(--ink); }
+html.la .lh-preview { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 10px 12px; border-radius: var(--r-md); background: var(--chip-bg); font-size: 13px; color: var(--ink); }
 html.la .lh-preview .lh-empty { color: var(--muted); }
 @media (max-width: 700px) { html.la .lh-row { grid-template-columns: 1fr 1fr; } html.la .lh-row [data-k=name] { grid-column: 1 / -1; order: -1; } }
 html.la .settings-section:has(#lhRows) { grid-column: 1 / -1; }
@@ -180,7 +197,7 @@ html.la .lh-row, html.la .lh-preview { direction: ltr; }
 html.la .lh-row > * { min-width: 0; }
 
 /* transfers: result received through the label QR code */
-html.la .qr-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: var(--soft-accent); color: var(--accent); font-size: 12px; font-weight: 700; white-space: nowrap; }
+html.la .qr-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--r-sm); background: var(--soft-accent); color: var(--accent); font-size: 12px; font-weight: 700; white-space: nowrap; }
 html.la .qr-badge.sent { background: var(--soft-green); color: var(--green-text); }
 html.la .qr-badge .ic { width: 14px; height: 14px; }
 
@@ -190,17 +207,17 @@ html.la .page-tabs .custody-tab-btn { display: inline-flex; align-items: center;
 html.la .page-tabs .ic { width: 15px; height: 15px; }
 html.la .tab-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
 html.la .tab-count[hidden] { display: none; }
-html.la .labgo-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; background: var(--soft-accent); color: var(--accent); font-size: 10.5px; font-weight: 800; vertical-align: middle; }
-html.la .price-tag { display: inline-block !important; width: auto !important; margin-top: 4px; padding: 2px 8px !important; border-radius: 999px; background: var(--soft-accent) !important; color: var(--accent) !important; font-weight: 700; }
+html.la .labgo-badge { display: inline-block; padding: 1px 7px; border-radius: var(--r-sm); background: var(--soft-accent); color: var(--accent); font-size: 10.5px; font-weight: 700; vertical-align: middle; }
+html.la .price-tag { display: inline-block !important; width: auto !important; margin-top: 4px; padding: 2px 8px !important; border-radius: var(--r-sm); background: var(--soft-accent) !important; color: var(--accent) !important; font-weight: 700; }
 html.la .lab-picker { position: relative; }
-html.la .lab-results { position: absolute; z-index: 20; inset-inline: 0; top: 74px; max-height: 240px; overflow-y: auto; background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; box-shadow: var(--shadow-xl); padding: 4px; }
+html.la .lab-results { position: absolute; z-index: 20; inset-inline: 0; top: 74px; max-height: 240px; overflow-y: auto; background: var(--card); border: 1px solid var(--card-border); border-radius: var(--r-lg); box-shadow: var(--shadow-xl); padding: 4px; }
 html.la .lab-results[hidden] { display: none; }
-html.la .lab-results button { display: grid; width: 100%; text-align: start; padding: 9px 12px; border-radius: 12px; border: 0; background: none; font: inherit; color: var(--ink); cursor: pointer; }
+html.la .lab-results button { display: grid; width: 100%; text-align: start; padding: 9px 12px; border-radius: var(--r-sm); border: 0; background: none; font: inherit; color: var(--ink); cursor: pointer; }
 html.la .lab-results button:hover, html.la .lab-results button:focus { background: var(--chip-bg); outline: none; }
 html.la .lab-results b { font-size: 14px; }
 html.la .lab-results small, html.la .lab-results p { color: var(--muted); font-size: 12px; margin: 0; }
 html.la .lab-results p { padding: 10px 12px; }
-html.la .lab-chosen { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--chip-bg); }
+html.la .lab-chosen { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: var(--r-md); background: var(--chip-bg); }
 html.la .lab-chosen[hidden] { display: none; }
 html.la .lab-chosen strong { flex: 1; }
 html.la .link-btn { border: 0; background: none; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; padding: 0; }
@@ -213,3 +230,23 @@ html.la .receive-row input { flex: 1; min-width: 0; direction: ltr; letter-spaci
 html.la .incoming-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 html.la .status-pill.on_the_way { background: var(--chip-bg); color: var(--muted); }
 html.la .status-pill.received { background: var(--soft-accent); color: var(--accent); }
+
+/* page frame width follows the shell */
+html.la .dashboard-container, html.la .main-content, html.la .profile-container,
+html.la .external-transfers-container, html.la .test-catalog-details-wrapper { max-width: var(--content-max); padding: 8px 32px 64px !important; }
+html.la .external-transfers-page { padding: 8px 32px 64px !important; max-width: var(--content-max); margin: 0 auto; }
+@media (max-width: 1180px) { html.la .dashboard-container, html.la .main-content, html.la .profile-container, html.la .external-transfers-page { padding: 8px 24px 56px !important; } }
+@media (max-width: 900px) { html.la .dashboard-container, html.la .main-content, html.la .profile-container, html.la .external-transfers-page { padding: 4px 16px 32px !important; } }
+html.la .card-header, html.la .section-header { padding-bottom: 12px !important; border-bottom: 1px solid var(--line) !important; margin-bottom: 16px !important; }
+html.la .stat-card, html.la .transfer-stat { padding: 18px 20px !important; }
+html.la .modal-content, html.la .modal-panel { border: 1px solid var(--card-border) !important; }
+
+/* transfers: one frame (no double padding), underline page tabs, wrapping actions */
+html.la .external-transfers-page { padding: 0 !important; max-width: none; }
+html.la .external-transfers-container { width: auto; }
+html.la #pageTabs.page-tabs { display: flex !important; gap: 20px; background: none !important; padding: 0 !important; border-radius: 0 !important; border-bottom: 1px solid var(--line) !important; margin: 0 0 20px; }
+html.la #pageTabs .custody-tab-btn { position: relative; height: auto; padding: 10px 2px !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; font-size: 13.5px; font-weight: 500; color: var(--muted-2) !important; }
+html.la #pageTabs .custody-tab-btn.active { color: var(--ink) !important; font-weight: 600 !important; box-shadow: none !important; }
+html.la #pageTabs .custody-tab-btn.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: 2px 2px 0 0; background: var(--accent); }
+html.la .row-actions { flex-wrap: wrap; justify-content: flex-end; max-width: 360px; margin-inline-start: auto; }
+html.la .custody-tabs:not(#pageTabs) { display: inline-flex !important; }

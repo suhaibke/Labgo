@@ -407,29 +407,29 @@
         .test-badge.blood-tests,
         .test-badge.pathology,
         .test-badge.biochemistry {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+            background: var(--red);
         }
 
         .test-badge.x-ray,
         .test-badge.mri,
         .test-badge.ct-scan,
         .test-badge.ultrasound {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            background: var(--blue);
         }
 
         .test-badge.genetics,
         .test-badge.microbiology {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: var(--green);
         }
 
         .test-badge.allergy,
         .test-badge.cardiology,
         .test-badge.neurology {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: var(--amber);
         }
 
         .test-badge.general {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            background: var(--accent);
         }
 
         .header-text h1 {
@@ -490,7 +490,7 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+            background: var(--accent);
             color: var(--white);
             border: none;
             padding: var(--spacing-md) var(--spacing-xl);
@@ -506,7 +506,7 @@
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
+            transform: none;
             box-shadow: var(--shadow-xl);
         }
 
@@ -536,7 +536,7 @@
         .card-header {
             padding: var(--spacing-lg);
             border-bottom: 1px solid var(--gray-100);
-            background: linear-gradient(to bottom, var(--gray-50), var(--white));
+            background: var(--surface-2);
         }
 
         .card-header h3 {
@@ -616,19 +616,19 @@
         }
 
         .stat-icon-small.total {
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+            background: var(--accent);
         }
 
         .stat-icon-small.completed {
-            background: linear-gradient(135deg, var(--success), #059669);
+            background: var(--green);
         }
 
         .stat-icon-small.pending {
-            background: linear-gradient(135deg, var(--warning), #d97706);
+            background: var(--amber);
         }
 
         .stat-icon-small.progress {
-            background: linear-gradient(135deg, var(--info), #0284c7);
+            background: var(--blue);
         }
 
         .stat-info {
@@ -672,7 +672,7 @@
             width: 40px;
             height: 40px;
             border-radius: var(--radius-md);
-            background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+            background: var(--accent);
             color: var(--white);
             display: flex;
             align-items: center;
@@ -836,7 +836,7 @@
             width: 50px;
             height: 50px;
             border-radius: var(--radius-md);
-            background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+            background: var(--accent);
             display: flex;
             align-items: center;
             justify-content: center;

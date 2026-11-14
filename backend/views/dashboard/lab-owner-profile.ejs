@@ -40,10 +40,10 @@
         /* Profile Header */
         .profile-header {
             background: white;
-            border-radius: 16px;
+            border-radius: var(--r-lg);
             padding: 2rem;
             margin-bottom: 2rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
             border: 1px solid #e5e7eb;
             display: flex;
             justify-content: space-between;
@@ -77,9 +77,9 @@
         /* Profile Card */
         .profile-card {
             background: white;
-            border-radius: 16px;
+            border-radius: var(--r-lg);
             padding: 2rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
             border: 1px solid #e5e7eb;
             margin-bottom: 2rem;
         }
@@ -97,7 +97,7 @@
             width: 120px;
             height: 120px;
             border-radius: 50%;
-            background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(79, 70, 229) 100%);
+            background: var(--accent);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -123,7 +123,7 @@
             padding: 0.25rem 0.75rem;
             background: rgba(102, 126, 234, 0.1);
             color: rgb(102, 126, 234);
-            border-radius: 20px;
+            border-radius: var(--r-lg);
             font-size: 0.875rem;
             font-weight: 600;
             margin-top: 0.5rem;
@@ -132,9 +132,9 @@
         /* Profile Sections */
         .profile-section {
             background: white;
-            border-radius: 16px;
+            border-radius: var(--r-lg);
             padding: 2rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
             border: 1px solid #e5e7eb;
             margin-bottom: 2rem;
         }
@@ -151,13 +151,13 @@
         .section-icon {
             width: 48px;
             height: 48px;
-            border-radius: 12px;
+            border-radius: var(--r-sm);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.25rem;
             color: white;
-            background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(79, 70, 229) 100%);
+            background: var(--accent);
         }
 
         .section-title {
@@ -225,7 +225,7 @@
         .form-textarea:focus {
             outline: none;
             border-color: rgb(102, 126, 234);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            box-shadow: var(--shadow-sm);
         }
 
         .form-textarea {
@@ -242,9 +242,9 @@
         /* Save Section */
         .save-section {
             background: white;
-            border-radius: 16px;
+            border-radius: var(--r-lg);
             padding: 2rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
             border: 1px solid #e5e7eb;
             display: flex;
             justify-content: space-between;
@@ -277,21 +277,21 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(79, 70, 229) 100%);
+            background: var(--accent);
             color: white;
-            box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.3);
+            box-shadow: var(--shadow-md);
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px 0 rgba(102, 126, 234, 0.4);
+            transform: none;
+            box-shadow: var(--shadow-md);
         }
 
         .btn-secondary {
             background: white;
             color: #374151;
             border: 1px solid #e5e7eb;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-secondary:hover {
@@ -308,7 +308,7 @@
             color: white;
             padding: 1rem 1.5rem;
             border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--shadow-md);
             z-index: 9999;
             display: flex;
             align-items: center;
@@ -454,7 +454,7 @@
                     <!-- Security Section -->
                     <div class="profile-section">
                         <div class="section-header">
-                            <div class="section-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                            <div class="section-icon" style="background: var(--red);">
                                 <i class="fas fa-lock"></i>
                             </div>
                             <div>

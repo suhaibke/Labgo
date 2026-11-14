@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('labWeb.support') %> · <%= title %></title>
+</head>
+
+<body>
+    <%- include('../partials/lab-navbar') %>
+    <% const W = (k) => __('labWeb.' + k); %>
+
+    <main class="la-main screen-enter">
+        <div class="la-page-head">
+            <div>
+                <h1 class="la-h1"><%= W('support') %></h1>
+                <p class="la-sub"><%= W('supportSub') %></p>
+            </div>
+        </div>
+
+        <div class="sp-layout">
+            <form class="la-card flush" id="stForm" novalidate>
+                <div class="la-card-head"><h2 class="la-h2"><%= W('newTicket') %></h2></div>
+                <div class="la-card-body">
+                    <label class="la-label"><%= W('ticketType') %></label>
+                    <div class="la-seg block" id="stType" style="margin-bottom:16px">
+                        <button type="button" data-t="suggestion" class="on"><%= W('typeSuggestion') %></button>
+                        <button type="button" data-t="bug"><%= W('typeBug') %></button>
+                        <button type="button" data-t="problem"><%= W('typeProblem') %></button>
+                        <button type="button" data-t="other"><%= W('typeOther') %></button>
+                    </div>
+                    <div class="la-field"><label class="la-label" for="stSubject"><%= W('subject') %> <span class="la-faint">(<%= W('optional') %>)</span></label><input class="la-input" id="stSubject" maxlength="160"></div>
+                    <div class="la-field"><label class="la-label" for="stMessage"><%= W('message') %> *</label><textarea class="la-textarea" id="stMessage" maxlength="4000" style="min-height:140px"></textarea></div>
+                    <div class="la-field">
+                        <label class="la-label"><%= W('images') %> <span class="la-faint">(<%= W('optional') %>)</span></label>
+                        <label class="la-drop" for="stImages"><svg class="ic" style="width:20px;height:20px"><use href="#i-image"/></svg> <%= W('addImages') %></label>
+                        <input type="file" id="stImages" accept="image/*" multiple hidden>
+                        <div class="la-gallery" id="stThumbs" style="margin-top:10px"></div>
+                    </div>
+                    <p class="la-hint" id="stErr" style="color:var(--red)" hidden><%= W('messageRequired') %></p>
+                </div>
+                <div class="la-card-foot" style="display:flex;justify-content:flex-end">
+                    <button type="submit" class="la-btn" id="stSend"><svg class="ic flip-rtl"><use href="#i-send"/></svg><%= W('send') %></button>
+                </div>
+            </form>
+
+            <section class="la-card flush">
+                <div class="la-card-head"><h2 class="la-h2"><%= W('myTickets') %> <span class="la-count" id="stCount">0</span></h2></div>
+                <div class="la-spinner" id="stLoading"></div>
+                <div id="stList"></div>
+                <div class="la-empty-box" id="stEmpty" hidden><svg class="ic"><use href="#i-life-buoy"/></svg><b><%= W('noTickets') %></b><%= W('noTicketsSub') %></div>
+            </section>
+        </div>
+    </main>
+
+    <style>
+        html.la .sp-layout { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 16px; margin-top: 20px; align-items: start; }
+        html.la .st-item { padding: 14px 20px; border-bottom: 1px solid var(--line); }
+        html.la .st-item:last-child { border-bottom: 0; }
+        html.la .st-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        html.la .st-no { font-weight: 600; font-variant-numeric: tabular-nums; }
+        html.la .st-msg { margin: 8px 0 0; font-size: 13.5px; color: var(--ink-2); white-space: pre-line; line-height: 1.65; }
+        html.la .st-reply { margin-top: 10px; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line); font-size: 13px; }
+        html.la .st-reply b { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--accent); margin-bottom: 4px; }
+        html.la .st-reply .ic { width: 14px; height: 14px; }
+        html.la .st-imgs { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        html.la .st-imgs img { width: 56px; height: 56px; object-fit: cover; border-radius: var(--r-sm); border: 1px solid var(--line); }
+        html.la .la-gallery .st-thumb { position: relative; }
+        html.la .la-gallery .st-thumb button { position: absolute; top: 4px; inset-inline-end: 4px; width: 22px; height: 22px; border-radius: var(--r-xs); background: rgba(0,0,0,.6); color: #fff; display: grid; place-items: center; }
+        html.la .la-gallery .st-thumb .ic { width: 12px; height: 12px; }
+        @media (max-width: 1000px) { html.la .sp-layout { grid-template-columns: minmax(0, 1fr); } }
+    </style>
+
+    <script>
+    (function () {
+        var T = <%- JSON.stringify({ suggestion: W('typeSuggestion'), bug: W('typeBug'), problem: W('typeProblem'), other: W('typeOther'), open: W('statusOpen'), in_progress: W('statusInProgress'), closed: W('statusClosed'), reply: W('teamReply'), awaiting: W('awaitingReply'), sent: W('ticketSent'), error: W('error'), ticket: W('ticket') }) %>;
+        var type = 'suggestion', files = [], tickets = [];
+        var lang = document.documentElement.lang || 'ar';
+        function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+        function fmt(d) { try { return new Date(d).toLocaleString(lang === 'ar' ? 'ar-IQ' : lang, { dateStyle: 'medium', timeStyle: 'short' }); } catch (e) { return ''; } }
+        var pill = { open: 'amber', in_progress: 'blue', closed: 'neutral' };
+
+        function render() {
+            document.getElementById('stCount').textContent = tickets.length;
+            document.getElementById('stEmpty').hidden = tickets.length > 0;
+            document.getElementById('stList').innerHTML = tickets.map(function (t) {
+                return '<article class="st-item"><div class="st-top">'
+                    + '<span class="st-no" dir="ltr">#' + t.ticketNo + '</span>'
+                    + '<span class="la-pill neutral">' + esc(T[t.type] || t.type) + '</span>'
+                    + '<span class="la-pill dot ' + (pill[t.status] || 'neutral') + '">' + esc(T[t.status] || t.status) + '</span>'
+                    + '<span class="la-muted" style="font-size:12px;margin-inline-start:auto">' + fmt(t.createdAt) + '</span></div>'
+                    + (t.subject ? '<div style="font-weight:600;margin-top:8px">' + esc(t.subject) + '</div>' : '')
+                    + '<p class="st-msg">' + esc(t.message) + '</p>'
+                    + (t.images && t.images.length ? '<div class="st-imgs">' + t.images.map(function (u) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt=""></a>'; }).join('') + '</div>' : '')
+                    + (t.adminReply ? '<div class="st-reply"><b><svg class="ic"><use href="#i-message-circle"/></svg>' + esc(T.reply) + '</b>' + esc(t.adminReply) + '</div>'
+                        : '<div class="la-muted" style="font-size:12px;margin-top:8px">' + esc(T.awaiting) + '</div>')
+                    + '</article>';
+            }).join('');
+        }
+        function load() {
+            fetch('/lab/api/support', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (res) {
+                tickets = (res.data && res.data.items) || []; render();
+            }).catch(function () { window.laToast(T.error); }).finally(function () { document.getElementById('stLoading').hidden = true; });
+        }
+
+        document.querySelectorAll('#stType button').forEach(function (b) {
+            b.addEventListener('click', function () { type = b.dataset.t; document.querySelectorAll('#stType button').forEach(function (x) { x.classList.toggle('on', x === b); }); });
+        });
+        function thumbs() {
+            document.getElementById('stThumbs').innerHTML = files.map(function (f, k) {
+                return '<div class="st-thumb"><img src="' + URL.createObjectURL(f) + '" alt=""><button type="button" data-rm="' + k + '"><svg class="ic"><use href="#i-x"/></svg></button></div>';
+            }).join('');
+        }
+        document.getElementById('stImages').addEventListener('change', function (e) { files = files.concat(Array.prototype.slice.call(e.target.files)).slice(0, 6); e.target.value = ''; thumbs(); });
+        document.getElementById('stThumbs').addEventListener('click', function (e) { var b = e.target.closest('[data-rm]'); if (b) { files.splice(Number(b.dataset.rm), 1); thumbs(); } });
+
+        document.getElementById('stForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var msg = document.getElementById('stMessage').value.trim();
+            document.getElementById('stErr').hidden = !!msg;
+            if (!msg) { document.getElementById('stMessage').focus(); return; }
+            var fd = new FormData();
+            fd.append('type', type); fd.append('subject', document.getElementById('stSubject').value.trim()); fd.append('message', msg);
+            files.forEach(function (f) { fd.append('images', f); });
+            var btn = document.getElementById('stSend'); btn.disabled = true;
+            fetch('/lab/api/support', { method: 'POST', body: fd }).then(function (r) { return r.json(); }).then(function (res) {
+                if (!res.success) { window.laToast(res.message || T.error); return; }
+                window.laToast(T.sent + ' #' + res.data.ticketNo);
+                document.getElementById('stForm').reset(); files = []; thumbs(); load();
+            }).catch(function () { window.laToast(T.error); }).finally(function () { btn.disabled = false; });
+        });
+        load();
+    })();
+    </script>
+</body>
+
+</html>
