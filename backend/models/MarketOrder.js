@@ -24,6 +24,7 @@ const MarketOrderSchema = new mongoose.Schema({
     note: { type: String, trim: true, maxlength: 600, default: '' },
     status: { type: String, enum: STATUSES, default: 'new', index: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    adminSeenAt: { type: Date, default: null }, // for the admin's "new orders" badge
 }, { timestamps: true });
 
 const MarketOrder = mongoose.model('MarketOrder', MarketOrderSchema);

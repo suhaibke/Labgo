@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const auth = require('../../middleware/auth');
 const MarketListing = require('../../models/MarketListing');
 const SupportTicket = require('../../models/SupportTicket');
+const MarketOrder = require('../../models/MarketOrder');
 const { notifyLab } = require('../../services/labNotify');
 
 const router = express.Router();
@@ -51,6 +52,65 @@ router.patch('/market/:id', async (req, res) => {
     }
 });
 
+// ---------- orders between labs (monitoring) ----------
+const ORDER_AR = { new: 'جديد', preparing: 'قيد التجهيز', shipped: 'تم الشحن', delivered: 'تم التوصيل', cancelled: 'ملغي' };
+
+router.get('/market/orders', async (req, res) => {
+    try {
+        const filter = {};
+        if (MarketOrder.STATUSES.includes(req.query.status)) filter.status = req.query.status;
+        const [items, unseen, totals] = await Promise.all([
+            MarketOrder.find(filter).sort({ createdAt: -1 }).limit(300)
+                .populate('buyerLabId', 'name city phone').populate('sellerLabId', 'name city phone').lean(),
+            MarketOrder.countDocuments({ adminSeenAt: null }),
+            MarketOrder.aggregate([{ $group: { _id: '$status', count: { $sum: 1 }, total: { $sum: '$total' } } }]),
+        ]);
+        res.json({ success: true, data: { unseen, items, totals } });
+    } catch (error) {
+        console.error('Admin market orders error:', error);
+        res.status(500).json({ success: false });
+    }
+});
+
+router.post('/market/orders/seen', async (req, res) => {
+    try {
+        await MarketOrder.updateMany({ adminSeenAt: null }, { $set: { adminSeenAt: new Date() } });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+// The admin can step in on a disputed order: set any status. Both labs are told.
+router.patch('/market/orders/:id', async (req, res) => {
+    try {
+        if (!valid(req.params.id)) return res.status(404).json({ success: false });
+        const to = String(req.body?.status || '');
+        if (!MarketOrder.STATUSES.includes(to)) return res.status(400).json({ success: false, message: 'Unknown status' });
+        const order = await MarketOrder.findById(req.params.id);
+        if (!order) return res.status(404).json({ success: false });
+        if (order.status === to) return res.json({ success: true });
+        const was = order.status;
+        order.status = to;
+        await order.save();
+        // stock follows cancelling / un-cancelling a purchase
+        if (order.kind === 'purchase' && (to === 'cancelled') !== (was === 'cancelled')) {
+            await MarketListing.updateOne({ _id: order.listingId }, { $inc: { stock: to === 'cancelled' ? order.quantity : -order.quantity } });
+        }
+        for (const labId of [order.buyerLabId, order.sellerLabId]) {
+            await notifyLab(labId, {
+                title: `طلب المتجر #${order.orderNo}: ${ORDER_AR[to]}`,
+                body: `${order.title} — تم التحديث من إدارة LabGo`,
+                data: { type: 'store_order', orderId: String(order._id) },
+            }).catch(() => {});
+        }
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Admin market order update error:', error);
+        res.status(500).json({ success: false });
+    }
+});
+
 router.get('/support', async (req, res) => {
     try {
         const filter = {};
@@ -67,11 +127,13 @@ router.get('/support', async (req, res) => {
 
 router.get('/counts', async (req, res) => {
     try {
-        const [support, market] = await Promise.all([
+        const [support, listings, orders] = await Promise.all([
             SupportTicket.countDocuments({ adminSeenAt: null }),
             MarketListing.countDocuments({ approvalStatus: 'pending', status: { $ne: 'removed' } }),
+            MarketOrder.countDocuments({ adminSeenAt: null }),
         ]);
-        res.json({ success: true, data: { support, market } });
+        // the store badge counts listings to review plus orders not looked at yet
+        res.json({ success: true, data: { support, market: listings + orders, listings, orders } });
     } catch (error) {
         res.status(500).json({ success: false });
     }

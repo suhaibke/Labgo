@@ -43,8 +43,22 @@
                     <h1>مراجعة متجر المختبرات</h1>
                     <p class="header-subtitle">المنتجات والمزادات والمختبرات المعروضة للبيع لا تظهر للمختبرات إلا بعد موافقتك. يبدأ عدّاد المزاد من لحظة الموافقة.</p>
                 </div>
-                <div class="header-actions"><button class="modern-btn refresh-btn" onclick="load()"><i class="fas fa-sync-alt"></i><span>تحديث</span></button></div>
+                <div class="header-actions"><button class="modern-btn refresh-btn" onclick="view === 'orders' ? loadOrders() : load()"><i class="fas fa-sync-alt"></i><span>تحديث</span></button></div>
             </div>
+            <div class="filters" id="views">
+                <button data-v="listings" class="on"><i class="fas fa-store"></i> الإعلانات</button>
+                <button data-v="orders"><i class="fas fa-receipt"></i> الطلبات بين المختبرات <span id="ordersBadge" class="pill pending" style="display:none"></span></button>
+            </div>
+            <div class="filters" id="orderFilters" style="display:none">
+                <button data-s="" class="on">الكل</button>
+                <button data-s="new">جديد</button>
+                <button data-s="preparing">قيد التجهيز</button>
+                <button data-s="shipped">تم الشحن</button>
+                <button data-s="delivered">تم التوصيل</button>
+                <button data-s="cancelled">ملغي</button>
+            </div>
+            <div id="orderTotals" class="muted" style="display:none;margin:0 0 12px"></div>
+            <div class="cards" id="orders" style="display:none"></div>
             <div class="filters" id="filters">
                 <button data-s="pending" class="on">بانتظار المراجعة</button>
                 <button data-s="approved">معروض</button>
@@ -99,6 +113,62 @@
             load();
         }
         load();
+
+        // ---------- orders between labs ----------
+        const ORDER = { new: 'جديد', preparing: 'قيد التجهيز', shipped: 'تم الشحن', delivered: 'تم التوصيل', cancelled: 'ملغي' };
+        const ORDER_PILL = { new: 'pending', preparing: 'in_progress', shipped: 'in_progress', delivered: 'approved', cancelled: 'rejected' };
+        let orderFilter = '', view = 'listings';
+        const labLine = (l) => l ? `${esc(l.name)}${l.city ? ' · ' + esc(l.city) : ''} · <span class="ltr">${esc(l.phone || '')}</span>` : '—';
+        async function loadOrders() {
+            const res = await fetch('/api/admin/hub/market/orders' + (orderFilter ? `?status=${orderFilter}` : ''), { headers: headers() });
+            const data = await res.json();
+            const box = document.getElementById('orders');
+            if (!data.success) { box.innerHTML = 'تعذر التحميل'; return; }
+            const t = data.data.totals || [], sum = (k) => (t.find((x) => x._id === k) || { count: 0, total: 0 });
+            const all = t.reduce((a, x) => a + x.count, 0);
+            document.getElementById('orderTotals').innerHTML = `إجمالي الطلبات <b>${all}</b> · جديد <b>${sum('new').count}</b> · قيد التجهيز <b>${sum('preparing').count}</b> · تم التوصيل <b>${sum('delivered').count}</b> بقيمة <b class="ltr">${money(sum('delivered').total)} IQD</b> · ملغي <b>${sum('cancelled').count}</b>`;
+            box.innerHTML = data.data.items.map((o) => `
+                <div class="card ${o.adminSeenAt ? '' : 'new'}">
+                    <div class="row"><b><span class="ltr">#${esc(o.orderNo)}</span> · ${esc(o.title)}</b><span class="pill ${ORDER_PILL[o.status]}">${ORDER[o.status]}</span></div>
+                    <div class="muted">${o.kind === 'interest' ? 'طلب شراء مختبر' : 'شراء منتج · الكمية ' + esc(o.quantity)} · ${day(o.createdAt)}</div>
+                    <div style="margin:8px 0"><b class="ltr">${money(o.total)} IQD</b></div>
+                    <div class="muted"><b>المشتري:</b> ${labLine(o.buyerLabId)}</div>
+                    <div class="muted"><b>البائع:</b> ${labLine(o.sellerLabId)}</div>
+                    <div class="muted"><b>هاتف الطلب:</b> <span class="ltr">${esc(o.phone)}</span>${o.address ? ' · ' + esc(o.address) : ''}</div>
+                    ${o.note ? `<p class="msg">${esc(o.note)}</p>` : ''}
+                    <div class="actions">
+                        <select onchange="moveOrder('${o._id}', this.value)" style="border:1px solid #e5e7eb;border-radius:999px;padding:8px 12px;font:inherit;font-weight:700">
+                            ${Object.keys(ORDER).map((k) => `<option value="${k}" ${k === o.status ? 'selected' : ''}>${ORDER[k]}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>`).join('') || '<p class="muted">لا توجد طلبات</p>';
+            // opening the list clears the "new orders" badge
+            if (data.data.unseen) fetch('/api/admin/hub/market/orders/seen', { method: 'POST', headers: headers() });
+            document.getElementById('ordersBadge').style.display = 'none';
+        }
+        async function moveOrder(id, status) {
+            if (!confirm('تغيير حالة الطلب إلى «' + ORDER[status] + '»؟ سيصل إشعار للمختبرين.')) { loadOrders(); return; }
+            await fetch(`/api/admin/hub/market/orders/${id}`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ status }) });
+            loadOrders();
+        }
+        function showView(v) {
+            view = v;
+            document.querySelectorAll('#views button').forEach((x) => x.classList.toggle('on', x.dataset.v === v));
+            const orders = v === 'orders';
+            document.getElementById('filters').style.display = orders ? 'none' : '';
+            document.getElementById('list').style.display = orders ? 'none' : '';
+            ['orderFilters', 'orderTotals', 'orders'].forEach((id) => { document.getElementById(id).style.display = orders ? '' : 'none'; });
+            if (orders) loadOrders();
+        }
+        document.querySelectorAll('#views button').forEach((b) => b.addEventListener('click', () => showView(b.dataset.v)));
+        document.querySelectorAll('#orderFilters button').forEach((b) => b.addEventListener('click', () => {
+            document.querySelectorAll('#orderFilters button').forEach((x) => x.classList.toggle('on', x === b));
+            orderFilter = b.dataset.s; loadOrders();
+        }));
+        fetch('/api/admin/hub/counts', { headers: headers() }).then((r) => r.json()).then((d) => {
+            if (d.success && d.data.orders) { const b = document.getElementById('ordersBadge'); b.textContent = d.data.orders; b.style.display = 'inline-block'; }
+        }).catch(() => {});
+        if (location.hash === '#orders') showView('orders');
     </script>
 </body>
 </html>

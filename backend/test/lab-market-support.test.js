@@ -129,3 +129,38 @@ test('order steps: the seller moves it forward, the buyer may only cancel a new 
     assert.equal(allowedMove(o('preparing'), buyer, 'cancelled'), false);
     assert.equal(allowedMove(o('new'), buyer, 'preparing'), false);
 });
+
+test('admin: lists orders between labs and can change a status (stock follows a cancel)', async (t) => {
+    const MarketOrder = require('../models/MarketOrder');
+    const authMw = require('../middleware/auth');
+    t.mock.method(authMw, 'verifyToken', (req, res, next) => { req.user = { role: req.headers['x-role'] || 'admin' }; next(); });
+    delete require.cache[require.resolve('../routes/admin/market-support')];
+    const order = { _id: new mongoose.Types.ObjectId(), orderNo: 7001, kind: 'purchase', status: 'new', quantity: 3, title: 'Tubes', listingId: new mongoose.Types.ObjectId(),
+        buyerLabId: new mongoose.Types.ObjectId(), sellerLabId: new mongoose.Types.ObjectId(), save: async function () { return this; } };
+    const chain = { sort() { return this; }, limit() { return this; }, populate() { return this; }, lean: async () => [order] };
+    t.mock.method(MarketOrder, 'find', () => chain);
+    t.mock.method(MarketOrder, 'countDocuments', async () => 1);
+    t.mock.method(MarketOrder, 'aggregate', async () => [{ _id: 'new', count: 1, total: 60000 }]);
+    t.mock.method(MarketOrder, 'findById', async () => order);
+    const stock = [];
+    t.mock.method(MarketListing, 'updateOne', async (q, u) => { stock.push(u); return {}; });
+    const told = [];
+    t.mock.method(labNotify, 'notifyLab', async (id) => { told.push(String(id)); });
+    const app = express();
+    app.use(express.json());
+    app.use('/hub', require('../routes/admin/market-support'));
+    const server = http.createServer(app);
+    await new Promise((r) => server.listen(0, '127.0.0.1', r));
+    t.after(() => new Promise((r) => server.close(r)));
+    const base = `http://127.0.0.1:${server.address().port}/hub`;
+    assert.equal((await fetch(`${base}/market/orders`, { headers: { 'x-role': 'lab' } })).status, 403, 'labs cannot open the admin list');
+    const list = await (await fetch(`${base}/market/orders`)).json();
+    assert.equal(list.data.items.length, 1);
+    assert.equal(list.data.unseen, 1);
+    const patch = (status) => fetch(`${base}/market/orders/${order._id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    assert.equal((await patch('flying')).status, 400);
+    assert.equal((await patch('cancelled')).status, 200);
+    assert.equal(order.status, 'cancelled');
+    assert.deepEqual(stock[0], { $inc: { stock: 3 } });
+    assert.equal(told.length, 2, 'both labs are told');
+});
