@@ -230,6 +230,11 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label>رابط الإحالة (اختياري)</label>
+                        <input type="url" id="fieldLink" class="form-control" dir="ltr" placeholder="https://..." />
+                        <div class="icon-hint">الصق رابط المشاركة لمنتج أو مزاد أو مختبر من المتجر، أو أي رابط آخر. عند الضغط على البانر يفتح هذا الرابط.</div>
+                    </div>
+                    <div class="form-group">
                         <label>الترتيب</label>
                         <input type="number" id="fieldOrder" class="form-control" value="0" />
                     </div>
@@ -280,7 +285,7 @@
                     tbody.innerHTML = data.data.banners.map(b => `
                     <tr>
                         <td><img src="${b.imageUrl}" alt="banner" /></td>
-                        <td>${b.placement === 'lab_store' ? 'متجر المختبرات' : 'الرئيسية'}</td>
+                        <td>${b.placement === 'lab_store' ? 'متجر المختبرات' : 'الرئيسية'}${b.linkUrl ? '<div style="font-size:11px;color:#888;direction:ltr;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + String(b.linkUrl).replace(/[<>&"]/g, '') + '</div>' : ''}</td>
                         <td>${b.order}</td>
                         <td><span class="status-pill ${b.isActive ? 'active' : 'inactive'}">${b.isActive ? 'مفعّل' : 'معطّل'}</span></td>
                         <td>
@@ -323,6 +328,7 @@
                 document.getElementById('editingId').value = '';
                 document.getElementById('fieldOrder').value = '0';
                 document.getElementById('fieldPlacement').value = 'home';
+                document.getElementById('fieldLink').value = '';
                 document.getElementById('fieldImage').value = '';
                 document.getElementById('bannerModal').classList.add('show');
             }
@@ -332,6 +338,7 @@
                 document.getElementById('editingId').value = banner._id;
                 document.getElementById('fieldOrder').value = banner.order || 0;
                 document.getElementById('fieldPlacement').value = banner.placement || 'home';
+                document.getElementById('fieldLink').value = banner.linkUrl || '';
                 document.getElementById('fieldImage').value = '';
                 document.getElementById('bannerModal').classList.add('show');
             }
@@ -353,6 +360,7 @@
                 const formData = new FormData();
                 formData.append('order', document.getElementById('fieldOrder').value || 0);
                 formData.append('placement', document.getElementById('fieldPlacement').value);
+                formData.append('linkUrl', document.getElementById('fieldLink').value.trim());
                 if (imageFile) formData.append('image', imageFile);
 
                 try {

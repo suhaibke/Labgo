@@ -37,6 +37,7 @@
             <a href="#" data-k="lab_sale"><%= W('kindLabSale') %></a>
             <a href="#" data-k="lab_auction"><%= W('kindLabAuction') %></a>
             <a href="#" data-k="mine"><%= W('myListings') %></a>
+            <a href="#" data-k="orders"><%= W('myOrders') %> <span class="tab-count" id="mkOrdersCount" hidden></span></a>
         </div>
 
         <div class="la-toolbar" style="margin-top:16px">
@@ -45,6 +46,7 @@
 
         <div class="la-spinner" id="mkLoading"></div>
         <div class="mk-grid" id="mkGrid"></div>
+        <div id="mkOrders" hidden></div>
         <div class="la-empty-box la-card" id="mkEmpty" hidden style="margin-top:16px">
             <svg class="ic"><use href="#i-store"/></svg><b><%= W('noListings') %></b><%= W('noListingsSub') %>
         </div>
@@ -119,6 +121,11 @@
         html.la .mk-banner-dots button { width: 8px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.6); transition: width .2s ease, background-color .2s ease; }
         html.la .mk-banner-dots button.on { width: 20px; background: #fff; }
         @media (max-width: 700px) { html.la .mk-banner { aspect-ratio: 5 / 2; } }
+        html.la .mk-card { cursor: pointer; }
+        html.la .mk-share { position: absolute; top: 8px; inset-inline-end: 8px; width: 32px; height: 32px; border-radius: 50%; background: var(--card); color: var(--ink); display: grid; place-items: center; box-shadow: var(--shadow-md); border: 1px solid var(--line); }
+        html.la .mk-share:hover { color: var(--accent); }
+        html.la .mk-share .ic { width: 15px; height: 15px; }
+        html.la .mk-slide.linked { cursor: pointer; }
         html.la .mk-section { margin-top: 24px; }
         html.la .mk-more { font-size: 13px; font-weight: 600; color: var(--accent); }
         html.la #mkTabs a { display: inline-flex; align-items: center; }
@@ -158,8 +165,19 @@
 
     <script>
     (function () {
-        var T = <%- JSON.stringify({ product: W('kindProduct'), auction: W('kindAuction'), lab_sale: W('kindLabSale'), lab_auction: W('kindLabAuction'), price: W('price'), startPrice: W('startPrice'), currentBid: W('currentBid'), bids: W('bids'), endsIn: W('endsIn'), ended: W('ended'), pending: W('pendingApproval'), approved: W('approved'), rejected: W('rejected'), youLead: W('youLead'), youWon: W('youWon'), placeBid: W('placeBid'), yourBid: W('yourBid'), minBid: W('minBid'), bidPlaced: W('bidPlaced'), seller: W('seller'), details: W('details'), description: W('description'), category: W('category'), condition: W('condition'), New: W('condNew'), Used: W('condUsed'), stock: W('stock'), unit: W('unit'), code: W('code'), location: W('location'), area: W('area'), equipment: W('equipment'), del: W('delete'), confirmDelete: W('confirmDelete'), deleted: W('deleted'), error: W('error'), sent: W('listingSent'), rejectReason: W('rejectReason'), close: W('cancel'), viewAll: W('viewAll'), secAuctions: W('secAuctions'), secProducts: W('secProducts'), secLabs: W('secLabs') }) %>;
-        var items = [], tab = 'all', q = '', files = [];
+        var T = <%- JSON.stringify({ product: W('kindProduct'), auction: W('kindAuction'), lab_sale: W('kindLabSale'), lab_auction: W('kindLabAuction'), price: W('price'), startPrice: W('startPrice'), currentBid: W('currentBid'), bids: W('bids'), endsIn: W('endsIn'), ended: W('ended'), pending: W('pendingApproval'), approved: W('approved'), rejected: W('rejected'), youLead: W('youLead'), youWon: W('youWon'), placeBid: W('placeBid'), yourBid: W('yourBid'), minBid: W('minBid'), bidPlaced: W('bidPlaced'), seller: W('seller'), details: W('details'), description: W('description'), category: W('category'), condition: W('condition'), New: W('condNew'), Used: W('condUsed'), stock: W('stock'), unit: W('unit'), code: W('code'), location: W('location'), area: W('area'), equipment: W('equipment'), del: W('delete'), confirmDelete: W('confirmDelete'), deleted: W('deleted'), error: W('error'), sent: W('listingSent'), rejectReason: W('rejectReason'), close: W('cancel'), share: W('share'), linkCopied: W('linkCopied'), buy: W('buy'), interested: W('interested'), quantity: W('quantity'), address: W('address'), phone: W('phone'), noteOpt: W('noteOpt'), confirmOrder: W('confirmOrder'), orderSent: W('orderSent'), total: W('total'), purchases: W('purchases'), incoming: W('incoming'), noStoreOrders: W('noStoreOrders'), noStoreOrdersSub: W('noStoreOrdersSub'), st_new: W('stNew'), st_preparing: W('stPreparing'), st_shipped: W('stShipped'), st_delivered: W('stDelivered'), st_cancelled: W('stCancelled'), act_preparing: W('actPrepare'), act_shipped: W('actShip'), act_delivered: W('actDeliver'), act_cancelled: W('actCancel'), buyer: W('buyer'), interestTag: W('interestTag'), outOfStock: W('outOfStock'), fillPhoneAddress: W('fillPhoneAddress'), updated: W('updated'), viewAll: W('viewAll'), secAuctions: W('secAuctions'), secProducts: W('secProducts'), secLabs: W('secLabs') }) %>;
+        var items = [], tab = 'all', q = '', files = [], orders = { mine: [], incoming: [] };
+        var LAB = <%- JSON.stringify({ phone: lab.phone || '', address: [lab.address, lab.city].filter(Boolean).join(' - ') }).replace(/</g, '\\u003c') %>;
+        var EMPTY_TEXT = { title: <%- JSON.stringify(W('noListings')) %>, sub: <%- JSON.stringify(W('noListingsSub')) %> };
+        function shareUrl(id) { return location.origin + '/m/' + id; }
+        // Native share sheet where the browser has one, otherwise copy the link.
+        function share(l) {
+            var url = shareUrl(l.id);
+            if (navigator.share) { navigator.share({ title: l.title, url: url }).catch(function () {}); return; }
+            var done = function () { window.laToast(T.linkCopied); };
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { prompt(T.share, url); });
+            else prompt(T.share, url);
+        }
         var lang = document.documentElement.lang || 'ar';
         function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
         function money(n) { return (Number(n) || 0).toLocaleString('en-US'); }
@@ -181,14 +199,15 @@
             var auction = isAuction(l), t = auction ? left(l) : '';
             var img = l.images && l.images[0] ? '<img src="' + esc(l.images[0]) + '" alt="" loading="lazy">' : '<svg class="ic"><use href="#i-' + (l.kind.indexOf('lab') === 0 ? 'hospital' : 'package') + '"/></svg>';
             var badge = l.won ? '<span class="la-pill green">' + esc(T.youWon) + '</span>' : l.youLead ? '<span class="la-pill blue">' + esc(T.youLead) + '</span>' : statusPill(l);
-            return '<button type="button" class="mk-card" data-id="' + l.id + '">'
-                + '<div class="mk-img">' + img + '<span class="la-pill neutral">' + esc(T[l.kind]) + '</span></div>'
+            return '<div class="mk-card" role="button" tabindex="0" data-id="' + l.id + '">'
+                + '<div class="mk-img">' + img + '<span class="la-pill neutral">' + esc(T[l.kind]) + '</span>'
+                + (l.approvalStatus === 'approved' ? '<button type="button" class="mk-share" data-share="' + l.id + '" aria-label="' + esc(T.share) + '" title="' + esc(T.share) + '"><svg class="ic"><use href="#i-share-2"/></svg></button>' : '') + '</div>'
                 + '<div class="mk-body"><div class="mk-title">' + esc(l.title) + '</div>'
                 + '<div class="mk-meta"><svg class="ic"><use href="#i-hospital"/></svg>' + esc(l.lab ? l.lab.name + (l.lab.city ? ' · ' + l.lab.city : '') : '') + '</div>'
                 + (badge ? '<div>' + badge + '</div>' : '')
                 + '<div class="mk-foot"><div class="mk-price"><small>' + esc(auction ? T.currentBid : T.price) + (auction && l.bids ? ' · ' + l.bids + ' ' + esc(T.bids) : '') + '</small><b>' + money(auction ? l.currentBid : l.price) + ' <span class="la-muted" style="font-size:11.5px;font-weight:500">IQD</span></b></div>'
                 + (auction ? '<span class="mk-time' + (t ? '' : ' over') + '" data-ends="' + esc(l.endsAt || '') + '"><svg class="ic"><use href="#i-clock"/></svg><span>' + (t || esc(T.ended)) + '</span></span>' : '')
-                + '</div></div></button>';
+                + '</div></div></div>';
         }
         function visible() {
             return items.filter(function (l) {
@@ -210,6 +229,12 @@
             var n = items.filter(live).length, badge = document.getElementById('mkAuctionCount');
             badge.hidden = !n; badge.textContent = n;
             var grid = document.getElementById('mkGrid');
+            var open = orders.incoming.filter(function (o) { return o.status === 'new'; }).length, oc = document.getElementById('mkOrdersCount');
+            oc.hidden = !open; oc.textContent = open;
+            document.getElementById('mkOrders').hidden = tab !== 'orders';
+            grid.hidden = tab === 'orders';
+            document.getElementById('mkSearch').closest('.la-toolbar').hidden = tab === 'orders';
+            if (tab === 'orders') { renderOrders(); return; }
             if (tab === 'all' && !q) {
                 // home view: live auctions first, then products, then labs
                 var auctions = list.filter(isAuction).sort(function (a, b) { return (left(b) ? 1 : 0) - (left(a) ? 1 : 0) || new Date(a.endsAt) - new Date(b.endsAt); });
@@ -223,15 +248,84 @@
                 grid.className = 'mk-grid';
                 grid.innerHTML = list.map(card).join('');
             }
-            document.getElementById('mkEmpty').hidden = list.length > 0;
+            var empty = document.getElementById('mkEmpty');
+            empty.hidden = list.length > 0;
+            empty.querySelector('b').textContent = EMPTY_TEXT.title; empty.lastChild.textContent = EMPTY_TEXT.sub;
         }
+        // ---- my orders: what I bought, and orders other labs placed on my listings ----
+        var ORDER_PILL = { new: 'amber', preparing: 'blue', shipped: 'violet', delivered: 'green', cancelled: 'neutral' };
+        var SELLER_NEXT = { new: ['preparing', 'cancelled'], preparing: ['shipped', 'cancelled'], shipped: ['delivered'] };
+        function orderRow(o) {
+            var acts = o.role === 'seller' ? (SELLER_NEXT[o.status] || []) : (o.status === 'new' ? ['cancelled'] : []);
+            return '<tr><td><b class="num" dir="ltr">#' + o.orderNo + '</b></td>'
+                + '<td><div class="la-row-flex" style="gap:10px">' + (o.image ? '<img class="la-thumb" src="' + esc(o.image) + '" alt="">' : '')
+                + '<div><b style="font-weight:600">' + esc(o.title) + '</b>' + (o.kind === 'interest' ? ' <span class="la-pill accent">' + esc(T.interestTag) + '</span>' : '')
+                + '<div class="la-muted" style="font-size:12px">' + esc(o.role === 'seller' ? T.buyer : T.seller) + ': ' + esc(o.otherLab) + '</div></div></div></td>'
+                + '<td class="num" style="text-align:start">' + (o.kind === 'interest' ? '—' : o.quantity) + '</td>'
+                + '<td class="num" style="text-align:start"><b style="font-weight:600">' + money(o.total) + '</b> <span class="la-muted" style="font-size:11.5px">IQD</span></td>'
+                + '<td><div dir="ltr" style="text-align:start">' + esc(o.phone) + '</div>' + (o.address ? '<div class="la-muted" style="font-size:12px">' + esc(o.address) + '</div>' : '') + (o.note ? '<div class="la-muted" style="font-size:12px">' + esc(o.note) + '</div>' : '') + '</td>'
+                + '<td><span class="la-pill dot ' + ORDER_PILL[o.status] + '">' + esc(T['st_' + o.status]) + '</span></td>'
+                + '<td style="text-align:end;white-space:nowrap">' + acts.map(function (a) {
+                    return '<button type="button" class="la-btn sm ' + (a === 'cancelled' ? 'danger-soft' : '') + '" data-order="' + o.id + '" data-to="' + a + '">' + esc(T['act_' + a]) + '</button>';
+                }).join(' ') + '</td></tr>';
+        }
+        function orderTable(title, list) {
+            if (!list.length) return '';
+            return '<section class="la-card flush" style="margin-top:16px"><div class="la-card-head"><h2 class="la-h2">' + esc(title) + ' <span class="la-count">' + list.length + '</span></h2></div>'
+                + '<div style="overflow-x:auto"><table class="la-table"><thead><tr><th>#</th><th>' + esc(T.details) + '</th><th>' + esc(T.quantity) + '</th><th>' + esc(T.total) + '</th><th>' + esc(T.phone) + '</th><th></th><th></th></tr></thead><tbody>'
+                + list.map(orderRow).join('') + '</tbody></table></div></section>';
+        }
+        function renderOrders() {
+            var box = document.getElementById('mkOrders'), none = !orders.mine.length && !orders.incoming.length;
+            box.innerHTML = orderTable(T.incoming, orders.incoming) + orderTable(T.purchases, orders.mine);
+            var empty = document.getElementById('mkEmpty');
+            empty.hidden = !none;
+            empty.querySelector('b').textContent = none ? T.noStoreOrders : EMPTY_TEXT.title;
+            empty.lastChild.textContent = none ? T.noStoreOrdersSub : EMPTY_TEXT.sub;
+        }
+        function loadOrders() {
+            return fetch('/lab/api/market/orders', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (res) {
+                if (res.success) { orders = res.data; render(); }
+            }).catch(function () {});
+        }
+        document.getElementById('mkOrders').addEventListener('click', function (e) {
+            var b = e.target.closest('[data-order]'); if (!b) return;
+            if (b.dataset.to === 'cancelled' && !confirm(T.act_cancelled + '?')) return;
+            b.disabled = true;
+            fetch('/lab/api/market/orders/' + b.dataset.order, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: b.dataset.to }) })
+                .then(function (r) { return r.json(); }).then(function (res) {
+                    if (!res.success) { window.laToast(res.message || T.error); b.disabled = false; return; }
+                    window.laToast(T.updated); loadOrders(); load();
+                }).catch(function () { window.laToast(T.error); b.disabled = false; });
+        });
+
         function load() {
             return fetch('/lab/api/market', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (res) {
                 items = (res.data && res.data.items) || [];
                 render();
+                if (!deepLinked) { deepLinked = true; followLink(location.href, true); }
                 showBanners((res.data && res.data.banners) || [], (res.data && res.data.bannerSeconds) || 5);
             }).catch(function () { window.laToast(T.error); showBanners([], 5); }).finally(function () { document.getElementById('mkLoading').hidden = true; });
         }
+        // A store link (share link, ?item= or ?tab=) opens inside the page; anything else opens in a new tab.
+        var deepLinked = false;
+        function followLink(href, quiet) {
+            var u; try { u = new URL(href, location.origin); } catch (e) { return false; }
+            var m = u.pathname.match(/^\/m\/([a-f0-9]{24})$/i), item = m ? m[1] : u.searchParams.get('item'), tabName = u.searchParams.get('tab');
+            var here = u.origin === location.origin || /(^|\/)m\/[a-f0-9]{24}$/i.test(u.pathname);
+            if (item && here) {
+                if (items.some(function (x) { return x.id === item; })) { openDetail(item); return true; }
+                if (!quiet) window.open(u.href, '_blank', 'noopener');
+                return false;
+            }
+            if (tabName && u.origin === location.origin && u.pathname === '/lab/market') {
+                var a = document.querySelector('#mkTabs a[data-k="' + tabName.replace(/[^a-z_]/g, '') + '"]');
+                if (a) { a.click(); return true; }
+            }
+            if (!quiet) window.open(u.href, '_blank', 'noopener');
+            return false;
+        }
+
         // ---- banner carousel ----
         var bannerTimer;
         // Until the admin uploads store banners, three built-in slides are shown.
@@ -249,9 +343,9 @@
             var track = document.getElementById('mkBannerTrack'), dots = document.getElementById('mkBannerDots'), at = 0;
             var dir = document.documentElement.dir || 'rtl';
             track.innerHTML = custom
-                ? slides.map(function (b) { return '<img class="mk-slide" src="' + esc(b.imageUrl) + '" alt="" loading="lazy">'; }).join('')
+                ? slides.map(function (b) { return '<img class="mk-slide' + (b.linkUrl ? ' linked' : '') + '" src="' + esc(b.imageUrl) + '" alt="" loading="lazy"' + (b.linkUrl ? ' data-link="' + esc(b.linkUrl) + '" role="link" tabindex="0"' : '') + '>'; }).join('')
                 : slides.map(function (b) {
-                    return '<div class="mk-slide mk-slide-text" dir="' + dir + '" style="background:' + b.bg + '"><div><h2>' + esc(b.title) + '</h2><p>' + esc(b.sub) + '</p>'
+                    return '<div class="mk-slide mk-slide-text" data-slide-go="' + b.go + '" dir="' + dir + '" style="background:' + b.bg + ';cursor:pointer"><div><h2>' + esc(b.title) + '</h2><p>' + esc(b.sub) + '</p>'
                         + '<button type="button" data-slide-go="' + b.go + '">' + esc(b.cta) + '</button></div><svg class="ic"><use href="#i-' + b.icon + '"/></svg></div>';
                 }).join('');
             dots.innerHTML = slides.length > 1 ? slides.map(function (_, k) { return '<button type="button" data-k="' + k + '" aria-label="' + (k + 1) + '"></button>'; }).join('') : '';
@@ -265,6 +359,8 @@
             document.getElementById('mkBannerNext').onclick = function () { go(at + 1); auto(); };
             dots.onclick = function (e) { var d = e.target.closest('[data-k]'); if (d) { go(Number(d.dataset.k)); auto(); } };
             track.onclick = function (e) {
+                var linked = e.target.closest('[data-link]');
+                if (linked) { followLink(linked.dataset.link); return; }
                 var b = e.target.closest('[data-slide-go]'); if (!b) return;
                 if (b.dataset.slideGo === 'add') document.getElementById('mkNew').click();
                 else document.querySelector('#mkTabs a[data-k="' + b.dataset.slideGo + '"]').click();
@@ -312,9 +408,11 @@
             var min = (l.currentBid || l.price) + 1;
             var canBid = auction && !l.mine && t && l.approvalStatus === 'approved';
             var canDelete = l.mine && !(l.bids > 0);
+            var canOrder = !auction && !l.mine && l.approvalStatus === 'approved' && (l.status || 'active') === 'active';
             document.getElementById('mkDetailBody').innerHTML =
-                '<div class="la-between" style="margin-bottom:16px"><div><span class="la-pill neutral">' + esc(T[l.kind]) + '</span> ' + statusPill(l) + '</div>'
-                + '<button type="button" class="la-icon-btn" data-close aria-label="' + esc(T.close) + '"><svg class="ic"><use href="#i-x"/></svg></button></div>'
+                '<div class="la-between" style="margin-bottom:16px"><div><span class="la-pill neutral">' + esc(T[l.kind]) + '</span> ' + statusPill(l) + '</div><div>'
+                + (l.approvalStatus === 'approved' ? '<button type="button" class="la-btn secondary sm" id="mkShare"><svg class="ic"><use href="#i-share-2"/></svg>' + esc(T.share) + '</button> ' : '')
+                + '<button type="button" class="la-icon-btn" data-close aria-label="' + esc(T.close) + '"><svg class="ic"><use href="#i-x"/></svg></button></div></div>'
                 + '<div class="mk-detail"><div><div class="mk-hero" id="mkHero">' + (imgs[0] ? '<img src="' + esc(imgs[0]) + '" alt="">' : '<svg class="ic" style="width:36px;height:36px"><use href="#i-image"/></svg>') + '</div>'
                 + (imgs.length > 1 ? '<div class="mk-thumbs">' + imgs.map(function (u, k) { return '<button type="button" class="' + (k ? '' : 'on') + '" data-img="' + esc(u) + '"><img src="' + esc(u) + '" alt=""></button>'; }).join('') + '</div>' : '')
                 + '</div><div>'
@@ -326,6 +424,16 @@
                     + '<div><span class="la-eyebrow">' + esc(T.endsIn) + '</span><div class="mk-time' + (t ? '' : ' over') + '" data-ends="' + esc(l.endsAt || '') + '" style="font-size:18px"><span>' + (t || esc(T.ended)) + '</span></div></div></div>' : '')
                 + (l.won ? '<div class="la-alert ok" style="margin-top:12px"><svg class="ic"><use href="#i-badge-check"/></svg>' + esc(T.youWon) + '</div>' : '')
                 + (canBid ? '<form class="mk-bid" id="mkBidForm"><input class="la-input" id="mkBidAmount" inputmode="numeric" dir="ltr" placeholder="' + esc(T.minBid) + ' ' + money(min) + '"><button class="la-btn" type="submit"><svg class="ic"><use href="#i-gavel"/></svg>' + esc(T.placeBid) + '</button></form>' : '')
+                + (canOrder ? (l.kind === 'product' && !(l.stock > 0)
+                    ? '<div class="la-alert warn" style="margin-top:12px">' + esc(T.outOfStock) + '</div>'
+                    : '<button type="button" class="la-btn block" id="mkBuy" style="margin-top:12px"><svg class="ic"><use href="#i-shopping-bag"/></svg>' + esc(l.kind === 'product' ? T.buy : T.interested) + '</button>'
+                    + '<form id="mkOrderForm" hidden style="margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-2)">'
+                    + (l.kind === 'product' ? '<label class="la-label">' + esc(T.quantity) + '</label><input class="la-input" id="mkQty" type="number" min="1" max="' + l.stock + '" value="1" dir="ltr" style="margin-bottom:10px">'
+                        + '<label class="la-label">' + esc(T.address) + '</label><input class="la-input" id="mkAddr" maxlength="300" value="' + esc(LAB.address) + '" style="margin-bottom:10px">' : '')
+                    + '<label class="la-label">' + esc(T.phone) + '</label><input class="la-input" id="mkPhone" dir="ltr" inputmode="tel" maxlength="40" value="' + esc(LAB.phone) + '" style="margin-bottom:10px">'
+                    + '<label class="la-label">' + esc(T.noteOpt) + '</label><input class="la-input" id="mkNote" maxlength="600">'
+                    + (l.kind === 'product' ? '<div class="la-between" style="margin-top:12px"><span class="la-muted">' + esc(T.total) + '</span><b id="mkTotal" class="num">' + money(l.price) + ' IQD</b></div>' : '')
+                    + '<button type="submit" class="la-btn block" style="margin-top:12px">' + esc(T.confirmOrder) + '</button></form>') : '')
                 + (l.rejectReason && l.approvalStatus === 'rejected' ? '<div class="la-alert error" style="margin-top:12px">' + esc(T.rejectReason) + ': ' + esc(l.rejectReason) + '</div>' : '')
                 + (facts.length ? '<dl class="la-kv" style="margin-top:18px">' + facts.map(function (f) { return '<dt>' + esc(T[f[0]]) + '</dt><dd>' + esc(f[1]) + '</dd>'; }).join('') + '</dl>' : '')
                 + (l.description ? '<p style="margin:16px 0 0;white-space:pre-line;color:var(--ink-2);font-size:13.5px;line-height:1.7">' + esc(l.description) + '</p>' : '')
@@ -338,6 +446,29 @@
                     document.getElementById('mkHero').innerHTML = '<img src="' + esc(b.dataset.img) + '" alt="">';
                     detail.querySelectorAll('[data-img]').forEach(function (x) { x.classList.toggle('on', x === b); });
                 });
+            });
+            var sh = document.getElementById('mkShare');
+            if (sh) sh.addEventListener('click', function () { share(l); });
+            var buy = document.getElementById('mkBuy'), of = document.getElementById('mkOrderForm');
+            if (buy) buy.addEventListener('click', function () { of.hidden = false; buy.hidden = true; (document.getElementById('mkQty') || document.getElementById('mkPhone')).focus(); });
+            var qtyEl = document.getElementById('mkQty');
+            if (qtyEl) qtyEl.addEventListener('input', function () {
+                var n = Math.max(1, Math.min(l.stock, Math.round(Number(qtyEl.value) || 1)));
+                document.getElementById('mkTotal').textContent = money(l.price * n) + ' IQD';
+            });
+            if (of) of.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var phone = document.getElementById('mkPhone').value.trim(), addr = (document.getElementById('mkAddr') || { value: '' }).value.trim();
+                if (phone.replace(/\D/g, '').length < 7 || (l.kind === 'product' && !addr)) { window.laToast(T.fillPhoneAddress); return; }
+                var btn = of.querySelector('button[type=submit]'); btn.disabled = true;
+                fetch('/lab/api/market/' + l.id + '/order', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ quantity: qtyEl ? Number(qtyEl.value) : 1, address: addr, phone: phone, note: document.getElementById('mkNote').value.trim() }) })
+                    .then(function (r) { return r.json(); }).then(function (res) {
+                        if (!res.success) { window.laToast(res.code === 'stock' ? T.outOfStock : (res.message || T.error)); btn.disabled = false; return; }
+                        detail.classList.remove('active');
+                        window.laToast(T.orderSent + ' #' + res.data.orderNo);
+                        load(); loadOrders().then(function () { document.querySelector('#mkTabs a[data-k="orders"]').click(); });
+                    }).catch(function () { window.laToast(T.error); btn.disabled = false; });
             });
             var bf = document.getElementById('mkBidForm');
             if (bf) bf.addEventListener('submit', function (e) {
@@ -363,7 +494,12 @@
         document.getElementById('mkGrid').addEventListener('click', function (e) {
             var more = e.target.closest('[data-go]');
             if (more) { e.preventDefault(); document.querySelector('#mkTabs a[data-k="' + more.dataset.go + '"]').click(); return; }
+            var s = e.target.closest('[data-share]');
+            if (s) { e.stopPropagation(); share(items.find(function (x) { return x.id === s.dataset.share; })); return; }
             var c = e.target.closest('.mk-card'); if (c) openDetail(c.dataset.id);
+        });
+        document.getElementById('mkGrid').addEventListener('keydown', function (e) {
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('mk-card')) { e.preventDefault(); openDetail(e.target.dataset.id); }
         });
 
         // ---- new listing ----
@@ -420,6 +556,7 @@
         });
 
         load();
+        loadOrders();
     })();
     </script>
 </body>

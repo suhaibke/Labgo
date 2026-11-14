@@ -8,6 +8,9 @@ const SupportTicket = require('../../models/SupportTicket');
 const Counter = require('../../models/Counter');
 const r2Service = require('../../services/r2Service');
 const market = require('../../services/marketService');
+const MarketOrder = require('../../models/MarketOrder');
+const labNotify = require('../../services/labNotify');
+const notifyLab = (...a) => labNotify.notifyLab(...a).catch(() => {});
 const Banner = require('../../models/Banner');
 const AppSettings = require('../../models/AppSettings');
 
@@ -67,7 +70,7 @@ router.get('/api/market', async (req, res) => {
         ]);
         res.json({ success: true, data: {
             items: list.map((l) => view(l, req.lab._id)),
-            banners: banners.map((b) => ({ id: String(b._id), imageUrl: b.imageUrl })),
+            banners: banners.map((b) => ({ id: String(b._id), imageUrl: b.imageUrl, linkUrl: b.linkUrl || '' })),
             bannerSeconds: settings?.bannerDurationSeconds || 5,
         } });
     } catch (error) {
@@ -143,6 +146,105 @@ router.delete('/api/market/:id', async (req, res) => {
     }
 });
 
+// ---------- store orders (buy a product / ask to buy a lab) ----------
+function orderView(o, labId) {
+    const selling = String(o.sellerLabId) === String(labId);
+    return {
+        id: String(o._id), orderNo: o.orderNo, kind: o.kind, listingId: String(o.listingId), title: o.title, code: o.code, image: o.image,
+        quantity: o.quantity, unitPrice: o.unitPrice, total: o.total, address: o.address, phone: o.phone, note: o.note,
+        status: o.status, role: selling ? 'seller' : 'buyer',
+        // each side sees the other lab
+        otherLab: selling ? o.buyerLabName : o.sellerLabName,
+        createdAt: o.createdAt,
+    };
+}
+
+// What each side may do next. The seller moves the order forward; the buyer
+// can only cancel before the seller starts on it.
+const NEXT = { new: ['preparing', 'cancelled'], preparing: ['shipped', 'cancelled'], shipped: ['delivered'], delivered: [], cancelled: [] };
+function allowedMove(order, labId, to) {
+    const selling = String(order.sellerLabId) === String(labId);
+    if (selling) return (NEXT[order.status] || []).includes(to);
+    return order.status === 'new' && to === 'cancelled';
+}
+
+const STATUS_AR = { preparing: 'قيد التجهيز', shipped: 'تم الشحن', delivered: 'تم التوصيل', cancelled: 'ملغي' };
+
+router.get('/api/market/orders', async (req, res) => {
+    try {
+        const list = await MarketOrder.find({ $or: [{ buyerLabId: req.lab._id }, { sellerLabId: req.lab._id }] }).sort({ createdAt: -1 }).limit(300).lean();
+        const all = list.map((o) => orderView(o, req.lab._id));
+        res.json({ success: true, data: { mine: all.filter((o) => o.role === 'buyer'), incoming: all.filter((o) => o.role === 'seller') } });
+    } catch (error) {
+        console.error('Market orders error:', error);
+        res.status(500).json({ success: false, message: 'Error loading orders' });
+    }
+});
+
+router.post('/api/market/:id/order', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).json({ success: false });
+        const l = await MarketListing.findById(req.params.id).populate('labId', 'name');
+        if (!l || l.approvalStatus !== 'approved' || l.status !== 'active') return res.status(404).json({ success: false, message: 'Not available', code: 'gone' });
+        if (market.isAuction(l)) return res.status(400).json({ success: false, message: 'Auctions take bids, not orders', code: 'auction' });
+        const sellerId = l.labId?._id || l.labId;
+        if (String(sellerId) === String(req.lab._id)) return res.status(400).json({ success: false, message: 'You cannot order your own listing', code: 'own' });
+        const b = req.body || {};
+        const phone = clip(b.phone, 40);
+        if (phone.replace(/\D/g, '').length < 7) return res.status(400).json({ success: false, message: 'Phone number is required', code: 'phone' });
+        const product = l.kind === 'product';
+        const address = clip(b.address, 300);
+        if (product && !address) return res.status(400).json({ success: false, message: 'Address is required', code: 'address' });
+        const quantity = product ? Math.max(1, Math.round(num(b.quantity) || 1)) : 1;
+        if (product) {
+            // take the stock atomically so two labs cannot buy the last piece
+            const taken = await MarketListing.updateOne({ _id: l._id, stock: { $gte: quantity } }, { $inc: { stock: -quantity } });
+            if (!taken.modifiedCount) return res.status(409).json({ success: false, message: 'Not enough in stock', code: 'stock', stock: l.stock });
+        }
+        const order = await MarketOrder.create({
+            orderNo: await Counter.next('marketOrder', 7000),
+            listingId: l._id, kind: product ? 'purchase' : 'interest',
+            buyerLabId: req.lab._id, buyerLabName: req.lab.name || '', sellerLabId: sellerId, sellerLabName: l.labId?.name || '',
+            title: l.title, code: l.code || '', image: (l.images || [])[0] || '',
+            quantity, unitPrice: l.price, total: l.price * quantity, address, phone, note: clip(b.note, 600),
+            createdBy: req.user?._id || null,
+        });
+        await notifyLab(sellerId, {
+            title: product ? `طلب شراء جديد: ${l.title}` : `مهتم بشراء مختبرك: ${l.title}`,
+            body: `${req.lab.name || 'مختبر'} — ${product ? `الكمية ${quantity}، الإجمالي ${order.total.toLocaleString('en-US')} د.ع` : 'يرغب بالشراء'} · ${phone}`,
+            data: { type: 'store_order', orderId: String(order._id) },
+        });
+        res.status(201).json({ success: true, data: orderView(order, req.lab._id) });
+    } catch (error) {
+        console.error('Market order error:', error);
+        res.status(500).json({ success: false, message: 'Error sending the order' });
+    }
+});
+
+router.patch('/api/market/orders/:id', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).json({ success: false });
+        const order = await MarketOrder.findOne({ _id: req.params.id, $or: [{ buyerLabId: req.lab._id }, { sellerLabId: req.lab._id }] });
+        if (!order) return res.status(404).json({ success: false, message: 'Not found' });
+        const to = String(req.body?.status || '');
+        if (!allowedMove(order, req.lab._id, to)) return res.status(400).json({ success: false, message: 'This change is not allowed', code: 'move' });
+        const moved = await MarketOrder.findOneAndUpdate({ _id: order._id, status: order.status }, { $set: { status: to } }, { new: true });
+        if (!moved) return res.status(409).json({ success: false, message: 'The order changed, reload', code: 'race' });
+        // a cancelled purchase gives its pieces back
+        if (to === 'cancelled' && order.kind === 'purchase') await MarketListing.updateOne({ _id: order.listingId }, { $inc: { stock: order.quantity } });
+        const selling = String(order.sellerLabId) === String(req.lab._id);
+        await notifyLab(selling ? order.buyerLabId : order.sellerLabId, {
+            title: `طلب المتجر #${order.orderNo}: ${STATUS_AR[to] || to}`,
+            body: `${order.title} — ${req.lab.name || ''}`,
+            data: { type: 'store_order', orderId: String(order._id) },
+        });
+        res.json({ success: true, data: orderView(moved, req.lab._id) });
+    } catch (error) {
+        console.error('Market order update error:', error);
+        res.status(500).json({ success: false, message: 'Error updating the order' });
+    }
+});
+
 // ---------- support ----------
 router.get('/api/support', async (req, res) => {
     try {
@@ -174,3 +276,4 @@ router.post('/api/support', upload.array('images', 6), async (req, res) => {
 
 module.exports = router;
 module.exports.view = view;
+module.exports.allowedMove = allowedMove;

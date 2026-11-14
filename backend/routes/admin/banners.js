@@ -60,6 +60,12 @@ router.put('/duration', auth.verifyToken, requireAdmin, async (req, res) => {
     }
 });
 
+// Only web links are kept (no javascript: or other schemes).
+function cleanLink(v) {
+    const s = String(v || '').trim().slice(0, 500);
+    return /^https?:\/\/[^\s'"<>]+$/i.test(s) ? s : '';
+}
+
 // Create a new banner slide
 router.post('/', auth.verifyToken, requireAdmin, uploadBannerImage, async (req, res) => {
     try {
@@ -70,6 +76,7 @@ router.post('/', auth.verifyToken, requireAdmin, uploadBannerImage, async (req, 
         const { order, placement } = req.body;
         const banner = new Banner({
             imageUrl: req.file.r2Url,
+            linkUrl: cleanLink(req.body.linkUrl),
             placement: Banner.PLACEMENTS.includes(placement) ? placement : 'home',
             order: order ? Number(order) : 0,
             createdBy: req.user._id,
@@ -94,6 +101,7 @@ router.put('/:id', auth.verifyToken, requireAdmin, uploadBannerImage, async (req
         const { order, isActive, placement } = req.body;
         if (order !== undefined) banner.order = Number(order);
         if (Banner.PLACEMENTS.includes(placement)) banner.placement = placement;
+        if (req.body.linkUrl !== undefined) banner.linkUrl = cleanLink(req.body.linkUrl);
         if (isActive !== undefined) banner.isActive = isActive === true || isActive === 'true';
 
         if (req.file && req.file.r2Url) {

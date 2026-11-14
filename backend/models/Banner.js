@@ -12,6 +12,14 @@ const BannerSchema = new mongoose.Schema({
         enum: ['home', 'lab_store'],
         default: 'home',
     },
+    // Where a tap on the slide goes: a store share link (opens that listing
+    // or section inside the store) or any other address. Empty = no link.
+    linkUrl: {
+        type: String,
+        trim: true,
+        maxlength: 500,
+        default: '',
+    },
     order: {
         type: Number,
         default: 0,
