@@ -44,10 +44,11 @@ router.get('/r/o/:id', async (req, res) => {
 
 // Short link sent to the patient by WhatsApp / SMS.
 router.get('/r/:code', async (req, res, next) => {
-    if (!receipt.CODE_RE.test(req.params.code)) return next();
+    const code = receipt.normalizeCode(req.params.code);
+    if (!code) return next();
     let order = null;
     try {
-        order = await Order.findOne({ resultCode: req.params.code }).select(FIELDS).populate('labId', 'name phone');
+        order = await Order.findOne({ resultCode: code }).select(FIELDS).populate('labId', 'name phone');
     } catch (error) {
         console.error('Short result link error:', error);
     }

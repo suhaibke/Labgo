@@ -149,14 +149,15 @@ async function createWalkInOrder(lab, staffUserId, body = {}) {
 
     const { user, beneficiary } = await resolvePatient(lab, { name, phone: body.phone, gender, birthDate });
 
+    const receiptNo = await Counter.next(`receipt:${lab._id}`, 0);
     const order = new Order({
         patientId: user._id,
         beneficiary: beneficiary || { isForOtherPerson: false },
         labId: lab._id,
         tests,
         qrCode: Order.generateQRCode(),
-        receiptNo: await Counter.next(`receipt:${lab._id}`, 0),
-        resultCode: require('./receiptLinkService').newCode(),
+        receiptNo,
+        resultCode: require('./receiptLinkService').newCode({ receiptNo }),
         location: {
             address: [lab.address, lab.city].filter(Boolean).join(' - ') || lab.name,
             coordinates: {
