@@ -91,3 +91,23 @@ test('new pages: market and support for all staff, supplies for store or finance
     assert.equal(perms.canAccess('/api/supplies', ['finance'], false), true);
     assert.equal(perms.canAccess('/orders/abc/receipt', ['patients'], false), true);
 });
+
+test('results worklist: state, progress and order number per order', () => {
+    const { worklistRow } = require('../helpers/results-worklist');
+    const base = { _id: new mongoose.Types.ObjectId(), patientId: { name: 'Sara', phone: '0770' }, tests: [{ testName: 'CBC' }, { testName: 'TSH' }], receiptNo: 12, status: 'at_lab', createdAt: new Date() };
+    const pending = worklistRow({ ...base });
+    assert.equal(pending.state, 'pending');
+    assert.equal(pending.orderNo, 'V0012');
+    assert.equal(pending.total, 2);
+    const draft = worklistRow({ ...base, urgency: 'urgent', results: { entryStatus: 'draft', values: [{ testName: 'CBC', value: '13' }, { testName: 'TSH', value: '' }] } });
+    assert.equal(draft.state, 'draft');
+    assert.equal(draft.filled, 1);
+    assert.equal(draft.urgent, true);
+    const done = worklistRow({ ...base, status: 'completed', results: { entryStatus: 'approved', reportUrl: 'https://x/r.pdf', values: [] } });
+    assert.equal(done.state, 'approved');
+});
+
+test('the results list is for staff who may enter results', () => {
+    assert.equal(perms.canAccess('/results', ['results'], false), true);
+    assert.equal(perms.canAccess('/api/results', ['patients'], false), false);
+});

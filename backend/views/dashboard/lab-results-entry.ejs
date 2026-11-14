@@ -20,9 +20,9 @@
     %>
 
     <main class="la-main rs-page">
-        <a href="<%= typeof backHref !== 'undefined' && backHref ? backHref : '/lab/orders/' + order._id %>" class="rs-back press-95">
+        <a href="<%= typeof backHref !== 'undefined' && backHref ? backHref : '/lab/results' %>" class="rs-back press-95">
             <svg class="ic flip-rtl"><use href="#i-arrow-left"/></svg>
-            <%= __('results.backToOrder') %>
+            <%= typeof backHref !== 'undefined' && backHref ? __('results.backToOrder') : __('labWeb.rsBack') %>
         </a>
 
         <!-- patient -->

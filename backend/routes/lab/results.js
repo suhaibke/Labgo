@@ -11,6 +11,7 @@ const { decorateOrderWithPatientInfo } = require('../../helpers/order-patient-in
 const { pickRange, classify } = require('../../helpers/result-ranges');
 
 const receiptPrint = require('../../services/receiptPrintService');
+const { worklistRow } = require('../../helpers/results-worklist');
 
 const router = express.Router();
 const patientFields = 'name phone gender birthDate patientNo';
@@ -166,6 +167,45 @@ router.get('/orders/:orderId/receipt', async (req, res) => {
     }
 });
 
+// ---------- results worklist (every order waiting for, or holding, results) ----------
+async function worklist(labId) {
+    const orders = await Order.find({ labId, status: { $in: EDITABLE } })
+        .populate('patientId', patientFields).sort({ createdAt: -1 }).limit(300);
+    const items = orders.map(worklistRow);
+    const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+    return {
+        items,
+        counts: {
+            pending: items.filter((i) => i.state === 'pending').length,
+            draft: items.filter((i) => i.state === 'draft').length,
+            approved: items.filter((i) => i.state === 'approved').length,
+            urgent: items.filter((i) => i.urgent && i.state !== 'approved').length,
+            approvedToday: items.filter((i) => i.state === 'approved' && i.approvedAt && new Date(i.approvedAt) >= startOfDay).length,
+        },
+    };
+}
+
+router.get('/results', async (req, res) => {
+    try {
+        res.render('dashboard/lab-results', {
+            lab: req.lab, user: req.user, title: req.lab.name, ...langOf(req), activeSection: 'results',
+            dataJson: JSON.stringify(await worklist(req.lab._id)).replace(/</g, '\\u003c'),
+        });
+    } catch (error) {
+        console.error('Results list error:', error);
+        res.status(500).render('error', { message: 'Error loading results', error: null });
+    }
+});
+
+router.get('/api/results', async (req, res) => {
+    try {
+        res.json({ success: true, data: await worklist(req.lab._id) });
+    } catch (error) {
+        console.error('Results list error:', error);
+        res.status(500).json({ success: false, message: 'Error loading results' });
+    }
+});
+
 router.get('/orders/:orderId/results', async (req, res) => {
     try {
         const order = await Order.findById(req.params.orderId).populate('patientId', patientFields);
@@ -178,7 +218,7 @@ router.get('/orders/:orderId/results', async (req, res) => {
             user: req.user,
             title: req.lab.name,
             ...langOf(req),
-            activeSection: 'orders',
+            activeSection: 'results',
             order: data.order,
             rows: data.rows,
             editable: EDITABLE.includes(order.status),

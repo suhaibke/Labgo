@@ -14,6 +14,7 @@
     { label: __('labWeb.groupDaily'), items: [
       { id: 'overview', href: '/lab/dashboard', icon: 'layout-dashboard', label: __('navigation.dashboard') },
       { id: 'orders', href: '/lab/orders', icon: 'clipboard-list', label: __('navigation.orders') },
+      { id: 'results', href: '/lab/results', icon: 'file-check', label: __('results.title') },
       { id: 'add-patient', href: '/lab/patients/new', icon: 'user-plus', label: __('labApp.addPatient') },
       { id: 'patient-tests', href: '/lab/patient-tests', icon: 'test-tube', label: __('navigation.patientTests') },
       { id: 'external-transfers', href: '/lab/external-transfers', icon: 'arrow-left-right', label: __('navigation.externalTransfers') },
@@ -34,7 +35,7 @@
     { id: 'settings', also: ['profile', 'users'], href: '/lab/settings', icon: 'settings', label: __('navigation.settings') },
     { id: 'support', href: '/lab/support', icon: 'life-buoy', label: __('labWeb.support') },
   ];
-  const _bottom = ['overview', 'orders', 'add-patient', 'patient-tests', 'settings'];
+  const _bottom = ['overview', 'orders', 'add-patient', 'results', 'settings'];
   // Only pages this account may open (staff permissions). Settings opens the first allowed tab.
   const _can = typeof labCan === 'function' ? labCan : function () { return true; };
   _navEnd.forEach(function (n) {

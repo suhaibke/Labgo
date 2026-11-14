@@ -24,8 +24,8 @@
 
         <div class="la-page-tabs" id="mkTabs" role="tablist">
             <a href="#" data-k="all" class="on"><%= W('kindAll') %></a>
+            <a href="#" data-k="auction"><svg class="ic" style="width:15px;height:15px;margin-inline-end:4px"><use href="#i-gavel"/></svg><%= W('kindAuction') %> <span class="tab-count" id="mkAuctionCount" hidden></span></a>
             <a href="#" data-k="product"><%= W('kindProduct') %></a>
-            <a href="#" data-k="auction"><%= W('kindAuction') %></a>
             <a href="#" data-k="lab_sale"><%= W('kindLabSale') %></a>
             <a href="#" data-k="lab_auction"><%= W('kindLabAuction') %></a>
             <a href="#" data-k="mine"><%= W('myListings') %></a>
@@ -94,6 +94,9 @@
 
     <style>
         html.la .mk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; margin-top: 16px; }
+        html.la .mk-section { margin-top: 24px; }
+        html.la .mk-more { font-size: 13px; font-weight: 600; color: var(--accent); }
+        html.la #mkTabs a { display: inline-flex; align-items: center; }
         html.la .mk-card { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--card-border); border-radius: var(--r-lg); overflow: hidden; text-align: start; box-shadow: var(--shadow-sm); transition: border-color .15s ease, box-shadow .15s ease; }
         html.la .mk-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-md); }
         html.la .mk-img { aspect-ratio: 4 / 3; background: var(--chip-bg); display: grid; place-items: center; color: var(--placeholder); position: relative; }
@@ -130,7 +133,7 @@
 
     <script>
     (function () {
-        var T = <%- JSON.stringify({ product: W('kindProduct'), auction: W('kindAuction'), lab_sale: W('kindLabSale'), lab_auction: W('kindLabAuction'), price: W('price'), startPrice: W('startPrice'), currentBid: W('currentBid'), bids: W('bids'), endsIn: W('endsIn'), ended: W('ended'), pending: W('pendingApproval'), approved: W('approved'), rejected: W('rejected'), youLead: W('youLead'), youWon: W('youWon'), placeBid: W('placeBid'), yourBid: W('yourBid'), minBid: W('minBid'), bidPlaced: W('bidPlaced'), seller: W('seller'), details: W('details'), description: W('description'), category: W('category'), condition: W('condition'), New: W('condNew'), Used: W('condUsed'), stock: W('stock'), unit: W('unit'), code: W('code'), location: W('location'), area: W('area'), equipment: W('equipment'), del: W('delete'), confirmDelete: W('confirmDelete'), deleted: W('deleted'), error: W('error'), sent: W('listingSent'), rejectReason: W('rejectReason'), close: W('cancel') }) %>;
+        var T = <%- JSON.stringify({ product: W('kindProduct'), auction: W('kindAuction'), lab_sale: W('kindLabSale'), lab_auction: W('kindLabAuction'), price: W('price'), startPrice: W('startPrice'), currentBid: W('currentBid'), bids: W('bids'), endsIn: W('endsIn'), ended: W('ended'), pending: W('pendingApproval'), approved: W('approved'), rejected: W('rejected'), youLead: W('youLead'), youWon: W('youWon'), placeBid: W('placeBid'), yourBid: W('yourBid'), minBid: W('minBid'), bidPlaced: W('bidPlaced'), seller: W('seller'), details: W('details'), description: W('description'), category: W('category'), condition: W('condition'), New: W('condNew'), Used: W('condUsed'), stock: W('stock'), unit: W('unit'), code: W('code'), location: W('location'), area: W('area'), equipment: W('equipment'), del: W('delete'), confirmDelete: W('confirmDelete'), deleted: W('deleted'), error: W('error'), sent: W('listingSent'), rejectReason: W('rejectReason'), close: W('cancel'), viewAll: W('viewAll'), secAuctions: W('secAuctions'), secProducts: W('secProducts'), secLabs: W('secLabs') }) %>;
         var items = [], tab = 'all', q = '', files = [];
         var lang = document.documentElement.lang || 'ar';
         function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
@@ -170,9 +173,31 @@
                 return true;
             });
         }
+        function live(l) { return isAuction(l) && l.approvalStatus === 'approved' && left(l); }
+        function section(title, icon, list, k) {
+            if (!list.length) return '';
+            return '<section class="mk-section"><div class="la-section-head"><h2 class="la-h2"><svg class="ic" style="color:var(--accent);margin-inline-end:6px"><use href="#i-' + icon + '"/></svg>' + esc(title) + ' <span class="la-count">' + list.length + '</span></h2>'
+                + (list.length > 4 ? '<a href="#" class="mk-more" data-go="' + k + '">' + esc(T.viewAll) + '</a>' : '') + '</div>'
+                + '<div class="mk-grid" style="margin-top:0">' + list.slice(0, 4).map(card).join('') + '</div></section>';
+        }
         function render() {
             var list = visible();
-            document.getElementById('mkGrid').innerHTML = list.map(card).join('');
+            var n = items.filter(live).length, badge = document.getElementById('mkAuctionCount');
+            badge.hidden = !n; badge.textContent = n;
+            var grid = document.getElementById('mkGrid');
+            if (tab === 'all' && !q) {
+                // home view: live auctions first, then products, then labs
+                var auctions = list.filter(isAuction).sort(function (a, b) { return (left(b) ? 1 : 0) - (left(a) ? 1 : 0) || new Date(a.endsAt) - new Date(b.endsAt); });
+                grid.className = '';
+                grid.innerHTML = section(T.secAuctions, 'gavel', auctions, 'auction')
+                    + section(T.secProducts, 'package', list.filter(function (l) { return l.kind === 'product'; }), 'product')
+                    + section(T.secLabs, 'hospital', list.filter(function (l) { return l.kind === 'lab_sale'; }), 'lab_sale');
+            } else {
+                // the "auctions" tab shows device and lab auctions together
+                if (tab === 'auction') list = items.filter(function (l) { return isAuction(l) && l.approvalStatus === 'approved' && (!q || (l.title + ' ' + (l.lab ? l.lab.name : '')).toLowerCase().indexOf(q) !== -1); });
+                grid.className = 'mk-grid';
+                grid.innerHTML = list.map(card).join('');
+            }
             document.getElementById('mkEmpty').hidden = list.length > 0;
         }
         function load() {
@@ -269,6 +294,8 @@
             });
         }
         document.getElementById('mkGrid').addEventListener('click', function (e) {
+            var more = e.target.closest('[data-go]');
+            if (more) { e.preventDefault(); document.querySelector('#mkTabs a[data-k="' + more.dataset.go + '"]').click(); return; }
             var c = e.target.closest('.mk-card'); if (c) openDetail(c.dataset.id);
         });
 

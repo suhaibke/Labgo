@@ -866,3 +866,6 @@ html.la [hidden] { display: none !important; }
 /* older markup with hard-coded dark text */
 html.la .day-name, html.la .service-linked-test { color: var(--ink) !important; }
 html.la .service-linked-test { background: var(--surface-2) !important; border: 1px solid var(--line) !important; }
+
+/* small counter inside a tab */
+html.la .tab-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; margin-inline-start: 6px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; line-height: 1; }

@@ -29,6 +29,7 @@ const RULES = [
     [/^\/api\/app\/packages$/, ['packages']],
     [/^\/api\/app\/lab$/, ['settings']],
     [/^\/api\/app\/transfers$/, ['patients', 'results']],
+    [/^\/(api\/)?results\/?$/, ['results']],
     [/^\/profile\/?$/, 'any'],
     [/^\/api\/user\/profile$/, 'any'],
     [/^\/(api\/)?orders\/[^/]+\/results(\/approve)?$/, ['results']],

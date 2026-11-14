@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('results.title') %> · <%= title %></title>
+</head>
+
+<body>
+    <%- include('../partials/lab-navbar') %>
+    <% const W = (k) => __('labWeb.' + k); %>
+
+    <main class="la-main screen-enter">
+        <div class="la-page-head">
+            <div>
+                <h1 class="la-h1"><%= __('results.title') %></h1>
+                <p class="la-sub"><%= W('resultsSub') %></p>
+            </div>
+            <div class="la-page-actions">
+                <button type="button" class="la-btn secondary" id="rlRefresh" aria-label="refresh" style="width:38px;padding:0"><svg class="ic"><use href="#i-refresh-cw"/></svg></button>
+                <% if (typeof labCan !== 'function' || labCan('/lab/patients/new')) { %>
+                <a href="/lab/patients/new" class="la-btn"><svg class="ic"><use href="#i-user-plus"/></svg><%= __('labApp.addPatient') %></a>
+                <% } %>
+            </div>
+        </div>
+
+        <section class="la-grid c4" style="margin-top:20px">
+            <div class="la-card la-kpi"><span class="la-kpi-ic"><svg class="ic"><use href="#i-hourglass"/></svg></span><div><b id="kPending">0</b><span><%= W('rsPending') %></span></div></div>
+            <div class="la-card la-kpi"><span class="la-kpi-ic"><svg class="ic"><use href="#i-pencil"/></svg></span><div><b id="kDraft">0</b><span><%= W('rsDraft') %></span></div></div>
+            <div class="la-card la-kpi"><span class="la-kpi-ic"><svg class="ic"><use href="#i-zap"/></svg></span><div><b id="kUrgent">0</b><span><%= W('rsUrgent') %></span></div></div>
+            <div class="la-card la-kpi"><span class="la-kpi-ic"><svg class="ic"><use href="#i-circle-check"/></svg></span><div><b id="kToday">0</b><span><%= W('rsApprovedToday') %></span></div></div>
+        </section>
+
+        <section class="la-card flush" style="margin-top:16px">
+            <div class="la-card-head" style="flex-wrap:wrap">
+                <div class="la-seg" id="rlTabs">
+                    <button type="button" data-s="todo" class="on"><%= W('rsPending') %> <span class="la-count" id="cTodo">0</span></button>
+                    <button type="button" data-s="approved"><%= W('rsApproved') %> <span class="la-count" id="cApproved">0</span></button>
+                    <button type="button" data-s="all"><%= __('labApp.all') %></button>
+                </div>
+                <div class="la-search" style="height:34px;flex:1;min-width:220px;max-width:360px">
+                    <svg class="ic"><use href="#i-search"/></svg>
+                    <input id="rlSearch" placeholder="<%= W('rsSearch') %>" autofocus>
+                </div>
+            </div>
+            <div style="overflow-x:auto">
+                <table class="la-table" id="rlTable">
+                    <thead><tr>
+                        <th><%= W('orderNo') %></th><th><%= W('colPatient') %></th><th><%= W('rsTests') %></th>
+                        <th><%= W('rsProgress') %></th><th><%= W('colStatus') %></th><th><%= W('colTime') %></th><th></th>
+                    </tr></thead>
+                    <tbody id="rlRows"></tbody>
+                </table>
+            </div>
+            <div class="la-empty-box" id="rlEmpty" hidden><svg class="ic"><use href="#i-file-check"/></svg><b><%= W('rsNone') %></b><%= W('rsNoneSub') %></div>
+        </section>
+    </main>
+
+    <style>
+        html.la #rlRows tr { cursor: pointer; }
+        html.la #rlRows tr.urgent td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+        html.la[dir="rtl"] #rlRows tr.urgent td:first-child { box-shadow: inset -3px 0 0 var(--red); }
+        html.la .rl-no { font-weight: 600; font-variant-numeric: tabular-nums; }
+        html.la .rl-tests { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted-2); }
+        html.la .rl-prog { display: flex; align-items: center; gap: 8px; min-width: 110px; }
+        html.la .rl-prog .la-progress { flex: 1; }
+        html.la .rl-prog span { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+        html.la #rlTabs .la-count { margin-inline-start: 4px; height: 18px; min-width: 20px; font-size: 11px; }
+        @media (max-width: 760px) { html.la #rlTable th:nth-child(3), html.la #rlTable td:nth-child(3), html.la #rlTable th:nth-child(6), html.la #rlTable td:nth-child(6) { display: none; } }
+    </style>
+
+    <script>
+    (function () {
+        var T = <%- JSON.stringify({ pending: W('rsPending'), draft: W('rsDraft'), approved: W('rsApproved'), urgent: W('rsUrgent'), enter: W('rsEnter'), cont: W('rsContinue'), view: W('rsView'), error: W('error') }) %>;
+        var data = <%- dataJson %>, tab = 'todo', q = '';
+        var lang = document.documentElement.lang || 'ar';
+        function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+        function when(d) {
+            var x = new Date(d), today = new Date().toDateString() === x.toDateString();
+            try { return today ? x.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : x.toLocaleDateString(lang === 'ar' ? 'ar-IQ' : lang, { month: 'short', day: 'numeric' }); } catch (e) { return ''; }
+        }
+        var pill = { pending: 'amber', draft: 'blue', approved: 'green' };
+        function render() {
+            var c = data.counts;
+            document.getElementById('kPending').textContent = c.pending;
+            document.getElementById('kDraft').textContent = c.draft;
+            document.getElementById('kUrgent').textContent = c.urgent;
+            document.getElementById('kToday').textContent = c.approvedToday;
+            document.getElementById('cTodo').textContent = c.pending + c.draft;
+            document.getElementById('cApproved').textContent = c.approved;
+            var list = data.items.filter(function (i) {
+                if (tab === 'todo' && i.state === 'approved') return false;
+                if (tab === 'approved' && i.state !== 'approved') return false;
+                if (q && (i.name + ' ' + i.orderNo + ' ' + i.phone + ' ' + (i.patientNo || '') + ' ' + i.tests.join(' ')).toLowerCase().indexOf(q) === -1) return false;
+                return true;
+            });
+            // urgent first, then oldest first for work to do; newest first otherwise
+            if (tab === 'todo') list.sort(function (a, b) { return (b.urgent - a.urgent) || (new Date(a.createdAt) - new Date(b.createdAt)); });
+            document.getElementById('rlEmpty').hidden = list.length > 0;
+            document.getElementById('rlTable').style.display = list.length ? '' : 'none';
+            document.getElementById('rlRows').innerHTML = list.map(function (i) {
+                var pct = i.state === 'approved' ? 100 : (i.total ? Math.round(i.filled / i.total * 100) : 0);
+                var label = i.state === 'approved' ? T.view : i.state === 'draft' ? T.cont : T.enter;
+                return '<tr data-id="' + i.id + '" class="' + (i.urgent && i.state !== 'approved' ? 'urgent' : '') + '">'
+                    + '<td><span class="rl-no" dir="ltr">' + esc(i.orderNo) + '</span></td>'
+                    + '<td><b style="font-weight:600">' + esc(i.name) + '</b>' + (i.urgent ? ' <span class="la-pill urgent">' + esc(T.urgent) + '</span>' : '')
+                    + (i.phone ? '<div class="la-muted" dir="ltr" style="font-size:12px;text-align:start">' + esc(i.phone) + '</div>' : '') + '</td>'
+                    + '<td><div class="rl-tests" title="' + esc(i.tests.join(', ')) + '">' + esc(i.tests.join('، ')) + '</div></td>'
+                    + '<td><div class="rl-prog"><div class="la-progress"><div style="width:' + pct + '%"></div></div><span dir="ltr">' + (i.state === 'approved' ? i.total : i.filled) + '/' + i.total + '</span></div></td>'
+                    + '<td><span class="la-pill dot ' + pill[i.state] + '">' + esc(T[i.state]) + '</span></td>'
+                    + '<td class="la-muted">' + when(i.createdAt) + '</td>'
+                    + '<td style="text-align:end"><a class="la-btn sm ' + (i.state === 'approved' ? 'secondary' : '') + '" href="/lab/orders/' + i.id + '/results"><svg class="ic"><use href="#i-' + (i.state === 'approved' ? 'eye' : 'file-text') + '"/></svg>' + esc(label) + '</a></td></tr>';
+            }).join('');
+        }
+        document.getElementById('rlRows').addEventListener('click', function (e) {
+            var tr = e.target.closest('tr'); if (tr && !e.target.closest('a')) window.location.href = '/lab/orders/' + tr.dataset.id + '/results';
+        });
+        document.querySelectorAll('#rlTabs button').forEach(function (b) {
+            b.addEventListener('click', function () { tab = b.dataset.s; document.querySelectorAll('#rlTabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); render(); });
+        });
+        var search = document.getElementById('rlSearch');
+        search.addEventListener('input', function () { q = search.value.trim().toLowerCase(); render(); });
+        // Enter opens the only match: scan a receipt barcode (V0001) to jump straight to entry
+        search.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter') return;
+            var rows = document.querySelectorAll('#rlRows tr');
+            var exact = data.items.filter(function (i) { return i.orderNo.toLowerCase() === q; });
+            if (exact.length === 1) window.location.href = '/lab/orders/' + exact[0].id + '/results';
+            else if (rows.length === 1) window.location.href = '/lab/orders/' + rows[0].dataset.id + '/results';
+        });
+        function reload() {
+            return fetch('/lab/api/results', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); })
+                .then(function (res) { if (res.success) { data = res.data; render(); } }).catch(function () { window.laToast(T.error); });
+        }
+        document.getElementById('rlRefresh').addEventListener('click', reload);
+        setInterval(function () { if (!document.hidden) reload(); }, 60000);
+        render();
+    })();
+    </script>
+</body>
+
+</html>
