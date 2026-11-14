@@ -67,7 +67,8 @@ function toAppPatient(order, base = '') {
         permanent: info.patientNo ? `#${info.patientNo}` : (o.qrCode || ''),
         orderCode: o.qrCode || '',
         orderNo: receipt.receiptCode(o),
-        resultUrl: base ? receipt.resultLink(base, String(o._id)) : '',
+        // the short link when the order has a code, the long signed one otherwise
+        resultUrl: base ? (o.resultCode ? receipt.shortLink(base, o.resultCode) : receipt.resultLink(base, String(o._id))) : '',
     };
 }
 
@@ -99,6 +100,13 @@ async function patientsFor(lab, base = '') {
         .populate('patientId', patientFields)
         .sort({ createdAt: -1 })
         .limit(200);
+    // Orders made before short links existed get their code the first time they are listed.
+    const missing = orders.filter((o) => !o.resultCode);
+    if (missing.length) {
+        for (const o of missing) o.resultCode = receipt.newCode();
+        await Order.bulkWrite(missing.map((o) => ({ updateOne: { filter: { _id: o._id, resultCode: { $exists: false } }, update: { $set: { resultCode: o.resultCode } } } })), { ordered: false })
+            .catch((error) => console.warn('Result codes not saved:', error.message));
+    }
     return orders.map((o) => toAppPatient(o, base));
 }
 

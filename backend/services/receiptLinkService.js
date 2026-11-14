@@ -21,4 +21,18 @@ function resultLink(baseUrl, orderId) {
     return `${String(baseUrl || '').replace(/\/+$/, '')}/r/o/${orderId}?k=${key(orderId)}`;
 }
 
-module.exports = { receiptCode, key, checkKey, resultLink };
+// Short result link for messages (WhatsApp / SMS): /r/<8 characters>.
+// The code is random and stored on the order; letters that look alike are left out.
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+const CODE_RE = /^[A-HJ-NP-Za-km-z2-9]{8}$/;
+function newCode() {
+    const bytes = crypto.randomBytes(8);
+    let out = '';
+    for (let i = 0; i < 8; i++) out += CODE_ALPHABET[bytes[i] % CODE_ALPHABET.length];
+    return out;
+}
+function shortLink(baseUrl, code) {
+    return `${String(baseUrl || '').replace(/\/+$/, '')}/r/${code}`;
+}
+
+module.exports = { receiptCode, key, checkKey, resultLink, newCode, shortLink, CODE_RE };

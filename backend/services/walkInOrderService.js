@@ -156,6 +156,7 @@ async function createWalkInOrder(lab, staffUserId, body = {}) {
         tests,
         qrCode: Order.generateQRCode(),
         receiptNo: await Counter.next(`receipt:${lab._id}`, 0),
+        resultCode: require('./receiptLinkService').newCode(),
         location: {
             address: [lab.address, lab.city].filter(Boolean).join(' - ') || lab.name,
             coordinates: {

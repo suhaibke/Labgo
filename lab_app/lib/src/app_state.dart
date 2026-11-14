@@ -2667,12 +2667,28 @@ class AppState extends ChangeNotifier {
               },
     ];
     final lab = labDisplayName;
+    // The freshest copy of the patient carries the link (the list reloads after approval).
+    var link = p.resultUrl;
+    if (link.isEmpty) {
+      for (final x in patients) {
+        if (x.id == p.id) link = x.resultUrl;
+      }
+    }
     return [
       tr('مرحباً ${p.name}،', 'سڵاو ${p.name}،', 'Hello ${p.name},'),
       tr('نتائج تحاليلك في $lab اكتملت:', 'ئەنجامی پشکنینەکانت لە $lab تەواو بوو:', 'Your test results at $lab are ready:'),
       ...lines,
       '',
-      tr('يرجى الحضور إلى المختبر لاستلام النتيجة. شكراً لاختياركم $lab.', 'تکایە بۆ وەرگرتنی ئەنجام سەردانی تاقیگە بکە. سوپاس.', 'Please come to the lab to collect your result. Thank you for choosing $lab.'),
+      // Short link that opens the report (PDF) once the result is approved.
+      if (link.isNotEmpty) ...[
+        tr('لعرض التقرير الكامل (PDF) افتح الرابط:', 'بۆ بینینی ڕاپۆرتی تەواو (PDF) ئەم بەستەرە بکەرەوە:', 'Open the full report (PDF):'),
+        link,
+        '',
+      ],
+      if (link.isEmpty)
+        tr('يرجى الحضور إلى المختبر لاستلام النتيجة. شكراً لاختياركم $lab.', 'تکایە بۆ وەرگرتنی ئەنجام سەردانی تاقیگە بکە. سوپاس.', 'Please come to the lab to collect your result. Thank you for choosing $lab.')
+      else
+        tr('شكراً لاختياركم $lab.', 'سوپاس بۆ هەڵبژاردنی $lab.', 'Thank you for choosing $lab.'),
       if (labPhone.trim().isNotEmpty) '${tr('للاستفسار', 'پرسیار', 'Questions')}: $labPhone',
     ].join('\n');
   }

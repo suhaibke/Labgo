@@ -92,6 +92,8 @@ const OrderSchema = new mongoose.Schema({
 
     // Lab's own sequential order number (shown as V0001 on the receipt).
     receiptNo: { type: Number, default: null },
+    // Short code of the public result link (/r/<code>) sent to the patient.
+    resultCode: { type: String, default: undefined },
 
     // QR Code for nurse to scan at patient location
     qrCode: {
@@ -564,6 +566,7 @@ const OrderSchema = new mongoose.Schema({
 });
 
 // Indexes for better query performance
+OrderSchema.index({ resultCode: 1 }, { unique: true, sparse: true });
 OrderSchema.index({ patientId: 1, createdAt: -1 });
 OrderSchema.index({ labId: 1, status: 1 });
 OrderSchema.index({ nurseId: 1, status: 1 });

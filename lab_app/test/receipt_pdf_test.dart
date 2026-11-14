@@ -20,4 +20,23 @@ void main() {
     final rep = await buildResultReportPdf(app, p);
     expect(rep.length, greaterThan(1000));
   });
+
+  test('the WhatsApp / SMS message carries the short result link', () {
+    SharedPreferences.setMockInitialValues({});
+    final app = AppState();
+    const base = Patient(
+      id: 'x2', name: 'Omar', age: '30Y', gender: 'Male', phone: '', tests: ['CBC'], sample: 'Blood',
+      urgency: 'Normal', notes: '', status: 'Completed', time: '10:00', price: 15000, doctor: '',
+      mode: 'B2C', results: {'CBC': '13'}, permanent: 'P-2',
+    );
+    expect(app.resultMessage(base).contains('/r/'), isFalse);
+    const linked = Patient(
+      id: 'x3', name: 'Omar', age: '30Y', gender: 'Male', phone: '', tests: ['CBC'], sample: 'Blood',
+      urgency: 'Normal', notes: '', status: 'Completed', time: '10:00', price: 15000, doctor: '',
+      mode: 'B2C', results: {'CBC': '13'}, permanent: 'P-3', resultUrl: 'https://labgo.test/r/qB4aJimx',
+    );
+    final msg = app.resultMessage(linked);
+    expect(msg, contains('https://labgo.test/r/qB4aJimx'));
+    expect(msg, contains('PDF'));
+  });
 }
