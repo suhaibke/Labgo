@@ -1900,6 +1900,15 @@
     "secAuctions": "Devam eden açık artırmalar",
     "secProducts": "Ürünler",
     "secLabs": "Satılık laboratuvarlar",
-    "viewAll": "Tümünü gör"
+    "viewAll": "Tümünü gör",
+    "bn1Title": "Laboratuvarlar için LabGo mağazası",
+    "bn1Sub": "Cihaz ve malzemeleri doğrudan laboratuvarlar arasında alın satın",
+    "bn1Cta": "Ürünlere göz at",
+    "bn2Title": "Açık artırma",
+    "bn2Sub": "Diğer laboratuvarların cihaz ve laboratuvarlarına teklif verin",
+    "bn2Cta": "Artırmaları aç",
+    "bn3Title": "Cihazlarınızı veya laboratuvarınızı satın",
+    "bn3Sub": "İlan ekleyin; yönetici onayından sonra görünür",
+    "bn3Cta": "İlan ekle"
   }
 }

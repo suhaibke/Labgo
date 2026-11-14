@@ -2170,6 +2170,15 @@
     "secAuctions": "Live auctions",
     "secProducts": "Products",
     "secLabs": "Labs for sale",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "bn1Title": "LabGo store for labs",
+    "bn1Sub": "Buy and sell devices and supplies directly between labs",
+    "bn1Cta": "Browse products",
+    "bn2Title": "Auctions",
+    "bn2Sub": "Bid on devices and labs listed by other labs",
+    "bn2Cta": "Open auctions",
+    "bn3Title": "Sell your devices or your lab",
+    "bn3Sub": "Add a listing; labs see it after admin approval",
+    "bn3Cta": "Add listing"
   }
 }

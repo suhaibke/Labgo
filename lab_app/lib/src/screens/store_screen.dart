@@ -145,10 +145,20 @@ class _StoreScreenState extends State<StoreScreen> {
         hint: app.tr('ابحث بالاسم أو الكود أو المختبر…', 'بگەڕێ…', 'Search by name, code or lab…'),
         onChanged: (v) => setState(() => search = v),
       ),
-      if (app.storeBanners.isNotEmpty) ...[
-        const SizedBox(height: 12),
-        _StoreBanner(images: app.storeBanners, seconds: app.storeBannerSeconds),
-      ],
+      const SizedBox(height: 12),
+      _StoreBanner(
+        images: app.storeBanners,
+        seconds: app.storeBannerSeconds,
+        // Built-in slides, shown until the admin uploads store banners.
+        fallback: [
+          _Slide(app.tr('متجر LabGo للمختبرات', 'فرۆشگای LabGo', 'LabGo store for labs'), app.tr('بيع واشترِ الأجهزة والمواد مباشرة بين المختبرات', 'ئامێر و کەرەستە لە نێوان تاقیگەکان بکڕە و بفرۆشە', 'Buy and sell devices and supplies between labs'),
+              app.tr('تصفح المنتجات', 'بەرهەمەکان', 'Browse products'), 'Package', pal.accent, () => setState(() => category = 'All')),
+          _Slide(app.tr('المزاد', 'مزایدە', 'Auction'), app.tr('زايد على أجهزة ومختبرات معروضة من مختبرات أخرى', 'نرخ بدە لەسەر ئامێر و تاقیگەکان', 'Bid on devices and labs listed by other labs'),
+              app.tr('افتح المزاد', 'کردنەوەی مزایدە', 'Open auctions'), 'Gavel', const Color(0xFF17191E), () => go('auction')),
+          _Slide(app.tr('اعرض أجهزتك أو مختبرك للبيع', 'ئامێرەکانت یان تاقیگەکەت بفرۆشە', 'Sell your devices or your lab'), app.tr('أضف إعلانك ويظهر للمختبرات بعد موافقة الإدارة', 'دوای ڕەزامەندی بەڕێوەبەر دەردەکەوێت', 'Add a listing; labs see it after admin approval'),
+              app.tr('إضافة إعلان', 'زیادکردن', 'Add listing'), 'Plus', const Color(0xFF2563EB), () => go('add')),
+        ],
+      ),
       const SizedBox(height: 12),
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -1152,11 +1162,21 @@ class _AddListingState extends State<_AddListing> {
 }
 
 
-/// The store's banner: slides uploaded by the LabGo admin, changing on a timer.
+/// One built-in banner slide: title, line, button and what the button does.
+class _Slide {
+  final String title, sub, cta, icon;
+  final Color color;
+  final VoidCallback onTap;
+  const _Slide(this.title, this.sub, this.cta, this.icon, this.color, this.onTap);
+}
+
+/// The store's banner: slides uploaded by the LabGo admin, changing on a
+/// timer. With none uploaded yet, the built-in [fallback] slides show instead.
 class _StoreBanner extends StatefulWidget {
   final List<String> images;
+  final List<_Slide> fallback;
   final int seconds;
-  const _StoreBanner({required this.images, required this.seconds});
+  const _StoreBanner({required this.images, required this.seconds, required this.fallback});
 
   @override
   State<_StoreBanner> createState() => _StoreBannerState();
@@ -1167,13 +1187,25 @@ class _StoreBannerState extends State<_StoreBanner> {
   Timer? _timer;
   int at = 0;
 
+  int get _count => widget.images.isNotEmpty ? widget.images.length : widget.fallback.length;
+
   @override
   void initState() {
     super.initState();
     _timer = Timer.periodic(Duration(seconds: widget.seconds), (_) {
-      if (!mounted || widget.images.length < 2 || !_page.hasClients) return;
-      _page.animateToPage((at + 1) % widget.images.length, duration: const Duration(milliseconds: 450), curve: Curves.easeOutCubic);
+      if (!mounted || _count < 2 || !_page.hasClients) return;
+      _page.animateToPage((at + 1) % _count, duration: const Duration(milliseconds: 450), curve: Curves.easeOutCubic);
     });
+  }
+
+  @override
+  void didUpdateWidget(_StoreBanner old) {
+    super.didUpdateWidget(old);
+    // Admin banners arrived (or were removed): start again from the first slide.
+    if (old.images.isEmpty != widget.images.isEmpty && _page.hasClients) {
+      at = 0;
+      _page.jumpToPage(0);
+    }
   }
 
   @override
@@ -1183,9 +1215,48 @@ class _StoreBannerState extends State<_StoreBanner> {
     super.dispose();
   }
 
+  Widget _text(BuildContext context, _Slide s) => Container(
+        color: s.color,
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(s.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: ts(context, 18, weight: w900, color: Colors.white, height: 1.25)),
+                  const SizedBox(height: 4),
+                  Text(s.sub, maxLines: 2, overflow: TextOverflow.ellipsis, style: ts(context, 12.5, color: Colors.white.withValues(alpha: .9), height: 1.4)),
+                  const SizedBox(height: 10),
+                  Tap(
+                    onTap: s.onTap,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(999)),
+                      child: Text(s.cta, style: ts(context, 12.5, weight: w700, color: const Color(0xFF111111))),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 84,
+              height: 84,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: .18), borderRadius: BorderRadius.circular(16)),
+              child: LIcon(s.icon, size: 40, color: Colors.white),
+            ),
+          ],
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final pal = context.pal;
+    final custom = widget.images.isNotEmpty;
+    final rtl = Directionality.of(context);
     return Column(
       children: [
         ClipRRect(
@@ -1196,24 +1267,26 @@ class _StoreBannerState extends State<_StoreBanner> {
               textDirection: TextDirection.ltr,
               child: PageView.builder(
                 controller: _page,
-                itemCount: widget.images.length,
+                itemCount: _count,
                 onPageChanged: (i) => setState(() => at = i),
-                itemBuilder: (_, i) => Image.network(
-                  widget.images[i],
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => ColoredBox(color: pal.chipBg, child: Center(child: LIcon('ImagePlus', size: 28, color: pal.muted))),
-                  loadingBuilder: (_, child, p) => p == null ? child : ColoredBox(color: pal.chipBg),
-                ),
+                itemBuilder: (_, i) => custom
+                    ? Image.network(
+                        widget.images[i],
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => ColoredBox(color: pal.chipBg, child: Center(child: LIcon('ImagePlus', size: 28, color: pal.muted))),
+                        loadingBuilder: (_, child, p) => p == null ? child : ColoredBox(color: pal.chipBg),
+                      )
+                    : Directionality(textDirection: rtl, child: _text(context, widget.fallback[i])),
               ),
             ),
           ),
         ),
-        if (widget.images.length > 1) ...[
+        if (_count > 1) ...[
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              for (var i = 0; i < widget.images.length; i++)
+              for (var i = 0; i < _count; i++)
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   margin: const EdgeInsets.symmetric(horizontal: 3),
