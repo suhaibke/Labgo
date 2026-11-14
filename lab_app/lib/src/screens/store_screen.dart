@@ -13,9 +13,11 @@ import '../ui.dart';
 /// LabGo admin approves it; the lab sees its own listings with their status.
 
 class StoreOrder {
-  final String id, productName, code, address, phone, createdAt;
-  final int quantity, total;
-  int step;
+  final String id, kind, productName, code, address, phone, createdAt, otherLab, note;
+  final int orderNo, quantity, total;
+  /// buyer = this lab bought it; seller = another lab ordered this lab's listing.
+  final String role;
+  String status; // new | preparing | shipped | delivered | cancelled
   StoreOrder({
     required this.id,
     required this.productName,
@@ -25,8 +27,33 @@ class StoreOrder {
     required this.address,
     required this.phone,
     required this.createdAt,
-    this.step = 0,
+    this.orderNo = 0,
+    this.kind = 'purchase',
+    this.otherLab = '',
+    this.note = '',
+    this.role = 'buyer',
+    this.status = 'new',
   });
+
+  static StoreOrder fromJson(Map<String, dynamic> j) {
+    final d = DateTime.tryParse('${j['createdAt'] ?? ''}')?.toLocal();
+    return StoreOrder(
+      id: '${j['id'] ?? ''}',
+      orderNo: (j['orderNo'] as num?)?.toInt() ?? 0,
+      kind: '${j['kind'] ?? 'purchase'}',
+      productName: '${j['title'] ?? ''}',
+      code: '${j['code'] ?? ''}',
+      quantity: (j['quantity'] as num?)?.toInt() ?? 1,
+      total: (j['total'] as num?)?.toInt() ?? 0,
+      address: '${j['address'] ?? ''}',
+      phone: '${j['phone'] ?? ''}',
+      note: '${j['note'] ?? ''}',
+      otherLab: '${j['otherLab'] ?? ''}',
+      role: '${j['role'] ?? 'buyer'}',
+      status: '${j['status'] ?? 'new'}',
+      createdAt: d == null ? '' : '${d.day}/${d.month}/${d.year}',
+    );
+  }
 }
 
 String money(int v) => v.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
@@ -148,6 +175,16 @@ class _StoreScreenState extends State<StoreScreen> {
       const SizedBox(height: 12),
       _StoreBanner(
         images: app.storeBanners,
+        onTapImage: (i) {
+          final link = i < app.storeBannerLinks.length ? app.storeBannerLinks[i] : '';
+          if (link.isEmpty) return;
+          final it = app.listingForLink(link);
+          if (it != null) {
+            go('detail', it: it);
+          } else {
+            app.openExternalLink(link);
+          }
+        },
         seconds: app.storeBannerSeconds,
         // Built-in slides, shown until the admin uploads store banners.
         fallback: [
@@ -167,7 +204,7 @@ class _StoreScreenState extends State<StoreScreen> {
             _pill(context, 'Plus', app.d('storeAdd'), () => go('add'), filled: true),
             _pill(context, 'Gavel', '${app.tr('المزاد', 'مزایدە', 'Auction')}${auctions.isEmpty ? '' : ' (${auctions.length})'}', () => go('auction')),
             _pill(context, 'Package', '${app.tr('معروضاتي', 'بەرهەمەکانم', 'My listings')}${mineCount > 0 ? ' ($mineCount)' : ''}', () => go('mine')),
-            _pill(context, 'ShoppingCart', '${app.tr('طلباتي', 'داواکارییەکانم', 'My Orders')}${app.storeOrders.isEmpty ? '' : ' (${app.storeOrders.length})'}', () => go('orders')),
+            _pill(context, 'ShoppingCart', '${app.tr('طلباتي', 'داواکارییەکانم', 'My Orders')}${app.storeOrders.length + app.storeIncoming.length == 0 ? '' : ' (${app.storeOrders.length + app.storeIncoming.length})'}', () => go('orders')),
           ],
         ),
       ),
@@ -396,24 +433,13 @@ class _StoreScreenState extends State<StoreScreen> {
       ),
       const SizedBox(height: 12),
       Tap(
-        onTap: () {
+        onTap: () async {
           if (_address.text.trim().isEmpty || _phone.text.trim().isEmpty) {
             app.toast(app.tr('أكمل العنوان ورقم الهاتف', 'ناونیشان و ژمارە پڕ بکەرەوە', 'Fill in the address and phone'));
             return;
           }
-          final n = DateTime.now();
-          app.addStoreOrder(StoreOrder(
-            id: '${n.millisecondsSinceEpoch}',
-            productName: p.title,
-            code: p.code,
-            quantity: qty,
-            total: p.price * qty,
-            address: _address.text.trim(),
-            phone: _phone.text.trim(),
-            createdAt: '${n.day}/${n.month}/${n.year}',
-          ));
-          app.toast(app.tr('تم إرسال الطلب ✓', 'داواکاری نێردرا ✓', 'Order sent ✓'));
-          go('orders');
+          final ok = await app.placeStoreOrder(p, quantity: qty, address: _address.text.trim(), phone: _phone.text.trim());
+          if (ok && mounted) go('orders');
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -429,35 +455,84 @@ class _StoreScreenState extends State<StoreScreen> {
   List<Widget> _orders(BuildContext context) {
     final app = context.app;
     final pal = app.palette;
-    final steps = [
-      app.tr('تم الاستلام', 'وەرگیرا', 'Received'),
-      app.tr('قيد التجهيز', 'ئامادەکردن', 'Preparing'),
-      app.tr('تم الشحن', 'نێردرا', 'Shipped'),
-      app.tr('تم التوصيل', 'گەیەندرا', 'Delivered'),
-    ];
+    String label(String st) => switch (st) {
+          'preparing' => app.tr('قيد التجهيز', 'ئامادەکردن', 'Preparing'),
+          'shipped' => app.tr('تم الشحن', 'نێردرا', 'Shipped'),
+          'delivered' => app.tr('تم التوصيل', 'گەیەندرا', 'Delivered'),
+          'cancelled' => app.tr('ملغي', 'هەڵوەشێنرایەوە', 'Cancelled'),
+          _ => app.tr('جديد', 'نوێ', 'New'),
+        };
+    String act(String st) => switch (st) {
+          'preparing' => app.tr('بدء التجهيز', 'دەستپێکردن', 'Start preparing'),
+          'shipped' => app.tr('تم الشحن', 'نێردرا', 'Mark shipped'),
+          'delivered' => app.tr('تم التوصيل', 'گەیەندرا', 'Mark delivered'),
+          _ => app.tr('إلغاء', 'هەڵوەشاندنەوە', 'Cancel'),
+        };
+    // The seller moves an order forward; the buyer can only cancel a new one.
+    List<String> next(StoreOrder o) => o.role == 'seller'
+        ? switch (o.status) { 'new' => ['preparing', 'cancelled'], 'preparing' => ['shipped', 'cancelled'], 'shipped' => ['delivered'], _ => <String>[] }
+        : (o.status == 'new' ? ['cancelled'] : <String>[]);
+    Widget card(StoreOrder o) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: CardBox(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: Text('${o.orderNo > 0 ? '#${o.orderNo}  ' : ''}${o.productName}', style: ts(context, 15, weight: w700))),
+                    _Badge(label(o.status), o.status == 'cancelled' ? pal.muted : pal.accent, o.status == 'cancelled' ? pal.chipBg : pal.softAccent),
+                  ],
+                ),
+                if (o.otherLab.isNotEmpty)
+                  Text('${o.role == 'seller' ? app.tr('المشتري', 'کڕیار', 'Buyer') : app.tr('البائع', 'فرۆشیار', 'Seller')}: ${o.otherLab}', style: ts(context, 12, color: pal.muted)),
+                Text(
+                  '${o.kind == 'interest' ? app.tr('طلب شراء مختبر', 'داواکاری کڕینی تاقیگە', 'Lab purchase request') : '${app.tr('الكمية', 'بڕ', 'Qty')}: ${o.quantity}'}${o.createdAt.isEmpty ? '' : ' • ${o.createdAt}'}',
+                  style: ts(context, 12, color: pal.muted),
+                ),
+                if (o.role == 'seller') Text('${o.phone}${o.address.isEmpty ? '' : ' • ${o.address}'}', style: ts(context, 12, color: pal.muted)),
+                Text('${money(o.total)} IQD', style: ts(context, 14, weight: w700)),
+                if (next(o).isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      for (final st in next(o))
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 8),
+                          child: Tap(
+                            onTap: () => app.moveStoreOrder(o, st),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: st == 'cancelled' ? pal.chipBg : pal.accent,
+                                borderRadius: BorderRadius.circular(999),
+                                border: st == 'cancelled' ? Border.all(color: pal.cardBorder) : null,
+                              ),
+                              child: Text(act(st), style: ts(context, 12.5, weight: w700, color: st == 'cancelled' ? const Color(0xFFC81E1E) : Colors.white)),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
     return [
       const SizedBox(height: 4),
       Text(app.tr('طلباتي', 'داواکارییەکانم', 'My Orders'), style: ts(context, 26, weight: w700, height: 1.25)),
       const SizedBox(height: 12),
-      for (final o in app.storeOrders) ...[
-        CardBox(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(child: Text(o.productName, style: ts(context, 15, weight: w700))),
-                  _Badge(steps[o.step], pal.accent, pal.softAccent),
-                ],
-              ),
-              Text('${o.code.isEmpty ? '' : '${o.code} • '}${app.tr('الكمية', 'بڕ', 'Qty')}: ${o.quantity} • ${o.createdAt}', style: ts(context, 12, color: pal.muted)),
-              Text('${money(o.total)} IQD', style: ts(context, 14, weight: w700)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
+      if (app.storeIncoming.isNotEmpty) ...[
+        _sectionTitle(context, app.tr('طلبات واردة لي', 'داواکارییە هاتووەکان', 'Orders I received'), app.storeIncoming.length),
+        const SizedBox(height: 8),
+        for (final o in app.storeIncoming) card(o),
+        const SizedBox(height: 6),
+        _sectionTitle(context, app.tr('مشترياتي', 'کڕینەکانم', 'My purchases'), app.storeOrders.length),
+        const SizedBox(height: 8),
       ],
-      if (app.storeOrders.isEmpty) _empty(context, app.tr('لا توجد طلبات بعد', 'هێشتا داواکاری نییە', 'No orders yet')),
+      for (final o in app.storeOrders) card(o),
+      if (app.storeOrders.isEmpty && app.storeIncoming.isEmpty) _empty(context, app.tr('لا توجد طلبات بعد', 'هێشتا داواکاری نییە', 'No orders yet')),
     ];
   }
 }
@@ -557,6 +632,7 @@ class _ListingCard extends StatelessWidget {
               children: [
                 _Thumb(item: m, size: double.infinity, height: 160, radius: 0),
                 PositionedDirectional(top: 10, start: 10, child: _Badge(kindLabel(app, m.kind), Colors.white, Colors.black.withValues(alpha: .6))),
+                if (m.approved) PositionedDirectional(top: 8, end: 8, child: _ShareButton(item: m)),
                 if (m.images.length + m.localImages.length > 1)
                   PositionedDirectional(
                     bottom: 10,
@@ -629,6 +705,7 @@ class _AuctionCard extends StatelessWidget {
               children: [
                 _Thumb(item: item, size: double.infinity, height: 130, radius: 0),
                 PositionedDirectional(top: 8, end: 8, child: CountdownRing(item: item, size: 50, dark: true)),
+                if (item.approved) PositionedDirectional(top: 8, start: 8, child: _ShareButton(item: item)),
               ],
             ),
             Padding(
@@ -837,7 +914,13 @@ class _DetailState extends State<_Detail> {
           ],
         ),
         const SizedBox(height: 6),
-        Text(m.title, style: ts(context, 24, weight: w700, height: 1.25)),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: Text(m.title, style: ts(context, 24, weight: w700, height: 1.25))),
+            if (m.approved) ...[const SizedBox(width: 8), _ShareButton(item: m)],
+          ],
+        ),
         if (m.labName.isNotEmpty) Text(m.labName, style: ts(context, 13, color: pal.muted)),
         const SizedBox(height: 10),
         if (m.isAuction)
@@ -931,7 +1014,7 @@ class _DetailState extends State<_Detail> {
           )
         else if (!m.mine && m.approved && m.kind == 'lab_sale')
           Tap(
-            onTap: () => app.toast(app.tr('تم إرسال طلبك — سيتواصل معك فريق LabGo', 'داواکارییەکەت نێردرا', 'Request sent — the LabGo team will contact you')),
+            onTap: () => app.placeStoreOrder(m, phone: app.labPhone),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 16),
               alignment: Alignment.center,
@@ -1176,7 +1259,8 @@ class _StoreBanner extends StatefulWidget {
   final List<String> images;
   final List<_Slide> fallback;
   final int seconds;
-  const _StoreBanner({required this.images, required this.seconds, required this.fallback});
+  final void Function(int index) onTapImage;
+  const _StoreBanner({required this.images, required this.seconds, required this.fallback, required this.onTapImage});
 
   @override
   State<_StoreBanner> createState() => _StoreBannerState();
@@ -1270,13 +1354,19 @@ class _StoreBannerState extends State<_StoreBanner> {
                 itemCount: _count,
                 onPageChanged: (i) => setState(() => at = i),
                 itemBuilder: (_, i) => custom
-                    ? Image.network(
-                        widget.images[i],
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => ColoredBox(color: pal.chipBg, child: Center(child: LIcon('ImagePlus', size: 28, color: pal.muted))),
-                        loadingBuilder: (_, child, p) => p == null ? child : ColoredBox(color: pal.chipBg),
+                    ? GestureDetector(
+                        onTap: () => widget.onTapImage(i),
+                        child: Image.network(
+                          widget.images[i],
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => ColoredBox(color: pal.chipBg, child: Center(child: LIcon('ImagePlus', size: 28, color: pal.muted))),
+                          loadingBuilder: (_, child, p) => p == null ? child : ColoredBox(color: pal.chipBg),
+                        ),
                       )
-                    : Directionality(textDirection: rtl, child: _text(context, widget.fallback[i])),
+                    : GestureDetector(
+                        onTap: widget.fallback[i].onTap,
+                        child: Directionality(textDirection: rtl, child: _text(context, widget.fallback[i])),
+                      ),
               ),
             ),
           ),
@@ -1298,6 +1388,29 @@ class _StoreBannerState extends State<_StoreBanner> {
           ),
         ],
       ],
+    );
+  }
+}
+
+
+/// Round share button on a listing: copies its share link.
+class _ShareButton extends StatelessWidget {
+  final MarketItem item;
+  const _ShareButton({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    return Tap(
+      onTap: () => app.shareListing(item),
+      scale: .9,
+      child: Container(
+        width: 36,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Color(0x33000000), blurRadius: 6, offset: Offset(0, 2))]),
+        child: const LIcon('Share2', size: 16, color: Color(0xFF111111)),
+      ),
     );
   }
 }

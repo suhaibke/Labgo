@@ -176,6 +176,14 @@ class LabApi {
   Future<Map<String, dynamic>> addListing(Map<String, String> fields, List<List<int>> images) => sendForm('/lab/api/market', fields, images);
   Future<Map<String, dynamic>> bid(String id, int amount) => _data('POST', '/lab/api/market/$id/bid', {'amount': amount});
 
+  /// Public share link of a store listing (also what a banner link points to).
+  String shareUrl(String id) => _uri('/m/$id').toString();
+
+  // ---- store orders between labs ----
+  Future<Map<String, dynamic>> marketOrders() => _data('GET', '/lab/api/market/orders');
+  Future<Map<String, dynamic>> orderListing(String id, Map<String, dynamic> body) => _data('POST', '/lab/api/market/$id/order', body);
+  Future<Map<String, dynamic>> moveMarketOrder(String id, String status) => _data('PATCH', '/lab/api/market/orders/$id', {'status': status});
+
   Future<void> uploadLabLogo(List<int> bytes) => uploadImage('/lab/api/profile/logo', 'logo', bytes, 'logo.jpg');
   Future<void> uploadUserPhoto(List<int> bytes) => uploadImage('/api/auth/profile-picture', 'profilePicture', bytes, 'photo.jpg');
 

@@ -928,13 +928,16 @@ class AppState extends ChangeNotifier {
   bool storeOpen = false;
   /// Approved listings of every lab plus this lab's own (any status).
   List<MarketItem> marketItems = [];
-  final List<StoreOrder> storeOrders = [];
+  /// Store orders: what this lab bought, and orders other labs placed on its listings.
+  List<StoreOrder> storeOrders = [];
+  List<StoreOrder> storeIncoming = [];
 
   void openStore() {
     storeOpen = true;
     notificationsOpen = false;
     notifyListeners();
     loadMarket();
+    loadStoreOrders();
   }
 
   void closeStore() {
@@ -944,6 +947,8 @@ class AppState extends ChangeNotifier {
 
   /// Banner slides at the top of the store (uploaded by the LabGo admin).
   List<String> storeBanners = [];
+  /// Where a tap on each banner goes ('' = nowhere), same order as [storeBanners].
+  List<String> storeBannerLinks = [];
   int storeBannerSeconds = 5;
 
   Future<void> loadMarket() async {
@@ -951,7 +956,9 @@ class AppState extends ChangeNotifier {
     try {
       final data = await LabApi.instance.market();
       marketItems = [for (final j in (data['items'] as List? ?? const [])) MarketItem.fromJson(Map<String, dynamic>.from(j as Map))];
-      storeBanners = [for (final b in (data['banners'] as List? ?? const [])) '${(b as Map)['imageUrl'] ?? ''}'].where((u) => u.isNotEmpty).toList();
+      final slides = [for (final b in (data['banners'] as List? ?? const [])) Map<String, dynamic>.from(b as Map)].where((b) => '${b['imageUrl'] ?? ''}'.isNotEmpty).toList();
+      storeBanners = [for (final b in slides) '${b['imageUrl']}'];
+      storeBannerLinks = [for (final b in slides) '${b['linkUrl'] ?? ''}'];
       storeBannerSeconds = ((data['bannerSeconds'] as num?) ?? 5).toInt().clamp(2, 30);
       notifyListeners();
     } catch (_) {}
@@ -991,9 +998,86 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void addStoreOrder(StoreOrder o) {
-    storeOrders.insert(0, o);
-    notifyListeners();
+  Future<void> loadStoreOrders() async {
+    if (!LabApi.enabled) return;
+    try {
+      final data = await LabApi.instance.marketOrders();
+      storeOrders = [for (final j in (data['mine'] as List? ?? const [])) StoreOrder.fromJson(Map<String, dynamic>.from(j as Map))];
+      storeIncoming = [for (final j in (data['incoming'] as List? ?? const [])) StoreOrder.fromJson(Map<String, dynamic>.from(j as Map))];
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  /// Buys a product (or asks to buy a lab for sale). The order goes to the
+  /// selling lab, which is notified and moves it through the steps.
+  Future<bool> placeStoreOrder(MarketItem item, {int quantity = 1, String address = '', required String phone, String note = ''}) async {
+    try {
+      if (LabApi.enabled) {
+        final saved = await LabApi.instance.orderListing(item.id, {'quantity': quantity, 'address': address, 'phone': phone, 'note': note});
+        storeOrders = [StoreOrder.fromJson(saved), ...storeOrders];
+        loadMarket();
+      } else {
+        final n = DateTime.now();
+        storeOrders = [
+          StoreOrder(id: '${n.millisecondsSinceEpoch}', orderNo: 7000 + storeOrders.length + 1, kind: item.kind == 'product' ? 'purchase' : 'interest', productName: item.title, code: item.code,
+              quantity: quantity, total: item.price * quantity, address: address, phone: phone, createdAt: '${n.day}/${n.month}/${n.year}', otherLab: item.labName),
+          ...storeOrders,
+        ];
+      }
+      notifyListeners();
+      toast(tr('تم إرسال الطلب للمختبر البائع ✓', 'داواکاری نێردرا بۆ فرۆشیار ✓', 'Order sent to the selling lab ✓'));
+      return true;
+    } on ApiError catch (e) {
+      toast(e.code == 'stock' ? tr('الكمية المطلوبة غير متوفرة', 'ئەم بڕە بەردەست نییە', 'Not enough in stock') : e.message);
+      return false;
+    } catch (_) {
+      toast(tr('تعذر إرسال الطلب، تحقق من الاتصال', 'داواکاری نەنێردرا', 'Could not send the order, check the connection'));
+      return false;
+    }
+  }
+
+  /// Seller: next step. Buyer: cancel a new order.
+  Future<void> moveStoreOrder(StoreOrder o, String status) async {
+    try {
+      if (LabApi.enabled) await LabApi.instance.moveMarketOrder(o.id, status);
+      o.status = status;
+      notifyListeners();
+      if (LabApi.enabled) loadStoreOrders();
+    } on ApiError catch (e) {
+      toast(e.message);
+    } catch (_) {
+      toast(tr('تعذر التحديث', 'نوێ نەکرایەوە', 'Could not update'));
+    }
+  }
+
+  /// Copies the listing's share link (paste it in WhatsApp, or in a banner's link).
+  Future<void> shareListing(MarketItem m) async {
+    final url = LabApi.enabled ? LabApi.instance.shareUrl(m.id) : 'https://labgo-iq.com/m/${m.id}';
+    await Clipboard.setData(ClipboardData(text: '${m.title}\n$url'));
+    HapticFeedback.selectionClick();
+    toast(tr('تم نسخ رابط المشاركة ✓', 'بەستەری هاوبەشکردن کۆپی کرا ✓', 'Share link copied ✓'));
+  }
+
+  /// The listing a store link points to (share link /m/<id> or ?item=<id>), if it is loaded.
+  MarketItem? listingForLink(String link) {
+    final u = Uri.tryParse(link.trim());
+    if (u == null) return null;
+    final m = RegExp(r'/m/([a-fA-F0-9]{24})$').firstMatch(u.path);
+    final id = m?.group(1) ?? u.queryParameters['item'];
+    if (id == null) return null;
+    for (final it in marketItems) {
+      if (it.id == id) return it;
+    }
+    return null;
+  }
+
+  /// A banner link that is not a store listing opens in the browser.
+  Future<void> openExternalLink(String link) async {
+    final u = Uri.tryParse(link.trim());
+    if (u == null || !(u.scheme == 'http' || u.scheme == 'https')) return;
+    try {
+      await launchUrl(u, mode: LaunchMode.externalApplication);
+    } catch (_) {}
   }
 
   void selectTab(String id) {
