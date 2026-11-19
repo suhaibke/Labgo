@@ -1468,6 +1468,33 @@ class AppState extends ChangeNotifier {
     draft = {for (final t in p.tests) t: p.results[t] ?? ''};
     draftMeta = Map.of(p.resultMeta);
     tab = 'results';
+    _attachSentResultFile(p);
+    notifyListeners();
+  }
+
+  /// The photo / file another lab returned for this patient's sent sample
+  /// becomes the attached result here: shown, croppable, used on approval.
+  Future<void> _attachSentResultFile(Patient p) async {
+    if (!LabApi.enabled || resultFiles.containsKey(p.id)) return;
+    Referral? from;
+    for (final r in referrals) {
+      if (r.resultFile.isEmpty) continue;
+      final linked = r.orderId == p.id;
+      // older samples sent before they were tied to the order: same name and test
+      final sameName = r.orderId == null &&
+          r.patient.trim().toLowerCase() == p.name.trim().toLowerCase() &&
+          p.tests.any((t) => r.tests.contains(t) || r.test.split(', ').contains(t));
+      if (linked || sameName) from = r;
+    }
+    if (from == null) return;
+    final bytes = await LabApi.instance.fetchBytes(from.resultFile);
+    if (bytes == null || resultFiles.containsKey(p.id)) return;
+    final name = from.resultFile.split('/').last;
+    resultFiles[p.id] = (name, Uint8List.fromList(bytes));
+    _uploadedUrls[p.id] = from.resultFile;
+    if (selectedPatient?.id == p.id) {
+      toast(tr('وصلت صورة النتيجة من ${from.lab} — يمكنك قصها واعتمادها', 'وێنەی ئەنجام لە ${from.lab} گەیشت', 'Result file from ${from.lab} attached — crop and approve it'));
+    }
     notifyListeners();
   }
 
