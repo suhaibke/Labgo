@@ -639,7 +639,8 @@ app.get('/.well-known/apple-app-site-association', (req, res) => {
   res.json({
     applinks: {
       apps: [],
-      details: [{ appID: 'J2CUF228NR.com.labgollc.labgo', paths: ['/p/*'] }],
+      // /p/* shared packages, /r/* result links (WhatsApp / SMS / QR) — but not the PDF itself
+      details: [{ appID: 'J2CUF228NR.com.labgollc.labgo', paths: ['/p/*', 'NOT /r/*/data', '/r/*'] }],
     },
   });
 });

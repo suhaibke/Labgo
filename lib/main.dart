@@ -17,6 +17,8 @@ import 'src/services/api_service.dart';
 import 'src/services/notification_service.dart';
 import 'src/utils/fallback_localizations.dart';
 import 'src/utils/package_share.dart';
+import 'src/utils/result_link.dart';
+import 'src/screens/test_results/result_link_screen.dart';
 import 'l10n/app_localizations.dart';
 
 /// Scroll behavior using platform-default physics (no velocity hacking).
@@ -153,6 +155,14 @@ class _LabGoAppState extends State<LabGoApp> {
   }
 
   void _handleIncomingLink(Uri uri) {
+    // A result link from the lab (WhatsApp / SMS / QR): show that result.
+    final resultCode = resultCodeFromLink(uri);
+    if (resultCode != null) {
+      ApiService.navigatorKey.currentState?.push(
+        MaterialPageRoute(builder: (context) => ResultLinkScreen(code: resultCode)),
+      );
+      return;
+    }
     final packageId = packageIdFromLink(uri);
     if (packageId == null) return;
 

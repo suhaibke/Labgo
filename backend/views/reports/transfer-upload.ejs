@@ -36,6 +36,20 @@
   .brand { text-align: center; margin-top: 16px; font-size: 12px; color: var(--muted); }
   .brand b { color: var(--accent); }
   .en { display: block; font-size: 12px; color: var(--muted); font-weight: 500; direction: ltr; text-align: start; }
+  .test { background: #fff; border-radius: 18px; padding: 12px; margin-top: 10px; }
+  .test h3 { margin: 0 0 8px; font-size: 15px; direction: ltr; text-align: start; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid .full { grid-column: 1 / -1; }
+  .grid input { border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; width: 100%; font: inherit; font-size: 16px; direction: ltr; text-align: left; }
+  .grid input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  .grid .val input { font-size: 20px; font-weight: 700; }
+  .grid small { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 700; }
+  .grid small i { font-style: normal; font-weight: 500; direction: ltr; }
+  .fixed { display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 16px; padding: 12px; font-weight: 700; }
+  .fixed span { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .error.top { background: #FDECEC; border-radius: 14px; padding: 10px 12px; margin: 0 0 12px; }
+  .or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; font-weight: 700; margin: 18px 0 4px; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 </style>
 </head>
 <body>
@@ -58,21 +72,49 @@
     <% if (typeof price !== 'undefined' && price) { %><div class="row"><span>السعر المتفق · Agreed price</span><b><%= price %> IQD</b></div><% } %>
   </div>
   <form method="post" enctype="multipart/form-data" id="f">
-    <label for="lab">اسم مختبركم <span class="en">Your lab name</span></label>
-    <input type="text" id="lab" name="uploaderName" maxlength="120" required value="<%= toLab %>">
-    <label>ملف النتيجة (PDF أو صورة، حتى 10 ميغا) <span class="en">Result file (PDF or photo, up to 10 MB)</span></label>
+    <% if (error) { %><p class="error top" role="alert"><%= error %></p><% } %>
+    <label>مختبركم <span class="en">Your lab — set by the sending lab</span></label>
+    <div class="fixed"><b dir="auto"><%= toLab || '—' %></b><span>ثابت · fixed</span></div>
+    <% const f = (typeof form !== 'undefined' && form) || {}; const list = (typeof testList !== 'undefined' && testList.length) ? testList : ['']; %>
+    <label>النتائج <span class="en">Results — value, unit and normal range for each test</span></label>
+    <% list.forEach(function (name, i) { %>
+      <div class="test">
+        <% if (name) { %><h3><%= name %></h3><% } else { %>
+          <div class="grid" style="grid-template-columns:1fr;margin-bottom:8px"><div><small>التحليل · Test</small><input name="test_0" value="<%= f.test_0 || '' %>" placeholder="e.g. Vitamin D"></div></div>
+        <% } %>
+        <div class="grid">
+          <label class="full val"><small>النتيجة <i>Result</i></small><input name="value_<%= i %>" value="<%= f['value_' + i] || '' %>" inputmode="decimal" autocomplete="off"></label>
+          <label><small>الوحدة <i>Unit</i></small><input name="unit_<%= i %>" value="<%= f['unit_' + i] || '' %>" autocomplete="off"></label>
+          <label><small>المعدل الطبيعي <i>Range</i></small><input name="range_<%= i %>" value="<%= f['range_' + i] || '' %>" autocomplete="off"></label>
+        </div>
+      </div>
+    <% }) %>
+    <div class="or">أو / و · or / and</div>
+    <label>صورة أو ملف النتيجة (PDF أو صورة، حتى 10 ميغا) <span class="en">Result photo or file (PDF or image, up to 10 MB)</span></label>
     <label class="drop" id="drop"><b id="fileName">اختر الملف أو صوّر النتيجة</b>Choose a file or take a photo
-      <input type="file" name="resultFile" id="file" accept="application/pdf,image/jpeg,image/png" required></label>
+      <input type="file" name="resultFile" id="file" accept="application/pdf,image/*"></label>
     <label for="note">ملاحظات (اختياري) <span class="en">Notes (optional)</span></label>
     <textarea id="note" name="note" maxlength="1000"></textarea>
-    <% if (error) { %><p class="error"><%= error %></p><% } %>
+    <p class="error" id="clientError" role="alert" hidden></p>
     <button type="submit" id="send">إرسال النتيجة · Send result</button>
   </form>
   <script>
     document.getElementById('file').addEventListener('change', function () {
       if (this.files[0]) document.getElementById('fileName').textContent = this.files[0].name;
     });
-    document.getElementById('f').addEventListener('submit', function () { document.getElementById('send').disabled = true; });
+    // Nothing typed and no file: say so here, before sending.
+    document.getElementById('f').addEventListener('submit', function (e) {
+      var typed = Array.prototype.some.call(document.querySelectorAll('input[name^="value_"]'), function (i) { return i.value.trim(); });
+      var file = document.getElementById('file').files.length > 0;
+      if (!typed && !file) {
+        e.preventDefault();
+        var m = document.getElementById('clientError');
+        m.textContent = 'اكتب النتيجة أو أرفق صورة / ملف · Type the result or attach a photo / file';
+        m.hidden = false;
+        return;
+      }
+      document.getElementById('send').disabled = true;
+    });
   </script>
 <% } %>
   <div class="brand">LabGo · <b>labgo</b></div>

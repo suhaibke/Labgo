@@ -25,6 +25,8 @@ const ExternalTransferSchema = new mongoose.Schema({
         required: true,
         trim: true,
     },
+    // Short tracking code shown to people and on the label barcode: "T7K4M9X".
+    trackingCode: { type: String, trim: true },
 
     // Patient snapshot - copied from the order at creation time, or typed
     // by hand when there's no order. Never re-read from the order later,
@@ -101,6 +103,18 @@ const ExternalTransferSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 ExternalTransferSchema.index({ labId: 1, sentAt: -1 });
+ExternalTransferSchema.index({ trackingCode: 1 }, { unique: true, sparse: true });
+
+// No 0/O, 1/I/L: easy to read out and type from a label.
+const TRACK_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+function newTrackingCode() {
+    const bytes = require('crypto').randomBytes(6);
+    return `T${[...bytes].map((b) => TRACK_ALPHABET[b % TRACK_ALPHABET.length]).join('')}`;
+}
+ExternalTransferSchema.statics.newTrackingCode = newTrackingCode;
+ExternalTransferSchema.pre('validate', function assignTrackingCode() {
+    if (!this.trackingCode) this.trackingCode = newTrackingCode();
+});
 
 ExternalTransferSchema.statics.generateSampleCode = function () {
     const timestamp = Date.now().toString(36);

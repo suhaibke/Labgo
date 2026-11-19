@@ -38,6 +38,9 @@ const LabDocumentsSchema = new mongoose.Schema({
 }, { _id: false });
 
 const LabSchema = new mongoose.Schema({
+    // Short number for the lab's file folder (uploads/results/L101); given on first use.
+    // immutable: once given, no update can change it.
+    labNo: { type: Number, immutable: true, index: { unique: true, sparse: true } },
     name: {
         type: String,
         required: true,
@@ -475,5 +478,28 @@ LabSchema.index({ status: 1 });
 LabSchema.index({ 'patientTests.patientId': 1 });
 LabSchema.index({ 'patientTests.requestDate': -1 });
 
+// Lab number (L101, L102, ...): given when the lab is created, never changed or
+// reused. It names the lab's result folder and identifies it in archives.
+LabSchema.pre('save', async function assignLabNo() {
+    if (this.labNo == null) this.labNo = await require('./Counter').next('labNo', 100);
+});
+
 const Lab = mongoose.model('Lab', LabSchema);
+
+/** "L101" for a lab (or '' when it has no number yet). */
+Lab.code = (lab) => (lab?.labNo ? `L${lab.labNo}` : '');
+
+/** Numbers every lab that has none yet, oldest first (run at start-up). */
+Lab.ensureNumbers = async function ensureNumbers() {
+    const Counter = require('./Counter');
+    const missing = await Lab.find({ labNo: { $exists: false } }).select('_id').sort({ createdAt: 1 }).lean();
+    for (const l of missing) {
+        const no = await Counter.next('labNo', 100);
+        // Straight to the collection: the field is immutable for normal updates,
+        // and this only fills a missing number.
+        await Lab.collection.updateOne({ _id: l._id, labNo: { $exists: false } }, { $set: { labNo: no } });
+    }
+    return missing.length;
+};
+
 module.exports = Lab;

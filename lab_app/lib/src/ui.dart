@@ -169,12 +169,18 @@ class FilterChipPill extends StatelessWidget {
   final VoidCallback onTap;
   final double scale;
 
+  /// Optional Lucide icon before the label.
+  final String? icon;
+  final Color? iconColor;
+
   const FilterChipPill({
     super.key,
     required this.label,
     required this.selected,
     required this.onTap,
     this.scale = 0.95,
+    this.icon,
+    this.iconColor,
   });
 
   @override
@@ -189,17 +195,44 @@ class FilterChipPill extends StatelessWidget {
           color: selected ? pal.ink : pal.chipBg,
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Text(
-          label,
-          style: ts(
-            context,
-            13,
-            weight: w700,
-            color: selected
-                ? (pal.dark ? const Color(0xFF0B0B0D) : pal.appBg)
-                : pal.muted2,
-          ),
-        ),
+        child: icon == null
+            ? Text(
+                label,
+                style: ts(
+                  context,
+                  13,
+                  weight: w700,
+                  color: selected
+                      ? (pal.dark ? const Color(0xFF0B0B0D) : pal.appBg)
+                      : pal.muted2,
+                ),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LIcon(
+                    icon!,
+                    size: 14,
+                    color:
+                        iconColor ??
+                        (selected
+                            ? (pal.dark ? const Color(0xFF0B0B0D) : pal.appBg)
+                            : pal.muted2),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: ts(
+                      context,
+                      13,
+                      weight: w700,
+                      color: selected
+                          ? (pal.dark ? const Color(0xFF0B0B0D) : pal.appBg)
+                          : pal.muted2,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -662,7 +695,9 @@ class BoxField extends StatelessWidget {
         keyboardType: keyboard,
         textDirection: ltr ? TextDirection.ltr : null,
         // Latin text (addresses, e-mails) lines up on the start side in Arabic too.
-        textAlign: ltr && Directionality.of(context) == TextDirection.rtl ? TextAlign.right : TextAlign.start,
+        textAlign: ltr && Directionality.of(context) == TextDirection.rtl
+            ? TextAlign.right
+            : TextAlign.start,
         style: ts(context, fontSize),
         strutStyle: StrutStyle(
           fontSize: fontSize,

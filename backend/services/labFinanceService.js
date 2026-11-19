@@ -42,7 +42,7 @@ async function summary(labId, period) {
         Order.find({ labId, status: { $ne: 'cancelled' }, orderCategory: { $ne: 'prescription' }, createdAt: { $gte: range.from, $lt: range.to } })
             .select('pricing financials payment orderType createdAt').lean(),
         LabExpense.find({ labId, date: { $gte: range.from, $lt: range.to } }).sort({ date: -1 }).lean(),
-        Order.find({ labId, status: { $ne: 'cancelled' }, 'payment.status': 'pending', orderType: 'walk_in' })
+        Order.find({ labId, status: { $ne: 'cancelled' }, 'payment.status': { $in: ['pending', 'partial'] }, orderType: 'walk_in' })
             .populate('patientId', 'name phone').sort({ createdAt: -1 }).limit(100).lean(),
     ]);
 
@@ -54,6 +54,7 @@ async function summary(labId, period) {
         const v = labShare(o);
         income += v;
         if (o.payment?.status === 'paid') collected += v;
+        else if (o.payment?.status === 'partial') collected += Math.min(v, o.payment.paidAmount || 0);
         const k = bucketKey(o.createdAt, range.unit);
         if (k >= 0 && k < n) incomeSeries[k] += v;
     }
@@ -70,7 +71,8 @@ async function summary(labId, period) {
         qrCode: o.qrCode,
         name: o.beneficiary?.isForOtherPerson ? o.beneficiary.name : (o.patientId?.name || ''),
         phone: o.patientId?.phone || '',
-        amount: labShare(o),
+        // what is still owed (a partial payment leaves the rest)
+        amount: Math.max(0, labShare(o) - (o.payment?.status === 'partial' ? (o.payment.paidAmount || 0) : 0)),
         createdAt: o.createdAt,
     }));
 

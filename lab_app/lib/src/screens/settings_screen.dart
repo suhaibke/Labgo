@@ -424,6 +424,14 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           rowButton(
+            icon: 'Wrench',
+            label: app.tr('طلب صيانة', 'داوای چاککردنەوە', 'Maintenance request'),
+            open: app.openSection == 'maintenance',
+            onTap: () => app.toggleSection('maintenance'),
+          ),
+          if (app.openSection == 'maintenance') const _Maintenance(),
+          const SizedBox(height: 12),
+          rowButton(
             icon: 'ShoppingBag',
             label:
                 '${app.tr('طلباتي', 'داواکارییەکانم', 'My Orders')}${app.productOrders.isNotEmpty ? ' (${app.productOrders.length})' : ''}',
@@ -1756,8 +1764,10 @@ class _Financial extends StatelessWidget {
       for (final e in ((f['byCategory'] as Map?) ?? const {}).entries)
         if (e.key != 'salaries' && e.key != 'rent') (catLabel('${e.key}'), money(e.value as num)),
     ];
+    // Tapping a debt opens "Pay off" for that order.
     final debtLines = [
-      for (final dbt in ((f['debts'] as List?) ?? const [])) ('${dbt['name']}', money(dbt['amount'] as num)),
+      for (final dbt in ((f['debts'] as List?) ?? const []))
+        ('${dbt['name']}', money(dbt['amount'] as num), '${dbt['orderId'] ?? ''}', (dbt['amount'] as num).round()),
     ];
 
     return _sectionBody([
@@ -1791,7 +1801,11 @@ class _Financial extends StatelessWidget {
         sub(d('expenses')),
         for (final l in otherLines) line(l.$1, l.$2),
         sub(d('debts')),
-        for (final l in debtLines) line(l.$1, l.$2, accent: true),
+        for (final l in debtLines)
+          Tap(
+            onTap: l.$3.isEmpty ? null : () => app.openSettle(l.$3, l.$1, l.$4),
+            child: line('${l.$1}  ›', l.$2, accent: true),
+          ),
       ], gap: 8),
       Text(d('incomeVsExpenses'), style: ts(context, 13, weight: w700)),
       SizedBox(
@@ -3531,6 +3545,17 @@ class LabDataCard extends StatelessWidget {
     final holders = app.licenseHolders;
     return CardBox(
       child: _col([
+        if (app.labCode.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16), border: Border.all(color: pal.line)),
+            child: Row(children: [
+              LIcon('Building2', size: 16, color: pal.accent),
+              const SizedBox(width: 8),
+              Expanded(child: Text(app.tr('رقم المختبر في LabGo', 'ژمارەی تاقیگە', 'Lab number on LabGo'), style: ts(context, 13, weight: w700))),
+              Text(app.labCode, textDirection: TextDirection.ltr, style: ts(context, 15, weight: w900, color: pal.accent)),
+            ]),
+          ),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16)),
@@ -4104,6 +4129,190 @@ class _SupportState extends State<_Support> {
               ],
             ),
           ),
+      ],
+    ]);
+  }
+}
+
+
+/// Maintenance requests for the building and utilities (not lab devices),
+/// with photos of the problem.
+class _Maintenance extends StatefulWidget {
+  const _Maintenance();
+
+  @override
+  State<_Maintenance> createState() => _MaintenanceState();
+}
+
+class _MaintenanceState extends State<_Maintenance> {
+  String category = 'electricity';
+  String priority = 'normal';
+  final _location = TextEditingController();
+  final _description = TextEditingController();
+  final List<Uint8List> images = [];
+  bool sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AppScope.read(context).loadMaintenance();
+  }
+
+  @override
+  void dispose() {
+    _location.dispose();
+    _description.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    final cats = [
+      ('electricity', 'Zap', app.tr('كهرباء', 'کارەبا', 'Electricity')),
+      ('ac', 'Snowflake', app.tr('سبلت / تكييف', 'سپلیت / فێنککەرەوە', 'Split / AC')),
+      ('plumbing', 'Droplets', app.tr('ماء وصحيات', 'ئاو و ئاوەڕۆ', 'Plumbing')),
+      ('building', 'BrickWall', app.tr('بناء وأبواب', 'بینا و دەرگا', 'Building & doors')),
+      ('furniture', 'Armchair', app.tr('أثاث', 'کەلوپەل', 'Furniture')),
+      ('internet', 'Wifi', app.tr('إنترنت وكاميرات', 'ئینتەرنێت و کامێرا', 'Internet & cameras')),
+      ('cleaning', 'Sparkles', app.tr('تنظيف', 'پاککردنەوە', 'Cleaning')),
+      ('other', 'Wrench', app.tr('أخرى', 'هیتر', 'Other')),
+    ];
+    String catName(String k) {
+      final c = cats.firstWhere((c) => c.$1 == k, orElse: () => cats.last);
+      return c.$3;
+    }
+
+    (String, Color) statusOf(String k) => switch (k) {
+          'in_progress' => (app.tr('قيد التنفيذ', 'لە کاردایە', 'In progress'), const Color(0xFF0A84FF)),
+          'done' => (app.tr('تم الإصلاح ✓', 'چاککرا ✓', 'Fixed ✓'), const Color(0xFF34C759)),
+          'cancelled' => (app.tr('ملغى', 'هەڵوەشاوە', 'Cancelled'), pal.muted),
+          _ => (app.tr('بانتظار الفني', 'چاوەڕێی وەستا', 'Awaiting technician'), const Color(0xFFD97706)),
+        };
+
+    return _sectionBody([
+      Text(app.tr('اطلب فنّي صيانة', 'داوای وەستا بکە', 'Request a technician'), style: ts(context, 16, weight: w700)),
+      Text(
+        app.tr('للمبنى والخدمات فقط (كهرباء، سبلت، ماء…). أعطال الأجهزة المختبرية لها قسم خاص.',
+            'تەنها بۆ بینا و خزمەتگوزاری. ئامێرەکان بەشی خۆیان هەیە.',
+            'Building and utilities only (power, AC, water…). Lab devices have their own channel.'),
+        style: ts(context, 12, color: pal.muted, height: 1.5),
+      ),
+      Wrap(spacing: 6, runSpacing: 6, children: [
+        for (final c in cats) FilterChipPill(label: c.$3, icon: c.$2, selected: category == c.$1, onTap: () => setState(() => category = c.$1)),
+      ]),
+      Row(children: [
+        Expanded(child: FilterChipPill(label: app.tr('عادي', 'ئاسایی', 'Normal'), selected: priority == 'normal', onTap: () => setState(() => priority = 'normal'))),
+        const SizedBox(width: 8),
+        Expanded(child: FilterChipPill(label: app.tr('عاجل', 'بەپەلە', 'Urgent'), icon: 'TriangleAlert', iconColor: priority == 'urgent' ? null : const Color(0xFFE5484D), selected: priority == 'urgent', onTap: () => setState(() => priority = 'urgent'))),
+      ]),
+      BoxField(controller: _location, hint: app.tr('المكان (مثلاً: غرفة السحب، الاستقبال)', 'شوێن', 'Where (e.g. sampling room, reception)'), fontSize: 14, vPad: 10),
+      BoxField(controller: _description, hint: app.tr('صف المشكلة…', 'کێشەکە بنووسە…', 'Describe the problem…'), lines: 4, fontSize: 14),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (var i = 0; i < images.length; i++)
+            Stack(children: [
+              ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(images[i], width: 72, height: 72, fit: BoxFit.cover)),
+              PositionedDirectional(
+                top: 2,
+                end: 2,
+                child: Tap(
+                  onTap: () => setState(() => images.removeAt(i)),
+                  child: Container(width: 22, height: 22, alignment: Alignment.center, decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle), child: const LIcon('X', size: 12, color: Colors.white)),
+                ),
+              ),
+            ]),
+          if (images.length < 6)
+            Tap(
+              onTap: () async {
+                final picked = await app.pickImages(max: 6 - images.length);
+                if (picked.isNotEmpty) setState(() => images.addAll(picked));
+              },
+              child: Container(
+                width: 72,
+                height: 72,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: pal.line)),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  LIcon('Camera', size: 20, color: pal.accent),
+                  const SizedBox(height: 2),
+                  Text(app.tr('صورة', 'وێنە', 'Photo'), style: ts(context, 10.5, weight: w700, color: pal.muted)),
+                ]),
+              ),
+            ),
+        ],
+      ),
+      _pill(
+        context,
+        sending ? '…' : app.tr('إرسال طلب الصيانة', 'ناردنی داواکاری', 'Send request'),
+        color: pal.accent,
+        textColor: Colors.white,
+        icon: 'Wrench',
+        onTap: () async {
+          if (sending) return;
+          setState(() => sending = true);
+          final no = await app.sendMaintenance(
+            category: category,
+            priority: priority,
+            location: _location.text.trim(),
+            description: _description.text.trim(),
+            images: List.of(images),
+          );
+          if (!mounted) return;
+          setState(() => sending = false);
+          if (no == null) return;
+          _location.clear();
+          _description.clear();
+          setState(() => images.clear());
+          app.toast(app.tr('تم إرسال طلب الصيانة #$no ✓', 'داواکاری #$no نێردرا ✓', 'Maintenance request #$no sent ✓'));
+        },
+      ),
+      if (app.maintenanceRequests.isNotEmpty) ...[
+        Text(app.tr('طلباتي', 'داواکارییەکانم', 'My requests'), style: ts(context, 14, weight: w700)),
+        for (final m in app.maintenanceRequests.take(20))
+          Builder(builder: (context) {
+            final st = statusOf('${m['status']}');
+            final imgs = (m['images'] as List?)?.length ?? 0;
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Expanded(
+                      child: Text('#${m['requestNo']} • ${catName('${m['category']}')}${m['priority'] == 'urgent' ? ' • ${app.tr('عاجل', 'بەپەلە', 'Urgent')}' : ''}',
+                          style: ts(context, 14, weight: w700)),
+                    ),
+                    Text(st.$1, style: ts(context, 12, weight: w700, color: st.$2)),
+                  ]),
+                  if ('${m['location'] ?? ''}'.isNotEmpty)
+                    Row(children: [LIcon('MapPin', size: 12, color: pal.muted), const SizedBox(width: 4), Flexible(child: Text('${m['location']}', style: ts(context, 12, color: pal.muted)))]),
+                  Text('${m['description']}', maxLines: 2, overflow: TextOverflow.ellipsis, style: ts(context, 12, color: pal.muted)),
+                  if (imgs > 0)
+                    Row(children: [LIcon('Camera', size: 12, color: pal.muted), const SizedBox(width: 4), Text('$imgs', style: ts(context, 11, color: pal.muted))]),
+                  if ('${m['adminReply'] ?? ''}'.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text('${app.tr('الرد', 'وەڵام', 'Reply')}: ${m['adminReply']}', style: ts(context, 12, weight: w600)),
+                  ],
+                  if (m['status'] == 'open')
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: Tap(
+                        onTap: () => app.cancelMaintenance('${m['id']}'),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(app.tr('إلغاء الطلب', 'هەڵوەشاندنەوە', 'Cancel'), style: ts(context, 12, weight: w700, color: const Color(0xFFE5484D))),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
       ],
     ]);
   }

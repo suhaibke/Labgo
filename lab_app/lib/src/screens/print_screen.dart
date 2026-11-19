@@ -79,9 +79,11 @@ class PrintScreen extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _PillButton(
-            label: t3('تأكيد', 'پشتڕاستکردنەوە', 'Confirm'),
-            color: pal.segmented,
-            onTap: app.confirmReceipt,
+            label: t3('ملصق', 'لیبڵ', 'Label'),
+            icon: 'Tag',
+            color: pal.ink,
+            textColor: pal.appBg,
+            onTap: app.printTubeLabels,
           ),
         ),
         const SizedBox(width: 8),
@@ -97,7 +99,7 @@ class PrintScreen extends StatelessWidget {
       final merged = patient.copyWith(
         results: {...patient.results, ...app.printDraft},
       );
-      final rows = resultRows(merged);
+      final rows = resultRows(merged).where((r) => r.value.trim().isNotEmpty).toList();
       backLabel = t3(
         'العودة للنتائج',
         'گەڕانەوە بۆ ئەنجامەکان',
@@ -242,6 +244,10 @@ class PrintScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Row(children: buttons),
+                      if (receipt) ...[
+                        const SizedBox(height: 8),
+                        _TubeLabelRow(t3: t3),
+                      ],
                     ],
                   ),
                 ),
@@ -313,13 +319,30 @@ class _ReceiptPaper extends StatelessWidget {
       ),
     );
 
-    final payText = payLater
+    final payText = patient.isPartlyPaid
+        ? t3(
+            'دفع جزئي — متبقي ${formatNumber(patient.due)}',
+            'بەشێکی دراوە — ماوە ${formatNumber(patient.due)}',
+            'Partly Paid — ${formatNumber(patient.due)} due',
+          )
+        : payLater
         ? t3(
             'الدفع لاحقاً — معلق',
             'دواتر پارەبدە — چاوەڕوانە',
             'Pay Later — Pending',
           )
         : t3('تم الدفع', 'پارەدراوە', 'Paid');
+    Widget money(String label, int v, {bool bold = false, bool minus = false}) => Row(
+      children: [
+        Text(label, style: m(10, weight: bold ? w900 : w400)),
+        const Spacer(),
+        Text(
+          '${minus ? '-' : ''}${formatNumber(v)}${bold ? ' IQD' : ''}',
+          textDirection: TextDirection.ltr,
+          style: m(10, weight: bold ? w900 : w700),
+        ),
+      ],
+    );
 
     return _Paper(
       child: Column(
@@ -372,7 +395,7 @@ class _ReceiptPaper extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 6),
               color: const Color(0xFF111111),
               child: Text(
-                t3('⚡ عاجل • URGENT', '⚡ بەپەلە • URGENT', '⚡ URGENT'),
+                t3('عاجل • URGENT', 'بەپەلە • URGENT', 'URGENT'),
                 textAlign: TextAlign.center,
                 style: m(14, weight: w900, color: Colors.white, height: 1.2, tracking: 1),
               ),
@@ -470,6 +493,10 @@ class _ReceiptPaper extends StatelessWidget {
               textAlign: TextAlign.center,
               style: m(10, weight: w700),
             ),
+          if (patient.discount > 0) ...[
+            money(t3('المجموع', 'کۆ', 'Subtotal'), patient.gross),
+            money(t3('الخصم', 'داشکاندن', 'Discount'), patient.discount, minus: true),
+          ],
           Row(
             children: [
               Text(
@@ -484,6 +511,10 @@ class _ReceiptPaper extends StatelessWidget {
               ),
             ],
           ),
+          if (patient.isPartlyPaid) ...[
+            money(t3('المدفوع', 'دراو', 'Paid'), patient.collected),
+            money(t3('المتبقي', 'ماوە', 'Remaining'), patient.due, bold: true),
+          ],
           const SizedBox(height: 4),
           Center(
             child: Container(
@@ -556,6 +587,63 @@ class _DashPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Tube label row under the receipt buttons: how many labels, then print.
+class _TubeLabelRow extends StatelessWidget {
+  final String Function(String, String, String) t3;
+  const _TubeLabelRow({required this.t3});
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    final n = app.tubeLabelCopies;
+    Widget step(String icon, int to, bool enabled) => Tap(
+          onTap: enabled ? () => app.setTubeLabelCopies(to) : () {},
+          scale: .9,
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(color: pal.card, shape: BoxShape.circle),
+            child: Center(child: LIcon(icon, size: 15, color: enabled ? pal.ink : pal.muted)),
+          ),
+        );
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 6, 6),
+      decoration: BoxDecoration(color: pal.segmented, borderRadius: BorderRadius.circular(999)),
+      child: Row(
+        children: [
+          LIcon('TestTube', size: 16, color: pal.ink),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              t3('ملصق التيوب', 'لیبڵی تیوب', 'Tube label'),
+              style: ts(context, 13, weight: w700),
+            ),
+          ),
+          step('Minus', n - 1, n > 1),
+          SizedBox(
+            width: 28,
+            child: Text('$n', textAlign: TextAlign.center, style: ts(context, 14, weight: w900)),
+          ),
+          step('Plus', n + 1, n < 10),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 92,
+            child: _PillButton(
+              label: t3('طباعة', 'چاپ', 'Print'),
+              color: pal.accent,
+              textColor: Colors.white,
+              icon: 'Printer',
+              fontSize: 13,
+              onTap: app.printTubeLabels,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PillButton extends StatelessWidget {

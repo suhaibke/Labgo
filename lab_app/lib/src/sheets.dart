@@ -1,5 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:barcode/barcode.dart' as bc;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+
+import 'crop_editor.dart';
+import 'models.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'theme.dart';
@@ -39,6 +45,408 @@ class Overlays extends StatelessWidget {
             _Backdrop(opacity: .4, onTap: () => app.showLogout(false)),
             const _LogoutDialog(),
           ],
+          if (app.settle != null) ...[
+            _Backdrop(opacity: .4, onTap: app.closeSettle),
+            _SettleSheet(key: ValueKey('settle-${app.settle!.$1}')),
+          ],
+          if (app.rowMenu != null) ...[
+            _Backdrop(opacity: .4, onTap: () => app.openRowMenu(null)),
+            _RowMenuSheet(key: ValueKey('menu-${app.rowMenu!.id}')),
+          ],
+          if (app.editingPatient != null) ...[
+            _Backdrop(opacity: .4, onTap: app.closeRowDialogs),
+            _EditPatientSheet(key: ValueKey('edit-${app.editingPatient!.id}')),
+          ],
+          if (app.deletingPatient != null) ...[
+            _Backdrop(opacity: .5, onTap: app.closeRowDialogs),
+            const _DeletePatientDialog(),
+          ],
+          if (app.sentResult != null) ...[
+            _Backdrop(opacity: .4, onTap: () => app.openSentResult(null)),
+            _SentResultSheet(key: ValueKey('sent-${app.sentResult!.id}')),
+          ],
+          if (app.uploadSourceOpen) ...[
+            _Backdrop(opacity: .4, onTap: app.closeUploadSource),
+            const _UploadSourceSheet(),
+          ],
+          if (app.cropperLoading)
+            const Positioned.fill(child: ColoredBox(color: Color(0x88000000), child: Center(child: CircularProgressIndicator(color: Colors.white)))),
+          if (app.cropper != null) CropEditor(key: ValueKey('crop-${app.cropper!.$1}-${app.resultCrops[app.cropper!.$1]?.length ?? 0}')),
+          if (app.addPaySheet != null) ...[
+            _Backdrop(opacity: .4, onTap: () => app.openAddPaySheet(null)),
+            if (app.addPaySheet == 'discount') const _DiscountSheet() else const _PartialPaySheet(),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+String _n(int v) => v.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+
+/// Digits typed in any script (Arabic-Indic too) → a number.
+num _parse(String s) {
+  const ar = '٠١٢٣٤٥٦٧٨٩', fa = '۰۱۲۳۴۵۶۷۸۹';
+  final b = StringBuffer();
+  for (final ch in s.split('')) {
+    final i = ar.indexOf(ch), j = fa.indexOf(ch);
+    b.write(i >= 0 ? '$i' : j >= 0 ? '$j' : ch);
+  }
+  return num.tryParse(b.toString().replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
+}
+
+/// Title row shared by the payment sheets: icon, title, subtitle and close.
+Widget _payHeader(BuildContext context, String icon, String title, String sub, VoidCallback onClose) {
+  final pal = context.pal;
+  return Row(
+    children: [
+      Container(
+        width: 42,
+        height: 42,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: pal.accent.withValues(alpha: .12), shape: BoxShape.circle),
+        child: LIcon(icon, size: 20, color: pal.accent),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: ts(context, 17, weight: w900)),
+            Text(sub, style: ts(context, 12, color: pal.muted)),
+          ],
+        ),
+      ),
+      Tap(onTap: onClose, child: Padding(padding: const EdgeInsets.all(6), child: LIcon('X', size: 20, color: pal.muted))),
+    ],
+  );
+}
+
+Widget _sumRow(BuildContext context, String label, String value, {Color? color, bool big = false}) => Padding(
+  padding: const EdgeInsets.symmetric(vertical: 3),
+  child: Row(
+    children: [
+      Text(label, style: ts(context, big ? 15 : 13, weight: big ? w900 : w400, color: big ? null : context.pal.muted)),
+      const Spacer(),
+      Text(value, textDirection: TextDirection.ltr, style: ts(context, big ? 18 : 14, weight: big ? w900 : w700, color: color)),
+    ],
+  ),
+);
+
+Widget _chip(BuildContext context, String label, bool on, VoidCallback onTap) {
+  final pal = context.pal;
+  return Tap(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: on ? pal.accent : pal.chipBg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: on ? pal.accent : pal.line),
+      ),
+      child: Text(label, textDirection: TextDirection.ltr, style: ts(context, 13, weight: w700, color: on ? Colors.white : null)),
+    ),
+  );
+}
+
+Widget _wideButton(BuildContext context, String label, VoidCallback? onTap, {bool primary = true}) {
+  final pal = context.pal;
+  return Tap(
+    onTap: onTap,
+    child: Opacity(
+      opacity: onTap == null ? .45 : 1,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: primary ? pal.accent : pal.segmented,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(label, style: ts(context, 15, weight: w700, color: primary ? Colors.white : null)),
+      ),
+    ),
+  );
+}
+
+/// "Discount" on Add Patient: an amount in IQD or a percentage, with a live total.
+class _DiscountSheet extends StatefulWidget {
+  const _DiscountSheet();
+
+  @override
+  State<_DiscountSheet> createState() => _DiscountSheetState();
+}
+
+class _DiscountSheetState extends State<_DiscountSheet> {
+  late String _mode = context.app.addDiscountMode;
+  late final _input = TextEditingController(
+    text: context.app.addDiscountValue > 0 ? '${context.app.addDiscountValue}' : '',
+  );
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  int _discountFor(int total) {
+    final v = _parse(_input.text);
+    final d = _mode == 'percent' ? (total * v.clamp(0, 100) / 100).round() : v.round();
+    return d.clamp(0, total).toInt();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    final total = app.addTotal;
+    final discount = _discountFor(total);
+    final pct = _mode == 'percent';
+    final presets = pct ? const [5, 10, 15, 20, 25, 50] : const [1000, 2000, 5000, 10000, 25000];
+    final typed = _parse(_input.text);
+    final tooMuch = !pct && typed > total;
+    return BottomSheetBox(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _payHeader(context, 'Tag', app.tr('خصم على الطلب', 'داشکاندن', 'Discount'),
+              app.tr('ينقص من المبلغ الكلي للمريض', 'لە کۆی گشتی کەم دەبێتەوە', 'Taken off the patient\'s total'), () => app.openAddPaySheet(null)),
+          const SizedBox(height: 16),
+          // amount / percent
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(color: pal.segmented, borderRadius: BorderRadius.circular(999)),
+            child: Row(
+              children: [
+                for (final m in [('amount', app.tr('مبلغ (IQD)', 'بڕ (IQD)', 'Amount (IQD)')), ('percent', app.tr('نسبة %', 'ڕێژە %', 'Percent %'))])
+                  Expanded(
+                    child: Tap(
+                      onTap: () => setState(() {
+                        _mode = m.$1;
+                        _input.clear();
+                      }),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _mode == m.$1 ? pal.card : Colors.transparent,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(m.$2, style: ts(context, 13, weight: w700, color: _mode == m.$1 ? null : pal.muted)),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          BoxField(
+            controller: _input,
+            hint: pct ? app.tr('مثال: 10', 'نموونە: 10', 'e.g. 10') : app.tr('مثال: 5,000', 'نموونە: 5,000', 'e.g. 5,000'),
+            keyboard: const TextInputType.numberWithOptions(decimal: true),
+            ltr: true,
+            fontSize: 20,
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final v in presets)
+                _chip(context, pct ? '$v%' : _n(v), typed == v, () => setState(() => _input.text = '$v')),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(18), border: Border.all(color: pal.line)),
+            child: Column(
+              children: [
+                _sumRow(context, app.tr('المجموع', 'کۆ', 'Subtotal'), '${_n(total)} IQD'),
+                _sumRow(context, app.tr('الخصم', 'داشکاندن', 'Discount'), discount > 0 ? '-${_n(discount)} IQD' : '—', color: discount > 0 ? Fixed.red : null),
+                Divider(color: pal.line, height: 14),
+                _sumRow(context, app.tr('الإجمالي بعد الخصم', 'کۆ دوای داشکاندن', 'Total after discount'), '${_n(total - discount)} IQD', big: true, color: pal.accent),
+              ],
+            ),
+          ),
+          if (tooMuch) ...[
+            const SizedBox(height: 6),
+            Text(app.tr('الخصم أكبر من المبلغ الكلي', 'داشکاندن لە کۆی گشتی زیاترە', 'The discount is more than the total'), style: ts(context, 12, color: Fixed.red)),
+          ],
+          const SizedBox(height: 16),
+          _wideButton(context, app.tr('تطبيق الخصم', 'داشکاندن جێبەجێ بکە', 'Apply discount'),
+              total == 0 || tooMuch ? null : () => app.setAddDiscount(_mode, _parse(_input.text))),
+          if (app.addDiscount > 0) ...[
+            const SizedBox(height: 8),
+            _wideButton(context, app.tr('إزالة الخصم', 'لابردنی داشکاندن', 'Remove discount'), () => app.setAddDiscount('amount', 0), primary: false),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// "Partial payment" on Add Patient: what the patient pays now; the rest is owed.
+class _PartialPaySheet extends StatefulWidget {
+  const _PartialPaySheet();
+
+  @override
+  State<_PartialPaySheet> createState() => _PartialPaySheetState();
+}
+
+class _PartialPaySheetState extends State<_PartialPaySheet> {
+  final _input = TextEditingController();
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    final net = app.addNet;
+    final paid = _parse(_input.text).round();
+    final valid = paid > 0 && paid < net;
+    int part(int pct) => ((net * pct / 100) / 250).round() * 250;
+    return BottomSheetBox(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _payHeader(context, 'Tag', app.tr('دفع جزئي', 'پارەدانی بەشێک', 'Partial payment'),
+              app.tr('يدفع المريض جزءاً الآن ويبقى الباقي ديناً عليه', 'نەخۆش ئێستا بەشێک دەدات و ئەوی تر قەرزە', 'The patient pays part now and owes the rest'),
+              () => app.openAddPaySheet(null)),
+          const SizedBox(height: 16),
+          _sumRow(context, app.tr('المبلغ الكلي', 'کۆی گشتی', 'Total'), '${_n(net)} IQD', big: true),
+          if (app.addDiscount > 0)
+            Text(app.tr('بعد خصم ${_n(app.addDiscount)}', 'دوای داشکاندنی ${_n(app.addDiscount)}', 'after a ${_n(app.addDiscount)} discount'),
+                style: ts(context, 12, color: pal.muted)),
+          const SizedBox(height: 12),
+          Text(app.tr('المبلغ المدفوع الآن', 'بڕی دراو ئێستا', 'Paid now'), style: ts(context, 13, weight: w700)),
+          const SizedBox(height: 6),
+          BoxField(
+            controller: _input,
+            hint: '0',
+            keyboard: TextInputType.number,
+            ltr: true,
+            fontSize: 20,
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final pct in const [25, 50, 75])
+                if (part(pct) > 0 && part(pct) < net)
+                  _chip(context, '$pct% · ${_n(part(pct))}', paid == part(pct), () => setState(() => _input.text = '${part(pct)}')),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(18), border: Border.all(color: pal.line)),
+            child: Column(
+              children: [
+                _sumRow(context, app.tr('المدفوع', 'دراو', 'Paid'), '${_n(paid.clamp(0, net).toInt())} IQD', color: Fixed.green),
+                Divider(color: pal.line, height: 14),
+                _sumRow(context, app.tr('المتبقي على المريض', 'ماوە لەسەر نەخۆش', 'Still owed'), '${_n((net - paid).clamp(0, net).toInt())} IQD',
+                    big: true, color: const Color(0xFFD97706)),
+              ],
+            ),
+          ),
+          if (_input.text.isNotEmpty && !valid) ...[
+            const SizedBox(height: 6),
+            Text(
+              paid >= net
+                  ? app.tr('المبلغ يساوي الإجمالي أو أكثر — استخدم زر الدفع الكامل', 'بڕەکە یەکسانە یان زیاترە لە کۆ — دوگمەی پارەدانی تەواو بەکاربهێنە', 'That covers the full total — use the full payment button')
+                  : app.tr('أدخل مبلغاً أكبر من صفر', 'بڕێک لە سفر زیاتر بنووسە', 'Enter an amount above zero'),
+              style: ts(context, 12, color: Fixed.red),
+            ),
+          ],
+          const SizedBox(height: 16),
+          _wideButton(context, app.tr('تأكيد وإضافة المريض', 'پشتڕاستکردنەوە و زیادکردنی نەخۆش', 'Confirm and add patient'),
+              valid && !app.addSaving ? () => app.submitPartial(paid) : null),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Pay off": the patient pays all or part of what they owe.
+class _SettleSheet extends StatefulWidget {
+  const _SettleSheet({super.key});
+
+  @override
+  State<_SettleSheet> createState() => _SettleSheetState();
+}
+
+class _SettleSheetState extends State<_SettleSheet> {
+  late final _input = TextEditingController(text: '${context.app.settle?.$3 ?? ''}');
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    final s = app.settle!;
+    final owed = s.$3;
+    final pay = _parse(_input.text).round();
+    final tooMuch = pay > owed;
+    final valid = pay > 0 && !tooMuch;
+    final left = (owed - pay).clamp(0, owed).toInt();
+    return BottomSheetBox(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _payHeader(context, 'Tag', app.tr('تسديد دين', 'دانەوەی قەرز', 'Pay off debt'), s.$2, app.closeSettle),
+          const SizedBox(height: 16),
+          _sumRow(context, app.tr('المبلغ المستحق', 'بڕی قەرز', 'Owed'), '${_n(owed)} IQD', big: true, color: const Color(0xFFD97706)),
+          const SizedBox(height: 12),
+          Text(app.tr('المبلغ المدفوع الآن', 'بڕی دراو ئێستا', 'Paid now'), style: ts(context, 13, weight: w700)),
+          const SizedBox(height: 6),
+          BoxField(controller: _input, hint: '0', keyboard: TextInputType.number, ltr: true, fontSize: 20, onChanged: (_) => setState(() {})),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _chip(context, app.tr('كامل المبلغ', 'هەمووی', 'All'), pay == owed, () => setState(() => _input.text = '$owed')),
+              if (owed >= 2000)
+                _chip(context, '50% · ${_n(((owed / 2) / 250).round() * 250)}', pay == ((owed / 2) / 250).round() * 250,
+                    () => setState(() => _input.text = '${((owed / 2) / 250).round() * 250}')),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(18), border: Border.all(color: pal.line)),
+            child: Column(
+              children: [
+                _sumRow(context, app.tr('يُدفع الآن', 'ئێستا دەدرێت', 'Paying now'), '${_n(pay.clamp(0, owed).toInt())} IQD', color: Fixed.green),
+                Divider(color: pal.line, height: 14),
+                _sumRow(context, app.tr('يبقى بعد الدفع', 'دوای پارەدان دەمێنێتەوە', 'Left after this'), left == 0 ? app.tr('لا شيء ✓', 'هیچ ✓', 'Nothing ✓') : '${_n(left)} IQD',
+                    big: true, color: left == 0 ? Fixed.green : const Color(0xFFD97706)),
+              ],
+            ),
+          ),
+          if (tooMuch) ...[
+            const SizedBox(height: 6),
+            Text(app.tr('المبلغ أكبر من الدين (${_n(owed)})', 'بڕەکە لە قەرز زیاترە (${_n(owed)})', 'More than what is owed (${_n(owed)})'),
+                style: ts(context, 12, color: Fixed.red)),
+          ],
+          const SizedBox(height: 16),
+          _wideButton(context, app.settling ? '…' : app.tr('تأكيد التسديد', 'پشتڕاستکردنەوەی پارەدان', 'Confirm payment'),
+              valid && !app.settling ? () => app.submitSettle(pay) : null),
         ],
       ),
     );
@@ -1123,6 +1531,396 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+
+/// One tappable line in an action sheet: tinted round icon, title, subtitle.
+Widget _actionTile(BuildContext context, String icon, String title, String sub, VoidCallback onTap, {Color? color}) {
+  final pal = context.pal;
+  final c = color ?? pal.accent;
+  return Tap(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(18)),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: c.withValues(alpha: .12), shape: BoxShape.circle),
+            child: LIcon(icon, size: 18, color: c),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: ts(context, 15, weight: w700, color: color)),
+                Text(sub, style: ts(context, 12, color: pal.muted)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// "⋮" on a results row: edit details, invoice, labels, delete.
+class _RowMenuSheet extends StatelessWidget {
+  const _RowMenuSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final p = app.rowMenu!;
+    final walkIn = !p.id.startsWith('tr:');
+    return BottomSheetBox(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _payHeader(context, 'User', p.name, '${p.code} • ${p.tests.join(', ')}', () => app.openRowMenu(null)),
+          const SizedBox(height: 14),
+          if (walkIn) ...[
+            _actionTile(context, 'UserPen', app.tr('تعديل البيانات الشخصية', 'دەستکاری زانیاری کەسی', 'Edit personal details'),
+                app.tr('الاسم، الهاتف، العمر والجنس', 'ناو، مۆبایل، تەمەن و ڕەگەز', 'Name, phone, age and gender'), () => app.rowAction('edit')),
+            const SizedBox(height: 8),
+          ],
+          _actionTile(context, 'Receipt', app.tr('طباعة الفاتورة', 'چاپی پسوڵە', 'Print invoice'),
+              app.tr('وصل 80 ملم مع رمز QR', 'پسوڵەی 80 ملم', '80 mm receipt with QR code'), () => app.rowAction('invoice')),
+          const SizedBox(height: 8),
+          _actionTile(context, 'Tag', app.tr('طباعة الملصقات', 'چاپی لیبڵ', 'Print labels'),
+              app.tr('ملصق التيوب بالباركود والاسم (${app.tubeLabelCopies})', 'لیبڵی تیوب (${app.tubeLabelCopies})', 'Tube label with barcode and name (${app.tubeLabelCopies})'),
+              () => app.rowAction('labels')),
+          if (walkIn) ...[
+            const SizedBox(height: 8),
+            _actionTile(context, 'Trash2', app.tr('حذف', 'سڕینەوە', 'Delete'),
+                app.tr('حذف الطلب من القائمة والحسابات', 'سڕینەوەی داواکاری', 'Remove the order from the list and finance'), () => app.rowAction('delete'),
+                color: const Color(0xFFE5484D)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EditPatientSheet extends StatefulWidget {
+  const _EditPatientSheet({super.key});
+
+  @override
+  State<_EditPatientSheet> createState() => _EditPatientSheetState();
+}
+
+class _EditPatientSheetState extends State<_EditPatientSheet> {
+  late final p = context.app.editingPatient!;
+  late final _name = TextEditingController(text: p.name);
+  late final _phone = TextEditingController(text: p.phone);
+  late final _ageMatch = RegExp(r'^(\d+)\s*([YMD])').firstMatch(p.age);
+  late final _age = TextEditingController(text: _ageMatch?.group(1) ?? '');
+  late String unit = _ageMatch?.group(2) ?? 'Y';
+  late String gender = p.gender == 'Female' ? 'Female' : 'Male';
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    _age.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    Widget label(String t) => Padding(
+          padding: const EdgeInsets.only(top: 10, bottom: 6),
+          child: Text(t, style: ts(context, 13, weight: w700)),
+        );
+    return BottomSheetBox(
+      maxHeightFactor: .9,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _payHeader(context, 'UserPen', app.tr('تعديل البيانات الشخصية', 'دەستکاری زانیاری', 'Edit personal details'), p.code, app.closeRowDialogs),
+            const SizedBox(height: 6),
+            label(app.tr('الاسم الكامل', 'ناوی تەواو', 'Full name')),
+            BoxField(controller: _name, hint: app.tr('اسم المريض', 'ناوی نەخۆش', 'Patient name')),
+            label(app.tr('الهاتف', 'مۆبایل', 'Phone')),
+            BoxField(controller: _phone, hint: '07xx xxx xxxx', keyboard: TextInputType.phone, ltr: true),
+            label(app.tr('العمر والجنس', 'تەمەن و ڕەگەز', 'Age and gender')),
+            Row(
+              children: [
+                Expanded(child: BoxField(controller: _age, hint: app.tr('العمر', 'تەمەن', 'Age'), keyboard: TextInputType.number, ltr: true)),
+                const SizedBox(width: 8),
+                for (final u in const [('Y', 'س', 'ساڵ', 'Y'), ('M', 'ش', 'م', 'M'), ('D', 'ي', 'ڕ', 'D')]) ...[
+                  _chip(context, app.tr(u.$2, u.$3, u.$4), unit == u.$1, () => setState(() => unit = u.$1)),
+                  const SizedBox(width: 4),
+                ],
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _chip(context, app.tr('ذكر', 'نێر', 'Male'), gender == 'Male', () => setState(() => gender = 'Male'))),
+                const SizedBox(width: 8),
+                Expanded(child: _chip(context, app.tr('أنثى', 'مێ', 'Female'), gender == 'Female', () => setState(() => gender = 'Female'))),
+              ],
+            ),
+            const SizedBox(height: 18),
+            _wideButton(
+              context,
+              app.rowBusy ? '…' : app.tr('حفظ التعديلات', 'پاشەکەوتکردن', 'Save changes'),
+              app.rowBusy
+                  ? null
+                  : () => app.submitEditPatient(name: _name.text, phone: _phone.text, gender: gender, age: _age.text, ageUnit: unit),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DeletePatientDialog extends StatelessWidget {
+  const _DeletePatientDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    final p = app.deletingPatient!;
+    const red = Color(0xFFE5484D);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Entrance.pop(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(color: pal.card, borderRadius: BorderRadius.circular(28), boxShadow: Shadows.xxl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: red.withValues(alpha: .12), shape: BoxShape.circle),
+                  child: const LIcon('Trash2', size: 24, color: red),
+                ),
+                const SizedBox(height: 10),
+                Text(app.tr('حذف طلب ${p.name}؟', 'داواکاری ${p.name} بسڕدرێتەوە؟', 'Delete ${p.name}\'s order?'),
+                    textAlign: TextAlign.center, style: ts(context, 18, weight: w700)),
+                const SizedBox(height: 4),
+                Text(
+                  app.tr('${p.code} • سيختفي من النتائج والحسابات ولا يمكن التراجع.', '${p.code} • ناگەڕێتەوە.',
+                      '${p.code} • It leaves the results and finance and cannot be undone.'),
+                  textAlign: TextAlign.center,
+                  style: ts(context, 13, color: pal.muted),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: _wideButton(context, app.w('cancel'), app.closeRowDialogs, primary: false)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Tap(
+                        onTap: app.rowBusy ? null : app.confirmDeletePatient,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(color: red, borderRadius: BorderRadius.circular(999)),
+                          child: Text(app.rowBusy ? '…' : app.tr('حذف', 'سڕینەوە', 'Delete'),
+                              style: ts(context, 15, weight: w700, color: Colors.white)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Upload result": gallery, camera or files.
+class _UploadSourceSheet extends StatelessWidget {
+  const _UploadSourceSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    return BottomSheetBox(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _payHeader(context, 'ImagePlus', app.tr('رفع النتيجة', 'بارکردنی ئەنجام', 'Upload result'),
+              app.tr('صورة أو ملف PDF', 'وێنە یان PDF', 'Photo or PDF'), app.closeUploadSource),
+          const SizedBox(height: 14),
+          _actionTile(context, 'Images', app.tr('من الاستوديو', 'لە گەلەری', 'Photo library'),
+              app.tr('اختر صورة النتيجة من الصور', 'وێنەیەک هەڵبژێرە', 'Pick a photo of the result'), () => app.uploadResultFrom('gallery')),
+          const SizedBox(height: 8),
+          _actionTile(context, 'Camera', app.tr('فتح الكاميرا', 'کامێرا', 'Camera'),
+              app.tr('صوّر ورقة النتيجة الآن', 'ئێستا وێنە بگرە', 'Take a photo of the result now'), () => app.uploadResultFrom('camera')),
+          const SizedBox(height: 8),
+          _actionTile(context, 'FolderOpen', app.tr('من الملفات', 'لە فایلەکان', 'Files'),
+              app.tr('PDF أو صورة من ملفات الجهاز', 'PDF یان وێنە', 'A PDF or image from your files'), () => app.uploadResultFrom('files')),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// Results of a sample sent to another lab: value, unit and normal range per
+/// test (typed from what the other lab reported), and / or its result file.
+class _SentResultSheet extends StatefulWidget {
+  const _SentResultSheet({super.key});
+
+  @override
+  State<_SentResultSheet> createState() => _SentResultSheetState();
+}
+
+class _SentResultSheetState extends State<_SentResultSheet> {
+  late final Referral r = context.app.sentResult!;
+  late final List<String> tests = r.tests.isNotEmpty
+      ? r.tests
+      : r.test.split(RegExp('[,،]')).map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+  late final Map<String, List<TextEditingController>> fields = {
+    for (final t in (tests.isEmpty ? ['Result'] : tests))
+      t: () {
+        final done = r.results.where((x) => x.test == t).firstOrNull;
+        return [
+          TextEditingController(text: done?.value ?? ''),
+          TextEditingController(text: done?.unit ?? ''),
+          TextEditingController(text: done?.range ?? ''),
+        ];
+      }(),
+  };
+  (String, Uint8List)? file;
+
+  @override
+  void dispose() {
+    for (final l in fields.values) {
+      for (final c in l) {
+        c.dispose();
+      }
+    }
+    super.dispose();
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png']);
+      if (picked.isEmpty) return;
+      final f = picked.first;
+      final bytes = await f.readAsBytes();
+      setState(() => file = (f.name, bytes));
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    Widget field(TextEditingController c, String hint, {bool number = false}) => BoxField(
+          controller: c,
+          hint: hint,
+          ltr: true,
+          fontSize: 14,
+          vPad: 10,
+          radius: 12,
+          keyboard: number ? const TextInputType.numberWithOptions(decimal: true) : null,
+        );
+    return BottomSheetBox(
+      maxHeightFactor: .92,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _payHeader(context, 'Send', r.patient, '${r.lab} • ${r.tracking}', () => app.openSentResult(null)),
+            const SizedBox(height: 10),
+            if (r.onLabGo && !r.done)
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16)),
+                child: Text(
+                  app.tr('المختبر المستلم مسجل في LabGo، وإذا أدخل النتيجة ستصلك تلقائياً. ويمكنك إدخالها بنفسك الآن.',
+                      'تاقیگەی وەرگر لە LabGo یە؛ دەتوانیت خۆت ئێستا ئەنجام بنووسیت.',
+                      'The receiving lab is on LabGo; its result reaches you automatically. You can also enter it yourself now.'),
+                  style: ts(context, 13, color: pal.muted, height: 1.5),
+                ),
+              ),
+            Text(
+                app.tr('اكتب النتيجة كما وصلتك من المختبر، أو أرفق صورتها أو ملفها.', 'ئەنجام بنووسە یان وێنەکەی هاوپێچ بکە.',
+                    'Type the result as the other lab reported it, or attach its photo or file.'),
+                style: ts(context, 12, color: pal.muted),
+              ),
+            for (final e in fields.entries) ...[
+              const SizedBox(height: 12),
+              Text(e.key, textDirection: TextDirection.ltr, style: ts(context, 14, weight: w700)),
+              const SizedBox(height: 6),
+              Row(children: [
+                Expanded(flex: 5, child: field(e.value[0], app.tr('النتيجة', 'ئەنجام', 'Result'), number: true)),
+                const SizedBox(width: 6),
+                Expanded(flex: 4, child: field(e.value[1], app.tr('الوحدة', 'یەکە', 'Unit'))),
+              ]),
+              const SizedBox(height: 6),
+              field(e.value[2], app.tr('المعدل الطبيعي (مثال: 30 - 100)', 'ئاستی ئاسایی (30 - 100)', 'Normal range (e.g. 30 - 100)')),
+            ],
+            if (r.resultFile.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Row(children: [
+                LIcon('FileText', size: 16, color: pal.accent),
+                const SizedBox(width: 6),
+                Text(app.tr('ملف النتيجة مرفق', 'فایلی ئەنجام هاوپێچە', 'Result file attached'), style: ts(context, 13, weight: w700)),
+              ]),
+            ],
+            ...[
+              const SizedBox(height: 12),
+              Tap(
+                onTap: _pickFile,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                  decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(999), border: Border.all(color: pal.line)),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    LIcon(file == null ? 'ImagePlus' : 'FileText', size: 16, color: pal.accent),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        file == null ? app.tr('إرفاق صورة أو ملف النتيجة', 'هاوپێچکردنی وێنە یان فایل', 'Attach the result photo or file') : file!.$1,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: ts(context, 13, weight: w700),
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 14),
+              _wideButton(
+                context,
+                app.sentSaving ? '…' : app.tr('حفظ النتيجة', 'پاشەکەوتکردن', 'Save result'),
+                app.sentSaving
+                    ? null
+                    : () => app.saveSentResults([
+                          for (final e in fields.entries)
+                            {'test': e.key, 'value': e.value[0].text, 'unit': e.value[1].text, 'range': e.value[2].text},
+                        ], file: file),
+              ),
+            ],
+          ],
         ),
       ),
     );

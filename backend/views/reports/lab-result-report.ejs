@@ -96,6 +96,7 @@ tr.cat td { background: var(--soft); font-weight: 800; font-size: 8.5pt; letter-
     <div class="lab">
       <h1 class="auto"><%= lab.name %></h1>
       <% if (lab.nameAr && lab.nameAr !== lab.name) { %><div class="ar ar-name"><%= lab.nameAr %></div><% } %>
+      <% if (lab.labNo) { %><div style="font-size:8px;color:#888;letter-spacing:.4px">LAB NO. L<%= lab.labNo %></div><% } %>
       <% if (lab.tagline) { %><div class="tagline"><%= lab.tagline %></div><% } %>
       <% if (lab.holders.length) { %>
         <div class="holders<%= lab.holders.length > 3 ? ' two' : '' %>">

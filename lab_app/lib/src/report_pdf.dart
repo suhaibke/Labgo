@@ -84,7 +84,8 @@ Future<Uint8List> buildResultReportPdf(AppState app, Patient p, {bool approved =
   final fonts = await _fonts();
   final t = _T(fonts);
   final accent = _pdfColor(app.palette.accent.toARGB32());
-  final rows = resultRows(p);
+  // Tests without a result yet are left out of the printed report.
+  final rows = resultRows(p).where((r) => r.value.trim().isNotEmpty).toList();
   final code = p.code;
   final qr = p.resultUrl.isNotEmpty ? p.resultUrl : code;
   final now = DateTime.now();
@@ -163,6 +164,7 @@ Future<Uint8List> buildResultReportPdf(AppState app, Patient p, {bool approved =
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
                   t(app.labDisplayName, size: 15, bold: true),
+                  if (app.labCode.isNotEmpty) t('LAB NO. ${app.labCode}', size: 6.5, color: _muted, spacing: .4),
                   if (holders.isNotEmpty) pw.SizedBox(height: 3),
                   for (final h in holders) t(h, size: 7.5, color: _ink),
                 ],
@@ -239,7 +241,8 @@ Future<Uint8List> buildResultReportPdf(AppState app, Patient p, {bool approved =
           ),
         ),
         pw.SizedBox(height: 8),
-        // results
+        // results — the table and its key only when some test has a value
+        if (rows.isNotEmpty) ...[
         pw.Table(
           columnWidths: const {
             0: pw.FlexColumnWidth(36),
@@ -305,6 +308,7 @@ Future<Uint8List> buildResultReportPdf(AppState app, Patient p, {bool approved =
         pw.SizedBox(height: 5),
         t('H = above the reference range · L = below the reference range', size: 7, color: _muted),
         t('H = أعلى من الطبيعي · L = أقل من الطبيعي', size: 7, color: _muted),
+        ],
         if (p.notes.trim().isNotEmpty) ...[
           pw.SizedBox(height: 8),
           pw.Container(
@@ -314,6 +318,21 @@ Future<Uint8List> buildResultReportPdf(AppState app, Patient p, {bool approved =
               t('LAB NOTE · ملاحظة المختبر', size: 7, bold: true, color: _muted),
               t(p.notes, size: 9),
             ]),
+          ),
+        ],
+        // Parts cropped from the uploaded result photo / PDF.
+        for (final (i, img) in (app.resultCrops[p.id] ?? const <Uint8List>[]).indexed) ...[
+          pw.SizedBox(height: 10),
+          // the heading only sits under a results table; alone, the image speaks for itself
+          if (i == 0 && rows.isNotEmpty) ...[
+            t('ATTACHED RESULT · مرفق النتيجة', size: 7.5, bold: true, color: _muted, spacing: .4),
+            pw.SizedBox(height: 4),
+          ],
+          pw.Container(
+            alignment: pw.Alignment.center,
+            padding: const pw.EdgeInsets.all(4),
+            decoration: pw.BoxDecoration(border: pw.Border.all(color: const PdfColor.fromInt(0xFFE5E7EB), width: .8)),
+            child: pw.Image(pw.MemoryImage(img), fit: pw.BoxFit.contain, height: 330),
           ),
         ],
         pw.SizedBox(height: 18),
@@ -687,6 +706,165 @@ Future<Uint8List> buildStatsPdf(AppState app, String title) async {
   return doc.save();
 }
 
+/// The statement of a period (0 today, 1 this week, 2 this month, 3 this year),
+/// printed from the home reports card: every order of the period with its amount,
+/// discount, net and payment, then the totals.
+Future<Uint8List> buildStatementPdf(AppState app, int period) async {
+  final fonts = await _fonts();
+  final t = _T(fonts);
+  final ar = app.lang != 'en';
+  final accent = _pdfColor(app.palette.accent.toARGB32());
+  String tr3(String a, String k, String e) => app.tr(a, k, e);
+  final cur = app.currency;
+  final now = DateTime.now();
+  final from = app.periodStart(period);
+  final list = app.periodPatients(period)
+    ..sort((a, b) => (a.createdAt ?? now).compareTo(b.createdAt ?? now));
+
+  final title = [
+    tr3('الموقف اليومي', 'باری ڕۆژانە', 'Daily statement'),
+    tr3('الموقف الأسبوعي', 'باری هەفتانە', 'Weekly statement'),
+    tr3('الموقف الشهري', 'باری مانگانە', 'Monthly statement'),
+    tr3('الموقف السنوي', 'باری ساڵانە', 'Yearly statement'),
+  ][period.clamp(0, 3)];
+  String day(DateTime d) => '${d.day}/${d.month}/${d.year}';
+  String two(int v) => v.toString().padLeft(2, '0');
+  final range = period == 0 ? day(from) : '${day(from)} — ${day(now)}';
+  String when(Patient p) {
+    final d = p.createdAt;
+    if (d == null) return p.time;
+    final hm = '${two(d.hour)}:${two(d.minute)}';
+    return period == 0 ? hm : '${d.day}/${d.month} $hm';
+  }
+
+  final gross = list.fold<int>(0, (a, p) => a + p.gross);
+  final discount = list.fold<int>(0, (a, p) => a + p.discount);
+  final net = list.fold<int>(0, (a, p) => a + p.price);
+  final paid = list.fold<int>(0, (a, p) => a + p.collected);
+  final unpaid = list.fold<int>(0, (a, p) => a + p.due);
+  final discounted = list.where((p) => p.discount > 0).length;
+
+  // Rows and columns follow the page direction on their own, but tables are
+  // laid out left to right, so Arabic / Kurdish table rows are reversed.
+  List<pw.Widget> dir(List<pw.Widget> cells) => ar ? cells.reversed.toList() : cells;
+  Map<int, pw.TableColumnWidth> widths(List<double> flex) {
+    final f = ar ? flex.reversed.toList() : flex;
+    return {for (var i = 0; i < f.length; i++) i: pw.FlexColumnWidth(f[i])};
+  }
+
+  pw.Widget c(String v, {bool bold = false, PdfColor color = _ink, double size = 8.5}) => pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+        child: t(v, size: size, bold: bold, color: color, maxLines: 2),
+      );
+  pw.Widget box(String label, String value, {PdfColor color = _ink}) => pw.Container(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          t(label, size: 7.5, color: _muted),
+          pw.SizedBox(height: 2),
+          t(value, size: 11.5, bold: true, color: color),
+        ]),
+      );
+
+  final doc = pw.Document(title: title, author: app.labDisplayName);
+  doc.addPage(pw.MultiPage(
+    pageFormat: PdfPageFormat.a4.copyWith(marginLeft: 30, marginRight: 30, marginTop: 30, marginBottom: 30),
+    textDirection: ar ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+    footer: (ctx) => pw.Row(children: [
+      pw.Expanded(child: t('${app.labDisplayName} · ${tr3('طُبع', 'چاپکرا', 'Printed')} ${day(now)} ${two(now.hour)}:${two(now.minute)} · ${ctx.pageNumber}/${ctx.pagesCount}', size: 7, color: _muted)),
+      if (_labgoLogo != null) pw.Image(pw.MemoryImage(_labgoLogo!), height: 10),
+      pw.SizedBox(width: 4),
+      t('Powered by LabGo platform', size: 7, color: _muted),
+    ]),
+    build: (ctx) => [
+      // header: lab, statement title and its dates
+      pw.Container(
+        padding: const pw.EdgeInsets.only(bottom: 8),
+        decoration: pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: accent, width: 2.5))),
+        child: pw.Row(children: [
+          pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            t(app.labDisplayName, size: 15, bold: true),
+            t(title, size: 12, color: accent, bold: true),
+            t(range, size: 9, color: _muted),
+          ])),
+          if (app.labLogo != null) pw.Image(pw.MemoryImage(app.labLogo!), width: 48, height: 48, fit: pw.BoxFit.contain),
+        ]),
+      ),
+      pw.SizedBox(height: 12),
+      // summary
+      pw.Table(
+        border: pw.TableBorder.all(color: _line, width: .6),
+        children: [
+          pw.TableRow(decoration: const pw.BoxDecoration(color: _soft), children: dir([
+            box(tr3('عدد الطلبات', 'ژمارەی داواکاری', 'Orders'), '${list.length}'),
+            box(tr3('المجموع قبل الخصم', 'کۆ پێش داشکاندن', 'Total before discount'), '${_money(gross)} $cur'),
+            box('${tr3('الخصومات', 'داشکاندنەکان', 'Discounts')} ($discounted)', '${_money(discount)} $cur', color: const PdfColor.fromInt(0xFFDC2626)),
+          ])),
+          pw.TableRow(children: dir([
+            box(tr3('الصافي', 'خاوێن', 'Net total'), '${_money(net)} $cur', color: accent),
+            box(tr3('المستلم', 'وەرگیراو', 'Collected'), '${_money(paid)} $cur', color: const PdfColor.fromInt(0xFF16A34A)),
+            box(tr3('غير مدفوع', 'نەدراو', 'Unpaid'), '${_money(unpaid)} $cur', color: unpaid > 0 ? const PdfColor.fromInt(0xFFD97706) : _ink),
+          ])),
+        ],
+      ),
+      pw.SizedBox(height: 14),
+      t(tr3('تفاصيل الطلبات', 'وردەکاری داواکارییەکان', 'Orders'), size: 11, bold: true),
+      pw.SizedBox(height: 6),
+      if (list.isEmpty)
+        pw.Padding(padding: const pw.EdgeInsets.symmetric(vertical: 18), child: pw.Center(child: t(tr3('لا توجد طلبات في هذه الفترة', 'هیچ داواکارییەک لەم ماوەیەدا نییە', 'No orders in this period'), size: 10, color: _muted)))
+      else
+        pw.Table(
+          border: pw.TableBorder.all(color: _line, width: .6),
+          columnWidths: widths([0.6, 1.3, 2.4, 1.3, 3, 1.5, 1.3, 1.5, 1.1]),
+          children: [
+            pw.TableRow(decoration: const pw.BoxDecoration(color: _soft), repeat: true, children: dir([
+              c('#', bold: true, color: _muted, size: 7.5),
+              c(tr3('الوصل', 'پسوڵە', 'Receipt'), bold: true, color: _muted, size: 7.5),
+              c(tr3('المريض', 'نەخۆش', 'Patient'), bold: true, color: _muted, size: 7.5),
+              c(period == 0 ? tr3('الوقت', 'کات', 'Time') : tr3('التاريخ', 'بەروار', 'Date'), bold: true, color: _muted, size: 7.5),
+              c(tr3('التحاليل', 'پشکنینەکان', 'Tests'), bold: true, color: _muted, size: 7.5),
+              c(tr3('المبلغ', 'بڕ', 'Amount'), bold: true, color: _muted, size: 7.5),
+              c(tr3('الخصم', 'داشکاندن', 'Discount'), bold: true, color: _muted, size: 7.5),
+              c(tr3('الصافي', 'خاوێن', 'Net'), bold: true, color: _muted, size: 7.5),
+              c(tr3('الدفع', 'پارەدان', 'Paid'), bold: true, color: _muted, size: 7.5),
+            ])),
+            for (var i = 0; i < list.length; i++)
+              pw.TableRow(children: dir([
+                c('${i + 1}', color: _muted),
+                c(list[i].code),
+                c(list[i].mode == 'B2B' && (list[i].company ?? '').isNotEmpty ? '${list[i].name}\n${list[i].company}' : list[i].name, bold: true),
+                c(when(list[i])),
+                c(list[i].tests.join('، '), size: 7.5),
+                c(_money(list[i].gross)),
+                c(list[i].discount > 0 ? '-${_money(list[i].discount)}' : '—', color: list[i].discount > 0 ? const PdfColor.fromInt(0xFFDC2626) : _muted),
+                c(_money(list[i].price), bold: true),
+                c(
+                    list[i].isPaid
+                        ? tr3('مدفوع', 'دراو', 'Paid')
+                        : list[i].isPartlyPaid
+                            ? '${tr3('جزئي', 'بەشێک', 'Part')} ${_money(list[i].collected)}'
+                            : tr3('غير مدفوع', 'نەدراو', 'Unpaid'),
+                    color: list[i].isPaid ? const PdfColor.fromInt(0xFF16A34A) : const PdfColor.fromInt(0xFFD97706), size: 7.5),
+              ])),
+            pw.TableRow(decoration: const pw.BoxDecoration(color: _soft), children: dir([
+              c(''),
+              c(''),
+              c(tr3('المجموع', 'کۆ', 'Total'), bold: true),
+              c(''),
+              c('${list.length} ${tr3('طلب', 'داواکاری', 'orders')}', color: _muted, size: 7.5),
+              c(_money(gross), bold: true),
+              c(discount > 0 ? '-${_money(discount)}' : '—', bold: true, color: discount > 0 ? const PdfColor.fromInt(0xFFDC2626) : _muted),
+              c(_money(net), bold: true, color: accent),
+              c(''),
+            ])),
+          ],
+        ),
+      pw.SizedBox(height: 6),
+      t('${tr3('المبالغ بالدينار العراقي', 'بڕەکان بە دیناری عێراقی', 'Amounts in Iraqi dinar')} ($cur)', size: 7.5, color: _muted),
+    ],
+  ));
+  return doc.save();
+}
+
 /// A photo of a result as a one-page PDF (to share or print).
 Future<Uint8List> imageAsPdf(Uint8List img) async {
   final doc = pw.Document();
@@ -789,13 +967,28 @@ Future<Uint8List> buildReceiptPdf(AppState app, Patient p, {required bool payLat
               ]),
             ),
           dashed(),
+          if (p.discount > 0) ...[
+            row(tr3('المجموع', 'کۆ', 'Subtotal'), _money(p.gross)),
+            row(tr3('الخصم', 'داشکاندن', 'Discount'), '-${_money(p.discount)}'),
+          ],
           row(tr3('الإجمالي', 'کۆی گشتی', 'TOTAL'), '${_money(p.price)} IQD', bold: true, size: 11),
+          if (p.isPartlyPaid) ...[
+            row(tr3('المدفوع', 'دراو', 'Paid'), _money(p.collected)),
+            row(tr3('المتبقي', 'ماوە', 'Remaining'), '${_money(p.due)} IQD', bold: true, size: 10),
+          ],
           pw.SizedBox(height: 3),
           pw.Center(
             child: pw.Container(
               padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: pw.BoxDecoration(border: pw.Border.all(color: _ink, width: .6)),
-              child: t(payLater ? tr3('الدفع لاحقاً — معلق', 'دواتر پارەبدە — چاوەڕوانە', 'Pay later — pending') : tr3('تم الدفع', 'پارەدراوە', 'Paid'), size: 8, bold: true),
+              child: t(
+                  p.isPartlyPaid
+                      ? tr3('دفع جزئي — متبقي ${_money(p.due)}', 'بەشێکی دراوە — ماوە ${_money(p.due)}', 'Partly paid — ${_money(p.due)} due')
+                      : payLater
+                          ? tr3('الدفع لاحقاً — معلق', 'دواتر پارەبدە — چاوەڕوانە', 'Pay later — pending')
+                          : tr3('تم الدفع', 'پارەدراوە', 'Paid'),
+                  size: 8,
+                  bold: true),
             ),
           ),
           pw.SizedBox(height: 8),
@@ -813,5 +1006,84 @@ Future<Uint8List> buildReceiptPdf(AppState app, Patient p, {required bool payLat
       ),
     ),
   );
+  return doc.save();
+}
+
+/// The tests to write on the tube label: each package's tests, then the rest
+/// (no duplicates).
+List<String> tubeLabelTests(Patient p) {
+  final pkgs = kPackages.where((k) => p.packages.contains(k.id) || p.packages.contains(k.name));
+  final out = <String>[];
+  for (final t in [for (final k in pkgs) ...k.tests, ...p.tests]) {
+    if (!out.contains(t)) out.add(t);
+  }
+  return out;
+}
+
+/// Narrowest bar of the tube barcode, in mm. Thermal label printers print
+/// 8 dots per mm (203 dpi), so 0.375 mm (3 dots) and 0.25 mm (2 dots) keep
+/// every bar an exact number of dots: sharp edges the analyzers' scanners
+/// read first time. The widest that fits wins.
+const _tubeModules = [0.375, 0.25];
+
+/// Tube label for a 50 × 25 mm thermal label printer: patient name, order
+/// number, age / gender / date, the order number as a Code 128 barcode and
+/// the tests. [copies] identical labels, one per tube.
+///
+/// Made for lab analyzers' barcode readers: Code 128, bars 10 mm tall, a
+/// quiet zone of at least 10 bars' width on each side, and a bar width fixed
+/// to the printer's dots (never stretched to fill the label). Stick it along
+/// the tube with the bars across it, like the tubes' own labels.
+Future<Uint8List> buildTubeLabelPdf(AppState app, Patient p, {int copies = 1}) async {
+  final fonts = await _fonts();
+  final t = _T(fonts);
+  const mm = PdfPageFormat.mm;
+  const usable = 47.0; // 50 mm minus the 1.5 mm margins
+  final code = p.code;
+  final when = p.createdAt ?? DateTime.now();
+  String two(int v) => v.toString().padLeft(2, '0');
+  final date = '${two(when.day)}/${two(when.month)}/${when.year % 100} ${two(when.hour)}:${two(when.minute)}';
+  final tests = tubeLabelTests(p).join(' • ');
+  final urgent = p.urgency == 'Urgent';
+
+  final barcode = pw.Barcode.code128();
+  // Code 128 always has a one-module element: the narrowest gives the count.
+  final elems = barcode.make(code, width: 1000, height: 1, drawText: false).toList();
+  final narrowest = elems.map((e) => e.width).reduce((a, b) => a < b ? a : b);
+  final modules = (1000 / narrowest).round();
+  final module = _tubeModules.firstWhere((m) => (modules + 20) * m <= usable, orElse: () => _tubeModules.last);
+  final barWidth = modules * module;
+
+  final doc = pw.Document(title: 'Tube label $code', author: app.labDisplayName);
+  for (var i = 0; i < copies.clamp(1, 20); i++) {
+    doc.addPage(
+      pw.Page(
+        pageFormat: const PdfPageFormat(50 * mm, 25 * mm, marginAll: 1.5 * mm),
+        build: (ctx) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            pw.Row(children: [
+              pw.Expanded(child: t(p.name, size: 7.5, bold: true, maxLines: 1)),
+              pw.SizedBox(width: 2),
+              t(code, size: 7.5, bold: true),
+            ]),
+            pw.Row(children: [
+              pw.Expanded(child: t('${p.age} • ${p.gender} • $date', size: 5.5, maxLines: 1)),
+              if (urgent)
+                pw.Container(
+                  color: _ink,
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 2),
+                  child: t('URGENT', size: 5.5, bold: true, color: PdfColors.white),
+                ),
+            ]),
+            pw.SizedBox(height: .6 * mm),
+            pw.Center(child: pw.BarcodeWidget(barcode: barcode, data: code, width: barWidth * mm, height: 10 * mm, drawText: false)),
+            pw.SizedBox(height: .6 * mm),
+            pw.Expanded(child: t(tests, size: 5.5, maxLines: 2)),
+          ],
+        ),
+      ),
+    );
+  }
   return doc.save();
 }

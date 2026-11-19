@@ -457,8 +457,7 @@ const createComprehensiveSeed = async () => {
         // ==================== CREATE ORDERS ====================
         console.log('\n📋 Creating orders...');
         const orderStatuses = [
-            'pending', 'confirmed', 'nurse_assigned', 'at_patient', 'going_to_lab',
-            'at_lab', 'in_progress', 'completed', 'completed', 'completed', 'cancelled'
+            'pending', 'confirmed', 'nurse_assigned', 'sample_collected', 'at_lab', 'completed', 'completed', 'completed', 'cancelled'
         ];
 
         const orderCount = 100;
@@ -538,16 +537,16 @@ const createComprehensiveSeed = async () => {
                 },
                 statusHistory: [{ status: 'pending', timestamp: randomDate(new Date('2024-09-01'), scheduledDate) }],
                 adminConfirmation: {
-                    confirmed: ['confirmed', 'nurse_assigned', 'at_patient', 'going_to_lab', 'at_lab', 'in_progress', 'completed'].includes(status),
-                    confirmedBy: ['confirmed', 'nurse_assigned', 'at_patient', 'going_to_lab', 'at_lab', 'in_progress', 'completed'].includes(status) ? createdUsers.admins[Math.floor(Math.random() * createdUsers.admins.length)]._id : null,
-                    confirmedAt: ['confirmed', 'nurse_assigned', 'at_patient', 'going_to_lab', 'at_lab', 'in_progress', 'completed'].includes(status) ? scheduledDate : null,
+                    confirmed: ['confirmed', 'nurse_assigned', 'sample_collected', 'at_lab', 'completed'].includes(status),
+                    confirmedBy: ['confirmed', 'nurse_assigned', 'sample_collected', 'at_lab', 'completed'].includes(status) ? createdUsers.admins[Math.floor(Math.random() * createdUsers.admins.length)]._id : null,
+                    confirmedAt: ['confirmed', 'nurse_assigned', 'sample_collected', 'at_lab', 'completed'].includes(status) ? scheduledDate : null,
                     notes: null
                 },
                 nurseAssignment: null,
                 qrScanned: {
-                    scanned: ['at_patient', 'going_to_lab', 'at_lab', 'in_progress', 'completed'].includes(status),
-                    scannedAt: ['at_patient', 'going_to_lab', 'at_lab', 'in_progress', 'completed'].includes(status) ? randomDate(scheduledDate, new Date()) : null,
-                    scannedBy: ['at_patient', 'going_to_lab', 'at_lab', 'in_progress', 'completed'].includes(status) ? createdNurses[Math.floor(Math.random() * 5)].user._id : null
+                    scanned: ['sample_collected', 'at_lab', 'completed'].includes(status),
+                    scannedAt: ['sample_collected', 'at_lab', 'completed'].includes(status) ? randomDate(scheduledDate, new Date()) : null,
+                    scannedBy: ['sample_collected', 'at_lab', 'completed'].includes(status) ? createdNurses[Math.floor(Math.random() * 5)].user._id : null
                 },
                 paymentCollected: {
                     collected: status === 'completed' && Math.random() > 0.3,
@@ -558,7 +557,7 @@ const createComprehensiveSeed = async () => {
                     reportUrl: `https://example.com/reports/order-${i}.pdf`,
                     completedAt: randomDate(scheduledDate, new Date()),
                     notified: Math.random() > 0.5
-                } : null,
+                } : undefined,
                 cancellation: status === 'cancelled' ? {
                     reason: 'Patient requested cancellation',
                     cancelledBy: patient._id,
@@ -567,8 +566,8 @@ const createComprehensiveSeed = async () => {
                 } : null,
                 notes: {
                     patientNotes: Math.random() > 0.8 ? 'Please be careful, I have fear of needles.' : null,
-                    labNotes: ['at_lab', 'in_progress', 'completed'].includes(status) && Math.random() > 0.7 ? 'Samples received in good condition.' : null,
-                    nurseNotes: ['at_patient', 'going_to_lab', 'at_lab', 'in_progress', 'completed'].includes(status) && Math.random() > 0.7 ? 'Sample collection completed successfully.' : null
+                    labNotes: ['at_lab', 'completed'].includes(status) && Math.random() > 0.7 ? 'Samples received in good condition.' : null,
+                    nurseNotes: ['sample_collected', 'at_lab', 'completed'].includes(status) && Math.random() > 0.7 ? 'Sample collection completed successfully.' : null
                 },
                 notifications: {
                     smsSent: Math.random() > 0.3,
@@ -586,7 +585,7 @@ const createComprehensiveSeed = async () => {
             });
 
             // Assign nurse if status requires it
-            if (['nurse_assigned', 'at_patient', 'going_to_lab', 'at_lab', 'in_progress', 'completed'].includes(status)) {
+            if (['nurse_assigned', 'sample_collected', 'at_lab', 'completed'].includes(status)) {
                 const availableNurse = createdNurses.filter(n => n.application.status === 'approved')[Math.floor(Math.random() * 5)];
                 if (availableNurse) {
                     order.nurseId = availableNurse.user._id;
@@ -603,18 +602,16 @@ const createComprehensiveSeed = async () => {
             const statusFlow = {
                 'confirmed': ['pending', 'confirmed'],
                 'nurse_assigned': ['pending', 'confirmed', 'nurse_assigned'],
-                'at_patient': ['pending', 'confirmed', 'nurse_assigned', 'at_patient'],
-                'going_to_lab': ['pending', 'confirmed', 'nurse_assigned', 'at_patient', 'going_to_lab'],
-                'at_lab': ['pending', 'confirmed', 'nurse_assigned', 'at_patient', 'going_to_lab', 'at_lab'],
-                'in_progress': ['pending', 'confirmed', 'nurse_assigned', 'at_patient', 'going_to_lab', 'at_lab', 'in_progress'],
-                'completed': ['pending', 'confirmed', 'nurse_assigned', 'at_patient', 'going_to_lab', 'at_lab', 'in_progress', 'completed'],
+                'sample_collected': ['pending', 'confirmed', 'nurse_assigned', 'sample_collected'],
+                'at_lab': ['pending', 'confirmed', 'nurse_assigned', 'sample_collected', 'at_lab'],
+                'completed': ['pending', 'confirmed', 'nurse_assigned', 'sample_collected', 'at_lab', 'completed'],
             };
 
             if (statusFlow[status]) {
                 order.statusHistory = statusFlow[status].map((s, idx) => ({
                     status: s,
                     timestamp: new Date(scheduledDate.getTime() + idx * 3600000),
-                    updatedBy: ['confirmed', 'nurse_assigned', 'at_patient', 'going_to_lab'].includes(s) ?
+                    updatedBy: ['confirmed', 'nurse_assigned', 'sample_collected'].includes(s) ?
                         (s === 'confirmed' ? createdUsers.admins[0]._id : order.nurseId) :
                         (lab.createdBy || lab.ownerId)
                 }));

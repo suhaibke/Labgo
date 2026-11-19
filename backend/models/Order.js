@@ -285,7 +285,8 @@ const OrderSchema = new mongoose.Schema({
     payment: {
         status: {
             type: String,
-            enum: ['pending', 'paid', 'refunded'],
+            // partial: the patient paid part of the amount (paidAmount) and owes the rest
+            enum: ['pending', 'partial', 'paid', 'refunded'],
             default: 'pending',
         },
         method: {
@@ -296,6 +297,11 @@ const OrderSchema = new mongoose.Schema({
         amount: {
             type: Number,
             required: true,
+            min: 0,
+        },
+        // What has been collected so far (walk-in orders); amount - paidAmount is still owed.
+        paidAmount: {
+            type: Number,
             min: 0,
         },
         currency: {
@@ -396,6 +402,8 @@ const OrderSchema = new mongoose.Schema({
             max: { type: Number, default: null },
             normalText: { type: String, trim: true, default: '' },
             flag: { type: String, enum: ['', 'normal', 'low', 'high'], default: '' },
+            // Unit / range typed for this order only (e.g. as the lab it was sent to reported them).
+            custom: { type: Boolean, default: false },
         }],
         comment: { type: String, trim: true, default: '' },
         entryStatus: { type: String, enum: ['none', 'draft', 'approved'], default: 'none' },

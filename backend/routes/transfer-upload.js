@@ -7,15 +7,25 @@ const mongoose = require('mongoose');
 const ExternalTransfer = require('../models/ExternalTransfer');
 const Lab = require('../models/Lab');
 const r2Service = require('../services/r2Service');
+const labResultStore = require('../services/labResultStore');
 const transferLabel = require('../services/transferLabelService');
+const labTransfers = require('../services/labTransferService');
 const { baseUrl } = require('../helpers/base-url');
 
 const router = express.Router();
-const TYPES = { 'application/pdf': '.pdf', 'image/jpeg': '.jpg', 'image/png': '.png' };
+// iPhone photos arrive as HEIC / HEIF; Android often as WebP.
+const TYPES = {
+    'application/pdf': '.pdf', 'image/jpeg': '.jpg', 'image/png': '.png',
+    'image/heic': '.heic', 'image/heif': '.heif', 'image/webp': '.webp',
+};
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024, files: 1 },
-    fileFilter: (req, file, cb) => cb(null, Boolean(TYPES[file.mimetype])),
+    fileFilter: (req, file, cb) => {
+        const ok = Boolean(TYPES[file.mimetype]);
+        if (!ok) req.badType = true;
+        cb(null, ok);
+    },
 });
 
 // "Sara Ali Hussein" -> "Sara A. H."
@@ -36,15 +46,23 @@ async function pageModel(transfer, extra = {}) {
     const lab = await Lab.findById(transfer.labId).select('name');
     return {
         state: transfer.status === 'completed' ? 'done' : 'form',
-        code: transfer.sampleCode,
+        code: transfer.trackingCode || transfer.sampleCode,
         sendingLab: lab?.name || '',
         patient: maskName(transfer.patientName),
-        tests: (transfer.tests || []).map((t) => t.testName).filter(Boolean).join(', ') || transfer.testsDescription || '',
+        tests: testList(transfer).join(', '),
+        testList: testList(transfer),
         toLab: transfer.externalLab?.name || '',
         price: typeof transfer.price === 'number' ? transfer.price.toLocaleString('en-US') : '',
         error: null,
         ...extra,
     };
+}
+
+// The tests to fill in: from the order, or the typed description split by commas.
+function testList(transfer) {
+    const named = (transfer.tests || []).map((t) => t.testName).filter(Boolean);
+    if (named.length) return named;
+    return String(transfer.testsDescription || '').split(/[,،]/).map((s) => s.trim()).filter(Boolean).slice(0, 30);
 }
 
 function headers(res) {
@@ -68,6 +86,7 @@ router.get('/r/t/:id', async (req, res) => {
 router.post('/r/t/:id', (req, res, next) => {
     upload.single('resultFile')(req, res, (err) => {
         if (err) req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'الملف أكبر من 10 ميغا · File is larger than 10 MB' : 'تعذر رفع الملف · Upload failed';
+        else if (req.badType) req.uploadError = 'نوع الملف غير مدعوم، أرفق PDF أو صورة · This file type is not supported — attach a PDF or a photo';
         next();
     });
 }, async (req, res) => {
@@ -77,24 +96,31 @@ router.post('/r/t/:id', (req, res, next) => {
         if (!transfer) return res.status(404).render('reports/transfer-upload', { state: 'invalid' });
         // One upload per sample: a received result cannot be replaced from the link.
         if (transfer.status === 'completed') return res.render('reports/transfer-upload', await pageModel(transfer));
-        if (req.uploadError || !req.file) {
+        // Typed results (value, unit, normal range per test) and/or a file.
+        const b = req.body || {};
+        const names = testList(transfer);
+        const rows = names.length
+            ? names.map((name, i) => ({ testName: name, value: b[`value_${i}`], unit: b[`unit_${i}`], range: b[`range_${i}`] }))
+            : [{ testName: String(b.test_0 || 'Result').slice(0, 120), value: b.value_0, unit: b.unit_0, range: b.range_0 }];
+        const typed = rows.some((r) => String(r.value || '').trim());
+        if (req.uploadError || (!req.file && !typed)) {
             return res.status(400).render('reports/transfer-upload', await pageModel(transfer, {
-                error: req.uploadError || 'اختر ملف PDF أو صورة · Choose a PDF or a photo',
+                error: req.uploadError || 'اكتب النتيجة أو أرفق صورة / ملف · Type the result or attach a photo / file',
+                form: b,
             }));
         }
-        const filename = r2Service.generateUniqueFilename(`${transfer.sampleCode}${TYPES[req.file.mimetype]}`, 'ext-upload-');
-        const uploaded = await r2Service.uploadBuffer(req.file.buffer, r2Service.r2Config.paths.results, filename, { contentType: req.file.mimetype });
-
-        transfer.status = 'completed';
-        transfer.completedAt = new Date();
-        transfer.resultFileUrl = uploaded.url;
-        transfer.resultSource = 'external_link';
+        let fileUrl = null;
+        if (req.file) {
+            const filename = labResultStore.fileName(transfer.trackingCode || transfer.sampleCode, TYPES[req.file.mimetype]);
+            fileUrl = (await r2Service.uploadBuffer(req.file.buffer, await labResultStore.resultsPath(transfer.labId), filename, { contentType: req.file.mimetype })).url;
+        }
         transfer.externalUpload = {
             uploadedAt: new Date(),
-            uploaderName: String(req.body?.uploaderName || '').trim().slice(0, 120),
-            note: String(req.body?.note || '').trim().slice(0, 1000),
+            uploaderName: transfer.externalLab?.name || '',
+            note: String(b.note || '').trim().slice(0, 1000),
         };
-        await transfer.save();
+        await labTransfers.saveExternalResults(transfer, rows, { source: 'external_link', fileUrl });
+        console.log(`QR result received: ${transfer.trackingCode || transfer.sampleCode} (${rows.filter((r) => String(r.value || '').trim()).length} values${fileUrl ? ', file' : ''})`);
         res.render('reports/transfer-upload', await pageModel(transfer));
     } catch (error) {
         console.error('Transfer result upload error:', error);

@@ -15,6 +15,12 @@ const Order = require('../models/Order');
 const r2Service = require('../services/r2Service');
 const transferLabel = require('../services/transferLabelService');
 
+// No database here: every lab's result folder is L101.
+const labResultStore = require('../services/labResultStore');
+labResultStore.resultsPath = async () => 'uploads/results/L101/2026-11';
+labResultStore.labFolder = async () => 'L101';
+labResultStore.monthOf = () => '2026-11';
+
 function makeTransfer(extra = {}) {
     const t = new ExternalTransfer({
         labId: new mongoose.Types.ObjectId(), sampleCode: 'LG-2026-4820', patientName: 'Sara Ali Hussein',
@@ -90,7 +96,7 @@ test('the receiving lab uploads once; the order is not completed until the lab r
     assert.equal(transfer.status, 'completed');
     assert.equal(transfer.resultSource, 'external_link');
     assert.equal(transfer.externalUpload.uploaderName, 'Al-Hayat Lab');
-    assert.match(transfer.resultFileUrl, /^\/uploads\/results\/ext-upload-/);
+    assert.match(transfer.resultFileUrl, /^\/uploads\/results\/L101\/2026-11\/[A-Za-z0-9-]+-[0-9A-Za-z]{8}\./);
     assert.equal(orderFind.mock.callCount(), 0, 'patient order untouched');
 
     res = await fetch(url, { method: 'POST', body: form });
@@ -117,4 +123,36 @@ test('the lab sends a reviewed external result on to the patient', async (t) => 
     assert.equal(order.results.reportUrl, '/uploads/results/x.pdf');
     assert.ok(transfer.forwardedAt);
     assert.equal(sent.mock.callCount(), 1);
+});
+
+test('the receiving lab can type value, unit and normal range instead of a file', async (t) => {
+    const transfer = makeTransfer({});
+    t.mock.method(ExternalTransfer, 'findById', async () => transfer);
+    t.mock.method(Lab, 'findById', () => ({ select: async () => ({ name: 'LabGo Mosul' }) }));
+    const uploads = t.mock.method(r2Service, 'uploadBuffer', async () => ({ url: '/x' }));
+    const base = await serve(t, publicApp());
+    const url = `${base}/r/t/${transfer._id}?k=${transferLabel.key(transfer)}`;
+
+    const empty = new FormData();
+    empty.append('uploaderName', 'Al-Hayat Lab');
+    let res = await fetch(url, { method: 'POST', body: empty });
+    assert.equal(res.status, 400, 'a value or a file is needed');
+    assert.equal(transfer.status, 'sent');
+
+    const form = new FormData();
+    form.append('uploaderName', 'Al-Hayat Lab');
+    form.append('value_0', '12');
+    form.append('unit_0', 'ng/mL');
+    form.append('range_0', '30 - 100');
+    res = await fetch(url, { method: 'POST', body: form });
+    assert.equal(res.status, 200);
+    assert.equal(transfer.status, 'completed');
+    assert.equal(uploads.mock.callCount(), 0, 'no file needed');
+    const v = transfer.receiverResults.values[0];
+    assert.equal(v.value, '12');
+    assert.equal(v.unit, 'ng/mL');
+    assert.equal(v.normalText, '30 - 100');
+    assert.equal(v.min, 30);
+    assert.equal(v.max, 100);
+    assert.equal(v.flag, 'low');
 });

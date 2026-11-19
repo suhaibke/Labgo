@@ -19,6 +19,7 @@ class _SendScreenState extends State<SendScreen> {
   late final TextEditingController _barcode;
   late final TextEditingController _age = TextEditingController(text: AppScope.read(context).refAge);
   final _price = TextEditingController();
+  final _phone = TextEditingController();
 
   @override
   void initState() {
@@ -32,7 +33,7 @@ class _SendScreenState extends State<SendScreen> {
 
   @override
   void dispose() {
-    for (final c in [_patient, _test, _lab, _barcode, _price, _age]) {
+    for (final c in [_patient, _test, _lab, _barcode, _price, _age, _phone]) {
       c.dispose();
     }
     super.dispose();
@@ -45,7 +46,7 @@ class _SendScreenState extends State<SendScreen> {
     final app = context.app;
     if (_formVersion != app.refFormVersion) {
       _formVersion = app.refFormVersion;
-      for (final c in [_patient, _test, _lab, _price, _age]) {
+      for (final c in [_patient, _test, _lab, _price, _age, _phone]) {
         c.clear();
       }
     }
@@ -222,19 +223,37 @@ class _SendScreenState extends State<SendScreen> {
         Text(d('receivedList'), style: ts(context, 16, weight: w700)),
         for (final r in app.receivedSamples) ...[
           const SizedBox(height: 8),
-          CardBox(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${r.patient} • ${r.test}',
-                  style: ts(context, 16, weight: w700),
-                ),
-                Text(
-                  '${r.code} • ${r.lab} • ${r.status}',
-                  style: ts(context, 12, color: pal.muted),
-                ),
-              ],
+          // Tap: open the sample in Results to enter its values.
+          Tap(
+            onTap: () => app.openIncoming(r),
+            child: CardBox(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${r.patient} • ${r.test}',
+                          style: ts(context, 16, weight: w700),
+                        ),
+                        Text(
+                          '${r.code} • ${r.lab} • ${r.status}',
+                          style: ts(context, 12, color: pal.muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    r.state == 'completed'
+                        ? app.tr('عرض النتيجة', 'ئەنجام', 'View result')
+                        : app.tr('إدخال النتيجة', 'ئەنجام بنووسە', 'Enter result'),
+                    style: ts(context, 12, weight: w700, color: pal.accent),
+                  ),
+                  LIcon('ChevronLeft', size: 16, color: pal.accent, flipX: !app.rtl),
+                ],
+              ),
             ),
           ),
         ],
@@ -297,10 +316,21 @@ class _SendScreenState extends State<SendScreen> {
                 hint: w('chooseName'),
                 onChanged: (v) => app.updateSend(() {
                   app.refPatient = v;
+                  app.refOrder = null;
                   app.refPatientOpen = true;
                 }),
               ),
             ),
+            // A new name becomes a patient like any other (receipt, results): phone needed.
+            if (app.refOrder == null && app.refPatient.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              SearchBarBox(
+                icon: 'Phone',
+                controller: _phone,
+                hint: app.tr('رقم هاتف المريض (يُسجَّل كمريض جديد)', 'ژمارەی مۆبایلی نەخۆش', 'Patient phone (registered as a new patient)'),
+                onChanged: (v) => app.updateSend(() => app.refPhone = v),
+              ),
+            ],
             const SizedBox(height: 8),
             // Gender and age (filled in from a saved patient; typed for a new name).
             Row(
@@ -344,6 +374,22 @@ class _SendScreenState extends State<SendScreen> {
             ),
             const SizedBox(height: 16),
             stepTitle('2', w('chooseTest')),
+            if (app.refOrderTests.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                app.tr('فحوصات المريض المسجلة — اضغط للإضافة', 'پشکنینە تۆمارکراوەکانی نەخۆش', "The patient's registered tests — tap to add"),
+                style: ts(context, 12, color: pal.muted),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final t in app.refOrderTests)
+                    FilterChipPill(label: t, icon: 'Plus', selected: false, onTap: () => app.addRefTest(t)),
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
             FloatingDropdown(
               open: app.refTestOpen && app.refTestSearch.trim().isNotEmpty && app.refTestMatches.isNotEmpty,
@@ -503,8 +549,9 @@ class _SendScreenState extends State<SendScreen> {
                 ),
               ),
             ],
-            // Price: the receiving lab's B2B price, editable.
-            if (app.refPrice.isNotEmpty || app.refLabObj?.id.isNotEmpty == true) ...[
+            // Price: the receiving lab's B2B price (editable), or typed for a lab
+            // that is not on LabGo.
+            if (app.refLab.trim().isNotEmpty || app.refPrice.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
                 '${app.tr('السعر', 'نرخ', 'Price')} (${app.currency})',
@@ -521,7 +568,9 @@ class _SendScreenState extends State<SendScreen> {
                 return SearchBarBox(
                   icon: 'Pencil',
                   controller: _price,
-                  hint: app.tr('اكتب السعر', 'نرخ بنووسە', 'Type the price'),
+                  hint: app.refLabObj?.id.isNotEmpty == true
+                      ? app.tr('اكتب السعر', 'نرخ بنووسە', 'Type the price')
+                      : app.tr('السعر المتفق عليه مع المختبر', 'نرخی ڕێککەوتوو', 'Price agreed with the lab'),
                   onChanged: app.setRefPrice,
                 );
               }),
@@ -553,7 +602,14 @@ class _SendScreenState extends State<SendScreen> {
       ),
       const SizedBox(height: 16),
       Text(w('trackingTitle'), style: ts(context, 16, weight: w700)),
-      for (final r in app.referrals) ...[
+      if (app.referrals.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        SearchBarBox(
+          hint: app.tr('ابحث بالاسم أو الفحص أو المختبر أو رقم التتبع…', 'بگەڕێ…', 'Search name, test, lab or tracking no.…'),
+          onChanged: app.setTrackSearch,
+        ),
+      ],
+      for (final r in app.trackedReferrals) ...[
         const SizedBox(height: 8),
         Tap(
           onTap: () => app.showLabel(r),
@@ -630,9 +686,34 @@ class _SendScreenState extends State<SendScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '${w('timeline')} • ${d('labelTitle')} →',
-                  style: ts(context, 11, color: pal.muted),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${w('timeline')} • ${d('labelTitle')} →',
+                        style: ts(context, 11, color: pal.muted),
+                      ),
+                    ),
+                    Tap(
+                      // A sample from a patient's order: the order's own result entry.
+                      onTap: () {
+                        final p = app.patients.where((x) => x.id == r.orderId).firstOrNull;
+                        if (p != null) {
+                          app.openPatient(p);
+                        } else {
+                          app.openSentResult(r);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(999), border: Border.all(color: pal.line)),
+                        child: Text(
+                          r.done ? app.tr('عرض النتيجة', 'ئەنجام', 'View result') : app.tr('إدخال النتيجة', 'ئەنجام بنووسە', 'Enter result'),
+                          style: ts(context, 12, weight: w700, color: pal.accent),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

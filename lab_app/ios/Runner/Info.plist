@@ -69,9 +69,9 @@
 	<!-- Lets the app reach a test server on the local Wi-Fi over http;
 	     internet servers still need https -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choose your photo and the lab logo from your photo library.</string>
+	<string>Choose your photo, the lab logo, result images and maintenance photos from your photo library.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>The camera reads sample barcodes and QR codes.</string>
+	<string>The camera reads sample barcodes and QR codes, and takes photos of result sheets and maintenance problems.</string>
 	<!-- Only standard HTTPS: no export-compliance question on each TestFlight build -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>

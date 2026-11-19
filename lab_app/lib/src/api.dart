@@ -70,7 +70,9 @@ class LabApi {
     } catch (_) {
       throw ApiError(res.statusCode, 'Unexpected server response');
     }
-    if (res.statusCode == 401) await _saveToken(null);
+    // Sign out only when the server rejected the token this request carried; a
+    // request sent before the saved token was restored must not erase it.
+    if (res.statusCode == 401 && req.headers.containsKey('Authorization')) await _saveToken(null);
     if (res.statusCode >= 400 || json['success'] == false) {
       throw ApiError(res.statusCode, (json['message'] ?? 'Request failed').toString(), code: json['code']?.toString());
     }
@@ -102,6 +104,31 @@ class LabApi {
         .toList();
   }
 
+  /// Pays off [amount] of what the patient owes; returns the updated patient.
+  Future<Patient> payOrder(String orderId, int amount) async {
+    final json = await _send('POST', '/lab/api/app/orders/$orderId/pay', {'amount': amount});
+    return patientFromJson(Map<String, dynamic>.from(json['data'] as Map));
+  }
+
+  /// Edits a walk-in patient's name / phone / gender / age; returns the updated patient.
+  Future<Patient> editPatient(String orderId, Map<String, dynamic> body) async {
+    final json = await _send('PATCH', '/lab/api/app/orders/$orderId/patient', body);
+    return patientFromJson(Map<String, dynamic>.from(json['data'] as Map));
+  }
+
+  /// Results of a sample sent to a lab that is not on LabGo, typed by this lab.
+  Future<Map<String, dynamic>> saveTransferResults(String id, List<Map<String, String>> values) async {
+    final json = await _send('PUT', '/lab/api/app/transfers/$id/results', {'values': values});
+    return Map<String, dynamic>.from((json['data'] as Map)['referral'] as Map);
+  }
+
+  /// Attaches the result file (photo / PDF) of a sent sample.
+  Future<void> uploadTransferResult(String id, List<int> bytes, String filename) =>
+      uploadImage('/lab/api/external-transfers/$id/result', 'resultFile', bytes, filename);
+
+  /// Deletes a walk-in order (the server keeps it as cancelled).
+  Future<void> deleteOrder(String orderId) => _send('DELETE', '/lab/api/app/orders/$orderId');
+
   /// Registers a patient at the lab; returns the new order id.
   Future<String> addPatient(Map<String, dynamic> body) async {
     final json = await _send('POST', '/lab/api/walk-in-orders', body);
@@ -114,21 +141,24 @@ class LabApi {
       : '/lab/api/orders/$id';
 
   /// Saves result values as a draft (test name -> value).
-  Future<void> saveResults(String orderId, Map<String, String> values) async {
+  /// [meta]: this order's own unit and range for some tests (sent to another lab).
+  Future<void> saveResults(String orderId, Map<String, String> values, {Map<String, (String, String)> meta = const {}}) async {
     await _send('PUT', '${_resultsBase(orderId)}/results', {
       'values': [
-        for (final e in values.entries) {'testName': e.key, 'value': e.value},
+        for (final e in values.entries)
+          {'testName': e.key, 'value': e.value, if (meta[e.key] != null) 'unit': meta[e.key]!.$1, if (meta[e.key] != null) 'range': meta[e.key]!.$2},
       ],
     });
   }
 
   /// Approves the results: the server builds the PDF report, completes the
   /// order and notifies the patient. Every test needs a value.
-  Future<void> approveResults(String orderId, Map<String, String> values, {String? reportUrl}) async {
+  Future<void> approveResults(String orderId, Map<String, String> values, {String? reportUrl, Map<String, (String, String)> meta = const {}}) async {
     try {
       await _send('POST', '${_resultsBase(orderId)}/results/approve', {
         'values': [
-          for (final e in values.entries) {'testName': e.key, 'value': e.value},
+          for (final e in values.entries)
+            {'testName': e.key, 'value': e.value, if (meta[e.key] != null) 'unit': meta[e.key]!.$1, if (meta[e.key] != null) 'range': meta[e.key]!.$2},
         ],
         if (reportUrl != null) 'reportUrl': reportUrl,
       });
@@ -170,6 +200,9 @@ class LabApi {
   }
 
   Future<Map<String, dynamic>> sendSupport(Map<String, String> fields, List<List<int>> images) => sendForm('/lab/api/support', fields, images);
+  Future<Map<String, dynamic>> sendMaintenance(Map<String, String> fields, List<List<int>> images) => sendForm('/lab/api/maintenance', fields, images);
+  Future<List<dynamic>> maintenanceRequests() async => ((await _data('GET', '/lab/api/maintenance'))['items'] as List?) ?? const [];
+  Future<void> cancelMaintenance(String id) => _send('PATCH', '/lab/api/maintenance/$id/cancel');
   Future<List<dynamic>> supportTickets() async => ((await _data('GET', '/lab/api/support'))['items'] as List?) ?? const [];
   /// Store listings plus the banner slides the admin set for the labs' store.
   Future<Map<String, dynamic>> market() => _data('GET', '/lab/api/market');
@@ -376,9 +409,16 @@ Patient patientFromJson(Map<String, dynamic> j) => Patient(
   status: (j['status'] ?? 'Pending') as String,
   time: (j['time'] ?? '') as String,
   price: ((j['price'] ?? 0) as num).toInt(),
+  discount: ((j['discount'] ?? 0) as num).toInt(),
+  paid: j['paid'] as bool?,
+  paidAmount: (j['paidAmount'] as num?)?.toInt(),
   doctor: (j['doctor'] ?? '') as String,
   mode: (j['mode'] ?? 'B2C') as String,
   company: j['company'] as String?,
+  resultMeta: {
+    for (final e in ((j['resultMeta'] ?? {}) as Map).entries)
+      '${e.key}': ('${(e.value as Map)['unit'] ?? ''}', '${(e.value as Map)['range'] ?? ''}'),
+  },
   results: {
     for (final e in ((j['results'] ?? {}) as Map).entries) '${e.key}': '${e.value}',
   },

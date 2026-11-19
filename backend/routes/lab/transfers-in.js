@@ -9,6 +9,7 @@ const Order = require('../../models/Order');
 const Lab = require('../../models/Lab');
 const Notification = require('../../models/Notification');
 const r2Service = require('../../services/r2Service');
+const labResultStore = require('../../services/labResultStore');
 const reportPdf = require('../../services/reportPdfService');
 const labTransfers = require('../../services/labTransferService');
 const { notifyLab } = require('../../services/labNotify');
@@ -104,7 +105,8 @@ function asOrder(t) {
 function summary(t, fromLabName) {
     return {
         id: String(t._id),
-        code: t.sampleCode,
+        code: t.trackingCode || t.sampleCode,
+        sampleCode: t.sampleCode,
         patient: t.patientName,
         gender: t.patientGender || null,
         age: Number.isInteger(t.patientAge) ? t.patientAge : null,
@@ -135,7 +137,9 @@ router.post('/api/transfers/incoming/receive', async (req, res) => {
     try {
         const code = String(req.body?.code || '').trim();
         if (!code) return res.status(400).json({ success: false, message: 'Scan or type the sample code', code: 'code' });
-        const t = await ExternalTransfer.findOne({ toLabId: req.lab._id, sampleCode: new RegExp(`^${code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
+        const exact = new RegExp(`^${code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        // The short tracking code (label barcode) or the older long sample code.
+        const t = await ExternalTransfer.findOne({ toLabId: req.lab._id, $or: [{ trackingCode: exact }, { sampleCode: exact }] });
         if (!t) return res.status(404).json({ success: false, message: 'No sample with this code was sent to your lab', code: 'notFound' });
         if (!t.receivedAt) {
             t.receivedAt = new Date();
@@ -251,12 +255,14 @@ async function copyToSenderOrder(t) {
     const order = await Order.findById(t.orderId);
     if (!order || order.results?.entryStatus === 'approved') return;
     const byName = new Map((t.receiverResults?.values || []).map((v) => [v.testName, v.value]));
+    const extra = new Map((t.receiverResults?.values || []).map((v) => [v.testName, v]));
     const prev = new Map((order.results?.values || []).map((v) => [v.testName, v]));
     if (!order.results) order.results = {};
     order.results.values = (order.tests || []).map((x) => {
         const old = prev.get(x.testName) || {};
         const value = byName.has(x.testName) ? byName.get(x.testName) : (old.value || '');
-        return { testId: x.testId, testName: x.testName, value, unit: old.unit || '', min: old.min ?? null, max: old.max ?? null, normalText: old.normalText || '', flag: old.flag || '' };
+        const ext = extra.get(x.testName) || {};
+        return { testId: x.testId, testName: x.testName, value, unit: old.unit || ext.unit || '', min: old.min ?? null, max: old.max ?? null, normalText: old.normalText || ext.normalText || '', flag: old.flag || ext.flag || '' };
     });
     order.results.entryStatus = 'draft';
     order.results.enteredAt = new Date();
@@ -292,8 +298,8 @@ router.post('/api/transfers/incoming/:id/results/approve', async (req, res) => {
         if (!fileUrl) {
             try {
                 const pdf = await reportPdf.buildReportPdf({ order: asOrder(t), lab: req.lab, rows: rowsFor(t, req.lab), approvedBy: req.user.name, baseUrl: null });
-                const name = r2Service.generateUniqueFilename(`${t.sampleCode}.pdf`, 'b2b-report-');
-                fileUrl = (await r2Service.uploadBuffer(pdf, r2Service.r2Config.paths.results, name, { contentType: 'application/pdf' })).url;
+                const name = labResultStore.fileName(t.sampleCode, '.pdf');
+                fileUrl = (await r2Service.uploadBuffer(pdf, await labResultStore.resultsPath(req.lab), name, { contentType: 'application/pdf' })).url;
             } catch (error) {
                 if (error.code === 'pdfUnavailable') return res.status(503).json({ success: false, code: 'pdfUnavailable', message: 'The server cannot build PDF reports right now' });
                 throw error;
@@ -341,4 +347,5 @@ router.post('/api/transfers/incoming/:id/upload-result', ...uploadIncomingResult
 
 module.exports = router;
 module.exports.asOrder = asOrder;
+module.exports.copyToSenderOrder = copyToSenderOrder;
 module.exports.summary = summary;

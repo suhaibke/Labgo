@@ -129,8 +129,17 @@ class Patient {
   final String? packageCategory;
   final List<String> tests;
   final List<String> packages;
+  /// What the patient pays, after any discount.
   final int price;
+  /// Discount taken off the order (server mode); 0 when there is none.
+  final int discount;
+  /// Whether the order is paid; null when unknown (the sample data).
+  final bool? paid;
+  /// Collected so far (a partial payment is less than [price]); null when unknown.
+  final int? paidAmount;
   final Map<String, String> results;
+  /// This order's own unit and normal range for a test (a test sent to another lab).
+  final Map<String, (String, String)> resultMeta;
   /// When the order was made (server mode); null for the sample data.
   final DateTime? createdAt;
   /// Order (receipt) number, e.g. V0001 — the code on the barcode.
@@ -154,23 +163,46 @@ class Patient {
     required this.mode,
     required this.results,
     required this.permanent,
+    this.resultMeta = const {},
     this.company,
     this.packages = const [],
     this.packageCategory,
     this.createdAt,
     this.orderNo = '',
     this.resultUrl = '',
+    this.discount = 0,
+    this.paid,
+    this.paidAmount,
   });
 
+  /// Price before the discount.
+  int get gross => price + discount;
+
+  /// Paid as the server reports it; otherwise everything but "Payment Pending".
+  bool get isPaid => paid ?? (paidAmount != null ? paidAmount! >= price : status != 'Payment Pending');
+
+  /// What has been collected, and what the patient still owes.
+  int get collected => paidAmount ?? (isPaid ? price : 0);
+  int get due => (price - collected).clamp(0, price);
+
+  /// Paid part of the amount, not all of it.
+  bool get isPartlyPaid => collected > 0 && collected < price;
+
   /// The order number shown on the receipt, label and report.
+  /// [code] short enough for a list chip: "LG-MWNGRNZJ-U8RYNI" -> "LG-U8RYNI".
+  String get shortCode {
+    final parts = code.split('-').where((x) => x.isNotEmpty).toList();
+    return parts.length > 2 ? '${parts.first}-${parts.last}' : code;
+  }
+
   String get code => orderNo.isNotEmpty ? orderNo : (permanent.isNotEmpty ? permanent : id.toUpperCase());
 
-  Patient copyWith({Map<String, String>? results, String? status, String? orderNo}) => Patient(
+  Patient copyWith({Map<String, String>? results, Map<String, (String, String)>? resultMeta, String? status, String? orderNo, String? name, String? phone, String? gender, String? age}) => Patient(
     id: id,
-    name: name,
-    age: age,
-    gender: gender,
-    phone: phone,
+    name: name ?? this.name,
+    age: age ?? this.age,
+    gender: gender ?? this.gender,
+    phone: phone ?? this.phone,
     tests: tests,
     sample: sample,
     urgency: urgency,
@@ -181,6 +213,7 @@ class Patient {
     doctor: doctor,
     mode: mode,
     results: results ?? this.results,
+    resultMeta: resultMeta ?? this.resultMeta,
     permanent: permanent,
     company: company,
     packages: packages,
@@ -188,6 +221,9 @@ class Patient {
     createdAt: createdAt,
     orderNo: orderNo ?? this.orderNo,
     resultUrl: resultUrl,
+    discount: discount,
+    paid: paid,
+    paidAmount: paidAmount,
   );
 }
 
@@ -281,11 +317,26 @@ String initials(String name) => name
     .toUpperCase();
 
 /// External lab referral (design `lw`).
+/// One result of a sent sample: value, unit and normal range (free text).
+class SentResult {
+  final String test, value, unit, range, flag;
+  const SentResult(this.test, this.value, this.unit, this.range, this.flag);
+}
+
 class Referral {
   final String id, patient, test, lab, status, eta, tracking;
   final int step;
   /// 'Male' | 'Female' | '' and age in years ('' when unknown).
   final String gender, age;
+  /// The patient's order this sample belongs to (server mode), if any.
+  final String? orderId;
+  /// The receiving lab is on LabGo (it enters the results itself).
+  final bool onLabGo;
+  final List<String> tests;
+  final List<SentResult> results;
+  final String resultFile;
+  final DateTime? sentAt;
+  bool get done => status == 'Completed';
   const Referral({
     required this.id,
     required this.patient,
@@ -297,6 +348,12 @@ class Referral {
     required this.step,
     this.gender = '',
     this.age = '',
+    this.orderId,
+    this.onLabGo = false,
+    this.tests = const [],
+    this.results = const [],
+    this.resultFile = '',
+    this.sentAt,
   });
 }
 

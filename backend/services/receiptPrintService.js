@@ -19,10 +19,10 @@ function ageOf(birthDate) {
 }
 
 const COPY = {
-    ar: { patient: 'المريض', ageGender: 'العمر / الجنس', doctor: 'الطبيب', company: 'الجهة', order: 'رقم الطلب', date: 'التاريخ', total: 'الإجمالي', discount: 'الخصم', paid: 'تم الدفع', later: 'الدفع لاحقاً — معلق', scan: 'امسح لعرض النتيجة عند جاهزيتها', urgent: 'عاجل', male: 'ذكر', female: 'أنثى', thanks: 'شكراً لاختياركم' },
-    en: { patient: 'Patient', ageGender: 'Age / Gender', doctor: 'Doctor', company: 'Company', order: 'Order No.', date: 'Date', total: 'TOTAL', discount: 'Discount', paid: 'Paid', later: 'Pay later — pending', scan: 'Scan to view the result when ready', urgent: 'URGENT', male: 'Male', female: 'Female', thanks: 'Thank you' },
-    ku: { patient: 'نەخۆش', ageGender: 'تەمەن / ڕەگەز', doctor: 'پزیشک', company: 'لایەن', order: 'ژمارەی داواکاری', date: 'بەروار', total: 'کۆی گشتی', discount: 'داشکاندن', paid: 'پارەدراوە', later: 'دواتر پارەبدە — چاوەڕوانە', scan: 'سکان بکە بۆ بینینی ئەنجام کاتێک ئامادەبوو', urgent: 'بەپەلە', male: 'نێر', female: 'مێ', thanks: 'سوپاس' },
-    tr: { patient: 'Hasta', ageGender: 'Yaş / Cinsiyet', doctor: 'Doktor', company: 'Kurum', order: 'Sipariş No.', date: 'Tarih', total: 'TOPLAM', discount: 'İndirim', paid: 'Ödendi', later: 'Sonra ödenecek — bekliyor', scan: 'Sonuç hazır olunca görmek için tarayın', urgent: 'ACİL', male: 'Erkek', female: 'Kadın', thanks: 'Teşekkürler' },
+    ar: { patient: 'المريض', ageGender: 'العمر / الجنس', doctor: 'الطبيب', company: 'الجهة', order: 'رقم الطلب', date: 'التاريخ', total: 'الإجمالي', discount: 'الخصم', paid: 'تم الدفع', later: 'الدفع لاحقاً — معلق', scan: 'امسح لعرض النتيجة عند جاهزيتها', urgent: 'عاجل', male: 'ذكر', female: 'أنثى', thanks: 'شكراً لاختياركم', partPaid: 'المدفوع', due: 'المتبقي', partial: 'دفع جزئي' },
+    en: { patient: 'Patient', ageGender: 'Age / Gender', doctor: 'Doctor', company: 'Company', order: 'Order No.', date: 'Date', total: 'TOTAL', discount: 'Discount', paid: 'Paid', later: 'Pay later — pending', scan: 'Scan to view the result when ready', urgent: 'URGENT', male: 'Male', female: 'Female', thanks: 'Thank you', partPaid: 'Paid', due: 'Remaining', partial: 'Partly paid' },
+    ku: { patient: 'نەخۆش', ageGender: 'تەمەن / ڕەگەز', doctor: 'پزیشک', company: 'لایەن', order: 'ژمارەی داواکاری', date: 'بەروار', total: 'کۆی گشتی', discount: 'داشکاندن', paid: 'پارەدراوە', later: 'دواتر پارەبدە — چاوەڕوانە', scan: 'سکان بکە بۆ بینینی ئەنجام کاتێک ئامادەبوو', urgent: 'بەپەلە', male: 'نێر', female: 'مێ', thanks: 'سوپاس', partPaid: 'دراو', due: 'ماوە', partial: 'بەشێکی دراوە' },
+    tr: { patient: 'Hasta', ageGender: 'Yaş / Cinsiyet', doctor: 'Doktor', company: 'Kurum', order: 'Sipariş No.', date: 'Tarih', total: 'TOPLAM', discount: 'İndirim', paid: 'Ödendi', later: 'Sonra ödenecek — bekliyor', scan: 'Sonuç hazır olunca görmek için tarayın', urgent: 'ACİL', male: 'Erkek', female: 'Kadın', thanks: 'Teşekkürler', partPaid: 'Ödenen', due: 'Kalan', partial: 'Kısmen ödendi' },
 };
 
 async function receiptHtml({ order, lab, baseUrl, lang = 'ar', autoPrint = true }) {
@@ -32,11 +32,14 @@ async function receiptHtml({ order, lab, baseUrl, lang = 'ar', autoPrint = true 
     const person = order.beneficiary?.isForOtherPerson ? order.beneficiary : (order.patientId || {});
     const gender = person.gender === 'male' ? t.male : person.gender === 'female' ? t.female : '';
     const age = ageOf(person.birthDate);
-    const qr = await QRCode.toString(receipt.resultLink(baseUrl, String(order._id)), { type: 'svg', margin: 0, errorCorrectionLevel: 'M' });
+    const qrUrl = order.resultCode ? receipt.shortLink(baseUrl, order.resultCode) : receipt.resultLink(baseUrl, String(order._id));
+    const qr = await QRCode.toString(qrUrl, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' });
     const bar = bwipjs.toSVG({ bcid: 'code128', text: code || String(order._id).slice(-8), height: 11, scale: 2, includetext: false, paddingwidth: 0, paddingheight: 0 });
     const when = new Date(order.createdAt || Date.now());
     const date = `${when.getFullYear()}/${String(when.getMonth() + 1).padStart(2, '0')}/${String(when.getDate()).padStart(2, '0')} ${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`;
     const paid = order.payment?.status === 'paid' || order.paymentCollected?.collected;
+    const partial = order.payment?.status === 'partial';
+    const paidSoFar = order.payment?.paidAmount || 0;
     const rows = (order.tests || []).map((x) => `<tr><td>${esc(x.testName)}</td><td class="n">${money(x.price)}</td></tr>`).join('');
     const line = (a, b, cls = '') => (b ? `<div class="kv ${cls}"><span>${esc(a)}</span><b>${b}</b></div>` : '');
     return `<!doctype html><html lang="${esc(lang)}" dir="${rtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><title>${esc(code)}</title>
@@ -77,7 +80,8 @@ ${line(t.date, `<span dir="ltr">${date}</span>`)}
 <hr>
 ${order.pricing?.discount ? line(t.discount, `<span dir="ltr">-${money(order.pricing.discount)}</span>`) : ''}
 <div class="total"><span>${esc(t.total)}</span><span dir="ltr">${money(order.pricing?.total)} IQD</span></div>
-<div class="c"><span class="pay">${esc(paid ? t.paid : t.later)}</span></div>
+${partial ? line(t.partPaid, `<span dir="ltr">${money(paidSoFar)}</span>`) + line(t.due, `<span dir="ltr">${money(Math.max(0, (order.pricing?.total || 0) - paidSoFar))} IQD</span>`, 'big') : ''}
+<div class="c"><span class="pay">${esc(paid ? t.paid : partial ? t.partial : t.later)}</span></div>
 <div class="codes">
   <div class="bar">${bar}</div><div class="code" dir="ltr">${esc(code)}</div>
   <div class="qr">${qr}</div><div class="mut">${esc(t.scan)}</div>

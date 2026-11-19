@@ -72,7 +72,9 @@ router.get('/', verifyToken, adminOnly, async (req, res) => {
         let query = {};
 
         if (search) {
+            const no = /^\s*L?(\d{3,6})\s*$/i.exec(String(search));
             query.$or = [
+                ...(no ? [{ labNo: Number(no[1]) }] : []),
                 { name: { $regex: search, $options: 'i' } },
                 { email: { $regex: search, $options: 'i' } },
                 { phone: { $regex: search, $options: 'i' } }
@@ -204,6 +206,27 @@ router.get('/search-owner', verifyToken, adminOnly, async (req, res) => {
     }
 });
 
+// Results index (Excel) for archiving: every order with all patient details.
+// :id is a lab id, or "all" for every lab. ?from=YYYY-MM-DD&to=YYYY-MM-DD (optional).
+router.get('/:id/results-index', verifyToken, adminOnly, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (id !== 'all' && !/^[a-f0-9]{24}$/i.test(id)) return res.status(404).json({ success: false, message: 'Lab not found' });
+        const valid = (d) => (d && !Number.isNaN(new Date(d).getTime()) ? d : undefined);
+        const out = await require('../../services/resultsIndexService').buildIndex({
+            labId: id, from: valid(req.query.from), to: valid(req.query.to), baseUrl: require('../../helpers/base-url').baseUrl(req),
+        });
+        if (!out) return res.status(404).json({ success: false, message: 'Lab not found' });
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${out.filename}"`);
+        res.setHeader('Cache-Control', 'no-store');
+        res.send(out.buffer);
+    } catch (error) {
+        console.error('Results index error:', error);
+        res.status(500).json({ success: false, message: 'Error building the results index' });
+    }
+});
+
 // Get lab by ID with all patient tests
 router.get('/:id', verifyToken, adminOnly, async (req, res) => {
     try {
@@ -293,6 +316,7 @@ router.post('/', verifyToken, adminOnly, ...uploadLabRegistration, async (req, r
     try {
         const labData = { ...req.body };
         delete labData.documents;
+        delete labData.labNo; // given by the server, never by the request
 
         // Handle file upload to R2
         const logoFile = req.files?.logo?.[0];

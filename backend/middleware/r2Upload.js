@@ -8,6 +8,7 @@
 const multer = require('multer');
 const path = require('path');
 const r2Service = require('../services/r2Service');
+const labResultStore = require('../services/labResultStore');
 
 // Use memory storage - files are stored in buffer and uploaded to R2
 const memoryStorage = multer.memoryStorage();
@@ -195,12 +196,32 @@ const testImportUpload = multer({
  * @param {string} uploadType - Type of upload (matches r2Config.paths keys)
  * @param {string} prefix - Filename prefix
  */
+// Receipt number / sample code that names an uploaded result file.
+async function resultRef(req) {
+    try {
+        const id = req.params?.orderId || req.params?.id;
+        if (!id || !/^[a-f0-9]{24}$/i.test(String(id))) return '';
+        if (req.params.orderId) {
+            const order = await require('../models/Order').findById(id).select('receiptNo qrCode').lean();
+            return order ? require('../services/receiptLinkService').receiptCode(order) : '';
+        }
+        const t = await require('../models/ExternalTransfer').findById(id).select('sampleCode').lean();
+        return t?.sampleCode || '';
+    } catch (_) {
+        return '';
+    }
+}
+
 function processR2Upload(uploadType, prefix = '') {
     return async (req, res, next) => {
         try {
             // Handle single file upload (req.file)
+            // Result files: uploads/results/L101/2026-11/V0006-4fK9xQ2m.pdf
+            const perLab = uploadType === 'results' && req.lab?._id;
+            const sub = perLab ? `${await labResultStore.labFolder(req.lab)}/${labResultStore.monthOf()}` : '';
             if (req.file) {
-                const result = await r2Service.uploadFromMulter(req.file, uploadType, prefix);
+                const name = perLab ? labResultStore.fileName(await resultRef(req), req.file.originalname) : '';
+                const result = await r2Service.uploadFromMulter(req.file, uploadType, prefix, sub, name);
                 // Store R2 result on the file object for route handler access
                 req.file.r2 = result;
                 req.file.r2Url = result.url;

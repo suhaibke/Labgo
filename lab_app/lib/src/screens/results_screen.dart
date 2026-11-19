@@ -31,10 +31,7 @@ class ResultsScreen extends StatelessWidget {
             style: ts(context, 13, color: pal.muted),
           ),
           const SizedBox(height: 12),
-          SearchBarBox(
-            hint: app.w('searchPatientTest'),
-            onChanged: app.setResultsSearch,
-          ),
+          const _ResultsSearch(),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -150,6 +147,34 @@ class ResultsScreen extends StatelessWidget {
   }
 }
 
+/// Search box that keeps showing the active search when the screen is rebuilt.
+class _ResultsSearch extends StatefulWidget {
+  const _ResultsSearch();
+
+  @override
+  State<_ResultsSearch> createState() => _ResultsSearchState();
+}
+
+class _ResultsSearchState extends State<_ResultsSearch> {
+  late final _c = TextEditingController(text: context.app.resultsSearch);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    return SearchBarBox(
+      controller: _c,
+      hint: app.tr('ابحث بالاسم أو كود العينة أو الهاتف…', 'بە ناو، کۆدی نموونە یان مۆبایل بگەڕێ…', 'Search name, sample code or phone…'),
+      onChanged: app.setResultsSearch,
+    );
+  }
+}
+
 class _ResultRow extends StatelessWidget {
   final Patient patient;
   const _ResultRow({required this.patient});
@@ -158,44 +183,30 @@ class _ResultRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = context.app;
     final pal = app.palette;
+    // Compact round action (icon only) so the name gets the row's width.
     Widget action({
       required String icon,
-      required String label,
       required VoidCallback onTap,
       Gradient? gradient,
       Color? color,
+      Color iconColor = Colors.white,
+      Border? border,
     }) => Tap(
       onTap: onTap,
-      scale: .95,
+      scale: .9,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LIcon(icon, size: 16, color: Colors.white),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: ts(
-                context,
-                10,
-                weight: w700,
-                color: Colors.white,
-                height: 1,
-              ),
-            ),
-          ],
-        ),
+        width: 36,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(gradient: gradient, color: color, shape: BoxShape.circle, border: border),
+        child: LIcon(icon, size: 16, color: iconColor),
       ),
     );
 
+    final code = patient.shortCode;
+    final pid = patient.permanent;
     return CardBox(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 8, 12),
       child: Row(
         children: [
           Expanded(
@@ -204,54 +215,79 @@ class _ResultRow extends StatelessWidget {
               child: Row(
                 children: [
                   InitialsAvatar(initials(patient.name)),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          patient.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: ts(context, 15, weight: w700),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                patient.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: ts(context, 15, weight: w700),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            // sample / receipt code, searchable
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(6), border: Border.all(color: pal.line)),
+                              child: Text(code, textDirection: TextDirection.ltr, style: ts(context, 10.5, weight: w700, color: pal.muted2, height: 1.4)),
+                            ),
+                          ],
                         ),
+                        if (app.sentFor(patient.id) case final sent?)
+                          Text(
+                            '${app.tr('مرسل إلى', 'نێردرا بۆ', 'Sent to')} ${sent.lab} • ${sent.tracking}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: ts(context, 11.5, weight: w700, color: pal.accent),
+                          ),
                         Text(
-                          patient.tests.join(', '),
+                          [if (pid.isNotEmpty && pid != code) pid, patient.tests.join(', ')].join(' • '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: ts(context, 12, color: pal.muted),
                         ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            StatusPill(patient.status),
+                            const SizedBox(width: 6),
+                            Text(patient.time, style: ts(context, 11, color: pal.muted)),
+                          ],
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        patient.time,
-                        style: ts(context, 12, color: pal.muted),
-                      ),
-                      StatusPill(patient.status),
-                    ],
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           action(
             icon: 'Send',
-            label: app.tr('إرسال', 'ناردن', 'Send'),
             gradient: context.pal.accentGradient,
             onTap: () => app.openSendSheet(patient),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           action(
             icon: 'Printer',
-            label: app.tr('طباعة النتائج', 'چاپی ئەنجام', 'Print Results'),
             color: pal.accent,
             onTap: () => app.openPrint(patient, patient.results),
+          ),
+          const SizedBox(width: 2),
+          Tap(
+            onTap: () => app.openRowMenu(patient),
+            scale: .9,
+            child: SizedBox(
+              width: 30,
+              height: 36,
+              child: Center(child: LIcon('EllipsisVertical', size: 20, color: pal.muted)),
+            ),
           ),
         ],
       ),
@@ -269,7 +305,8 @@ class ResultDetailScreen extends StatelessWidget {
     final pal = app.palette;
     final p = app.selectedPatient!;
     final idTail = p.id.length > 4 ? p.id.substring(p.id.length - 4) : p.id;
-    final rows = resultRows(p);
+    // Unit / range typed for sent tests count before they are saved.
+    final rows = resultRows(p.copyWith(resultMeta: {...p.resultMeta, ...app.draftMeta}));
 
     Widget infoCell(
       String label,
@@ -356,7 +393,7 @@ class ResultDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 for (final r in rows) ...[
-                  _ResultEntry(key: ValueKey(r.test), row: r),
+                  _ResultEntry(key: ValueKey(r.test), row: r, sent: app.sentTest(p, r.test)),
                   const SizedBox(height: 8),
                 ],
                 const SizedBox(height: 4),
@@ -396,6 +433,59 @@ class ResultDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Parts cut from the uploaded file; printed in the report.
+                if (app.resultFiles.containsKey(p.id)) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 64,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        for (final (i, img) in (app.resultCrops[p.id] ?? const []).indexed)
+                          Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 8),
+                            child: Stack(children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(color: Colors.white, child: Image.memory(img, width: 86, height: 64, fit: BoxFit.contain)),
+                              ),
+                              PositionedDirectional(
+                                top: 2,
+                                end: 2,
+                                child: Tap(
+                                  onTap: () => app.removeCrop(p.id, i),
+                                  child: Container(width: 20, height: 20, alignment: Alignment.center,
+                                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                      child: const LIcon('X', size: 11, color: Colors.white)),
+                                ),
+                              ),
+                            ]),
+                          ),
+                        if ((app.resultCrops[p.id]?.length ?? 0) < 4)
+                          Tap(
+                            onTap: () => app.openCropper(p.id),
+                            child: Container(
+                              width: 86,
+                              height: 64,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: pal.line)),
+                              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                LIcon('Crop', size: 18, color: pal.accent),
+                                const SizedBox(height: 2),
+                                Text(app.tr('قص جزء', 'بڕین', 'Crop part'), style: ts(context, 11, weight: w700)),
+                              ]),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (app.resultCrops[p.id]?.isNotEmpty ?? false)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(app.tr('الأجزاء المقصوصة تُطبع ضمن تقرير النتيجة', 'بەشە بڕاوەکان لە ڕاپۆرتدا چاپ دەکرێن', 'Cropped parts are printed in the result report'),
+                          style: ts(context, 11, color: pal.muted)),
+                    ),
+                ],
                 const SizedBox(height: 8),
                 Tap(
                   onTap: app.resultsLocked ? app.unlockResults : app.saveResults,
@@ -422,6 +512,43 @@ class ResultDetailScreen extends StatelessWidget {
               ],
             ),
           ),
+          // What the patient still owes (pay later / partial), with "Pay off".
+          if (p.due > 0) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD97706).withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFD97706).withValues(alpha: .35)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(app.tr('على المريض دين', 'نەخۆش قەرزارە', 'The patient owes'), style: ts(context, 12, color: pal.muted)),
+                        Text('${_mny(p.due)} IQD', textDirection: TextDirection.ltr,
+                            style: ts(context, 17, weight: w900, color: const Color(0xFFD97706))),
+                        if (p.isPartlyPaid)
+                          Text(app.tr('مدفوع ${_mny(p.collected)} من ${_mny(p.price)}', 'دراو ${_mny(p.collected)} لە ${_mny(p.price)}',
+                              'Paid ${_mny(p.collected)} of ${_mny(p.price)}'), style: ts(context, 11, color: pal.muted)),
+                      ],
+                    ),
+                  ),
+                  Tap(
+                    onTap: () => app.openSettle(p.id, p.name, p.due),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                      decoration: BoxDecoration(color: const Color(0xFFD97706), borderRadius: BorderRadius.circular(999)),
+                      child: Text(app.tr('تسديد', 'دانەوە', 'Pay off'), style: ts(context, 13, weight: w700, color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -493,7 +620,9 @@ class ResultDetailScreen extends StatelessWidget {
 /// One result input with the coloured low/normal/high indicator.
 class _ResultEntry extends StatefulWidget {
   final ResultRow row;
-  const _ResultEntry({super.key, required this.row});
+  /// Set when this test was sent to another lab: its unit / range can be typed.
+  final Referral? sent;
+  const _ResultEntry({super.key, required this.row, this.sent});
 
   @override
   State<_ResultEntry> createState() => _ResultEntryState();
@@ -503,10 +632,15 @@ class _ResultEntryState extends State<_ResultEntry> {
   late final TextEditingController _c = TextEditingController(
     text: context.app.draft[widget.row.test] ?? '',
   );
+  late final (String, String) _meta = context.app.draftMeta[widget.row.test] ?? context.app.sentDefaults(widget.row.test);
+  late final TextEditingController _unit = TextEditingController(text: _meta.$1);
+  late final TextEditingController _range = TextEditingController(text: _meta.$2);
 
   @override
   void dispose() {
     _c.dispose();
+    _unit.dispose();
+    _range.dispose();
     super.dispose();
   }
 
@@ -548,6 +682,25 @@ class _ResultEntryState extends State<_ResultEntry> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (widget.sent case final sent?)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: pal.softAccent, borderRadius: BorderRadius.circular(999)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    LIcon('Send', size: 11, color: pal.accent),
+                    const SizedBox(width: 4),
+                    Text(app.tr('مرسل', 'نێردراو', 'Sent'), style: ts(context, 11, weight: w700, color: pal.accent, height: 1.45)),
+                  ]),
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text('${sent.lab} • ${sent.tracking}', maxLines: 1, overflow: TextOverflow.ellipsis, style: ts(context, 11.5, color: pal.muted)),
+                ),
+              ]),
+            ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -593,6 +746,39 @@ class _ResultEntryState extends State<_ResultEntry> {
               ),
             ],
           ),
+          // A sent test: its unit and normal range as the other lab reported them (this order only).
+          if (widget.sent != null) ...[
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                flex: 2,
+                child: BoxField(
+                  controller: _unit,
+                  readOnly: app.resultsLocked,
+                  hint: app.tr('الوحدة', 'یەکە', 'Unit'),
+                  ltr: true,
+                  fontSize: 13,
+                  vPad: 8,
+                  radius: 12,
+                  onChanged: (v) => app.setDraftMeta(r.test, unit: v),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: BoxField(
+                  controller: _range,
+                  readOnly: app.resultsLocked,
+                  hint: app.tr('المعدل الطبيعي (30 - 100)', 'ئاستی ئاسایی', 'Normal range (30 - 100)'),
+                  ltr: true,
+                  fontSize: 13,
+                  vPad: 8,
+                  radius: 12,
+                  onChanged: (v) => app.setDraftMeta(r.test, range: v),
+                ),
+              ),
+            ]),
+          ],
           if (m != null) ...[
             const SizedBox(height: 6),
             Text(
@@ -711,3 +897,6 @@ class _ResultDotState extends State<_ResultDot> with TickerProviderStateMixin {
     );
   }
 }
+
+/// 25000 -> "25,000".
+String _mny(int v) => v.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');

@@ -106,14 +106,21 @@ List<ResultRow> resultRows(Patient p) {
         for (final x in kCatalog) {
           if (x.name == name) c = x;
         }
-        final row = normalRowFor(c, p);
-        final range = (c != null && c.normalText.trim().isNotEmpty)
+        // This order's own unit / range (a test sent to another lab) wins.
+        final own = p.resultMeta[t];
+        final ownRange = own == null ? null : RegExp(r'^\s*(-?\d+(?:\.\d+)?)\s*[-–—~]\s*(-?\d+(?:\.\d+)?)\s*$').firstMatch(own.$2);
+        final row = own != null
+            ? (ownRange == null ? null : RangeRow('0', '150', 'Y', 'Both', ownRange.group(1)!, ownRange.group(2)!))
+            : normalRowFor(c, p);
+        final range = own != null
+            ? own.$2
+            : (c != null && c.normalText.trim().isNotEmpty)
             ? c.normalText
             : '${row?.min ?? '—'}-${row?.max ?? '—'}';
         return ResultRow(
           t,
           p.results[t] ?? '',
-          c?.units ?? '',
+          own != null ? own.$1 : c?.units ?? '',
           range,
           t,
           _categoryFor(p, t),

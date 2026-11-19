@@ -12,6 +12,7 @@ import 'screens/results_screen.dart';
 import 'screens/send_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/store_screen.dart';
+import 'glass_toast.dart';
 import 'sheets.dart';
 import 'splash.dart';
 import 'theme.dart';
@@ -56,7 +57,7 @@ class Shell extends StatelessWidget {
               if (inApp && app.tab != 'print') const BottomNav(),
               if (inApp) const Overlays(),
               // Above sheets, so messages from a sheet's action are visible.
-              if (inApp && app.toastText != null) const _Toast(),
+              const GlassToastHost(),
               if (app.splashVisible) const SplashOverlay(),
             ],
           ),
@@ -447,69 +448,6 @@ class BottomNav extends StatelessWidget {
   }
 }
 
-class _Toast extends StatelessWidget {
-  const _Toast();
-
-  @override
-  Widget build(BuildContext context) {
-    final app = context.app;
-    final pal = app.palette;
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 102,
-      // The design's pop-in animation replaces the -50% X translate, so the toast
-      // starts at the horizontal centre. Kept on-screen when it is wide.
-      child: CustomSingleChildLayout(
-        delegate: _ToastLayout(),
-        child: Entrance.pop(
-          key: ValueKey(app.toastText),
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width * .92,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: pal.toastBg,
-              borderRadius: BorderRadius.circular(999),
-              boxShadow: Shadows.xl,
-            ),
-            child: Text(
-              app.toastText!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: ts(
-                context,
-                12.5,
-                weight: w700,
-                color: pal.toastText,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ToastLayout extends SingleChildLayoutDelegate {
-  @override
-  Size getSize(BoxConstraints constraints) => Size(constraints.maxWidth, 40);
-
-  @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
-      BoxConstraints(maxWidth: constraints.maxWidth * .92, maxHeight: 40);
-
-  @override
-  Offset getPositionForChild(Size size, Size childSize) {
-    final maxLeft = size.width * .96 - childSize.width;
-    return Offset(math.min(size.width / 2, maxLeft), 0);
-  }
-
-  @override
-  bool shouldRelayout(covariant SingleChildLayoutDelegate oldDelegate) => false;
-}
 
 
 /// The bell rings (a short swing every few seconds) while there are unread notifications.

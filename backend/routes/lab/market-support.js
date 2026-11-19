@@ -5,6 +5,7 @@ const multer = require('multer');
 const mongoose = require('mongoose');
 const MarketListing = require('../../models/MarketListing');
 const SupportTicket = require('../../models/SupportTicket');
+const MaintenanceRequest = require('../../models/MaintenanceRequest');
 const Counter = require('../../models/Counter');
 const r2Service = require('../../services/r2Service');
 const market = require('../../services/marketService');
@@ -271,6 +272,62 @@ router.post('/api/support', upload.array('images', 6), async (req, res) => {
     } catch (error) {
         console.error('Support create error:', error);
         res.status(500).json({ success: false, message: 'Error sending' });
+    }
+});
+
+// ---------- maintenance (power, AC, plumbing, building — not lab devices) ----------
+const maintView = (m) => ({
+    id: String(m._id), requestNo: m.requestNo, category: m.category, priority: m.priority, location: m.location,
+    description: m.description, images: m.images, status: m.status, adminReply: m.adminReply, createdAt: m.createdAt,
+});
+
+router.get('/api/maintenance', async (req, res) => {
+    try {
+        const list = await MaintenanceRequest.find({ labId: req.lab._id }).sort({ createdAt: -1 }).limit(100).lean();
+        res.json({ success: true, data: { items: list.map(maintView) } });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.post('/api/maintenance', upload.array('images', 6), async (req, res) => {
+    try {
+        const b = req.body || {};
+        const description = clip(b.description, 4000);
+        if (!description) return res.status(400).json({ success: false, message: 'Describe the problem', code: 'description' });
+        // A failed photo upload must not lose the request itself; the app is told.
+        let images = [];
+        let imagesFailed = false;
+        try {
+            images = await saveImages(req.files, 'support', 'maint-');
+        } catch (error) {
+            console.warn('Maintenance photos not saved:', error.message);
+            imagesFailed = (req.files || []).length > 0;
+        }
+        const m = await MaintenanceRequest.create({
+            requestNo: await Counter.next('maintenanceRequest', 1000),
+            labId: req.lab._id, userId: req.user._id,
+            category: MaintenanceRequest.CATEGORIES.includes(b.category) ? b.category : 'other',
+            priority: MaintenanceRequest.PRIORITIES.includes(b.priority) ? b.priority : 'normal',
+            location: clip(b.location, 160), description, images,
+        });
+        res.status(201).json({ success: true, data: { ...maintView(m), imagesFailed } });
+    } catch (error) {
+        console.error('Maintenance create error:', error);
+        res.status(500).json({ success: false, message: 'Error sending' });
+    }
+});
+
+router.patch('/api/maintenance/:id/cancel', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).json({ success: false });
+        const m = await MaintenanceRequest.findOneAndUpdate(
+            { _id: req.params.id, labId: req.lab._id, status: 'open' },
+            { $set: { status: 'cancelled' } }, { new: true });
+        if (!m) return res.status(404).json({ success: false, message: 'Not found' });
+        res.json({ success: true, data: maintView(m) });
+    } catch (error) {
+        res.status(500).json({ success: false });
     }
 });
 

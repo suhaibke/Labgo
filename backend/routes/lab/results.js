@@ -6,6 +6,8 @@ const Lab = require('../../models/Lab');
 const User = require('../../models/User');
 const fcmService = require('../../services/fcmService');
 const r2Service = require('../../services/r2Service');
+const labResultStore = require('../../services/labResultStore');
+const receipt = require('../../services/receiptLinkService');
 const reportPdf = require('../../services/reportPdfService');
 const { decorateOrderWithPatientInfo } = require('../../helpers/order-patient-info');
 const { pickRange, classify } = require('../../helpers/result-ranges');
@@ -51,7 +53,7 @@ function buildRows(order, lab) {
         const labTest = findLabTest(lab, t);
         const range = pickRange(labTest?.ranges, patient);
         // An approved report keeps the range it was approved with.
-        const useSaved = prev && order.results?.entryStatus === 'approved';
+        const useSaved = prev && (order.results?.entryStatus === 'approved' || prev.custom);
         const min = useSaved ? prev.min : num(range?.min);
         const max = useSaved ? prev.max : num(range?.max);
         const unit = useSaved ? prev.unit : (labTest?.unit || prev?.unit || '');
@@ -70,6 +72,7 @@ function buildRows(order, lab) {
             normalText,
             flag: classify(value, min, max),
             hasRange: min !== null || max !== null || Boolean(normalText),
+            custom: Boolean(prev?.custom),
             // Every age/gender group of the lab test, for the range editor.
             ranges: (labTest?.ranges || []).map((r) => ({ gender: r.gender, ageFrom: r.ageFrom, ageTo: r.ageTo, ageUnit: r.ageUnit, min: r.min, max: r.max })),
         };
@@ -114,6 +117,13 @@ function applyValues(order, rows, body, userId) {
     const values = rows.map((r) => {
         const v = byKey.get(String(r.testId)) || byKey.get(r.testName);
         const value = v ? String(v.value ?? '').trim().slice(0, 200) : r.value;
+        // This order's own unit / range for the test (sent to another lab).
+        if (v && (typeof v.unit === 'string' || typeof v.range === 'string')) {
+            const range = String(v.range ?? r.normalText ?? '').trim().slice(0, 80);
+            const { min, max } = require('../../services/labTransferService').parseRange(range);
+            const unit = typeof v.unit === 'string' ? v.unit.trim().slice(0, 40) : r.unit;
+            return { testId: r.testId, testName: r.testName, value, unit, min, max, normalText: range, flag: classify(value, min, max), custom: true };
+        }
         return {
             testId: r.testId,
             testName: r.testName,
@@ -123,6 +133,7 @@ function applyValues(order, rows, body, userId) {
             max: r.max,
             normalText: r.normalText,
             flag: classify(value, r.min, r.max),
+            custom: Boolean(r.custom),
         };
     });
     if (!order.results) order.results = {};
@@ -253,6 +264,7 @@ router.put('/api/orders/:orderId/results', async (req, res) => {
         applyValues(order, rows, req.body || {}, req.user._id);
         if (order.results.entryStatus !== 'approved') order.results.entryStatus = 'draft';
         await order.save();
+        await require('../../services/labTransferService').syncFromOrder(order, req.user._id);
         res.json({ success: true, data: payload(order, req.lab) });
     } catch (error) {
         console.error('Save results error:', error);
@@ -286,8 +298,8 @@ router.post('/api/orders/:orderId/results/approve', async (req, res) => {
         if (!reportUrl) {
             try {
                 const pdf = await reportFor(req, order, req.user.name);
-                const filename = r2Service.generateUniqueFilename(`${order.qrCode || order._id}.pdf`, 'report-');
-                const uploaded = await r2Service.uploadBuffer(pdf, r2Service.r2Config.paths.results, filename, { contentType: 'application/pdf' });
+                const filename = labResultStore.fileName(receipt.receiptCode(order), '.pdf');
+                const uploaded = await r2Service.uploadBuffer(pdf, await labResultStore.resultsPath(req.lab), filename, { contentType: 'application/pdf' });
                 reportUrl = uploaded.url;
             } catch (error) {
                 if (error.code === 'pdfUnavailable') {
@@ -316,6 +328,7 @@ router.post('/api/orders/:orderId/results/approve', async (req, res) => {
             console.error('FCM results notification error:', fcmError);
         }
 
+        await require('../../services/labTransferService').syncFromOrder(order, req.user._id);
         res.json({ success: true, data: payload(order, req.lab) });
     } catch (error) {
         console.error('Approve results error:', error);

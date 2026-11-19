@@ -15,6 +15,12 @@ const Order = require('../models/Order');
 const User = require('../models/User');
 const { pickRange, classify } = require('../helpers/result-ranges');
 
+// No database here: every lab's result folder is L101.
+const labResultStore = require('../services/labResultStore');
+labResultStore.resultsPath = async () => 'uploads/results/L101/2026-11';
+labResultStore.labFolder = async () => 'L101';
+labResultStore.monthOf = () => '2026-11';
+
 const labId = new mongoose.Types.ObjectId();
 const cbcId = new mongoose.Types.ObjectId();
 const vitId = new mongoose.Types.ObjectId();
@@ -147,7 +153,7 @@ test('approving without a file builds the report on the server and uploads it', 
     assert.equal(res.status, 200);
     assert.equal(built.order.results.entryStatus, 'approved', 'the report is built as approved');
     assert.equal(built.rows.length, 2);
-    assert.match(order.results.reportUrl, /^\/uploads\/results\/report-.*\.pdf$/);
+    assert.match(order.results.reportUrl, /^\/uploads\/results\/L101\/2026-11\/[A-Za-z0-9-]+-[0-9A-Za-z]{8}\.pdf$/);
     assert.equal(order.status, 'completed');
 });
 

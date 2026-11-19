@@ -84,4 +84,89 @@ async function notifySent(transfer, fromLab) {
     });
 }
 
-module.exports = { directory, quote, matchTest, testNamesOf, resolveTargetLab, applyTargetAndPrice, notifySent };
+// "3.5 - 7.2" / "3.5–7.2" -> { min: 3.5, max: 7.2 }; anything else stays text only.
+function parseRange(text) {
+    const m = /^\s*(-?\d+(?:\.\d+)?)\s*[-–—~]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(String(text || ''));
+    return m ? { min: Number(m[1]), max: Number(m[2]) } : { min: null, max: null };
+}
+
+/**
+ * Saves the results of a sample sent to a lab that is not on LabGo — typed by
+ * the sending lab, or entered by the receiving lab on the QR page.
+ * rows: [{ testName, value, unit, range }]. Completes the transfer, and an
+ * order it belongs to gets the values as a draft to review.
+ */
+async function saveExternalResults(t, rows, { source, userId = null, fileUrl = null } = {}) {
+    const { classify } = require('../helpers/result-ranges');
+    const clip = (v, n) => String(v ?? '').trim().slice(0, n);
+    const values = (rows || [])
+        .map((r) => {
+            const range = clip(r.range, 80);
+            const { min, max } = parseRange(range);
+            const value = clip(r.value, 200);
+            return { testName: clip(r.testName, 120), value, unit: clip(r.unit, 40), min, max, normalText: range, flag: classify(value, min, max) };
+        })
+        .filter((v) => v.testName && v.value);
+    if (!values.length && !fileUrl) return false;
+    if (!t.receiverResults) t.receiverResults = {};
+    if (values.length) t.receiverResults.values = values;
+    t.receiverResults.entryStatus = 'approved';
+    t.receiverResults.enteredAt = new Date();
+    t.receiverResults.approvedAt = new Date();
+    if (userId) t.receiverResults.approvedBy = userId;
+    if (fileUrl) t.resultFileUrl = fileUrl;
+    t.status = 'completed';
+    t.completedAt = new Date();
+    t.resultSource = source;
+    await t.save();
+    // Typed values go to the order as a draft to review; a file alone waits for the lab.
+    if (values.length) await require('../routes/lab/transfers-in').copyToSenderOrder(t);
+    // The other lab answered through the QR page: the sending lab is told.
+    if (source === 'external_link') {
+        const from = t.externalUpload?.uploaderName || t.externalLab?.name || '';
+        await notifyLab(t.labId, {
+            title: 'وصلت نتيجة العينة المرسلة',
+            body: `${from ? `${from} أرسل` : 'وصلت'} نتيجة ${t.trackingCode || t.sampleCode} (${t.patientName})${values.length ? '' : ' — ملف مرفق'}`,
+            data: { type: 'transfer_result', transferId: String(t._id), sampleCode: t.trackingCode || t.sampleCode, orderId: t.orderId ? String(t.orderId) : null },
+        });
+    }
+    return true;
+}
+
+/**
+ * Results typed on the sending lab's own order also finish the samples it sent
+ * out: a transfer whose tests all have a value on the order becomes completed
+ * (its tracking timeline moves on). Never throws.
+ */
+async function syncFromOrder(order, userId = null) {
+    try {
+        const ExternalTransfer = require('../models/ExternalTransfer');
+        const open = await ExternalTransfer.find({ orderId: order._id, status: 'sent' });
+        if (!open.length) return 0;
+        const byName = new Map((order.results?.values || []).filter((v) => String(v.value || '').trim()).map((v) => [v.testName, v]));
+        let done = 0;
+        for (const t of open) {
+            const names = (t.tests || []).map((x) => x.testName).filter(Boolean);
+            if (!names.length || !names.every((n) => byName.has(n))) continue;
+            if (!t.receiverResults) t.receiverResults = {};
+            t.receiverResults.values = names.map((n) => {
+                const v = byName.get(n);
+                return { testName: n, value: v.value, unit: v.unit || '', min: v.min ?? null, max: v.max ?? null, normalText: v.normalText || '', flag: v.flag || '' };
+            });
+            t.receiverResults.entryStatus = 'approved';
+            t.receiverResults.approvedAt = new Date();
+            if (userId) t.receiverResults.approvedBy = userId;
+            t.status = 'completed';
+            t.completedAt = new Date();
+            t.resultSource = 'lab';
+            await t.save();
+            done += 1;
+        }
+        return done;
+    } catch (error) {
+        console.warn('Transfer sync from order failed:', error.message);
+        return 0;
+    }
+}
+
+module.exports = { syncFromOrder, directory, quote, matchTest, testNamesOf, resolveTargetLab, applyTargetAndPrice, notifySent, saveExternalResults, parseRange };

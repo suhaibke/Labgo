@@ -17,6 +17,12 @@ const r2Service = require('../services/r2Service');
 const reportPdf = require('../services/reportPdfService');
 const labTransfers = require('../services/labTransferService');
 
+// No database here: every lab's result folder is L101.
+const labResultStore = require('../services/labResultStore');
+labResultStore.resultsPath = async () => 'uploads/results/L101/2026-11';
+labResultStore.labFolder = async () => 'L101';
+labResultStore.monthOf = () => '2026-11';
+
 const sendingLabId = new mongoose.Types.ObjectId();
 const receivingLab = {
     _id: new mongoose.Types.ObjectId(), name: 'Al-Hayat Lab', status: 'Active',
@@ -108,7 +114,7 @@ test('approved results go to the sending lab: report, draft values on its order,
     assert.equal(res.status, 200);
     assert.equal(tr.status, 'completed');
     assert.equal(tr.resultSource, 'receiving_lab');
-    assert.match(tr.resultFileUrl, /b2b-report-/);
+    assert.match(tr.resultFileUrl, /\/uploads\/results\/L101\/2026-11\/[A-Za-z0-9-]+-[0-9A-Za-z]{8}\.pdf$/);
     assert.equal(order.results.values[0].value, '22');
     assert.equal(order.results.entryStatus, 'draft', 'the sending lab still reviews and approves');
     assert.equal(order.status, 'at_lab');

@@ -55,7 +55,7 @@ function testsText(t) {
 async function codes(baseUrl, transfer) {
     // Transparent background: the label (and the app) draw the white box.
     const qrSvg = await QRCode.toString(uploadUrl(baseUrl, transfer), { type: 'svg', margin: 0, errorCorrectionLevel: 'M', color: { dark: '#000000', light: '#0000' } });
-    const barcodeSvg = bwipjs.toSVG({ bcid: 'code128', text: String(transfer.sampleCode), height: 10, scale: 2, includetext: false, paddingwidth: 0, paddingheight: 0 });
+    const barcodeSvg = bwipjs.toSVG({ bcid: 'code128', text: String(transfer.trackingCode || transfer.sampleCode), height: 10, scale: 2, includetext: false, paddingwidth: 0, paddingheight: 0 });
     return { qrSvg, barcodeSvg };
 }
 
@@ -63,7 +63,7 @@ async function codes(baseUrl, transfer) {
 async function labelData({ transfer, lab, baseUrl, lang = 'en' }) {
     const { qrSvg, barcodeSvg } = await codes(baseUrl, transfer);
     return {
-        code: transfer.sampleCode,
+        code: transfer.trackingCode || transfer.sampleCode,
         reference: transfer.referenceNumber || '',
         patient: transfer.patientName || '',
         tests: testsText(transfer),

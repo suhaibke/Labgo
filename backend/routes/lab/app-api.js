@@ -2,6 +2,7 @@
 // (Patient, CatalogTest, LabPackage). Same auth and permissions as the
 // dashboard: the app signs in with /api/auth/login and sends the token.
 const express = require('express');
+const mongoose = require('mongoose');
 const Order = require('../../models/Order');
 const Package = require('../../models/Package');
 const Lab = require('../../models/Lab');
@@ -15,6 +16,7 @@ const PACKAGE_CATEGORIES = Package.schema.path('category').enumValues;
 const { decorateOrderWithPatientInfo } = require('../../helpers/order-patient-info');
 const receipt = require('../../services/receiptLinkService');
 const { baseUrl } = require('../../helpers/base-url');
+const { resolvePatient, birthDateFromAge, WalkInError, createWalkInOrder } = require('../../services/walkInOrderService');
 
 const router = express.Router();
 const patientFields = 'name phone gender birthDate patientNo';
@@ -32,10 +34,26 @@ function ageText(info) {
     return Number.isInteger(info.age) ? `${info.age}Y` : '—';
 }
 
+// "LG-MWNVORLL-NQZAOC" -> "LG-NQZAOC" (short enough for a receipt line).
+function shortCode(code) {
+    const parts = String(code || '').split('-').filter(Boolean);
+    if (parts.length < 2) return String(code || '');
+    return `${parts[0]}-${parts[parts.length - 1]}`;
+}
+
 function appStatus(order) {
     if (order.status === 'completed') return 'Completed';
-    if (order.orderType === 'walk_in' && order.payment?.status === 'pending') return 'Payment Pending';
+    if (order.orderType === 'walk_in' && ['pending', 'partial'].includes(order.payment?.status)) return 'Payment Pending';
     return 'Pending';
+}
+
+// Collected so far: paidAmount when recorded, otherwise all or nothing by status.
+// Only walk-in orders are paid at the lab; other orders (home collection) are
+// settled with the nurse, so they never show as a debt to the lab.
+function paidAmountOf(o) {
+    if (o.orderType !== 'walk_in') return o.pricing?.total || 0;
+    if (typeof o.payment?.paidAmount === 'number') return o.payment.paidAmount;
+    return o.payment?.status === 'paid' ? (o.pricing?.total || 0) : 0;
 }
 
 function toAppPatient(order, base = '') {
@@ -43,7 +61,11 @@ function toAppPatient(order, base = '') {
     const info = o.patientInfo || {};
     const created = new Date(o.createdAt);
     const results = {};
-    for (const v of o.results?.values || []) if (v.value) results[v.testName] = v.value;
+    const resultMeta = {};
+    for (const v of o.results?.values || []) {
+        if (v.value) results[v.testName] = v.value;
+        if (v.custom) resultMeta[v.testName] = { unit: v.unit || '', range: v.normalText || '' };
+    }
     const company = o.walkIn?.company || '';
     return {
         id: String(o._id),
@@ -59,12 +81,18 @@ function toAppPatient(order, base = '') {
         time: Number.isNaN(created.getTime()) ? '' : `${two(created.getHours())}:${two(created.getMinutes())}`,
         createdAt: o.createdAt,
         price: o.pricing?.total || 0,
+        // for the period statement printed from the home card
+        discount: o.pricing?.discount || 0,
+        paid: o.orderType !== 'walk_in' || o.payment?.status === 'paid',
+        paidAmount: paidAmountOf(o),
         doctor: o.walkIn?.doctor || '',
         mode: company ? 'B2B' : 'B2C',
         company: company || null,
         results,
+        resultMeta,
         resultStatus: o.results?.entryStatus || 'none',
-        permanent: info.patientNo ? `#${info.patientNo}` : (o.qrCode || ''),
+        // #patientNo for an account; someone on another's phone gets the order code's short tail.
+        permanent: info.patientNo ? `#${info.patientNo}` : shortCode(o.qrCode),
         orderCode: o.qrCode || '',
         orderNo: receipt.receiptCode(o),
         // the short link when the order has a code, the long signed one otherwise
@@ -139,6 +167,8 @@ router.get('/api/app/bootstrap', async (req, res) => {
 // (the same fields as the web settings page).
 function labForApp(lab) {
     return {
+        // "L101": the lab's permanent number (archives, support).
+        labCode: lab.labNo ? `L${lab.labNo}` : '',
         name: lab.name || '', nameAr: lab.nameAr || '', phone: lab.phone || '', email: lab.email || '', website: lab.website || '',
         description: lab.description || '', address: lab.address || '', city: lab.city || '', logo: lab.logo || '',
         licenseOwners: holdersToText(lab.licenseHolders),
@@ -204,6 +234,97 @@ router.get('/api/app/finance', async (req, res) => {
     }
 });
 
+// ---------- pay off what a patient owes (pay later / partial payment) ----------
+// body: { amount } — omitted or more than what is owed settles the whole debt.
+router.post('/api/app/orders/:id/pay', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).json({ success: false, message: 'Not found' });
+        const order = await Order.findOne({ _id: req.params.id, labId: req.lab._id, orderType: 'walk_in' });
+        if (!order) return res.status(404).json({ success: false, message: 'Not found' });
+        const total = order.pricing?.total || 0;
+        const already = paidAmountOf(order);
+        const owed = Math.max(0, total - already);
+        if (owed <= 0) return res.status(409).json({ success: false, message: 'Already paid', code: 'paid' });
+        const raw = req.body?.amount;
+        const amount = raw === undefined || raw === null || raw === '' ? owed : Math.round(Number(raw));
+        if (!(amount > 0)) return res.status(400).json({ success: false, message: 'Enter an amount', code: 'amount' });
+        const paid = Math.min(total, already + amount);
+        const now = new Date();
+        order.payment.paidAmount = paid;
+        order.payment.status = paid >= total ? 'paid' : 'partial';
+        order.payment.paidAt = now;
+        order.payment.collectedBy = req.user?._id;
+        if (paid >= total) order.paymentCollected = { collected: true, collectedAt: now, collectedBy: req.user?._id };
+        await order.save();
+        const fresh = await Order.findById(order._id).populate('patientId', 'name phone gender birthDate patientNo').lean();
+        res.json({ success: true, data: toAppPatient(fresh, baseUrl(req)) });
+    } catch (error) {
+        console.error('Pay off error:', error);
+        res.status(500).json({ success: false, message: 'Error saving the payment' });
+    }
+});
+
+// ---------- edit a walk-in patient's details (name, phone, gender, age) ----------
+// A placeholder account this lab made is renamed in place; otherwise the order is
+// re-pointed at the account for the phone (or a "someone else" beneficiary), so a
+// registered patient's own account is never rewritten by a lab.
+router.patch('/api/app/orders/:id/patient', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).json({ success: false, message: 'Not found' });
+        const order = await Order.findOne({ _id: req.params.id, labId: req.lab._id, orderType: 'walk_in', status: { $ne: 'cancelled' } }).populate('patientId');
+        if (!order) return res.status(404).json({ success: false, message: 'Not found' });
+        const b = req.body || {};
+        const name = String(b.name || '').trim().slice(0, 120);
+        if (!name) return res.status(400).json({ success: false, message: 'Patient name is required', code: 'name' });
+        const gender = ['male', 'female'].includes(b.gender) ? b.gender : null;
+        const hasAge = b.age !== undefined && b.age !== null && String(b.age).trim() !== '';
+        const birthDate = hasAge ? birthDateFromAge(b.age, ['Y', 'M', 'D'].includes(b.ageUnit) ? b.ageUnit : 'Y') : undefined;
+        const user = order.patientId;
+        const forOther = order.beneficiary?.isForOtherPerson === true;
+        const samePhone = (() => {
+            const now = String((forOther ? order.beneficiary.phone : user?.phone) || '').replace(/\D/g, '').slice(-10);
+            return now && now === String(b.phone || '').replace(/\D/g, '').slice(-10);
+        })();
+        if (samePhone && forOther) {
+            order.beneficiary.name = name;
+            if (gender) order.beneficiary.gender = gender;
+            if (birthDate !== undefined) order.beneficiary.birthDate = birthDate;
+        } else if (samePhone && user?.labPlaceholder && String(user.createdByLabId) === String(req.lab._id)) {
+            user.name = name;
+            if (gender) user.gender = gender;
+            if (birthDate !== undefined) user.birthDate = birthDate;
+            await user.save();
+        } else {
+            const r = await resolvePatient(req.lab, { name, phone: b.phone, gender, birthDate: birthDate ?? user?.birthDate ?? null });
+            order.patientId = r.user._id;
+            order.beneficiary = r.beneficiary || { isForOtherPerson: false };
+        }
+        await order.save();
+        const fresh = await Order.findById(order._id).populate('patientId', patientFields);
+        res.json({ success: true, data: toAppPatient(fresh, baseUrl(req)) });
+    } catch (error) {
+        if (error instanceof WalkInError) return res.status(error.status).json({ success: false, message: error.message });
+        console.error('Edit patient error:', error);
+        res.status(500).json({ success: false, message: 'Error saving the patient' });
+    }
+});
+
+// ---------- delete a walk-in order (kept as cancelled, out of lists and finance) ----------
+router.delete('/api/app/orders/:id', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).json({ success: false, message: 'Not found' });
+        const order = await Order.findOne({ _id: req.params.id, labId: req.lab._id, orderType: 'walk_in', status: { $ne: 'cancelled' } });
+        if (!order) return res.status(404).json({ success: false, message: 'Not found' });
+        order.status = 'cancelled';
+        order.cancellation = { reason: String(req.body?.reason || 'Deleted by the lab').slice(0, 300), cancelledBy: req.user?._id, cancelledAt: new Date() };
+        await order.save();
+        res.json({ success: true, data: { id: String(order._id) } });
+    } catch (error) {
+        console.error('Delete order error:', error);
+        res.status(500).json({ success: false, message: 'Error deleting the order' });
+    }
+});
+
 // ---------- lab details edited in the app (saved as the user types) ----------
 router.patch('/api/app/lab', async (req, res) => {
     try {
@@ -241,8 +362,20 @@ function toReferral(t) {
         lab: t.externalLab?.name || '',
         status: done ? 'Completed' : 'Sent',
         eta: eta ? `${eta.getDate()}/${eta.getMonth() + 1}/${eta.getFullYear()}` : '—',
-        tracking: t.referenceNumber || t.sampleCode || '',
+        tracking: t.trackingCode || t.referenceNumber || t.sampleCode || '',
         step: done ? 3 : 1,
+        orderId: t.orderId ? String(t.orderId) : null,
+        onLabGo: Boolean(t.toLabId),
+        sentAt: t.sentAt || null,
+        tests: (t.tests || []).map((x) => x.testName).filter(Boolean).length
+            ? (t.tests || []).map((x) => x.testName).filter(Boolean)
+            : String(t.testsDescription || '').split(/[,،]/).map((s) => s.trim()).filter(Boolean),
+        // Results however they came back: typed here, by the receiving lab, or from the QR page.
+        results: (t.receiverResults?.values || []).filter((v) => v.value).map((v) => ({
+            test: v.testName, value: v.value, unit: v.unit || '', range: v.normalText || (v.min != null && v.max != null ? `${v.min} - ${v.max}` : ''), flag: v.flag || '',
+        })),
+        resultFile: t.resultFileUrl || '',
+        resultSource: t.resultSource || '',
     };
 }
 
@@ -254,6 +387,22 @@ router.get('/api/app/transfers', async (req, res) => {
     } catch (error) {
         console.error('App transfers error:', error);
         res.status(500).json({ success: false, message: 'Error loading transfers' });
+    }
+});
+
+// The sending lab types the results of a sample it sent (as the other lab
+// reported them) — also when that lab is on LabGo and has not entered them yet. body: { values: [{ testName, value, unit, range }] }
+router.put('/api/app/transfers/:id/results', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).json({ success: false, message: 'Not found' });
+        const t = await ExternalTransfer.findOne({ _id: req.params.id, labId: req.lab._id });
+        if (!t) return res.status(404).json({ success: false, message: 'Not found' });
+        const ok = await labTransfers.saveExternalResults(t, req.body?.values, { source: 'lab', userId: req.user?._id });
+        if (!ok) return res.status(400).json({ success: false, message: 'Enter at least one result', code: 'missing' });
+        res.json({ success: true, data: { referral: toReferral(t.toObject()) } });
+    } catch (error) {
+        console.error('Transfer results error:', error);
+        res.status(500).json({ success: false, message: 'Error saving the results' });
     }
 });
 
@@ -270,7 +419,40 @@ router.post('/api/app/transfers', async (req, res) => {
         let order = null;
         if (b.orderId && /^[a-f0-9]{24}$/i.test(String(b.orderId))) {
             order = await Order.findOne({ _id: b.orderId, labId: req.lab._id, status: { $nin: ['cancelled', 'completed'] } }).populate('patientId', patientFields);
-            if (order && await ExternalTransfer.exists({ orderId: order._id })) order = null;
+            // Another test of the same order can be sent; the same tests twice cannot.
+            if (order) {
+                const wanted = new Set((Array.isArray(b.testNames) ? b.testNames : [b.testName]).map((n) => String(n || '').trim()).filter(Boolean));
+                const earlier = await ExternalTransfer.find({ orderId: order._id }).select('tests').lean();
+                const sentNames = new Set(earlier.flatMap((t) => (t.tests || []).map((x) => x.testName)));
+                if (wanted.size && [...wanted].every((n) => sentNames.has(n))) {
+                    return res.status(409).json({ success: false, message: 'These tests were already sent', code: 'alreadySent' });
+                }
+            }
+        }
+        // A new patient typed on the send page becomes a normal patient (receipt
+        // V0001, results entered the same way), and the sample is sent from that order.
+        if (!order) {
+            const name = String(b.patientName || '').trim();
+            const names = [...new Set((Array.isArray(b.testNames) ? b.testNames : [b.testName]).map((n) => String(n || '').trim()).filter(Boolean))];
+            if (!name) return res.status(400).json({ success: false, message: 'Patient name is required' });
+            if (!String(b.patientPhone || '').replace(/\D/g, '')) {
+                return res.status(400).json({ success: false, message: 'Enter the patient phone number', code: 'phone' });
+            }
+            if (!names.length) return res.status(400).json({ success: false, message: 'Choose at least one test', code: 'tests' });
+            // The lab's own test when it has one (its price), otherwise a referred-only line.
+            const testLines = names.map((n) => {
+                const t = labTransfers.matchTest(req.lab, n);
+                return t
+                    ? { testId: t._id, testName: t.name, testCode: t.code || 'REF', category: t.category || 'General', price: t.price || 0 }
+                    : { testId: new mongoose.Types.ObjectId(), testName: n.slice(0, 120), testCode: 'REF', category: 'Referred', price: 0 };
+            });
+            const gender = String(b.patientGender || '').toLowerCase();
+            order = await createWalkInOrder(req.lab, req.user._id, {
+                name, phone: b.patientPhone, gender: ['male', 'female'].includes(gender) ? gender : undefined,
+                age: b.patientAge, ageUnit: 'Y', testLines, sampleType: 'blood',
+            });
+            await order.populate('patientId', patientFields);
+            b.testNames = testLines.map((t) => t.testName);
         }
         if (order) {
             const info = decorateOrderWithPatientInfo(order).patientInfo || {};
@@ -302,6 +484,7 @@ router.post('/api/app/transfers', async (req, res) => {
         res.status(201).json({ success: true, data: { referral: toReferral(transfer.toObject ? transfer.toObject() : transfer) } });
     } catch (error) {
         if (error instanceof ExternalTransferError) return res.status(error.statusCode).json({ success: false, message: error.message });
+        if (error instanceof WalkInError) return res.status(error.status).json({ success: false, message: error.message });
         console.error('App transfer error:', error);
         res.status(500).json({ success: false, message: 'Error saving the transfer' });
     }

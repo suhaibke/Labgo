@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../catalog_data.dart';
+import '../models.dart';
 import '../ui.dart';
 import 'auth_screens.dart' show AuthInput, FieldLabel;
 
@@ -149,10 +150,9 @@ class AddScreen extends StatelessWidget {
               children: [
                 FieldLabel(w('fullName')),
                 const SizedBox(height: 4),
-                _KeepInput(
+                _NameField(
                   initial: app.addName,
                   hint: app.tr('اسم المريض', 'ناوی نەخۆش', 'Patient name'),
-                  onChanged: (v) => app.addName = v,
                 ),
               ],
             ),
@@ -527,28 +527,80 @@ class AddScreen extends StatelessWidget {
           ]),
           const SizedBox(height: 12),
           CardBox(
-            child: Row(
+            child: Column(
               children: [
-                Text(w('total'), style: ts(context, 16, weight: w700)),
-                const Spacer(),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                if (app.addDiscount > 0) ...[
+                  Row(children: [
+                    Text(l3('Subtotal', 'المجموع', 'کۆ'), style: ts(context, 13, color: pal.muted)),
+                    const Spacer(),
+                    Text('${formatNumber(app.addTotal)} IQD', textDirection: TextDirection.ltr, style: ts(context, 13, color: pal.muted)),
+                  ]),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Text(l3('Discount', 'الخصم', 'داشکاندن'), style: ts(context, 13, color: pal.muted)),
+                    const Spacer(),
+                    Text('-${formatNumber(app.addDiscount)} IQD', textDirection: TextDirection.ltr, style: ts(context, 13, weight: w700, color: const Color(0xFFFF3B30))),
+                  ]),
+                  const SizedBox(height: 8),
+                ],
+                Row(
                   children: [
-                    Text(
-                      '${formatNumber(app.addTotal)} IQD',
-                      style: ts(context, 20, weight: w700),
-                    ),
-                    if (b2b)
-                      Text(
-                        d('b2bDiscountLabel'),
-                        style: ts(context, 11, weight: w700, color: pal.accent),
+                    Text(w('total'), style: ts(context, 16, weight: w700)),
+                    const SizedBox(width: 10),
+                    // Discount: an amount or a percentage off the total.
+                    Tap(
+                      onTap: () => app.openAddPaySheet('discount'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: pal.accent.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          app.addDiscount > 0 ? l3('Edit discount', 'تعديل الخصم', 'دەستکاری داشکاندن') : l3('+ Discount', '+ خصم', '+ داشکاندن'),
+                          style: ts(context, 12, weight: w700, color: pal.accent),
+                        ),
                       ),
+                    ),
+                    const Spacer(),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${formatNumber(app.addNet)} IQD',
+                          style: ts(context, 20, weight: w700),
+                        ),
+                        if (b2b)
+                          Text(
+                            d('b2bDiscountLabel'),
+                            style: ts(context, 11, weight: w700, color: pal.accent),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ],
             ),
           ),
           const SizedBox(height: 12),
+          // Partial payment: part now, the rest owed.
+          Tap(
+            onTap: () => app.openAddPaySheet('partial'),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: pal.chipBg,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: pal.accent.withValues(alpha: .5)),
+              ),
+              child: Text(
+                l3('Partial payment', 'دفع جزئي', 'پارەدانی بەشێک'),
+                style: ts(context, 14, weight: w700, color: pal.accent),
+              ),
+            ),
+          ),
           Row(
             children: [
               Expanded(
@@ -805,6 +857,114 @@ class _Tag extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+/// Patient name with suggestions from earlier patients; picking one fills
+/// the phone, age and gender too.
+class _NameField extends StatefulWidget {
+  final String initial;
+  final String hint;
+  const _NameField({required this.initial, required this.hint});
+
+  @override
+  State<_NameField> createState() => _NameFieldState();
+}
+
+class _NameFieldState extends State<_NameField> {
+  late final TextEditingController _c = TextEditingController(text: widget.initial);
+  final _focus = FocusNode();
+  bool _open = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() {
+      // a short delay so a tap on a suggestion lands before the list closes
+      if (!_focus.hasFocus) {
+        Future.delayed(const Duration(milliseconds: 180), () {
+          if (mounted) setState(() => _open = false);
+        });
+      } else {
+        setState(() => _open = true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    final matches = _open ? app.nameSuggestions(_c.text) : const <Patient>[];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AuthInput(
+          controller: _c,
+          focusNode: _focus,
+          hint: widget.hint,
+          onChanged: (v) {
+            app.addName = v;
+            setState(() => _open = true);
+          },
+        ),
+        if (matches.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: pal.card,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: pal.cardBorder),
+              boxShadow: const [BoxShadow(color: Color(0x1A000000), offset: Offset(0, 20), blurRadius: 25, spreadRadius: -5)],
+            ),
+            child: Column(
+              children: [
+                for (final p in matches)
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      _focus.unfocus();
+                      app.useSuggestedPatient(p);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                      child: Row(
+                        children: [
+                          LIcon('User', size: 16, color: pal.muted),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: ts(context, 14, weight: w700)),
+                                Text(
+                                  [p.phone, if (p.age != '—') p.age, p.gender == 'Female' ? app.tr('أنثى', 'مێ', 'Female') : app.tr('ذكر', 'نێر', 'Male')].join(' • '),
+                                  textDirection: TextDirection.ltr,
+                                  textAlign: app.rtl ? TextAlign.right : TextAlign.left,
+                                  style: ts(context, 11.5, color: pal.muted),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(app.tr('استخدام', 'بەکارهێنان', 'Use'), style: ts(context, 12, weight: w700, color: pal.accent)),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

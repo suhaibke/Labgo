@@ -16,6 +16,7 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const fs = require('fs');
 const path = require('path');
 const r2Config = require('../config/r2');
+const LOCAL_DISK = process.env.R2_LOCAL_DISK === '1' && process.env.NODE_ENV !== 'production';
 
 // Initialize S3 client for R2
 const s3Client = new S3Client({
@@ -54,7 +55,8 @@ function getContentType(filename) {
  * Generate a unique filename with timestamp
  */
 function generateUniqueFilename(originalFilename, prefix = '') {
-    const uniqueSuffix = Date.now() + '-' + Math.random().toString(36).substring(2, 15);
+    // 128 random bits: a stored file's URL cannot be guessed from another one.
+    const uniqueSuffix = Date.now() + '-' + require('crypto').randomBytes(16).toString('hex');
     const ext = path.extname(originalFilename);
     return `${prefix}${uniqueSuffix}${ext}`;
 }
@@ -125,6 +127,15 @@ async function uploadBuffer(buffer, uploadPath, filename, options = {}) {
         const key = `${uploadPath}/${filename}`;
         const contentType = options.contentType || getContentType(filename);
 
+        // Local development only (R2_LOCAL_DISK=1): keep the file in backend/uploads,
+        // which the /uploads route already serves. Never set on a real server.
+        if (LOCAL_DISK) {
+            const file = path.join(__dirname, '..', key);
+            await fs.promises.mkdir(path.dirname(file), { recursive: true });
+            await fs.promises.writeFile(file, buffer);
+            return { success: true, key, url: `/${key}`, bucket: 'local-disk', contentType };
+        }
+
         const command = new PutObjectCommand({
             Bucket: r2Config.bucketName,
             Key: key,
@@ -160,17 +171,18 @@ async function uploadBuffer(buffer, uploadPath, filename, options = {}) {
  * @param {string} prefix - Filename prefix (e.g., 'lab-logo-', 'product-')
  * @returns {Promise<Object>} - Upload result with URL
  */
-async function uploadFromMulter(multerFile, uploadType, prefix = '') {
+async function uploadFromMulter(multerFile, uploadType, prefix = '', subFolder = '', fixedName = '') {
     if (!multerFile) {
         throw new Error('No file provided');
     }
 
-    const uploadPath = r2Config.paths[uploadType];
-    if (!uploadPath) {
+    const basePath = r2Config.paths[uploadType];
+    if (!basePath) {
         throw new Error(`Invalid upload type: ${uploadType}`);
     }
+    const uploadPath = subFolder ? `${basePath}/${subFolder}` : basePath;
 
-    const filename = generateUniqueFilename(multerFile.originalname, prefix);
+    const filename = fixedName || generateUniqueFilename(multerFile.originalname, prefix);
 
     // If multer stored file locally (diskStorage), upload from path
     if (multerFile.path) {
@@ -288,6 +300,13 @@ async function getFileStream(fileUrl) {
         if (!fileUrl) return null;
 
         let key = fileUrl.startsWith('/') ? fileUrl.substring(1) : fileUrl;
+
+        if (LOCAL_DISK) {
+            const file = path.join(__dirname, '..', key);
+            if (!file.startsWith(path.join(__dirname, '..', 'uploads')) || !fs.existsSync(file)) return null;
+            return { stream: fs.createReadStream(file), contentType: getContentType(file), contentLength: fs.statSync(file).size };
+        }
+
 
         const command = new GetObjectCommand({
             Bucket: r2Config.bucketName,

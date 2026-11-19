@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const auth = require('../../middleware/auth');
 const MarketListing = require('../../models/MarketListing');
 const SupportTicket = require('../../models/SupportTicket');
+const MaintenanceRequest = require('../../models/MaintenanceRequest');
 const MarketOrder = require('../../models/MarketOrder');
 const { notifyLab } = require('../../services/labNotify');
 
@@ -127,13 +128,14 @@ router.get('/support', async (req, res) => {
 
 router.get('/counts', async (req, res) => {
     try {
-        const [support, listings, orders] = await Promise.all([
+        const [support, listings, orders, maintenance] = await Promise.all([
             SupportTicket.countDocuments({ adminSeenAt: null }),
             MarketListing.countDocuments({ approvalStatus: 'pending', status: { $ne: 'removed' } }),
             MarketOrder.countDocuments({ adminSeenAt: null }),
+            MaintenanceRequest.countDocuments({ status: 'open' }),
         ]);
         // the store badge counts listings to review plus orders not looked at yet
-        res.json({ success: true, data: { support, market: listings + orders, listings, orders } });
+        res.json({ success: true, data: { support, market: listings + orders, listings, orders, maintenance } });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -158,6 +160,44 @@ router.patch('/support/:id', async (req, res) => {
         await t.save();
         if (req.body?.reply) {
             await notifyLab(t.labId, { title: `رد على البلاغ #${t.ticketNo}`, body: t.adminReply.slice(0, 180), data: { type: 'support_reply', ticketId: String(t._id) } });
+        }
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+// ---------- maintenance requests from the labs ----------
+const MAINT_AR = { open: 'مستلم', in_progress: 'قيد التنفيذ — الفني في الطريق', done: 'تم الإصلاح', cancelled: 'ملغى' };
+
+router.get('/maintenance', async (req, res) => {
+    try {
+        const filter = {};
+        if (['open', 'in_progress', 'done', 'cancelled'].includes(req.query.status)) filter.status = req.query.status;
+        const items = await MaintenanceRequest.find(filter).sort({ priority: -1, createdAt: -1 }).limit(300)
+            .populate('labId', 'name city phone labNo').populate('userId', 'name phone').lean();
+        res.json({ success: true, data: { items } });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.patch('/maintenance/:id', async (req, res) => {
+    try {
+        if (!valid(req.params.id)) return res.status(404).json({ success: false });
+        const m = await MaintenanceRequest.findById(req.params.id);
+        if (!m) return res.status(404).json({ success: false });
+        const before = m.status;
+        if (['open', 'in_progress', 'done', 'cancelled'].includes(req.body?.status)) m.status = req.body.status;
+        const reply = typeof req.body?.reply === 'string' ? req.body.reply.trim().slice(0, 4000) : '';
+        if (reply) m.adminReply = reply;
+        await m.save();
+        if (reply || m.status !== before) {
+            await notifyLab(m.labId, {
+                title: `طلب الصيانة #${m.requestNo}: ${MAINT_AR[m.status] || m.status}`,
+                body: (reply || 'تم تحديث حالة طلب الصيانة').slice(0, 180),
+                data: { type: 'maintenance_update', requestId: String(m._id) },
+            });
         }
         res.json({ success: true });
     } catch (error) {

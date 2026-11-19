@@ -40,8 +40,6 @@ class AuthBody extends StatelessWidget {
         children: [
           if (app.authBanner != null)
             _Banner(text: app.authBanner!, color: Fixed.green),
-          if (app.toastText != null)
-            _Banner(text: app.toastText!, color: const Color(0xFF111111)),
           Entrance(key: ValueKey('${app.auth}-${app.lang}'), child: screen),
         ],
       ),
@@ -145,6 +143,7 @@ class FieldLabel extends StatelessWidget {
 /// `w-full bg-[var(--input-bg)] rounded-2xl px-3 py-3.5 text-[15px] border border-[var(--card-border)]`
 class AuthInput extends StatelessWidget {
   final TextEditingController? controller;
+  final FocusNode? focusNode;
   final String hint;
   final ValueChanged<String>? onChanged;
   final bool obscure;
@@ -161,6 +160,7 @@ class AuthInput extends StatelessWidget {
   const AuthInput({
     super.key,
     this.controller,
+    this.focusNode,
     required this.hint,
     this.onChanged,
     this.obscure = false,
@@ -182,6 +182,7 @@ class AuthInput extends StatelessWidget {
     final rtl = app.rtl;
     final field = TextField(
       controller: controller,
+      focusNode: focusNode,
       onChanged: onChanged,
       obscureText: obscure,
       keyboardType: keyboard,

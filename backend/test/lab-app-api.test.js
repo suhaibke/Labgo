@@ -62,7 +62,12 @@ test('licence holders round-trip through the app text field', () => {
 test('a transfer becomes an app referral', () => {
     const { toReferral } = require('../routes/lab/app-api');
     const r = toReferral({ _id: 'x', patientName: 'Sara', patientGender: 'female', patientAge: 31, tests: [{ testName: 'Vitamin D' }], externalLab: { name: 'Al-Noor' }, status: 'sent', referenceNumber: 'EXT-1', expectedResultAt: new Date(2026, 10, 15) });
-    assert.deepEqual(r, { id: 'x', patient: 'Sara', gender: 'female', age: 31, test: 'Vitamin D', lab: 'Al-Noor', status: 'Sent', eta: '15/11/2026', tracking: 'EXT-1', step: 1 });
+    assert.deepEqual(r, {
+        id: 'x', patient: 'Sara', gender: 'female', age: 31, test: 'Vitamin D', lab: 'Al-Noor', status: 'Sent', eta: '15/11/2026', tracking: 'EXT-1', step: 1,
+        orderId: null, onLabGo: false, sentAt: null, tests: ['Vitamin D'], results: [], resultFile: '', resultSource: '',
+    });
+    // the short tracking code wins over the reference number
+    assert.equal(toReferral({ _id: 'z', trackingCode: 'T7K4M9X', referenceNumber: 'EXT-1' }).tracking, 'T7K4M9X');
     assert.equal(toReferral({ _id: 'y', status: 'completed', sampleCode: 'S-1' }).step, 3);
 });
 

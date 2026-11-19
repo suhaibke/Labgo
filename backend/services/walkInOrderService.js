@@ -138,13 +138,22 @@ async function createWalkInOrder(lab, staffUserId, body = {}) {
 
     const testIds = Array.isArray(body.testIds) ? body.testIds.map(String) : [];
     const packageIds = Array.isArray(body.packageIds) ? body.packageIds.map(String) : [];
-    const tests = await resolveTests(lab, testIds, packageIds, Boolean(String(body.company || '').trim()));
+    const tests = Array.isArray(body.testLines) && body.testLines.length
+        ? body.testLines
+        : await resolveTests(lab, testIds, packageIds, Boolean(String(body.company || '').trim()));
     if (!tests.length) throw new WalkInError('Choose at least one test');
 
     const subtotal = tests.reduce((sum, t) => sum + t.price, 0);
     const discount = Math.min(subtotal, Math.max(0, Math.round(Number(body.discount) || 0)));
     const total = subtotal - discount;
-    const paid = body.payLater !== true;
+    // Paid in full (default), later (payLater) or in part (paidAmount between 0 and the total).
+    let paidAmount = total;
+    if (body.payLater === true) paidAmount = 0;
+    else if (body.paidAmount !== undefined && body.paidAmount !== null && body.paidAmount !== '') {
+        paidAmount = Math.min(total, Math.max(0, Math.round(Number(body.paidAmount) || 0)));
+    }
+    const paid = paidAmount >= total;
+    const payStatus = paid ? 'paid' : paidAmount > 0 ? 'partial' : 'pending';
     const now = new Date();
 
     const { user, beneficiary } = await resolvePatient(lab, { name, phone: body.phone, gender, birthDate });
@@ -175,7 +184,7 @@ async function createWalkInOrder(lab, staffUserId, body = {}) {
         urgency: body.urgency === 'urgent' ? 'urgent' : 'routine',
         status: 'at_lab',
         orderCategory: 'test',
-        payment: { status: paid ? 'paid' : 'pending', method: 'cash', amount: total, currency: 'IQD', paidAt: paid ? now : undefined, collectedBy: paid ? staffUserId : undefined },
+        payment: { status: payStatus, method: 'cash', amount: total, paidAmount, currency: 'IQD', paidAt: paidAmount > 0 ? now : undefined, collectedBy: paidAmount > 0 ? staffUserId : undefined },
         paymentCollected: { collected: paid, collectedAt: paid ? now : undefined, collectedBy: paid ? staffUserId : undefined },
         pricing: { subtotal, discount, total },
         notes: { labNotes: String(body.notes || '').trim().slice(0, 1000) },
@@ -207,4 +216,4 @@ async function lookupPatient(lab, query) {
     return { name: user.name, phone: user.phone || '', patientNo: user.patientNo ?? null, gender: user.gender || null, birthDate: user.birthDate || null };
 }
 
-module.exports = { createWalkInOrder, lookupPatient, birthDateFromAge, packageLines, WalkInError };
+module.exports = { createWalkInOrder, lookupPatient, birthDateFromAge, resolvePatient, packageLines, WalkInError };

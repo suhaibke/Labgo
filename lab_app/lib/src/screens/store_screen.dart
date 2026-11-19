@@ -937,7 +937,7 @@ class _DetailState extends State<_Detail> {
                       Text('${money(m.currentBid > 0 ? m.currentBid : m.price)} IQD', style: ts(context, 22, weight: w900, color: pal.accent)),
                       Text('${m.bids} ${app.tr('مزايدات', 'مزایدە', 'bids')} • ${app.tr('يبدأ من', 'دەستپێک', 'Starts at')} ${money(m.price)}', style: ts(context, 12, color: pal.muted)),
                       if (m.youLead) Text(app.tr('أنت صاحب أعلى مزايدة', 'تۆ بەرزترینیت', 'You have the top bid'), style: ts(context, 12, weight: w700, color: pal.greenText)),
-                      if (m.won) Text(app.tr('🎉 ربحت هذا المزاد', '🎉 بردتەوە', '🎉 You won this auction'), style: ts(context, 13, weight: w900, color: pal.greenText)),
+                      if (m.won) Text(app.tr('ربحت هذا المزاد', 'بردتەوە', 'You won this auction'), style: ts(context, 13, weight: w900, color: pal.greenText)),
                     ],
                   ),
                 ),

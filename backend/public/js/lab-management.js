@@ -118,7 +118,7 @@ function renderLabsTable(labs) {
                     ${lab.logo ? `<img src="${lab.logo}" alt="${lab.name}" class="lab-logo">` :
                       '<div class="lab-logo-placeholder"><i class="fas fa-flask"></i></div>'}
                     <div>
-                        <div class="lab-name">${escapeHtml(lab.name)}</div>
+                        <div class="lab-name">${escapeHtml(lab.name)}${lab.labNo ? ` <span class="lab-no" title="Lab number" style="font:600 11px/1.6 ui-monospace,monospace;padding:1px 6px;border-radius:6px;background:#f2f2f4;color:#555;margin-inline-start:6px">L${lab.labNo}</span>` : ''}</div>
                         <div class="lab-specialization">
                             ${lab.specialization?.slice(0, 2).join(', ') || 'General'}
                         </div>
@@ -168,6 +168,9 @@ function renderLabsTable(labs) {
                     </button>
                     <button class="action-btn featured ${lab.reportBranding?.hidePlatformFooter ? '' : 'active'}" onclick="toggleReportBranding('${lab._id}', ${!lab.reportBranding?.hidePlatformFooter})" title="${lab.reportBranding?.hidePlatformFooter ? 'LabGo footer hidden on reports — click to show' : 'LabGo footer shown on reports — click to hide'}">
                         <i class="fas fa-copyright"></i>
+                    </button>
+                    <button class="action-btn view" onclick="downloadResultsIndex('${lab._id}')" title="Results index (Excel) — every order with patient details">
+                        <i class="fas fa-file-excel"></i>
                     </button>
                     <button class="action-btn view" onclick="viewLabDetails('${lab._id}')" title="View Details">
                         <i class="fas fa-eye"></i>
@@ -849,6 +852,7 @@ function renderLabDetails(lab, recentTests) {
                 <div class="lab-info">
                     <div class="lab-title-section">
                         <h1 class="lab-name">${escapeHtml(lab.name)}</h1>
+                        ${lab.labNo ? `<span class="status-badge" title="Lab number" style="font-family:ui-monospace,monospace">L${lab.labNo}</span>` : ''}
                         <span class="status-badge ${lab.status.toLowerCase()}">${lab.status}</span>
                         ${lab.isVerified ? '<span class="verification-badge"><i class="fas fa-check-circle"></i></span>' : ''}
                     </div>
@@ -1076,3 +1080,33 @@ function showNotification(message, type = 'info') {
     console.log(`[${type.toUpperCase()}] ${message}`);
     // In a real implementation, this would show a toast notification
 }
+
+
+// Results index (Excel) for archiving: one lab, or 'all'. Asks for an optional date range.
+async function downloadResultsIndex(labId) {
+    const from = prompt('From date (YYYY-MM-DD) — leave empty for all time / من تاريخ (فارغ = الكل)', '');
+    if (from === null) return;
+    const to = from ? prompt('To date (YYYY-MM-DD) / إلى تاريخ', new Date().toISOString().slice(0, 10)) : '';
+    if (to === null) return;
+    const q = new URLSearchParams();
+    if (from) q.set('from', from);
+    if (to) q.set('to', to);
+    try {
+        const res = await fetch(`/admin/api/labs/${labId}/results-index?${q}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'Download failed');
+        const blob = await res.blob();
+        const name = (/filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') || '') || [])[1] || 'results-index.xlsx';
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    } catch (e) {
+        alert(e.message || 'Download failed');
+    }
+}
+window.downloadResultsIndex = downloadResultsIndex;
