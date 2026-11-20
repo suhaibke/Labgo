@@ -178,6 +178,7 @@ app.get('/api/health', (req, res) => {
 
 // Routes
 app.use('/api/auth', require('./routes/auth/auth'));
+app.use('/api/auth', require('./routes/auth/lab-register'));
 app.use('/api/protected', require('./routes/protected'));
 app.use('/api/app/labs', require('./routes/app/labs'));
 app.use('/api/app/services', require('./routes/app/services'));

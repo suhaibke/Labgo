@@ -82,7 +82,13 @@ class _StoreScreenState extends State<StoreScreen> {
   }
 
   String _from = 'main';
-  void go(String v, {MarketItem? it}) => setState(() {
+  void go(String v, {MarketItem? it}) {
+    // A guest can look around; buying, listing and their own orders need an account.
+    if (const {'checkout', 'add', 'orders', 'mine'}.contains(v) && AppScope.read(context).needsAccount()) return;
+    _go(v, it: it);
+  }
+
+  void _go(String v, {MarketItem? it}) => setState(() {
         if (v == 'detail') _from = view == 'auction' ? 'auction' : 'main';
         view = v;
         if (it != null) item = it;
@@ -986,6 +992,7 @@ class _DetailState extends State<_Detail> {
               const SizedBox(width: 8),
               Tap(
                 onTap: () async {
+                  if (app.needsAccount()) return;
                   final v = int.tryParse(_bid.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
                   if (v <= (m.currentBid > 0 ? m.currentBid : m.price)) {
                     app.toast(app.tr('المزايدة يجب أن تكون أعلى من الحالية', 'دەبێت بەرزتر بێت', 'Your bid must be higher than the current one'));

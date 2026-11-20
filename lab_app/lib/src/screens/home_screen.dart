@@ -26,54 +26,6 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (app.guest)
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: pal.accent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      app.tr(
-                        'أنت تتصفح كضيف',
-                        'وەک میوان دەگەڕێیت',
-                        'You are browsing as a guest',
-                      ),
-                      style: ts(context, 13, weight: w700, color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Tap(
-                    onTap: app.leaveGuest,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: pal.white, // bg-white (dark: #1C1C1E)
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        app.tr('تسجيل الدخول', 'چوونە ژوورەوە', 'Log In'),
-                        style: ts(
-                          context,
-                          12,
-                          weight: w900,
-                          color: pal.dark
-                              ? Colors.white
-                              : const Color(0xFF111111),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           Text(
             app.todayLabel,
             style: ts(context, 14, weight: w500, color: pal.muted),

@@ -122,6 +122,45 @@ class LabApi {
     return Map<String, dynamic>.from((json['data'] as Map)['referral'] as Map);
   }
 
+  // ---- sign-up, OTP and passwords ------------------------------------------
+  /// SMS code. purpose: 'register' (new number) or 'reset'.
+  Future<void> sendOtp(String phone, {String purpose = 'register'}) =>
+      _send('POST', purpose == 'reset' ? '/api/auth/password-reset/request' : '/api/auth/send-otp', {'phone': phone, 'purpose': purpose});
+
+  /// A new lab with its documents: fields as text, files as (field, name, bytes).
+  Future<Map<String, dynamic>> labRegister(Map<String, String> fields, List<(String, String, List<int>)> files) async {
+    final req = http.MultipartRequest('POST', _uri('/api/auth/lab-register'))
+      ..headers.addAll({'Accept': 'application/json'})
+      ..fields.addAll(fields);
+    for (final f in files) {
+      final lower = f.$2.toLowerCase();
+      final type = lower.endsWith('.pdf')
+          ? MediaType('application', 'pdf')
+          : lower.endsWith('.png')
+          ? MediaType('image', 'png')
+          : MediaType('image', 'jpeg');
+      req.files.add(http.MultipartFile.fromBytes(f.$1, f.$3, filename: f.$2, contentType: type));
+    }
+    final res = await http.Response.fromStream(await req.send().timeout(const Duration(seconds: 90)));
+    final json = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode >= 400 || json['success'] == false) throw ApiError(res.statusCode, '${json['message'] ?? 'Request failed'}', code: json['code']?.toString());
+    return (json['data'] ?? <String, dynamic>{}) as Map<String, dynamic>;
+  }
+
+  /// Checks the reset code; returns the token that allows a new password.
+  Future<String> resetVerify(String phone, String code) async {
+    final json = await _send('POST', '/api/auth/password-reset/verify-otp', {'phone': phone, 'code': code});
+    return '${json['resetToken'] ?? (json['data'] as Map?)?['resetToken'] ?? ''}';
+  }
+
+  Future<void> resetConfirm(String resetToken, String newPassword) =>
+      _send('POST', '/api/auth/password-reset/confirm', {'resetToken': resetToken, 'newPassword': newPassword});
+
+  Future<void> changePassword(String current, String next) =>
+      _send('POST', '/api/auth/change-password', {'currentPassword': current, 'newPassword': next});
+
+  Future<void> updateProfileName(String name) => _send('PUT', '/api/auth/update-profile', {'name': name});
+
   /// Deletes a transfer this lab made.
   Future<void> deleteTransfer(String id) => _send('DELETE', '/lab/api/app/transfers/$id');
 

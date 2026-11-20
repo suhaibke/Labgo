@@ -143,6 +143,12 @@ class AppState extends ChangeNotifier {
       await _loadFromServer();
       enterApp();
     } catch (e) {
+      if (e is ApiError && e.code == 'labPending') {
+        await LabApi.instance.logout();
+        onError?.call(tr('مختبرك قيد المراجعة من إدارة LabGo، وسيصلك إشعار عند التفعيل.', 'تاقیگەکەت لە پێداچوونەوەدایە.',
+            'Your lab is under review by LabGo; you will be notified when it is activated.'));
+        return;
+      }
       onError?.call(e.toString());
     } finally {
       loading = false;
@@ -195,6 +201,16 @@ class AppState extends ChangeNotifier {
       profileInitial = userName.trim()[0].toUpperCase();
     }
     userPhone = (b.user['phone'] ?? userPhone) as String;
+    userEmail = '${b.user['email'] ?? ''}';
+    final roleKey = '${b.user['roleKey'] ?? ''}';
+    userRole = switch (roleKey) {
+      'owner' => tr('مالك المختبر', 'خاوەنی تاقیگە', 'Lab owner'),
+      'admin' => tr('مدير', 'بەڕێوەبەر', 'Manager'),
+      'technician' => tr('فني مختبر', 'تەکنیکار', 'Lab technician'),
+      'receptionist' => tr('استقبال', 'پێشوازی', 'Reception'),
+      'accountant' => tr('محاسب', 'ژمێریار', 'Accountant'),
+      _ => roleKey.isEmpty ? userRole : roleKey,
+    };
     labName = (b.lab['name'] ?? labName) as String;
     labDisplayName = labName;
     labPhone = (b.lab['phone'] ?? labPhone) as String;
@@ -287,6 +303,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> addExpense(String category, num amount, String note) async {
+    if (needsAccount()) return;
     if (amount <= 0) {
       toast(tr('اكتب المبلغ', 'بڕ بنووسە', 'Enter the amount'));
       return;
@@ -737,6 +754,7 @@ class AppState extends ChangeNotifier {
 
   /// Lab details are edited without a Save button: save shortly after typing stops.
   void _scheduleLabSave() {
+    if (guest) return;
     if (!LabApi.enabled || !LabApi.instance.signedIn) return;
     if (_labKey == _labSaved) return;
     _labTimer?.cancel();
@@ -914,6 +932,153 @@ class AppState extends ChangeNotifier {
   String forgotPhone = '';
   String forgotEmail = '';
 
+  // ---- sign-up, OTP and password reset (server) ---------------------------------
+  /// What the registration form collected, kept until the SMS code is entered.
+  Map<String, String> regFields = {};
+  List<(String, String, Uint8List)> regFiles = [];
+  String _resetToken = '';
+  bool authBusy = false;
+
+  String _authError(Object e) {
+    if (e is! ApiError) return tr('تعذر الاتصال بالسيرفر', 'پەیوەندی نییە', 'Could not reach the server');
+    return switch (e.code) {
+      'phoneTaken' => tr('هذا الرقم مسجل بحساب آخر', 'ئەم ژمارەیە هەژماری هەیە', 'This phone number already has an account'),
+      'emailTaken' => tr('هذا البريد مسجل بحساب آخر', 'ئەم ئیمەیڵە هەژماری هەیە', 'This email already has an account'),
+      'otp' => tr('رمز خاطئ أو منتهي', 'کۆدی هەڵە', 'Wrong or expired code'),
+      'documents' => tr('ارفع شهادة فتح المختبر', 'بڕوانامە بار بکە', 'Upload the lab opening certificate'),
+      _ => e.message == 'Phone number already registered'
+          ? tr('هذا الرقم مسجل بحساب آخر', 'ئەم ژمارەیە هەژماری هەیە', 'This phone number already has an account')
+          : e.message == 'Phone number not found' || e.message == 'User not found'
+          ? tr('لا يوجد حساب بهذا الرقم', 'هەژمار نییە', 'No account with this phone number')
+          : e.message,
+    };
+  }
+
+  /// Register: send the SMS code, keep the form until it is confirmed.
+  Future<String?> startRegistration(Map<String, String> fields, List<(String, String, Uint8List)> files) async {
+    if (!LabApi.enabled) {
+      registerPhone = fields['phone'] ?? '';
+      goOtp('register');
+      return null;
+    }
+    authBusy = true;
+    notifyListeners();
+    try {
+      await LabApi.instance.sendOtp(fields['phone']!, purpose: 'register');
+      regFields = fields;
+      regFiles = files;
+      registerPhone = fields['phone']!;
+      goOtp('register');
+      return null;
+    } catch (e) {
+      return _authError(e);
+    } finally {
+      authBusy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Forgot password: SMS code to the account's phone.
+  Future<String?> startForgot(String phone) async {
+    if (!LabApi.enabled) {
+      goOtp('forgot');
+      return null;
+    }
+    authBusy = true;
+    notifyListeners();
+    try {
+      await LabApi.instance.sendOtp(phone, purpose: 'reset');
+      forgotPhone = phone;
+      forgotMethod = 'phone';
+      goOtp('forgot');
+      return null;
+    } catch (e) {
+      return _authError(e);
+    } finally {
+      authBusy = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> resendOtp() async {
+    if (!LabApi.enabled) return null;
+    try {
+      if (otpPurpose == 'forgot') {
+        await LabApi.instance.sendOtp(forgotPhone, purpose: 'reset');
+      } else {
+        await LabApi.instance.sendOtp(registerPhone, purpose: 'register');
+      }
+      return null;
+    } catch (e) {
+      return _authError(e);
+    }
+  }
+
+  /// The SMS code: creates the lab (pending review) or opens the new-password step.
+  Future<String?> confirmOtp(String code) async {
+    if (!LabApi.enabled) return code == '123456' ? null : tr('رمز خاطئ', 'کۆدی هەڵە', 'Wrong code');
+    authBusy = true;
+    notifyListeners();
+    try {
+      if (otpPurpose == 'forgot') {
+        _resetToken = await LabApi.instance.resetVerify(forgotPhone, code);
+        return null;
+      }
+      final r = await LabApi.instance.labRegister({...regFields, 'code': code}, regFiles);
+      regFields = {};
+      regFiles = [];
+      authBanner = tr(
+          'تم إرسال طلب تسجيل مختبرك${r['labNo'] != null && '${r['labNo']}'.isNotEmpty ? ' (${r['labNo']})' : ''}. ستراجع إدارة LabGo المستندات وتصلك رسالة عند التفعيل.',
+          'داواکاری تۆمارکردن نێردرا. دوای پێداچوونەوە چالاک دەکرێت.',
+          'Your lab sign-up was sent${r['labNo'] != null && '${r['labNo']}'.isNotEmpty ? ' (${r['labNo']})' : ''}. LabGo will review the documents and let you know when it is activated.');
+      return null;
+    } catch (e) {
+      return _authError(e);
+    } finally {
+      authBusy = false;
+      notifyListeners();
+    }
+  }
+
+  /// New password after a reset code.
+  Future<String?> confirmReset(String newPassword) async {
+    if (!LabApi.enabled) return null;
+    try {
+      await LabApi.instance.resetConfirm(_resetToken, newPassword);
+      _resetToken = '';
+      return null;
+    } catch (e) {
+      return _authError(e);
+    }
+  }
+
+  /// Settings → profile: change the password of the signed-in account.
+  Future<String?> changePassword(String current, String next) async {
+    if (!LabApi.enabled) return null;
+    try {
+      await LabApi.instance.changePassword(current, next);
+      return null;
+    } catch (e) {
+      if (e is ApiError && e.status == 400 && e.message.toLowerCase().contains('current')) {
+        return tr('كلمة المرور الحالية غير صحيحة', 'وشەی نهێنی ئێستا هەڵەیە', 'The current password is wrong');
+      }
+      return _authError(e);
+    }
+  }
+
+  Future<void> saveProfileName(String name) async {
+    doctorName = name;
+    profileInitial = name.trim().isEmpty ? profileInitial : name.trim()[0].toUpperCase();
+    notifyListeners();
+    if (LabApi.enabled && !guest) {
+      try {
+        await LabApi.instance.updateProfileName(name);
+      } catch (e) {
+        _serverError(e);
+      }
+    }
+  }
+
   void goOtp(String purpose) {
     otpPurpose = purpose;
     auth = 'otp';
@@ -962,6 +1127,11 @@ class AppState extends ChangeNotifier {
     labEmail = '';
     labLogo = null;
     userPhoto = null;
+    // Tests and packages belong to a lab too; signing in loads them again.
+    if (LabApi.enabled) {
+      kCatalog.clear();
+      kPackages.clear();
+    }
   }
 
   /// Guest actions that need a lab account: say so and offer sign-in.
@@ -1220,6 +1390,8 @@ class AppState extends ChangeNotifier {
   String labDisplayName = 'LabGo Mosul';
   String profileInitial = 'A';
   String userPhone = '+964 770 000 0000';
+  /// The signed-in account's email (server mode).
+  String userEmail = '';
   String userRole = 'Lab Manager';
   String userAddress = 'Mosul, Al-Majmoua St.';
   String licenseOwners = 'Dr. Ahmed Al-Mosuli, Dr. Sara Ali';
@@ -1424,6 +1596,7 @@ class AppState extends ChangeNotifier {
   bool uploadSourceOpen = false;
 
   void uploadResultFile() {
+    if (needsAccount()) return;
     if (selectedPatient == null) return;
     uploadSourceOpen = true;
     notifyListeners();
@@ -1650,6 +1823,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> submitEditPatient({required String name, required String phone, required String gender, required String age, required String ageUnit}) async {
+    if (needsAccount()) return;
     final p = editingPatient;
     if (p == null || rowBusy) return;
     if (name.trim().isEmpty) return toast(w('fillName'));
@@ -1680,6 +1854,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> confirmDeletePatient() async {
+    if (needsAccount()) return;
     final p = deletingPatient;
     if (p == null || rowBusy) return;
     rowBusy = true;
@@ -1879,6 +2054,7 @@ class AppState extends ChangeNotifier {
   }
 
   void saveResults() {
+    if (needsAccount()) return;
     final sp = selectedPatient;
     if (sp == null) return;
     _fillSentMeta(sp);
@@ -2080,6 +2256,7 @@ class AppState extends ChangeNotifier {
   /// builds its report and notifies the patient (or the lab that sent the sample).
   bool approving = false;
   Future<void> approveResultsFromDetail() async {
+    if (needsAccount()) return;
     final p = selectedPatient;
     if (p == null || approving) return;
     _fillSentMeta(p);
@@ -2282,6 +2459,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> submitSettle(int amount) async {
+    if (needsAccount()) return;
     final s = settle;
     if (s == null || settling) return;
     if (amount <= 0) {
@@ -2455,6 +2633,7 @@ class AppState extends ChangeNotifier {
   }
 
   void submitPatient({required bool payLater, int? paidAmount}) {
+    if (needsAccount()) return;
     if (addName.trim().isEmpty) {
       toast(w('fillName'));
       return;
@@ -2693,6 +2872,7 @@ class AppState extends ChangeNotifier {
   }
 
   void sendReferral() {
+    if (needsAccount()) return;
     if (refPatient.trim().isEmpty || refTests.isEmpty) {
       toast(tr('اختر المريض والتحاليل', 'نەخۆش و پشکنین هەڵبژێرە', 'Choose the patient and tests'));
       return;
@@ -2814,6 +2994,7 @@ class AppState extends ChangeNotifier {
 
   /// Swipe on a tracking card: deletes the transfer (the patient's order stays).
   Future<bool> deleteReferral(Referral r) async {
+    if (needsAccount()) return false;
     try {
       if (LabApi.enabled && !r.id.startsWith('seed')) await LabApi.instance.deleteTransfer(r.id);
       referrals = referrals.where((x) => x.id != r.id).toList();
@@ -2837,6 +3018,7 @@ class AppState extends ChangeNotifier {
 
   /// rows: test, value, unit, range.
   Future<void> saveSentResults(List<Map<String, String>> rows, {(String, Uint8List)? file}) async {
+    if (needsAccount()) return;
     final r = sentResult;
     if (r == null || sentSaving) return;
     final filled = rows.where((x) => (x['value'] ?? '').trim().isNotEmpty).toList();
@@ -2943,6 +3125,7 @@ class AppState extends ChangeNotifier {
   }
 
   void confirmReceive() {
+    if (needsAccount()) return;
     final s = foundSample;
     if (s == null) return;
     if (LabApi.enabled) {
@@ -3103,6 +3286,7 @@ class AppState extends ChangeNotifier {
 
   /// Sends a maintenance request with photos; returns the request number.
   Future<int?> sendMaintenance({required String category, required String priority, required String location, required String description, required List<Uint8List> images}) async {
+    if (needsAccount()) return null;
     if (description.trim().isEmpty) {
       toast(tr('اكتب وصف المشكلة', 'کێشەکە بنووسە', 'Describe the problem'));
       return null;
@@ -3157,6 +3341,7 @@ class AppState extends ChangeNotifier {
 
   /// Sends a suggestion / bug / problem with photos; returns the ticket number.
   Future<int?> sendSupport(String type, String subject, String message, List<Uint8List> images) async {
+    if (needsAccount()) return null;
     if (message.trim().isEmpty) {
       toast(tr('اكتب رسالتك', 'نامەکەت بنووسە', 'Write your message'));
       return null;
@@ -3231,6 +3416,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> saveSupplyOrder(SupplyOrder o) async {
+    if (needsAccount()) return;
     if (LabApi.enabled) {
       // The server gives the order its number, so the web and the app share one sequence.
       try {
@@ -3292,6 +3478,7 @@ class AppState extends ChangeNotifier {
   }
 
   void saveUser(ManagedUser u) {
+    if (needsAccount()) return;
     if (LabApi.enabled) {
       _saveUserOnServer(u);
       return;
@@ -3330,6 +3517,7 @@ class AppState extends ChangeNotifier {
   }
 
   void saveRole(LabRole r) {
+    if (needsAccount()) return;
     final i = roles.indexWhere((x) => x.id == r.id);
     roles = i >= 0
         ? [for (final x in roles) x.id == r.id ? r : x]
@@ -3404,6 +3592,7 @@ class AppState extends ChangeNotifier {
   }
 
   void addTest(CatalogTest test) {
+    if (needsAccount()) return;
     kCatalog.add(test);
     if (!LabApi.enabled) {
       toast(w('saved'));
@@ -3422,6 +3611,7 @@ class AppState extends ChangeNotifier {
   }
 
   void savePackage(LabPackage p) {
+    if (needsAccount()) return;
     final i = kPackages.indexWhere((x) => x.id == p.id);
     if (i >= 0) {
       kPackages[i] = p;
@@ -3492,6 +3682,7 @@ class AppState extends ChangeNotifier {
   };
 
   void addWasteTransfer(WasteTransfer t) {
+    if (needsAccount()) return;
     if (LabApi.enabled) {
       () async {
         try {

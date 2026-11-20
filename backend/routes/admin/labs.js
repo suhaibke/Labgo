@@ -441,6 +441,7 @@ router.put('/:id', verifyToken, adminOnly, ...uploadLabLogo, async (req, res) =>
         if (req.body.city) lab.city = req.body.city;
         if (req.body.zone) lab.zone = req.body.zone;
         if (req.body.country) lab.country = req.body.country;
+        const wasPending = lab.status === 'Pending';
         if (req.body.status) lab.status = req.body.status;
 
         // Update map coordinates if provided as JSON string
@@ -484,6 +485,14 @@ router.put('/:id', verifyToken, adminOnly, ...uploadLabLogo, async (req, res) =>
         lab.lastUpdatedBy = req.user.id;
 
         await lab.save();
+        // A self-registered lab hears that it was activated.
+        if (wasPending && lab.status === 'Active') {
+            await require('../../services/labNotify').notifyLab(lab._id, {
+                title: 'تم تفعيل مختبرك في LabGo',
+                body: `تمت مراجعة وثائق ${lab.name} وتفعيل الحساب. يمكنك تسجيل الدخول الآن.`,
+                data: { type: 'lab_activated' },
+            });
+        }
 
         // Handle owner role changes
         if (oldOwnerId && oldOwnerId.toString() !== newOwnerId) {

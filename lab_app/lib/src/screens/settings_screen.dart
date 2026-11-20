@@ -489,6 +489,9 @@ class _EditProfile extends StatefulWidget {
 
 class _EditProfileState extends State<_EditProfile> {
   late String name, phone, address, lab, role, avatar, password;
+  // change password
+  String curPass = '', newPass = '', newPass2 = '', passError = '';
+  bool passBusy = false;
 
   @override
   void initState() {
@@ -576,35 +579,79 @@ class _EditProfileState extends State<_EditProfile> {
         hint: 'Dr. Ahmed',
         onChanged: (v) => setState(() => name = v),
       ),
-      _Field(
-        label: d('phoneLabel'),
-        initial: phone,
-        ltr: true,
-        onChanged: (v) => phone = v,
+      // The account's registered details: shown, changed only through LabGo support.
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          children: [
+            for (final row in [
+              ('Phone', d('phoneLabel'), app.userPhone, true),
+              ('Mail', app.tr('البريد المسجل', 'ئیمەیڵی تۆمارکراو', 'Registered email'), app.userEmail.isEmpty ? '—' : app.userEmail, true),
+              ('User', d('userRoleLabel'), app.userRole, false),
+              ('Building2', d('labNameLabel'), app.labDisplayName, false),
+            ])
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(children: [
+                  LIcon(row.$1, size: 15, color: pal.muted),
+                  const SizedBox(width: 8),
+                  Text(row.$2, style: ts(context, 12, color: pal.muted)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(row.$3,
+                        textAlign: TextAlign.end,
+                        textDirection: row.$4 ? TextDirection.ltr : null,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: ts(context, 13, weight: w700)),
+                  ),
+                ]),
+              ),
+            Text(
+              app.tr('لتغيير الهاتف أو البريد تواصل مع دعم LabGo. اسم المختبر وعنوانه من «بيانات المختبر».',
+                  'بۆ گۆڕینی مۆبایل یان ئیمەیڵ پەیوەندی بە پشتگیری بکە.',
+                  'To change the phone or email, contact LabGo support. The lab name and address are in Lab data.'),
+              style: ts(context, 11, color: pal.muted, height: 1.5),
+            ),
+          ],
+        ),
       ),
-      _Field(
-        label: app.tr('العنوان', 'ناونیشان', 'Address'),
-        initial: address,
-        hint: 'Mosul, Al-Majmoua St.',
-        onChanged: (v) => address = v,
-      ),
-      _Field(
-        label: d('labNameLabel'),
-        initial: lab,
-        hint: 'LabGo Mosul',
-        onChanged: (v) => lab = v,
-      ),
-      _Field(
-        label: d('userRoleLabel'),
-        initial: role,
-        hint: w('labManager'),
-        onChanged: (v) => role = v,
-      ),
-      _Field(
-        label: d('passwordLabel'),
-        initial: '',
-        hint: '••••••••',
-        onChanged: (v) => password = v,
+      // Change password (checked against the current one on the server).
+      Text(app.tr('تغيير كلمة المرور', 'گۆڕینی وشەی نهێنی', 'Change password'), style: ts(context, 14, weight: w700)),
+      _Field(label: app.tr('كلمة المرور الحالية', 'وشەی نهێنی ئێستا', 'Current password'), initial: '', hint: '••••••••', onChanged: (v) => curPass = v),
+      _Field(label: app.tr('كلمة المرور الجديدة', 'وشەی نهێنی نوێ', 'New password'), initial: '', hint: app.tr('8 أحرف على الأقل', 'لانیکەم ٨ پیت', 'At least 8 characters'), onChanged: (v) => newPass = v),
+      _Field(label: app.tr('تأكيد كلمة المرور الجديدة', 'دووپاتکردنەوە', 'Confirm new password'), initial: '', hint: '••••••••', onChanged: (v) => newPass2 = v),
+      if (passError.isNotEmpty) Text(passError, style: ts(context, 12, weight: w700, color: Fixed.red)),
+      _pill(
+        context,
+        passBusy ? '…' : app.tr('تحديث كلمة المرور', 'نوێکردنەوەی وشەی نهێنی', 'Update password'),
+        color: pal.ink,
+        textColor: pal.appBg,
+        icon: 'ShieldCheck',
+        onTap: () async {
+          if (passBusy) return;
+          String? err;
+          if (curPass.isEmpty || newPass.isEmpty) {
+            err = app.tr('أدخل كلمة المرور الحالية والجديدة', 'وشەی نهێنی بنووسە', 'Enter the current and new password');
+          } else if (newPass.length < 8) {
+            err = app.tr('كلمة المرور 8 أحرف على الأقل', 'لانیکەم ٨ پیت', 'Password must be at least 8 characters');
+          } else if (newPass != newPass2) {
+            err = app.p('passMismatch');
+          }
+          if (err != null) return setState(() => passError = err!);
+          setState(() {
+            passBusy = true;
+            passError = '';
+          });
+          final res = await app.changePassword(curPass, newPass);
+          if (!mounted) return;
+          setState(() {
+            passBusy = false;
+            passError = res ?? '';
+          });
+          if (res == null) app.toast(app.tr('تم تغيير كلمة المرور ✓', 'وشەی نهێنی گۆڕدرا ✓', 'Password changed ✓'));
+        },
       ),
       Row(
         children: [
@@ -626,24 +673,9 @@ class _EditProfileState extends State<_EditProfile> {
               textColor: Colors.white,
               onTap: () {
                 if (name.trim().isEmpty) return;
-                app.updateSettings(() {
-                  app.doctorName = name.trim();
-                  app.userPhone = phone.trim().isNotEmpty
-                      ? phone.trim()
-                      : app.userPhone;
-                  app.labDisplayName = lab.trim().isNotEmpty
-                      ? lab.trim()
-                      : app.labDisplayName;
-                  app.userRole = role.trim().isNotEmpty
-                      ? role.trim()
-                      : app.userRole;
-                  app.profileInitial = avatar.trim().isNotEmpty
-                      ? avatar.trim()[0].toUpperCase()
-                      : app.profileInitial;
-                  if (address.trim().isNotEmpty)
-                    app.userAddress = address.trim();
-                  app.profileEditOpen = false;
-                });
+                if (app.needsAccount()) return;
+                app.saveProfileName(name.trim());
+                app.updateSettings(() => app.profileEditOpen = false);
                 app.toast(w('saved'));
               },
             ),
@@ -3927,22 +3959,28 @@ void showTermsPage(BuildContext context) {
   final ar = app.lang != 'en';
   final sections = ar
       ? const [
-          ('1. القبول', 'باستخدامك تطبيق LabGo Lab أو لوحة المختبرات فإنك توافق على هذه الشروط. إذا لم توافق عليها فلا تستخدم المنصة.'),
-          ('2. حسابات المختبرات', 'المختبر مسؤول عن صحة بياناته وبيانات أصحاب الإجازات، وعن حسابات موظفيه وصلاحياتهم، وعن سرية كلمات المرور.'),
-          ('3. النتائج والتقارير', 'المختبر وحده مسؤول عن دقة النتائج المدخلة واعتمادها. LabGo منصة لإدارة البيانات ولا تقدم تشخيصاً طبياً. تحمل التقارير رمز تحقق ويُمنع تعديلها بعد الاعتماد خارج المنصة.'),
-          ('4. بيانات المرضى', 'تُستخدم بيانات المرضى لتقديم الخدمة فقط وفق سياسة الخصوصية، ويلتزم المختبر بعدم استخدامها لأي غرض آخر.'),
-          ('5. التحويل بين المختبرات والمتجر', 'الأسعار المتفق عليها بين المختبرات وطلبات المتجر والمزادات مسؤولية الأطراف المعنية. لا يُعرض أي منتج أو مزاد أو مختبر للبيع إلا بعد مراجعة إدارة LabGo.'),
-          ('6. النفايات الطبية', 'يلتزم المختبر بتصنيف النفايات الطبية ووزنها بدقة عند طلب النقل وتسليمها مع تقرير الطلب.'),
-          ('7. التعديلات والتواصل', 'قد نحدّث هذه الشروط، ويُعد استمرار الاستخدام موافقة عليها. للتواصل: info@labgo-iq.com — +964 777 743 0067 — LabGo LLC.'),
+          ('القبول', 'باستخدامك تطبيق LabGo Lab أو لوحة المختبرات أو صفحات النتائج فإنك توافق على هذه الشروط. إذا لم توافق عليها فلا تستخدم المنصة.'),
+          ('حسابات المختبرات والموظفين', 'لكل مختبر رقم ثابت في LabGo (مثل L101) يُستخدم لتعريفه في السجلات والأرشيف ولا يتغير. المختبر مسؤول عن صحة بياناته وبيانات أصحاب الإجازات، وعن حسابات موظفيه والأدوار والصلاحيات التي يمنحها لهم، وعن سرية كلمات المرور وعدم مشاركة الحسابات. عند إزالة موظف يُوقف حسابه فوراً ولا يستطيع الدخول.'),
+          ('النتائج والتقارير', 'المختبر وحده مسؤول عن دقة النتائج المدخلة واعتمادها. LabGo منصة لإدارة البيانات ولا تقدم تشخيصاً طبياً. تُعد النتيجة معتمدة عند الضغط على «اعتماد»، وتحمل التقارير رمز تحقق، ويُمنع تعديلها بعد الاعتماد خارج المنصة. الصور والملفات المرفوعة كنتيجة، والأجزاء المقصوصة منها، والنتائج الواردة من مختبر آخر، يراجعها المختبر قبل اعتمادها ويتحمل مسؤوليتها.'),
+          ('بيانات المرضى وروابط النتائج', 'تُستخدم بيانات المرضى لتقديم الخدمة فقط وفق سياسة الخصوصية، ويلتزم المختبر بعدم استخدامها لأي غرض آخر. رابط النتيجة القصير ورمز QR على الوصل يفتحان نتيجة المريض لمن يملكهما؛ يُرسَلان للمريض نفسه فقط ويجب عدم نشرهما. تُحفظ التقارير وملفات النتائج كسجلات طبية في مجلد خاص بكل مختبر. فهرس الأرشيف الذي يتضمن بيانات المرضى متاح لإدارة LabGo فقط ويُحفظ في مكان محمي.'),
+          ('المدفوعات والخصومات والديون', 'يسجّل المختبر في المنصة ما يدفعه المريض والخصومات والدفع الجزئي وتسديد الديون. LabGo لا تستلم الأموال ولا تتحمل مسؤولية تحصيلها، والمختبر مسؤول عن صحة هذه السجلات.'),
+          ('الإرسال بين المختبرات', 'المختبر المرسل مسؤول عن العينة وعن بيانات المريض التي يشاركها، والمختبر المستلم مسؤول عن النتائج التي يدخلها، سواء من حسابه في LabGo أو من رابط QR على ملصق العينة. الأسعار المتفق عليها بين المختبرات مسؤولية الطرفين. يمكن للمختبر المرسل حذف الإرسال، ويُبلَّغ المختبر المستلم المسجل بذلك.'),
+          ('المتجر والمزادات', 'لا يُعرض أي منتج أو مزاد أو مختبر للبيع إلا بعد مراجعة إدارة LabGo وموافقتها. الشراء والمزايدة والعرض تتطلب حساب مختبر، والمزايدة التزام بالشراء بالسعر المعروض إذا رسا المزاد. الأسعار والتسليم والدفع مسؤولية البائع والمشتري.'),
+          ('الصيانة والنفايات الطبية', 'طلبات الصيانة مخصصة للمبنى والخدمات (كهرباء، تكييف، ماء…) وليست لأجهزة المختبر. تنسق LabGo الطلب ولا تضمن موعداً محدداً للإصلاح. يلتزم المختبر بتصنيف النفايات الطبية ووزنها بدقة عند طلب النقل وتسليمها مع تقرير الطلب.'),
+          ('التصفح كضيف', 'يمكن تصفح التطبيق والمتجر كضيف دون أي بيانات لمختبر. لا يحفظ الضيف شيئاً ولا يشتري ولا يزايد إلا بعد تسجيل الدخول بحساب مختبر.'),
+          ('التعديلات والتواصل', 'قد نحدّث هذه الشروط، ويُعد استمرار الاستخدام موافقة عليها. للتواصل: info@labgo-iq.com — +964 777 743 0067 — LabGo LLC.'),
         ]
       : const [
-          ('1. Acceptance', 'By using LabGo Lab or the lab dashboard you agree to these terms. If you do not agree, do not use the platform.'),
-          ('2. Lab accounts', 'The lab is responsible for its details and licence holders, its staff accounts and permissions, and keeping passwords private.'),
-          ('3. Results and reports', 'The lab alone is responsible for the results it enters and approves. LabGo manages data and does not give medical diagnoses. Reports carry a verification code and may not be altered outside the platform after approval.'),
-          ('4. Patient data', 'Patient data is used only to provide the service, under the privacy policy, and the lab must not use it for anything else.'),
-          ('5. Transfers and the store', 'Prices agreed between labs, store orders and auctions are the parties\' responsibility. No product, auction or lab for sale is shown before LabGo reviews it.'),
-          ('6. Medical waste', 'The lab must classify and weigh medical waste accurately when requesting pickup and hand it over with the request report.'),
-          ('7. Changes and contact', 'We may update these terms; continued use means you accept them. Contact: info@labgo-iq.com — +964 777 743 0067 — LabGo LLC.'),
+          ('Acceptance', 'By using LabGo Lab, the lab dashboard or the result pages you agree to these terms. If you do not agree, do not use the platform.'),
+          ('Lab and staff accounts', 'Each lab has a permanent LabGo number (e.g. L101) that identifies it in records and archives and never changes. The lab is responsible for its details and licence holders, its staff accounts and the roles and permissions it gives them, and keeping passwords private and accounts unshared. A removed staff member is disabled at once and can no longer sign in.'),
+          ('Results and reports', 'The lab alone is responsible for the results it enters and approves. LabGo manages data and does not give medical diagnoses. A result is approved when "Approve" is pressed; reports carry a verification code and may not be altered outside the platform after approval. Photos and files uploaded as a result, parts cropped from them, and results returned by another lab are reviewed by the lab before approval, and it is responsible for them.'),
+          ('Patient data and result links', 'Patient data is used only to provide the service, under the privacy policy, and the lab must not use it for anything else. The short result link and the QR code on the receipt open the patient\'s result for whoever has them; send them to the patient only and do not publish them. Reports and result files are kept as medical records in a folder per lab. The archive index with patient details is available to LabGo administrators only and must be stored securely.'),
+          ('Payments, discounts and debts', 'The lab records payments, discounts, partial payments and settled debts in the platform. LabGo does not receive money or collect payments, and the lab is responsible for these records.'),
+          ('Sending samples between labs', 'The sending lab is responsible for the sample and the patient details it shares; the receiving lab is responsible for the results it enters, from its LabGo account or the QR link on the sample label. Prices agreed between labs are the two labs\' responsibility. The sending lab may delete a transfer, and a receiving lab on LabGo is told.'),
+          ('Store and auctions', 'No product, auction or lab for sale is shown before LabGo reviews and approves it. Buying, bidding and listing need a lab account, and a bid is a commitment to buy at that price if the auction is won. Prices, delivery and payment are the seller\'s and buyer\'s responsibility.'),
+          ('Maintenance and medical waste', 'Maintenance requests are for the building and utilities (power, air conditioning, water…), not lab devices. LabGo coordinates the request and does not guarantee a repair date. The lab must classify and weigh medical waste accurately when requesting pickup and hand it over with the request report.'),
+          ('Browsing as a guest', 'The app and the store can be browsed as a guest, with no lab\'s data. A guest saves nothing and cannot buy or bid without signing in with a lab account.'),
+          ('Changes and contact', 'We may update these terms; continued use means you accept them. Contact: info@labgo-iq.com — +964 777 743 0067 — LabGo LLC.'),
         ];
   Navigator.of(context).push(MaterialPageRoute(
     fullscreenDialog: true,

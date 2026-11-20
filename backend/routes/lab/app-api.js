@@ -146,7 +146,11 @@ router.get('/api/app/bootstrap', async (req, res) => {
         res.json({
             success: true,
             data: {
-                user: { name: req.user.name || '', phone: req.user.phone || '', photo: req.user.profilePicture || '', isOwner: Boolean(req.isLabOwner), permissions: req.labPermissions || [] },
+                user: {
+                    name: req.user.name || '', phone: req.user.phone || '', email: req.user.email || '', photo: req.user.profilePicture || '',
+                    isOwner: Boolean(req.isLabOwner), roleKey: req.isLabOwner ? 'owner' : (req.user.labStaff?.roleKey || ''),
+                    permissions: req.labPermissions || [],
+                },
                 lab: labForApp(lab),
                 catalog: toCatalog(lab.tests),
                 packages: packages.map((p) => ({

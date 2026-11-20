@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 
+import '../api.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../ui.dart';
@@ -742,8 +745,22 @@ class _RegisterState extends State<_Register> {
   final _cert = TextEditingController();
   final _idFront = TextEditingController();
   final _idBack = TextEditingController();
+  final _city = TextEditingController();
   bool _terms = false;
   String _error = '';
+  /// Picked documents: (file name, bytes).
+  (String, Uint8List)? _certFile, _idFrontFile, _idBackFile;
+
+  Future<(String, Uint8List)?> _pick() async {
+    try {
+      final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png']);
+      if (picked.isEmpty) return null;
+      final f = picked.first;
+      return (f.name, await f.readAsBytes());
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   void dispose() {
@@ -757,6 +774,7 @@ class _RegisterState extends State<_Register> {
       _cert,
       _idFront,
       _idBack,
+      _city,
     ]) {
       c.dispose();
     }
@@ -803,11 +821,20 @@ class _RegisterState extends State<_Register> {
     required String icon,
     required String title,
     required String sub,
-    required String toastMsg,
+    required (String, Uint8List)? file,
+    required ValueChanged<(String, Uint8List)> onPicked,
   }) {
     final pal = context.pal;
+    if (file != null) {
+      icon = 'CircleCheck';
+      title = file.$1;
+      sub = context.app.tr('تم الاختيار — اضغط للتغيير', 'هەڵبژێردرا', 'Chosen — tap to change');
+    }
     return Tap(
-      onTap: () => context.app.setAuthBanner(toastMsg),
+      onTap: () async {
+        final f = await _pick();
+        if (f != null) onPicked(f);
+      },
       child: CustomPaint(
         painter: _DashedBorder(color: pal.line, radius: 16),
         child: Container(
@@ -927,6 +954,10 @@ class _RegisterState extends State<_Register> {
               keyboard: TextInputType.emailAddress,
             ),
           ),
+          _labeled(
+            app.tr('المدينة', 'شار', 'City'),
+            AuthInput(controller: _city, hint: app.tr('مثلاً: بغداد', 'بۆ نموونە: بەغدا', 'e.g. Baghdad')),
+          ),
           _labeled(app.p('password'), eye(_pass)),
           _labeled(app.p('confirmPass'), eye(_confirm)),
           GestureDetector(
@@ -959,6 +990,7 @@ class _RegisterState extends State<_Register> {
                     _lab,
                     _phone,
                     _email,
+                    _city,
                   ].any((c) => c.text.trim().isEmpty) ||
                   _pass.text.isEmpty ||
                   _confirm.text.isEmpty) {
@@ -967,6 +999,14 @@ class _RegisterState extends State<_Register> {
               }
               if (_pass.text != _confirm.text) {
                 setState(() => _error = app.p('passMismatch'));
+                return;
+              }
+              if (_pass.text.length < 8) {
+                setState(() => _error = app.tr('كلمة المرور 8 أحرف على الأقل', 'وشەی نهێنی لانیکەم ٨ پیت', 'Password must be at least 8 characters'));
+                return;
+              }
+              if (!RegExp(r'^\S+@\S+\.\S+$').hasMatch(_email.text.trim())) {
+                setState(() => _error = app.tr('أدخل بريداً صحيحاً', 'ئیمەیڵێکی دروست بنووسە', 'Enter a valid email'));
                 return;
               }
               if (!_terms) {
@@ -982,7 +1022,6 @@ class _RegisterState extends State<_Register> {
         ], 12),
       );
     } else {
-      final uploaded = t('تم الرفع', 'بەرزکرایەوە', 'Uploaded');
       Widget docCard(List<Widget> kids) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -994,11 +1033,6 @@ class _RegisterState extends State<_Register> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: _spaced(kids, 12),
         ),
-      );
-      final idMsg = t(
-        'رفع الصور غير متاح بعد — أدخل رقم الهوية أدناه',
-        'بەرزکردنەوەی وێنە هێشتا بەردەست نییە',
-        'Photo uploads are not available yet — enter the ID number below',
       );
       children.addAll(
         _spaced([
@@ -1026,16 +1060,9 @@ class _RegisterState extends State<_Register> {
             _uploadBox(
               icon: 'FileText',
               title: t('اضغط للرفع', 'بۆ بەرزکردنەوە بکە', 'Tap to upload'),
-              sub: t(
-                'صورة / PDF — المعاينة غير متاحة بعد',
-                'وێنە / PDF',
-                'Image / PDF — preview not available yet',
-              ),
-              toastMsg: t(
-                'رفع الصور غير متاح بعد — أدخل رقم المستند أدناه',
-                'بەرزکردنەوەی وێنە هێشتا بەردەست نییە',
-                'Photo uploads are not available yet — enter the document number below',
-              ),
+              sub: t('صورة / PDF', 'وێنە / PDF', 'Image / PDF'),
+              file: _certFile,
+              onPicked: (f) => setState(() => _certFile = f),
             ),
             _docInput(
               _cert,
@@ -1045,11 +1072,7 @@ class _RegisterState extends State<_Register> {
                 'Certificate number',
               ),
             ),
-            if (_cert.text.trim().isNotEmpty)
-              Text(
-                '✓ $uploaded • ${_cert.text.trim()}',
-                style: ts(context, 12, weight: w700, color: Fixed.green),
-              ),
+
           ]),
           docCard([
             Text(
@@ -1064,15 +1087,8 @@ class _RegisterState extends State<_Register> {
                 'Front side — Tap to upload',
               ),
               sub: t('صورة / PDF', 'وێنە / PDF', 'Image / PDF'),
-              toastMsg: idMsg,
-            ),
-            _docInput(
-              _idFront,
-              t(
-                'رقم الهوية — الوجه الأمامي',
-                'ژمارەی ناسنامە — ڕووی پێشەوە',
-                'ID number — front',
-              ),
+              file: _idFrontFile,
+              onPicked: (f) => setState(() => _idFrontFile = f),
             ),
             _uploadBox(
               icon: 'User',
@@ -1082,22 +1098,9 @@ class _RegisterState extends State<_Register> {
                 'Back side — Tap to upload',
               ),
               sub: t('صورة / PDF', 'وێنە / PDF', 'Image / PDF'),
-              toastMsg: idMsg,
+              file: _idBackFile,
+              onPicked: (f) => setState(() => _idBackFile = f),
             ),
-            _docInput(
-              _idBack,
-              t(
-                'رقم الهوية — الوجه الخلفي',
-                'ژمارەی ناسنامە — ڕووی دواوە',
-                'ID number — back',
-              ),
-            ),
-            if (_idFront.text.trim().isNotEmpty ||
-                _idBack.text.trim().isNotEmpty)
-              Text(
-                '✓ $uploaded',
-                style: ts(context, 12, weight: w700, color: Fixed.green),
-              ),
           ]),
           Text(
             t(
@@ -1127,17 +1130,33 @@ class _RegisterState extends State<_Register> {
               Expanded(
                 flex: 2,
                 child: GradientButton(
-                  label: app.p('createBtn'),
+                  label: app.authBusy ? '…' : app.p('createBtn'),
                   radius: 999,
                   height: 56,
-                  onTap: () {
-                    if (_name.text.trim().isNotEmpty)
-                      app.doctorName = _name.text.trim();
-                    if (_lab.text.trim().isNotEmpty)
-                      app.labDisplayName = _lab.text.trim();
-                    if (_phone.text.trim().isNotEmpty)
-                      app.registerPhone = _phone.text.trim();
-                    app.goOtp('register');
+                  onTap: () async {
+                    if (app.authBusy) return;
+                    if (_certFile == null) {
+                      setState(() => _error = t('ارفع شهادة فتح المختبر', 'بڕوانامە بار بکە', 'Upload the lab opening certificate'));
+                      return;
+                    }
+                    if (_idFrontFile == null || _idBackFile == null) {
+                      setState(() => _error = t('ارفع وجهي الهوية الوطنية', 'هەردوو ڕووی ناسنامە بار بکە', 'Upload both sides of the national ID'));
+                      return;
+                    }
+                    final err = await app.startRegistration({
+                      'ownerName': _name.text.trim(),
+                      'labName': _lab.text.trim(),
+                      'phone': _phone.text.trim(),
+                      'email': _email.text.trim(),
+                      'password': _pass.text,
+                      'city': _city.text.trim(),
+                      if (_cert.text.trim().isNotEmpty) 'licenseNumber': _cert.text.trim(),
+                    }, [
+                      ('labOpeningLicense', _certFile!.$1, _certFile!.$2),
+                      ('ownerUnifiedCard', _idFrontFile!.$1, _idFrontFile!.$2),
+                      ('ownerUnifiedCard', _idBackFile!.$1, _idBackFile!.$2),
+                    ]);
+                    if (err != null && mounted) setState(() => _error = err);
                   },
                 ),
               ),
@@ -1278,24 +1297,30 @@ class _OtpState extends State<_Otp> with SingleTickerProviderStateMixin {
       setState(() => _error = app.p('fillOtp'));
       return;
     }
-    if (_ctrls.map((c) => c.text).join() == '123456') {
-      setState(() {
-        _setStatus('correct');
-        _error = '';
-      });
-      Timer(const Duration(milliseconds: 650), () {
-        if (app.otpPurpose == 'forgot') {
-          app.goAuth('reset');
-        } else {
-          app.enterApp();
-        }
-      });
-    } else {
-      setState(() {
-        _setStatus('wrong');
-        _error = app.tr('رمز خاطئ', 'کۆدی هەڵە', 'Wrong code');
-      });
-    }
+    if (app.authBusy) return;
+    app.confirmOtp(_ctrls.map((c) => c.text).join()).then((err) {
+      if (!mounted) return;
+      if (err == null) {
+        setState(() {
+          _setStatus('correct');
+          _error = '';
+        });
+        Timer(const Duration(milliseconds: 650), () {
+          if (app.otpPurpose == 'forgot') {
+            app.goAuth('reset');
+          } else if (LabApi.enabled) {
+            app.goAuth('login'); // the lab waits for LabGo to activate it
+          } else {
+            app.enterApp();
+          }
+        });
+      } else {
+        setState(() {
+          _setStatus('wrong');
+          _error = err;
+        });
+      }
+    });
   }
 
   void _onDigit(int i, String v) {
@@ -1407,7 +1432,7 @@ class _OtpState extends State<_Otp> with SingleTickerProviderStateMixin {
                   style: ts(context, 13, color: pal.muted),
                 )
               : GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     for (final c in _ctrls) {
                       c.clear();
                     }
@@ -1416,6 +1441,8 @@ class _OtpState extends State<_Otp> with SingleTickerProviderStateMixin {
                       _startTimer();
                     });
                     _nodes[0].requestFocus();
+                    final err = await app.resendOtp();
+                    if (err != null && mounted) setState(() => _error = err);
                   },
                   child: Text(
                     app.p('resend'),
@@ -1429,12 +1456,6 @@ class _OtpState extends State<_Otp> with SingleTickerProviderStateMixin {
             textColor: Colors.white,
             vPad: 16,
             onTap: _confirm,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '${app.p('demoHint')} • ${app.p('tryHint')}',
-            textAlign: TextAlign.center,
-            style: ts(context, 12, color: pal.muted),
           ),
           const SizedBox(height: 16),
           GestureDetector(
@@ -1595,7 +1616,13 @@ class _ForgotState extends State<_Forgot> {
                 setState(() => _error = app.p('fillAll'));
                 return;
               }
-              app.goOtp('forgot');
+              if (method != 'phone' && LabApi.enabled) {
+                setState(() => _error = app.tr('استعادة كلمة المرور تتم برقم الهاتف المسجل', 'بە ژمارەی مۆبایل', 'Password reset works with the registered phone number'));
+                return;
+              }
+              app.startForgot(v).then((err) {
+                if (err != null && mounted) setState(() => _error = err);
+              });
             },
           ),
           const SizedBox(height: 16),
@@ -1694,8 +1721,19 @@ class _ResetState extends State<_Reset> {
                 setState(() => _error = app.p('passMismatch'));
                 return;
               }
-              app.goAuth('login');
-              app.setAuthBanner(app.p('changedToast'));
+              if (_new.text.length < 8) {
+                setState(() => _error = app.tr('كلمة المرور 8 أحرف على الأقل', 'وشەی نهێنی لانیکەم ٨ پیت', 'Password must be at least 8 characters'));
+                return;
+              }
+              app.confirmReset(_new.text).then((err) {
+                if (!mounted) return;
+                if (err != null) {
+                  setState(() => _error = err);
+                  return;
+                }
+                app.goAuth('login');
+                app.setAuthBanner(app.p('changedToast'));
+              });
             },
           ),
         ],

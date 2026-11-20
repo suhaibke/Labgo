@@ -84,7 +84,10 @@ async function sendOtp(phone) {
         const formattedPhone = formatPhoneNumber(phone);
         const code = generateOtpCode();
 
-        const { ok, data } = await deliverViaOtpiq(formattedPhone, code);
+        const devLog = process.env.OTP_DEV_LOG === '1' && process.env.NODE_ENV !== 'production';
+        const { ok, data } = devLog
+            ? (console.log(`[OTP dev] ${formattedPhone}: ${code}`), { ok: true, data: { messageId: `dev_${Date.now()}` } })
+            : await deliverViaOtpiq(formattedPhone, code);
 
         if (!ok) {
             console.error('OTPiq send failed:', data);

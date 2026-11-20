@@ -79,9 +79,6 @@ class _AppBodyState extends State<_AppBody> {
   Widget build(BuildContext context) {
     final app = context.app;
     Widget screen;
-    if (app.guest && !app.storeOpen && app.tab != 'home') {
-      return const SingleChildScrollView(child: Entrance(child: _GuestLock()));
-    }
     switch (app.storeOpen ? 'store' : app.tab) {
       case 'store':
         screen = const StoreScreen();
@@ -104,57 +101,41 @@ class _AppBodyState extends State<_AppBody> {
     }
     return SingleChildScrollView(
       // `.lang-fade` + `.screen-enter`
-      child: Entrance(child: screen),
+      child: Entrance(
+        child: app.guest && app.tab != 'print'
+            ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [const GuestBanner(), screen])
+            : screen,
+      ),
     );
   }
 }
 
-/// A tab a guest cannot open: what it is for and a sign-in button.
-class _GuestLock extends StatelessWidget {
-  const _GuestLock();
+/// Top of every page for a guest: "browsing as a guest" and Sign in.
+class GuestBanner extends StatelessWidget {
+  const GuestBanner({super.key});
 
   @override
   Widget build(BuildContext context) {
     final app = context.app;
     final pal = app.palette;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 64, 24, 140),
-      child: Column(
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(color: pal.accent, borderRadius: BorderRadius.circular(16)),
+      child: Row(
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: pal.softAccent, shape: BoxShape.circle),
-            child: LIcon('ShieldCheck', size: 30, color: pal.accent),
+          Expanded(
+            child: Text(app.tr('أنت تتصفح كضيف', 'وەک میوان دەگەڕێیت', 'You are browsing as a guest'),
+                style: ts(context, 13, weight: w700, color: Colors.white)),
           ),
-          const SizedBox(height: 14),
-          Text(app.tr('هذا القسم لحسابات المختبرات', 'ئەم بەشە بۆ هەژماری تاقیگەیە', 'This section is for lab accounts'),
-              textAlign: TextAlign.center, style: ts(context, 20, weight: w700)),
-          const SizedBox(height: 6),
-          Text(
-            app.tr('سجّل الدخول لإدارة المرضى والنتائج والإرسال والإعدادات. يمكنك تصفح المتجر كضيف.',
-                'بچۆ ژوورەوە بۆ بەڕێوەبردنی نەخۆش و ئەنجام. دەتوانیت فرۆشگا ببینیت.',
-                'Sign in to manage patients, results, transfers and settings. You can browse the store as a guest.'),
-            textAlign: TextAlign.center,
-            style: ts(context, 13, color: pal.muted, height: 1.6),
-          ),
-          const SizedBox(height: 18),
+          const SizedBox(width: 8),
           Tap(
             onTap: app.leaveGuest,
             child: Container(
-              height: 50,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: pal.accent, borderRadius: BorderRadius.circular(999)),
-              child: Text(app.tr('تسجيل الدخول', 'چوونە ژوورەوە', 'Sign in'), style: ts(context, 16, weight: w700, color: Colors.white)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Tap(
-            onTap: app.openStore,
-            child: SizedBox(
-              height: 44,
-              child: Center(child: Text(app.tr('تصفح المتجر', 'فرۆشگا', 'Browse the store'), style: ts(context, 14, weight: w700, color: pal.accent))),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(color: pal.white, borderRadius: BorderRadius.circular(999)),
+              child: Text(app.tr('تسجيل الدخول', 'چوونە ژوورەوە', 'Log In'),
+                  style: ts(context, 12, weight: w900, color: pal.dark ? Colors.white : const Color(0xFF111111))),
             ),
           ),
         ],

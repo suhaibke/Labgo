@@ -8,8 +8,8 @@ function isApiRequest(req) {
     return req.path.startsWith('/api/') || req.xhr || req.headers.accept?.includes('application/json');
 }
 
-function deny(req, res, status, message) {
-    if (isApiRequest(req)) return res.status(status).json({ success: false, message });
+function deny(req, res, status, message, code) {
+    if (isApiRequest(req)) return res.status(status).json({ success: false, message, ...(code ? { code } : {}) });
     return res.status(status).render('auth/login', { error: message, direction: 'ltr', font: 'Inter, sans-serif' });
 }
 
@@ -87,6 +87,11 @@ const auth = async (req, res, next) => {
                     error: null
                 });
             }
+        }
+
+        // A lab that signed itself up waits for the LabGo admin to activate it.
+        if (lab.status === 'Pending') {
+            return deny(req, res, 403, 'Your lab is under review by LabGo. You will be notified when it is activated.', 'labPending');
         }
 
         req.user = user;
