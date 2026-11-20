@@ -35,6 +35,15 @@ function pushAll(userIds, title, body, data) {
 async function notifyLab(labId, { title, body, data = {} }) {
     try {
         if (!labId) return 0;
+        // Live sync: open web dashboards of this lab refresh what the event is about
+        // (a sample from another lab, results returned, admin decisions…).
+        try {
+            const t = String(data.type || '');
+            const kind = /result/.test(t) ? 'results' : /transfer|sample/.test(t) ? 'transfers' : /maint/.test(t) ? 'maintenance'
+                : /waste/.test(t) ? 'waste' : /market|auction|order|support|ticket|listing/.test(t) ? 'store' : 'notification';
+            const path = { results: '/transfers/incoming', transfers: '/transfers/incoming', maintenance: '/api/maintenance', waste: '/waste', store: '/api/market' }[kind] || '/api/notifications';
+            require('./labLive').publish(labId, { kind, path, method: 'NOTIFY', source: 'server', by: '', client: '', type: t });
+        } catch (_) { /* live sync is best effort */ }
         const ids = await labUserIds(labId);
         if (!ids.length) return 0;
         await Notification.insertMany(ids.map((userId) => ({ userId, title, body, data: { audience: 'lab', ...data } })));

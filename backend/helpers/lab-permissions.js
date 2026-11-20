@@ -16,6 +16,8 @@ const DEFAULT_ROLES = [
 const RULES = [
     [/^\/(dashboard|overview)\/?$/, 'any'],
     [/^\/api\/stats$/, 'any'],
+    // Live-sync stream; each event is filtered by the member's permissions.
+    [/^\/api\/live$/, 'any'],
     [/^\/api\/notifications(\/read)?$/, 'any'],
     [/^\/api\/(support|market|maintenance)(\/|$)/, 'any'],
     [/^\/(support|market)\/?$/, 'any'],

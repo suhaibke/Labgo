@@ -450,13 +450,6 @@ class SettingsScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: context.pal.accentGradient,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.pal.accentShadow,
-                    offset: Offset(0, 10),
-                    blurRadius: 24,
-                  ),
-                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,

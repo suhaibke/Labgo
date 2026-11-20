@@ -28,6 +28,11 @@ const uploadLabCoverImage = r2SingleUpload('labs', 'coverImage', 'lab-cover-');
 
 // Apply lab authentication middleware to all routes
 router.use(auth);
+// Live sync: each open web dashboard hears about changes made from the app or
+// another browser (same lab, same permissions) and refreshes that data.
+const labLive = require('../../services/labLive');
+router.get('/api/live', labLive.stream);
+router.use(labLive.track);
 router.use(require('./external-transfers'));
 router.use(require('./results'));
 router.use(require('./walk-in'));

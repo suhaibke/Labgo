@@ -473,15 +473,7 @@ class GradientButton extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: gradient ?? context.pal.accentGradient,
           borderRadius: BorderRadius.circular(radius),
-          boxShadow: shadow
-              ? [
-                  BoxShadow(
-                    color: context.pal.accentShadow,
-                    offset: Offset(0, 10),
-                    blurRadius: 24,
-                  ),
-                ]
-              : null,
+          // No coloured glow around buttons.
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
