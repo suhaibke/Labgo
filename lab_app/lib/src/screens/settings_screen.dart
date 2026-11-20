@@ -2474,13 +2474,8 @@ class _ManageTestsState extends State<_ManageTests> {
       return width == null ? f : SizedBox(width: width, child: f);
     }
 
-    items.insert(0, 
-      Container(
-        padding: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: pal.line)),
-        ),
-        child: _col([
+    // The add form has its own card; the search sits under it, above the list.
+    final addForm = _col([
           Text(w('addTest'), style: ts(context, 13, weight: w700)),
           LayoutBuilder(
             builder: (context, c) {
@@ -2601,11 +2596,20 @@ class _ManageTestsState extends State<_ManageTests> {
               });
             },
           ),
-        ], gap: 8),
-      ),
-    );
+        ], gap: 8);
 
-    return _sectionBody(items);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sectionBody([addForm]),
+        const SizedBox(height: 12),
+        SearchBarBox(
+          hint: app.tr('ابحث عن فحص بالاسم أو الفئة…', 'بگەڕێ بۆ پشکنین…', 'Search a test by name or category…'),
+          onChanged: app.setSettingsSearch,
+        ),
+        if (items.isNotEmpty) _sectionBody(items),
+      ],
+    );
   }
 
   Widget _labeledSmall(
@@ -2874,6 +2878,8 @@ class _PackagesState extends State<_Packages> {
       start = '',
       end = '';
   List<String> tests = [];
+  /// Filters the test chips while building a package.
+  String testQuery = '';
   bool active = true, offer = false;
   int version = 0;
 
@@ -2975,12 +2981,22 @@ class _PackagesState extends State<_Packages> {
                   d('testsInPackage'),
                   style: ts(context, 12, weight: w700, color: pal.muted),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
+                SearchBarBox(
+                  hint: app.tr('ابحث عن فحص لإضافته…', 'بگەڕێ بۆ پشکنین…', 'Search a test to add…'),
+                  onChanged: (v) => setState(() => testQuery = v.trim().toLowerCase()),
+                ),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   children: [
+                    // Chosen tests stay visible whatever the search says.
                     for (final t in kCatalog)
+                      if (testQuery.isEmpty ||
+                          tests.contains(t.name) ||
+                          t.name.toLowerCase().contains(testQuery) ||
+                          t.category.toLowerCase().contains(testQuery))
                       GestureDetector(
                         onTap: () => setState(
                           () => tests.contains(t.name)
@@ -4183,7 +4199,7 @@ class _SectionPage extends StatelessWidget {
           app.w('manageTests'),
           app.tr('الأسعار والوحدات والمعدلات الطبيعية لكل فحص.', 'نرخ و یەکە و ئاستی ئاسایی', 'Prices, units and normal ranges of each test.'),
           const _ManageTests() as Widget,
-          app.tr('ابحث عن فحص بالاسم أو الفئة…', 'بگەڕێ بۆ پشکنین…', 'Search a test by name or category…'),
+          null,
         ),
       'packages' => (
           app.d('packagesManage'),
