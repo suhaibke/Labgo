@@ -169,7 +169,7 @@ test('creation endpoint links to a real order when orderId is given', async t =>
     assert.equal(created.patientName, 'Patient One');
 });
 
-test('external transfer notebook renders both order-linked and manual entries', async () => {
+test('orders & transfers page renders both order-linked and manual transfers', async () => {
     const dictionary = require('../i18n/languages/en.json');
     const translate = key => readKey(dictionary, key) || key;
     const linkedTransfer = {
@@ -204,7 +204,7 @@ test('external transfer notebook renders both order-linked and manual entries', 
     };
 
     const html = await ejs.renderFile(
-        path.join(__dirname, '../views/dashboard/lab-external-transfers.ejs'),
+        path.join(__dirname, '../views/dashboard/lab-orders.ejs'),
         {
             __: translate,
             lab: { name: 'Main Lab' },
@@ -213,15 +213,17 @@ test('external transfer notebook renders both order-linked and manual entries', 
             currentLang: 'en',
             direction: 'ltr',
             font: 'Inter, sans-serif',
-            activeSection: 'external-transfers',
-            stats: { total: 2, awaiting: 1, completed: 1 },
+            activeSection: 'orders',
+            tab: 'sent',
+            stats: { incoming: 0, inLab: 0, sent: 1, completed: 1 },
+            transferStats: { total: 2, awaiting: 1, completed: 1 },
             transfers: [linkedTransfer, manualTransfer],
             eligibleOrders: [eligibleOrder],
             selectedOrderId: '',
             transferDataJson: JSON.stringify([linkedTransfer, manualTransfer]).replace(/</g, '\\u003c'),
             eligibleOrdersJson: JSON.stringify([eligibleOrder]).replace(/</g, '\\u003c'),
         },
-        { filename: path.join(__dirname, '../views/dashboard/lab-external-transfers.ejs') }
+        { filename: path.join(__dirname, '../views/dashboard/lab-orders.ejs') }
     );
 
     assert.match(html, /Patient One/);
@@ -233,4 +235,8 @@ test('external transfer notebook renders both order-linked and manual entries', 
     assert.match(html, /data-action="delete-transfer"/);
     assert.match(html, /id="newTransferForm"/);
     assert.match(html, /id="manualModeSection"/);
+    // one page: patient-order columns, lab samples and the shared scan box
+    assert.match(html, /id="incomingOrdersList"/);
+    assert.match(html, /id="labIncomingList"/);
+    assert.match(html, /id="hubScanForm"/);
 });

@@ -23,61 +23,53 @@ function serializeForHtml(value) {
     return JSON.stringify(value).replace(/</g, '\\u003c');
 }
 
-router.get('/external-transfers', async (req, res) => {
-    try {
-        const currentLang = req.cookies?.lang
-            || req.headers['accept-language']?.split(',')[0]?.split('-')[0]
-            || 'ar';
-        const direction = ['ar', 'ku'].includes(currentLang) ? 'rtl' : 'ltr';
-        const font = currentLang === 'ar' ? 'Cairo, sans-serif' : 'Inter, sans-serif';
+/**
+ * What the transfers part of the Orders page needs: this lab's transfers, the
+ * orders that can still be sent, and the order to preselect (?orderId=).
+ */
+async function transferPageData(req) {
+    const [transfers, rawEligibleOrders, linkedOrderIds] = await Promise.all([
+        ExternalTransfer.find({ labId: req.lab._id }).sort({ sentAt: -1 }).lean(),
+        Order.find({
+            labId: req.lab._id,
+            status: { $nin: ['cancelled', 'completed'] },
+        })
+            .populate('patientId', patientFields)
+            .sort({ createdAt: -1 })
+            .lean(),
+        ExternalTransfer.distinct('orderId', { labId: req.lab._id, orderId: { $ne: null } }),
+    ]);
 
-        const [transfers, rawEligibleOrders, linkedOrderIds] = await Promise.all([
-            ExternalTransfer.find({ labId: req.lab._id }).sort({ sentAt: -1 }).lean(),
-            Order.find({
-                labId: req.lab._id,
-                status: { $nin: ['cancelled', 'completed'] },
-            })
-                .populate('patientId', patientFields)
-                .sort({ createdAt: -1 })
-                .lean(),
-            ExternalTransfer.distinct('orderId', { labId: req.lab._id, orderId: { $ne: null } }),
-        ]);
+    const linkedIdSet = new Set(linkedOrderIds.map((id) => String(id)));
+    const eligibleOrders = rawEligibleOrders
+        .filter((order) => !linkedIdSet.has(String(order._id)))
+        .map((order) => decorateOrderWithPatientInfo(order));
 
-        const linkedIdSet = new Set(linkedOrderIds.map((id) => String(id)));
-        const eligibleOrdersRaw = rawEligibleOrders.filter((order) => !linkedIdSet.has(String(order._id)));
-        const eligibleOrders = eligibleOrdersRaw.map((order) => decorateOrderWithPatientInfo(order));
+    const requestedOrderId = typeof req.query.orderId === 'string' ? req.query.orderId : '';
+    const selectedOrderId = eligibleOrders.some((order) => String(order._id) === requestedOrderId)
+        ? requestedOrderId
+        : '';
 
-        const requestedOrderId = typeof req.query.orderId === 'string' ? req.query.orderId : '';
-        const selectedOrderId = eligibleOrders.some((order) => String(order._id) === requestedOrderId)
-            ? requestedOrderId
-            : '';
+    return {
+        transfers,
+        eligibleOrders,
+        selectedOrderId,
+        transferStats: {
+            total: transfers.length,
+            awaiting: transfers.filter((t) => t.status === 'sent').length,
+            completed: transfers.filter((t) => t.status === 'completed').length,
+        },
+        transferDataJson: serializeForHtml(transfers),
+        eligibleOrdersJson: serializeForHtml(eligibleOrders),
+    };
+}
 
-        res.render('dashboard/lab-external-transfers', {
-            lab: req.lab,
-            user: req.user,
-            title: `${translateHelper('externalTransfers.title', currentLang)} - ${req.lab.name}`,
-            currentLang,
-            direction,
-            font,
-            activeSection: 'external-transfers',
-            transfers,
-            eligibleOrders,
-            selectedOrderId,
-            stats: {
-                total: transfers.length,
-                awaiting: transfers.filter((t) => t.status === 'sent').length,
-                completed: transfers.filter((t) => t.status === 'completed').length,
-            },
-            transferDataJson: serializeForHtml(transfers),
-            eligibleOrdersJson: serializeForHtml(eligibleOrders),
-        });
-    } catch (error) {
-        console.error('External transfers page error:', error);
-        res.status(500).render('error', {
-            message: 'Error loading external sample transfers',
-            error: process.env.NODE_ENV === 'development' ? error.message : null,
-        });
-    }
+// The transfers page is now part of the Orders page: old links land on the right tab.
+router.get('/external-transfers', (req, res) => {
+    const q = new URLSearchParams();
+    q.set('tab', req.query.tab === 'incoming' ? 'incoming' : 'sent');
+    if (typeof req.query.orderId === 'string' && req.query.orderId) q.set('orderId', req.query.orderId);
+    res.redirect(302, `/lab/orders?${q.toString()}`);
 });
 
 // Create a transfer - either linked to a real system order (orderId given)
@@ -289,3 +281,4 @@ router.delete('/api/external-transfers/:id', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.transferPageData = transferPageData;

@@ -64,12 +64,12 @@
                                                 <svg class="ic"><use href="#i-printer"/></svg>
                                             </button>
                                             <% if (!externalTransfer && order.status !== 'cancelled' && order.status !== 'completed') { %>
-                                                <a class="modern-btn send-to-lab-btn" href="/lab/external-transfers?orderId=<%= order._id %>" >
+                                                <a class="modern-btn send-to-lab-btn" href="/lab/orders?tab=sent&orderId=<%= order._id %>" >
                                                     <svg class="ic"><use href="#i-share-2"/></svg>
                                                     <span><%= __('labOrders.sendToAnotherLab') || 'Send to Another Lab' %></span>
                                                 </a>
                                             <% } else if (externalTransfer) { %>
-                                                <a class="modern-btn send-to-lab-btn" href="/lab/external-transfers" data-variant="soft">
+                                                <a class="modern-btn send-to-lab-btn" href="/lab/orders?tab=sent" data-variant="soft">
                                                     <svg class="ic"><use href="#i-arrow-left-right"/></svg>
                                                     <span><%= __('navigation.externalTransfers') %></span>
                                                 </a>
@@ -98,7 +98,7 @@
                                 <span class="sent-to-lab-label"><%= __('externalTransfers.status') %>:</span>
                                 <span class="sent-to-lab-value"><%= externalTransfer.status === 'completed' ? __('externalTransfers.statusCompleted') : __('externalTransfers.statusSent') %></span>
                             </div>
-                            <a class="sent-to-lab-link" href="/lab/external-transfers"><%= __('navigation.externalTransfers') %> <svg class="ic flip-ltr"><use href="#i-arrow-left"/></svg></a>
+                            <a class="sent-to-lab-link" href="/lab/orders?tab=sent"><%= __('navigation.externalTransfers') %> <svg class="ic flip-ltr"><use href="#i-arrow-left"/></svg></a>
                         </div>
                     </div>
                     <% } %>

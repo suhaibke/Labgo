@@ -204,14 +204,14 @@ function rowsFor(t, lab) {
 router.get('/transfers/incoming/:id/results', async (req, res) => {
     try {
         const t = mongoose.Types.ObjectId.isValid(req.params.id) ? await ExternalTransfer.findOne({ _id: req.params.id, toLabId: req.lab._id }) : null;
-        if (!t) return res.redirect('/lab/external-transfers?tab=incoming');
+        if (!t) return res.redirect('/lab/orders?tab=incoming');
         const data = payload(t);
         data.rows = rowsFor(t, req.lab);
         res.render('dashboard/lab-results-entry', {
-            lab: req.lab, user: req.user, title: req.lab.name, ...langOf(req), activeSection: 'external-transfers',
+            lab: req.lab, user: req.user, title: req.lab.name, ...langOf(req), activeSection: 'orders',
             order: data.order, rows: data.rows, editable: t.status !== 'completed' || t.resultSource === 'receiving_lab',
             initialJson: JSON.stringify(data).replace(/</g, '\\u003c'),
-            apiBase: `/lab/api/transfers/incoming/${t._id}`, backHref: '/lab/external-transfers?tab=incoming',
+            apiBase: `/lab/api/transfers/incoming/${t._id}`, backHref: '/lab/orders?tab=inlab',
         });
     } catch (error) {
         console.error('Incoming results page error:', error);

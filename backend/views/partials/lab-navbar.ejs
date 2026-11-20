@@ -14,11 +14,10 @@
   const _groups = [
     { label: __('labWeb.groupDaily'), items: [
       { id: 'overview', href: '/lab/dashboard', icon: 'layout-dashboard', label: __('navigation.dashboard') },
-      { id: 'orders', href: '/lab/orders', icon: 'clipboard-list', label: __('navigation.orders') },
+      { id: 'orders', href: '/lab/orders', icon: 'clipboard-list', label: __('labOrders.hubTitle'), also: ['external-transfers'] },
       { id: 'results', href: '/lab/results', icon: 'file-check', label: __('results.title') },
       { id: 'add-patient', href: '/lab/patients/new', icon: 'user-plus', label: __('labApp.addPatient') },
       { id: 'patient-tests', href: '/lab/patient-tests', icon: 'test-tube', label: __('navigation.patientTests') },
-      { id: 'external-transfers', href: '/lab/external-transfers', icon: 'arrow-left-right', label: __('navigation.externalTransfers') },
     ] },
     { label: __('labWeb.groupCatalog'), items: [
       { id: 'tests', href: '/lab/tests', icon: 'flask-conical', label: __('navigation.tests') },
@@ -62,15 +61,26 @@
       var a = localStorage.getItem('la-accent');
       if (a) d.style.setProperty('--accent', a);
     } catch (e) {}
+    // Side bar: the user's choice (folded / open), else folded on narrow screens.
+    var side = null;
+    try { side = localStorage.getItem('la-side'); } catch (e) {}
+    if (side === 'collapsed' || (side !== 'expanded' && window.innerWidth <= 1180)) d.classList.add('side-rail');
   })();
 </script>
 <%- include('lab-icons') %>
 
 <aside class="la-side" aria-label="<%= __('navigation.dashboard') %>">
-  <a href="/lab/dashboard" class="la-brand">
-    <span class="la-brand-logo"><img src="<%= (typeof lab !== 'undefined' && lab && lab.logo) || '/images/logo.png' %>" alt=""></span>
-    <span><b><%= _labName %></b><span>LabGo · <%= __('labWeb.workspace') %></span></span>
-  </a>
+  <div class="la-side-head">
+    <a href="/lab/dashboard" class="la-brand">
+      <span class="la-brand-logo"><img src="<%= (typeof lab !== 'undefined' && lab && lab.logo) || '/images/logo.png' %>" alt=""></span>
+      <span><b><%= _labName %></b><span>LabGo · <%= __('labWeb.workspace') %></span></span>
+    </a>
+    <button type="button" class="la-side-toggle press" id="laSideToggle" aria-expanded="true"
+      data-collapse="<%= __('labWeb.collapseMenu') %>" data-expand="<%= __('labWeb.expandMenu') %>"
+      aria-label="<%= __('labWeb.collapseMenu') %>" title="<%= __('labWeb.collapseMenu') %>">
+      <svg class="ic flip-rtl"><use href="#i-chevron-left"/></svg>
+    </button>
+  </div>
   <nav class="la-nav">
     <% _groups.forEach(function (g) { if (!g.items.length) return; %>
       <div class="la-nav-group"><%= g.label %></div>
@@ -103,6 +113,38 @@
     </div>
   </div>
 </aside>
+
+<script>
+  // Fold / open the side bar; the choice is kept for this browser.
+  (function () {
+    var d = document.documentElement, btn = document.getElementById('laSideToggle');
+    if (!btn) return;
+    function sync() {
+      var rail = d.classList.contains('side-rail');
+      var label = rail ? btn.dataset.expand : btn.dataset.collapse;
+      btn.setAttribute('aria-expanded', rail ? 'false' : 'true');
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+    }
+    sync();
+    btn.addEventListener('click', function () {
+      d.classList.add('side-anim');
+      var rail = d.classList.toggle('side-rail');
+      try { localStorage.setItem('la-side', rail ? 'collapsed' : 'expanded'); } catch (e) {}
+      sync();
+      setTimeout(function () { d.classList.remove('side-anim'); }, 320);
+    });
+    // No saved choice yet: follow the window width.
+    var mq = window.matchMedia('(max-width: 1180px)');
+    function follow() {
+      var saved = null; try { saved = localStorage.getItem('la-side'); } catch (e) {}
+      if (saved) return;
+      d.classList.toggle('side-rail', mq.matches);
+      sync();
+    }
+    if (mq.addEventListener) mq.addEventListener('change', follow); else if (mq.addListener) mq.addListener(follow);
+  })();
+</script>
 
 <nav class="la-bottom" aria-label="<%= __('navigation.dashboard') %>">
   <% _nav.concat(_navEndOk).filter(function (n) { return _bottom.indexOf(n.id) !== -1; }).forEach(function (n) { %>
@@ -175,8 +217,8 @@
     var bellCopy = { empty: <%- JSON.stringify(__('labNotifications.empty')) %> };
     function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
     function notifHref(d) {
-      if (d.type === 'transfer_incoming') return '/lab/external-transfers?tab=incoming';
-      if (d.type === 'transfer_received' || d.type === 'transfer_result') return '/lab/external-transfers';
+      if (d.type === 'transfer_incoming') return '/lab/orders?tab=incoming';
+      if (d.type === 'transfer_received' || d.type === 'transfer_result') return '/lab/orders?tab=sent';
       return '';
     }
     function ago(iso) {

@@ -172,7 +172,7 @@
                         ['/lab/patients/new', 'user-plus', L('addPatient')],
                         ['/lab/tests', 'flask-conical', L('addTest')],
                         ['/lab/patient-tests', 'test-tube', L('viewTests')],
-                        ['/lab/external-transfers', 'arrow-left-right', __('navigation.externalTransfers')],
+                        ['/lab/orders?tab=sent', 'arrow-left-right', __('navigation.externalTransfers')],
                         ['/lab/reports', 'chart-line', L('reports')],
                         ['/lab/settings', 'settings', L('settings')],
                        ].filter(function (a) { return typeof labCan !== 'function' || labCan(a[0]); }).forEach(function (a) { %>

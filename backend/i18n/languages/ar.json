@@ -1042,6 +1042,31 @@
     "descriptionUpdated": "تم تحديث الوصف بنجاح"
   },
   "labOrders": {
+    "stepSent": "أُرسلت",
+    "stepReceived": "استُلمت",
+    "stepResult": "النتيجة",
+    "hubTitle": "الطلبات والتحويلات",
+    "hubSubtitle": "طلبات المرضى، والعينات الواردة من المختبرات، وما أرسلته إليها — في مكان واحد.",
+    "tabIncoming": "الوارد",
+    "tabInLab": "في المختبر",
+    "tabSent": "المرسل",
+    "kpiIncoming": "وارد",
+    "kpiInLab": "في المختبر",
+    "kpiSent": "مرسل بانتظار النتيجة",
+    "kpiCompleted": "مكتمل",
+    "patientOrders": "طلبات المرضى",
+    "labSamples": "عينات من مختبرات أخرى",
+    "scanTitle": "استلام عينة",
+    "scanHint": "امسح أو اكتب رمز QR الطلب أو رقم تتبع العينة",
+    "noLabIncoming": "لا توجد عينات في الطريق إليك",
+    "noLabInLab": "لا توجد عينات مستلمة من مختبرات أخرى",
+    "filterAll": "الكل",
+    "filterAwaiting": "بانتظار النتيجة",
+    "filterCompleted": "مكتمل",
+    "sentTo": "إلى",
+    "fromLabLabel": "من",
+    "expected": "متوقع",
+    "tracking": "رقم التتبع",
     "title": "طلبات المختبر",
     "subtitle": "إدارة استلام العينات ونتائج الاختبارات",
     "incomingSamples": "استلام العينات",
@@ -1644,6 +1669,10 @@
   },
   "actions": "الإجراءات",
   "landing": {
+    "partners": {
+      "title": "مختبرات شريكة على LabGo",
+      "labsOnLabgo": "مختبراً شريكاً يعمل على LabGo"
+    },
     "meta": {
       "title": "لابجو - الرعاية الصحية عند باب منزلك",
       "description": "لابجو - رفيقك الموثوق في الرعاية الصحية. احجز فحوصات المختبر، اطلب زيارات التقنيين المنزلي، واحصل على النتائج بشكل سلس."
@@ -2382,6 +2411,8 @@
     "support": "الدعم الفني",
     "supplies": "طلب مستلزمات",
     "workspace": "مساحة المختبر",
+    "collapseMenu": "طي القائمة",
+    "expandMenu": "فتح القائمة",
     "theme": "المظهر",
     "notifications": "الإشعارات",
     "language": "اللغة",

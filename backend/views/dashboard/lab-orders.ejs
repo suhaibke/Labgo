@@ -9,93 +9,232 @@
 
 <body>
     <%- include('../partials/lab-navbar') %>
+    <link rel="stylesheet" href="/css/lab-orders-hub.css">
+<%
+    // Shared bits for the sent-transfer cards.
+    const _t = (k) => __(k, currentLang);
+    const _date = (d) => d ? new Date(d).toLocaleDateString(currentLang === 'ar' ? 'ar-IQ' : currentLang) : '';
+    const _money = (n) => Number(n || 0).toLocaleString('en-US');
+    const _labelLang = ['ar', 'ku'].includes(currentLang) ? currentLang : 'en';
+%>
 
-    <main class="la-main screen-enter">
+    <main class="la-main screen-enter hub">
         <!-- Header -->
         <section class="la-page-head">
             <div>
-                <h1 class="la-h1"><%= __('labOrders.title', currentLang) %></h1>
-                <p class="la-sub"><%= __('labOrders.subtitle', currentLang) %></p>
+                <h1 class="la-h1"><%= _t('labOrders.hubTitle') %></h1>
+                <p class="la-sub"><%= _t('labOrders.hubSubtitle') %></p>
             </div>
             <div class="la-row-flex" style="gap:8px">
-                <span class="la-sub"><%= __('labOrders.lastUpdated', currentLang) %>: <span id="lastUpdateTime">--</span></span>
-                <button id="autoRefreshToggle" class="la-btn chip md press active" title="<%= __('labOrders.autoRefresh', currentLang) %>">
-                    <svg class="ic"><use href="#i-clock"/></svg><span class="toggle-label"><%= __('labOrders.autoRefresh', currentLang) %></span>
+                <span class="la-sub hub-updated"><%= _t('labOrders.lastUpdated') %>: <span id="lastUpdateTime">--</span></span>
+                <button type="button" class="la-btn press" id="openTransferModal">
+                    <svg class="ic"><use href="#i-send"/></svg><%= _t('externalTransfers.newTransfer') %>
                 </button>
             </div>
         </section>
 
-        <!-- KPIs -->
-        <section class="la-grid c3" style="margin-top:16px">
-            <div class="la-card la-kpi stagger">
-                <span class="la-kpi-ic"><svg class="ic"><use href="#i-package"/></svg></span>
-                <div style="flex:1;min-width:0">
-                    <b id="incomingCount"><%= stats.incoming %></b>
-                    <span><%= __('labOrders.incomingSamples', currentLang) %></span>
-                </div>
-                <span class="la-pill accent"><%= __('orders.statusValues.sampleCollected', currentLang) %></span>
-            </div>
-            <div class="la-card la-kpi stagger" style="animation-delay:.05s">
-                <span class="la-kpi-ic" style="background:rgba(0,122,255,.12);color:var(--blue)"><svg class="ic"><use href="#i-flask-conical"/></svg></span>
-                <div style="flex:1;min-width:0">
-                    <b id="inLabCount"><%= stats.inLab %></b>
-                    <span><%= __('labOrders.inLab', currentLang) %></span>
-                </div>
-                <span class="la-pill blue"><%= __('orders.statusValues.atLab', currentLang) %></span>
-            </div>
-            <div class="la-card la-kpi stagger" style="animation-delay:.1s">
-                <span class="la-kpi-ic" style="background:var(--soft-green);color:var(--green-text)"><svg class="ic"><use href="#i-circle-check"/></svg></span>
-                <div style="flex:1;min-width:0">
-                    <b id="completedCount"><%= stats.completed %></b>
-                    <span><%= __('labOrders.completed', currentLang) %></span>
-                </div>
-                <span class="la-pill green"><%= __('orders.statusValues.completed', currentLang) %></span>
+        <!-- Counters -->
+        <section class="la-grid c4 hub-kpis" aria-label="<%= _t('labOrders.hubTitle') %>">
+            <button type="button" class="la-card la-kpi stagger press" data-go="incoming">
+                <span class="la-kpi-ic"><svg class="ic"><use href="#i-inbox"/></svg></span>
+                <div><b id="kpiIncoming"><%= stats.incoming %></b><span><%= _t('labOrders.kpiIncoming') %></span></div>
+            </button>
+            <button type="button" class="la-card la-kpi stagger press" data-go="inlab" style="animation-delay:.04s">
+                <span class="la-kpi-ic tone-blue"><svg class="ic"><use href="#i-flask-conical"/></svg></span>
+                <div><b id="kpiInLab"><%= stats.inLab %></b><span><%= _t('labOrders.kpiInLab') %></span></div>
+            </button>
+            <button type="button" class="la-card la-kpi stagger press" data-go="sent" style="animation-delay:.08s">
+                <span class="la-kpi-ic tone-amber"><svg class="ic"><use href="#i-hourglass"/></svg></span>
+                <div><b id="kpiSent"><%= stats.sent %></b><span><%= _t('labOrders.kpiSent') %></span></div>
+            </button>
+            <div class="la-card la-kpi stagger" style="animation-delay:.12s">
+                <span class="la-kpi-ic tone-green"><svg class="ic"><use href="#i-circle-check"/></svg></span>
+                <div><b id="kpiCompleted"><%= stats.completed %></b><span><%= _t('labOrders.kpiCompleted') %></span></div>
             </div>
         </section>
 
-        <!-- Two columns: incoming / in lab -->
-        <section class="la-grid c2" style="margin-top:16px;align-items:start">
-            <div class="la-card stagger" style="animation-delay:.12s">
-                <div class="la-col-head">
-                    <h2 class="la-h2"><%= __('labOrders.incomingSamples', currentLang) %></h2>
-                    <span class="la-count" id="incomingColumnCount"><%= stats.incoming %></span>
-                </div>
-                <form id="qrScanForm" class="la-search" style="margin-bottom:12px">
-                    <svg class="ic"><use href="#i-qr-code"/></svg>
-                    <input type="text" id="qrInput" placeholder="<%= __('labOrders.scanQRPlaceholder', currentLang) %>" autocomplete="off" autofocus
-                           aria-label="<%= __('labOrders.scanQR', currentLang) %>">
-                    <button type="submit" class="la-btn sm press-95" aria-label="<%= __('labOrders.scanQR', currentLang) %>"><svg class="ic flip-ltr"><use href="#i-arrow-left"/></svg></button>
-                </form>
-                <div id="incomingOrdersList"><div class="la-spinner"></div></div>
+        <!-- Tabs (segmented, as in the app) -->
+        <div class="hub-tabbar">
+            <div class="la-seg hub-seg" role="tablist" id="hubTabs">
+                <button type="button" role="tab" data-tab="incoming" class="<%= tab === 'incoming' ? 'on' : '' %>" aria-selected="<%= tab === 'incoming' %>">
+                    <svg class="ic"><use href="#i-inbox"/></svg><%= _t('labOrders.tabIncoming') %><span class="hub-count" id="tabCountIncoming" hidden></span>
+                </button>
+                <button type="button" role="tab" data-tab="inlab" class="<%= tab === 'inlab' ? 'on' : '' %>" aria-selected="<%= tab === 'inlab' %>">
+                    <svg class="ic"><use href="#i-flask-conical"/></svg><%= _t('labOrders.tabInLab') %><span class="hub-count" id="tabCountInLab" hidden></span>
+                </button>
+                <button type="button" role="tab" data-tab="sent" class="<%= tab === 'sent' ? 'on' : '' %>" aria-selected="<%= tab === 'sent' %>">
+                    <svg class="ic flip-rtl"><use href="#i-send"/></svg><%= _t('labOrders.tabSent') %><span class="hub-count" id="tabCountSent" <%= stats.sent ? '' : 'hidden' %>><%= stats.sent %></span>
+                </button>
             </div>
-            <div class="la-card stagger" style="animation-delay:.16s">
-                <div class="la-col-head">
-                    <h2 class="la-h2"><%= __('labOrders.inLab', currentLang) %></h2>
-                    <span class="la-count" id="inLabColumnCount"><%= stats.inLab %></span>
+        </div>
+
+        <!-- Incoming -->
+        <section class="hub-pane" data-pane="incoming" <%= tab === 'incoming' ? '' : 'hidden' %>>
+            <form id="hubScanForm" class="la-card hub-scan" autocomplete="off">
+                <span class="la-icon-circle hub-scan-ic"><svg class="ic"><use href="#i-qr-code"/></svg></span>
+                <div class="hub-scan-text">
+                    <b><%= _t('labOrders.scanTitle') %></b>
+                    <span><%= _t('labOrders.scanHint') %></span>
                 </div>
-                <div id="inLabOrdersList"><div class="la-spinner"></div></div>
+                <div class="la-search hub-scan-field">
+                    <svg class="ic"><use href="#i-barcode"/></svg>
+                    <input type="text" id="hubScanInput" maxlength="80" placeholder="<%= _t('labOrders.scanQRPlaceholder') %>" aria-label="<%= _t('labOrders.scanHint') %>">
+                    <button type="submit" class="la-btn sm press-95" id="hubScanBtn"><svg class="ic"><use href="#i-check"/></svg><%= _t('externalTransfers.receive') %></button>
+                </div>
+            </form>
+
+            <div class="la-grid c2 hub-cols">
+                <div class="la-card">
+                    <div class="la-col-head">
+                        <h2 class="la-h2"><svg class="ic hub-h-ic"><use href="#i-users"/></svg><%= _t('labOrders.patientOrders') %></h2>
+                        <span class="la-count" id="incomingColumnCount">0</span>
+                    </div>
+                    <div id="incomingOrdersList"><div class="la-spinner"></div></div>
+                </div>
+                <div class="la-card">
+                    <div class="la-col-head">
+                        <h2 class="la-h2"><svg class="ic hub-h-ic"><use href="#i-arrow-left-right"/></svg><%= _t('labOrders.labSamples') %></h2>
+                        <span class="la-count" id="labIncomingCount">0</span>
+                    </div>
+                    <div id="labIncomingList"><div class="la-spinner"></div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- In the lab -->
+        <section class="hub-pane" data-pane="inlab" <%= tab === 'inlab' ? '' : 'hidden' %>>
+            <div class="la-grid c2 hub-cols">
+                <div class="la-card">
+                    <div class="la-col-head">
+                        <h2 class="la-h2"><svg class="ic hub-h-ic"><use href="#i-users"/></svg><%= _t('labOrders.patientOrders') %></h2>
+                        <span class="la-count" id="inLabColumnCount">0</span>
+                    </div>
+                    <div id="inLabOrdersList"><div class="la-spinner"></div></div>
+                </div>
+                <div class="la-card">
+                    <div class="la-col-head">
+                        <h2 class="la-h2"><svg class="ic hub-h-ic"><use href="#i-arrow-left-right"/></svg><%= _t('labOrders.labSamples') %></h2>
+                        <span class="la-count" id="labInLabCount">0</span>
+                    </div>
+                    <div id="labInLabList"><div class="la-spinner"></div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sent to other labs -->
+        <section class="hub-pane" data-pane="sent" <%= tab === 'sent' ? '' : 'hidden' %>>
+            <div class="hub-toolbar">
+                <label class="la-search hub-search">
+                    <svg class="ic"><use href="#i-search"/></svg>
+                    <input id="transferSearch" type="search" placeholder="<%= _t('externalTransfers.searchPlaceholder') %>" aria-label="<%= _t('externalTransfers.searchPlaceholder') %>">
+                </label>
+                <div class="la-chips" id="sentFilters" role="group">
+                    <button type="button" class="la-chip on" data-filter="all"><%= _t('labOrders.filterAll') %> <span class="hub-chip-n"><%= transferStats.total %></span></button>
+                    <button type="button" class="la-chip" data-filter="sent"><%= _t('labOrders.filterAwaiting') %> <span class="hub-chip-n"><%= transferStats.awaiting %></span></button>
+                    <button type="button" class="la-chip" data-filter="completed"><%= _t('labOrders.filterCompleted') %> <span class="hub-chip-n"><%= transferStats.completed %></span></button>
+                </div>
+            </div>
+
+            <div class="hub-sent-list" id="sentList">
+                <% transfers.forEach(function (transfer) {
+                    const ext = transfer.externalLab || {};
+                    const genderText = transfer.patientGender ? __('common.' + transfer.patientGender, currentLang) : '';
+                    const ageText = transfer.patientAge !== null && transfer.patientAge !== undefined ? `${transfer.patientAge} ${_t('common.years')}` : '';
+                    const tests = (transfer.tests && transfer.tests.length) ? transfer.tests.map(function (t) { return t.testName; }) : (transfer.testsDescription ? [transfer.testsDescription] : []);
+                    const code = transfer.trackingCode || transfer.sampleCode;
+                    const searchText = [transfer.patientName, transfer.sampleCode, transfer.trackingCode, ext.name, ext.phone, transfer.referenceNumber].filter(Boolean).join(' ').toLowerCase();
+                    const done = transfer.status === 'completed';
+                    const received = done || Boolean(transfer.receivedAt);
+                %>
+                <article class="la-card hub-tcard" data-transfer-row data-status="<%= transfer.status %>" data-search="<%= searchText %>">
+                    <div class="la-order-top">
+                        <span class="la-avatar"><%= (transfer.patientName || '?').trim().charAt(0).toUpperCase() %></span>
+                        <span class="main">
+                            <span class="name"><%= transfer.patientName %></span>
+                            <span class="meta"><%= [genderText, ageText].filter(Boolean).join(' · ') || _t('common.notAvailable') %></span>
+                        </span>
+                        <span class="la-pill <%= done ? 'green' : 'amber' %>"><%= done ? _t('externalTransfers.statusCompleted') : _t('externalTransfers.statusSent') %></span>
+                    </div>
+
+                    <div class="hub-route">
+                        <span class="hub-code" title="<%= _t('labOrders.tracking') %>"><svg class="ic"><use href="#i-qr-code"/></svg><%= code %></span>
+                        <svg class="ic hub-route-arrow flip-rtl"><use href="#i-arrow-right"/></svg>
+                        <span class="hub-dest">
+                            <b><%= ext.name %></b><% if (transfer.toLabId) { %><span class="hub-labgo">LabGo</span><% } %>
+                            <% if (ext.phone) { %><small dir="ltr"><%= ext.phone %></small><% } %>
+                        </span>
+                    </div>
+
+                    <!-- tracking timeline: sent → received → result -->
+                    <ol class="hub-steps" aria-label="<%= _t('labOrders.tracking') %>">
+                        <li class="done"><span></span><%= _t('labOrders.stepSent') %></li>
+                        <li class="<%= received ? 'done' : (transfer.toLabId ? '' : 'skip') %>"><span></span><%= _t('labOrders.stepReceived') %></li>
+                        <li class="<%= done ? 'done' : '' %>"><span></span><%= _t('labOrders.stepResult') %></li>
+                    </ol>
+
+                    <% if (tests.length) { %>
+                    <div class="la-tags"><% tests.slice(0, 6).forEach(function (n) { %><span class="la-tag"><svg class="ic"><use href="#i-test-tube"/></svg><%= n %></span><% }) %><% if (tests.length > 6) { %><span class="la-tag">+<%= tests.length - 6 %></span><% } %></div>
+                    <% } %>
+
+                    <div class="la-order-foot">
+                        <div class="la-meta-row">
+                            <span><svg class="ic"><use href="#i-clock"/></svg><%= _date(transfer.sentAt) %></span>
+                            <% if (transfer.expectedResultAt && !done) { %><span><svg class="ic"><use href="#i-calendar-days"/></svg><%= _t('labOrders.expected') %> <%= _date(transfer.expectedResultAt) %></span><% } %>
+                            <% if (typeof transfer.price === 'number') { %><span><svg class="ic"><use href="#i-banknote"/></svg><%= _money(transfer.price) %> <%= _t('externalTransfers.currency') %></span><% } %>
+                        </div>
+                        <div class="hub-actions">
+                            <% if (transfer.orderId) { %>
+                            <a class="la-icon-btn press-90" href="/lab/orders/<%= transfer.orderId %>" title="<%= _t('externalTransfers.viewOrder') %>" aria-label="<%= _t('externalTransfers.viewOrder') %>"><svg class="ic"><use href="#i-eye"/></svg></a>
+                            <% } %>
+                            <button type="button" class="la-icon-btn press-90" data-action="print-label" data-transfer-id="<%= transfer._id %>" title="<%= _t('externalTransfers.printLabel') %>" aria-label="<%= _t('externalTransfers.printLabel') %>"><svg class="ic"><use href="#i-printer"/></svg></button>
+                            <button type="button" class="la-icon-btn press-90" data-action="download-label" data-transfer-id="<%= transfer._id %>" data-code="<%= transfer.sampleCode %>" title="<%= _t('externalTransfers.downloadPdf') %>" aria-label="<%= _t('externalTransfers.downloadPdf') %>"><svg class="ic"><use href="#i-file-down"/></svg></button>
+                            <button type="button" class="la-icon-btn press-90 hub-danger" data-action="delete-transfer" data-transfer-id="<%= transfer._id %>" title="<%= _t('externalTransfers.deleteTransfer') %>" aria-label="<%= _t('externalTransfers.deleteTransfer') %>"><svg class="ic"><use href="#i-trash-2"/></svg></button>
+                            <% if (!done) { %>
+                            <button type="button" class="la-btn md press-95" data-action="upload-result" data-transfer-id="<%= transfer._id %>"><svg class="ic"><use href="#i-upload"/></svg><%= _t('externalTransfers.uploadResult') %></button>
+                            <% } else { %>
+                                <% if (transfer.resultFileUrl) { %>
+                                <a class="la-btn md soft press-95" href="<%= transfer.resultFileUrl %>" target="_blank" rel="noopener"><svg class="ic"><use href="#i-file-down"/></svg><%= __('labOrderDetails.viewResult', currentLang) %></a>
+                                <% } %>
+                                <% if ((transfer.resultSource === 'external_link' || transfer.resultSource === 'receiving_lab') && transfer.orderId && !transfer.forwardedAt) { %>
+                                <button type="button" class="la-btn md press-95" data-action="forward-result" data-transfer-id="<%= transfer._id %>"><svg class="ic flip-rtl"><use href="#i-send"/></svg><%= _t('externalTransfers.sendToPatient') %></button>
+                                <% } else if (transfer.forwardedAt) { %>
+                                <span class="la-pill green"><svg class="ic"><use href="#i-check"/></svg><%= _t('externalTransfers.sentToPatient') %></span>
+                                <% } %>
+                            <% } %>
+                        </div>
+                    </div>
+                </article>
+                <% }) %>
+            </div>
+
+            <div class="la-card la-empty-box <%= transfers.length ? 'hidden' : '' %>" id="emptyTransfers">
+                <svg class="ic"><use href="#i-send"/></svg>
+                <p><b><%= _t('externalTransfers.noTransfers') %></b></p>
+                <p><%= _t('externalTransfers.noTransfersDescription') %></p>
+            </div>
+            <div class="la-card la-empty-box hidden" id="emptySearch">
+                <svg class="ic"><use href="#i-search"/></svg>
+                <p><%= _t('externalTransfers.noTransfers') %></p>
             </div>
         </section>
     </main>
 
-    <!-- Upload result -->
-    <div id="uploadModal" class="la-modal" role="dialog" aria-modal="true">
+    <!-- Upload a patient order's result (orders board) -->
+    <div id="uploadModal" class="la-modal" role="dialog" aria-modal="true" aria-labelledby="uploadModalTitle">
         <div class="la-modal-bg modal-overlay"></div>
         <div class="la-modal-card">
             <div class="la-between">
-                <h3 class="la-h2" style="font-size:18px"><%= __('labOrders.fileUpload.title', currentLang) %></h3>
-                <button class="la-circle press-90" id="closeModal" style="width:32px;height:32px;background:var(--segmented);border:0;box-shadow:none" aria-label="<%= __('common.cancel', currentLang) %>">
-                    <svg class="ic" style="width:16px;height:16px"><use href="#i-x"/></svg>
-                </button>
+                <h3 class="la-h2" id="uploadModalTitle"><%= _t('labOrders.fileUpload.title') %></h3>
+                <button class="la-icon-btn press-90" id="closeModal" type="button" aria-label="<%= _t('common.cancel') %>"><svg class="ic"><use href="#i-x"/></svg></button>
             </div>
             <form id="uploadForm" enctype="multipart/form-data" style="margin-top:14px">
                 <input type="hidden" id="uploadOrderId" name="orderId">
                 <div id="fileUploadArea">
                     <label for="resultFile" class="la-drop">
                         <span class="la-icon-circle" style="margin:0 auto;width:44px;height:44px"><svg class="ic"><use href="#i-upload"/></svg></span>
-                        <p style="margin:8px 0 4px;font-weight:700;font-size:14px"><%= __('labOrders.fileUpload.dragDrop', currentLang) %></p>
-                        <span class="la-btn sm" style="pointer-events:none"><%= __('labOrders.fileUpload.browse', currentLang) %></span>
-                        <p class="la-sub" style="margin-top:8px"><%= __('labOrders.fileUpload.supportedFormats', currentLang) %> • <%= __('labOrders.fileUpload.maxFileSize', currentLang) %></p>
+                        <p style="margin:8px 0 4px;font-weight:700;font-size:14px"><%= _t('labOrders.fileUpload.dragDrop') %></p>
+                        <span class="la-btn sm" style="pointer-events:none"><%= _t('labOrders.fileUpload.browse') %></span>
+                        <p class="la-sub" style="margin-top:8px"><%= _t('labOrders.fileUpload.supportedFormats') %> • <%= _t('labOrders.fileUpload.maxFileSize') %></p>
                     </label>
                     <input type="file" id="resultFile" name="resultFile" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp" hidden>
                 </div>
@@ -105,65 +244,186 @@
                         <p id="fileName" style="margin:0;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></p>
                         <p id="fileSize" class="la-sub"></p>
                     </div>
-                    <button type="button" id="removeFile" class="la-circle press-90" style="width:32px;height:32px" aria-label="remove">
-                        <svg class="ic" style="width:15px;height:15px"><use href="#i-x"/></svg>
-                    </button>
+                    <button type="button" id="removeFile" class="la-icon-btn press-90" aria-label="remove"><svg class="ic"><use href="#i-x"/></svg></button>
                 </div>
                 <div id="uploadProgress" style="display:none;margin-top:12px">
                     <div class="la-progress"><div id="progressFill"></div></div>
-                    <p id="progressText" class="la-sub" style="margin-top:6px"><%= __('labOrders.fileUpload.uploading', currentLang) %></p>
+                    <p id="progressText" class="la-sub" style="margin-top:6px"><%= _t('labOrders.fileUpload.uploading') %></p>
                 </div>
             </form>
-            <div class="la-row-flex" style="gap:8px;margin-top:16px">
-                <button class="la-btn soft press" id="cancelUpload" style="flex:1"><%= __('common.cancel', currentLang) %></button>
-                <button class="la-btn press" id="confirmUpload" style="flex:1" disabled>
-                    <svg class="ic"><use href="#i-circle-check"/></svg><%= __('labOrders.completeOrder', currentLang) %>
-                </button>
+            <div class="la-modal-actions">
+                <button class="la-btn soft press" id="cancelUpload" type="button"><%= _t('common.cancel') %></button>
+                <button class="la-btn press" id="confirmUpload" type="button" disabled><svg class="ic"><use href="#i-circle-check"/></svg><%= _t('labOrders.completeOrder') %></button>
             </div>
         </div>
     </div>
 
-    <style>
-        html.la #autoRefreshToggle:not(.active) { opacity: .55; }
-        html.la #confirmUpload:disabled { opacity: .5; cursor: default; }
-        html.la #qrScanForm { padding-inline-end: 6px; }
-    </style>
+    <!-- New transfer -->
+    <div id="newTransferModal" class="la-modal" role="dialog" aria-modal="true" aria-labelledby="newTransferTitle">
+        <div class="la-modal-bg" data-close-modal></div>
+        <div class="la-modal-card wide hub-modal">
+            <div class="la-between">
+                <h3 class="la-h2" id="newTransferTitle"><svg class="ic hub-h-ic"><use href="#i-send"/></svg><%= _t('externalTransfers.newTransfer') %></h3>
+                <button type="button" class="la-icon-btn press-90" data-close-modal aria-label="<%= _t('common.cancel') %>"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <form id="newTransferForm" class="hub-form">
+                <div class="hub-modal-scroll">
+                    <div class="la-seg block" id="transferModeTabs" style="margin:14px 0 4px">
+                        <button type="button" class="on" data-mode="order"><%= _t('externalTransfers.fromOrder') %></button>
+                        <button type="button" data-mode="manual"><%= _t('externalTransfers.manualEntry') %></button>
+                    </div>
 
-    <!-- Toast Container -->
+                    <div id="orderModeSection">
+                        <div class="la-field">
+                            <label class="la-label" for="sampleOrderId"><%= _t('externalTransfers.selectSample') %></label>
+                            <select id="sampleOrderId" name="orderId" class="la-select">
+                                <option value=""><%= _t('externalTransfers.selectSamplePlaceholder') %></option>
+                                <% eligibleOrders.forEach(function (order) { %>
+                                <option value="<%= order._id %>" <%= String(order._id) === selectedOrderId ? 'selected' : '' %>><%= order.qrCode %> — <%= order.patientInfo.name %> — <%= (order.tests || []).map(function (t) { return t.testName; }).join(', ') %></option>
+                                <% }) %>
+                            </select>
+                            <% if (!eligibleOrders.length) { %><p class="la-hint"><%= _t('externalTransfers.cannotTransfer') %></p><% } %>
+                        </div>
+
+                        <div class="la-tile hub-patient" id="patientInfoCard" hidden>
+                            <div class="la-order-top">
+                                <span class="la-avatar" id="autoPatientInitial">?</span>
+                                <span class="main"><span class="name" id="autoPatientName">—</span><span class="meta"><span id="autoPatientGender">—</span> · <span id="autoPatientAge">—</span> · <span id="autoPatientPhone" dir="ltr">—</span></span></span>
+                                <span class="la-pill neutral" id="autoSampleCode">—</span>
+                            </div>
+                            <p class="la-hint" id="autoPatientAddress"></p>
+                        </div>
+
+                        <div class="la-field" id="testSelectPanel" hidden>
+                            <label class="la-label"><%= _t('externalTransfers.selectTests') %></label>
+                            <div class="hub-test-pick" id="testSelectList"></div>
+                            <p class="la-hint"><%= _t('externalTransfers.selectTestsHint') %></p>
+                        </div>
+                    </div>
+
+                    <div id="manualModeSection" hidden>
+                        <p class="hub-legend"><%= _t('externalTransfers.patientInfo') %></p>
+                        <div class="la-form-grid">
+                            <div class="la-field hub-span-2"><label class="la-label" for="manualPatientName"><%= _t('externalTransfers.patientName') %> *</label><input class="la-input" id="manualPatientName" type="text" maxlength="200"></div>
+                            <div class="la-field"><label class="la-label" for="manualPatientPhone"><%= _t('externalTransfers.patientPhone') %></label><input class="la-input" id="manualPatientPhone" type="tel" maxlength="50" dir="ltr"></div>
+                            <div class="la-field"><label class="la-label" for="manualPatientGender"><%= _t('externalTransfers.patientGender') %></label>
+                                <select class="la-select" id="manualPatientGender"><option value="">—</option><option value="male"><%= _t('common.male') %></option><option value="female"><%= _t('common.female') %></option></select></div>
+                            <div class="la-field"><label class="la-label" for="manualPatientAge"><%= _t('externalTransfers.patientAge') %></label><input class="la-input" id="manualPatientAge" type="number" min="0" max="120"></div>
+                            <div class="la-field"><label class="la-label" for="manualSampleCode"><%= _t('externalTransfers.sampleCode') %></label><input class="la-input" id="manualSampleCode" type="text" maxlength="60" placeholder="<%= _t('externalTransfers.sampleCodeAuto') %>"></div>
+                            <div class="la-field hub-span-2"><label class="la-label" for="manualTestsDescription"><%= _t('externalTransfers.testsDescription') %></label><textarea class="la-textarea" id="manualTestsDescription" rows="2" maxlength="500"></textarea></div>
+                        </div>
+                    </div>
+
+                    <p class="hub-legend"><%= _t('externalTransfers.externalLabInfo') %></p>
+                    <div class="la-form-grid">
+                        <div class="la-field hub-span-2 lab-picker">
+                            <label class="la-label" for="labSearch"><%= _t('externalTransfers.registeredLab') %></label>
+                            <div class="la-tile hub-lab-chosen" id="labChosen" hidden>
+                                <span class="hub-labgo">LabGo</span> <b id="labChosenName"></b>
+                                <button type="button" class="la-btn sm soft" id="labClear"><%= _t('externalTransfers.clearLab') %></button>
+                            </div>
+                            <label class="la-search"><svg class="ic"><use href="#i-search"/></svg><input id="labSearch" type="search" autocomplete="off" placeholder="<%= _t('externalTransfers.searchLabs') %>"></label>
+                            <input type="hidden" id="toLabId" name="toLabId">
+                            <div class="hub-lab-results" id="labResults" hidden></div>
+                            <p class="la-hint"><%= _t('externalTransfers.registeredLabHint') %></p>
+                        </div>
+                        <div class="la-field hub-span-2"><label class="la-label" for="externalLabName"><%= _t('externalTransfers.labName') %> *</label><input class="la-input" id="externalLabName" name="labName" type="text" maxlength="160" required></div>
+                        <div class="la-field"><label class="la-label" for="contactName"><%= _t('externalTransfers.contactName') %></label><input class="la-input" id="contactName" name="contactName" type="text" maxlength="120"></div>
+                        <div class="la-field"><label class="la-label" for="externalLabPhone"><%= _t('externalTransfers.phone') %></label><input class="la-input" id="externalLabPhone" name="phone" type="tel" maxlength="40" dir="ltr"></div>
+                        <div class="la-field hub-span-2"><label class="la-label" for="externalLabAddress"><%= _t('externalTransfers.address') %></label><input class="la-input" id="externalLabAddress" name="address" type="text" maxlength="240"></div>
+                        <div class="la-field"><label class="la-label" for="referenceNumber"><%= _t('externalTransfers.referenceNumber') %></label><input class="la-input" id="referenceNumber" name="referenceNumber" type="text" maxlength="80"></div>
+                        <div class="la-field"><label class="la-label" for="expectedResultAt"><%= _t('externalTransfers.expectedResultDate') %></label><input class="la-input" id="expectedResultAt" name="expectedResultAt" type="date"></div>
+                        <div class="la-field hub-span-2"><label class="la-label" for="transferPrice"><%= _t('externalTransfers.price') %> (<%= _t('externalTransfers.currency') %>)</label><input class="la-input" id="transferPrice" name="price" type="text" inputmode="numeric" maxlength="12" dir="ltr"><p class="la-hint" id="priceHint"><%= _t('externalTransfers.priceHint') %></p></div>
+                        <div class="la-field hub-span-2"><label class="la-label" for="transferNotes"><%= _t('externalTransfers.notes') %></label><textarea class="la-textarea" id="transferNotes" name="notes" rows="3" maxlength="1000"></textarea></div>
+                    </div>
+                </div>
+                <div class="la-modal-actions">
+                    <button type="button" class="la-btn soft press" data-close-modal><%= _t('common.cancel') %></button>
+                    <button type="submit" class="la-btn press" id="saveTransferButton"><svg class="ic"><use href="#i-save"/></svg><%= _t('externalTransfers.saveTransfer') %></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Upload the result a lab returned for a sent sample -->
+    <div id="resultModal" class="la-modal" role="dialog" aria-modal="true" aria-labelledby="resultModalTitle">
+        <div class="la-modal-bg" data-close-result></div>
+        <div class="la-modal-card">
+            <div class="la-between">
+                <h3 class="la-h2" id="resultModalTitle"><%= _t('externalTransfers.uploadResult') %></h3>
+                <button type="button" class="la-icon-btn press-90" data-close-result aria-label="<%= _t('common.cancel') %>"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <form id="resultUploadForm" style="margin-top:14px">
+                <label class="la-drop" for="returnedResultFile">
+                    <span class="la-icon-circle" style="margin:0 auto;width:44px;height:44px"><svg class="ic"><use href="#i-upload"/></svg></span>
+                    <p style="margin:8px 0 4px;font-weight:700;font-size:14px"><%= _t('externalTransfers.chooseFile') %></p>
+                    <p class="la-sub" id="selectedResultFile">PDF, JPG, PNG, HEIC, WEBP</p>
+                </label>
+                <input id="returnedResultFile" name="resultFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp" hidden>
+                <div class="la-modal-actions">
+                    <button type="button" class="la-btn soft press" data-close-result><%= _t('common.cancel') %></button>
+                    <button type="submit" class="la-btn press" id="uploadResultButton"><svg class="ic"><use href="#i-upload"/></svg><%= _t('externalTransfers.uploadResult') %></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <input type="file" id="incomingFile" accept="application/pdf,image/jpeg,image/png,image/heic,image/webp" hidden>
     <div id="toastContainer" class="la-toasts"></div>
 
     <script>
-        // Pass data to JavaScript
+        // Orders board (lab-orders.js)
         window.labOrdersData = {
             apiBaseUrl: '/lab/api',
             uploadUrl: '/lab/api/orders',
             currentLang: '<%= currentLang %>',
-            texts: {
-                errorLoading: '<%= __('labOrders.notifications.errorLoading', currentLang) %>',
-                sampleReceived: '<%= __('labOrders.notifications.sampleReceived', currentLang) %>',
-                orderCompleted: '<%= __('labOrders.notifications.orderCompleted', currentLang) %>',
-                invalidQR: '<%= __('labOrders.notifications.invalidQR', currentLang) %>',
-                orderNotFound: '<%= __('labOrders.notifications.orderNotFound', currentLang) %>',
-                alreadyReceived: '<%= __('labOrders.notifications.alreadyReceived', currentLang) %>',
-                uploadSuccess: '<%= __('labOrders.fileUpload.uploadSuccess', currentLang) %>',
-                uploadError: '<%= __('labOrders.fileUpload.uploadError', currentLang) %>',
-                noIncomingSamples: '<%= __('labOrders.noIncomingSamples', currentLang) %>',
-                noOrdersInLab: '<%= __('labOrders.noOrdersInLab', currentLang) %>',
-                viewDetails: '<%= __('labOrders.viewDetails', currentLang) %>',
-                uploadResult: '<%= __('labOrders.uploadResult', currentLang) %>',
-                enterResults: '<%= __('results.enterResults', currentLang) %>',
-                completeOrder: '<%= __('labOrders.completeOrder', currentLang) %>',
-                tests: '<%= __('common.tests', currentLang) %>',
-                receiveSample: '<%= __('labOrders.receiveSample', currentLang) %>',
-                patient: '<%= __('labOrders.patient', currentLang) %>',
-                status: '<%= __('common.status', currentLang) %>',
-                male: '<%= __('common.male', currentLang) %>',
-                female: '<%= __('common.female', currentLang) %>',
-                years: '<%= __('common.years', currentLang) %>',
-                notAvailable: '<%= __('common.notAvailable', currentLang) %>'
-            }
+            texts: <%- JSON.stringify({
+                errorLoading: _t('labOrders.notifications.errorLoading'),
+                sampleReceived: _t('labOrders.notifications.sampleReceived'),
+                orderCompleted: _t('labOrders.notifications.orderCompleted'),
+                invalidQR: _t('labOrders.notifications.invalidQR'),
+                orderNotFound: _t('labOrders.notifications.orderNotFound'),
+                alreadyReceived: _t('labOrders.notifications.alreadyReceived'),
+                uploadSuccess: _t('labOrders.fileUpload.uploadSuccess'),
+                uploadError: _t('labOrders.fileUpload.uploadError'),
+                noIncomingSamples: _t('labOrders.noIncomingSamples'),
+                noOrdersInLab: _t('labOrders.noOrdersInLab'),
+                viewDetails: _t('labOrders.viewDetails'),
+                uploadResult: _t('labOrders.uploadResult'),
+                enterResults: _t('results.enterResults'),
+                completeOrder: _t('labOrders.completeOrder'),
+                tests: _t('common.tests'),
+                receiveSample: _t('labOrders.receiveSample'),
+                patient: _t('labOrders.patient'),
+                status: _t('common.status'),
+                male: _t('common.male'),
+                female: _t('common.female'),
+                years: _t('common.years'),
+                notAvailable: _t('common.notAvailable')
+            }).replace(/</g, '\\u003c') %>
         };
     </script>
+    <script type="application/json" id="hubData"><%- JSON.stringify({
+        eligibleOrders: eligibleOrders,
+        selectedOrderId: selectedOrderId,
+        labelLang: _labelLang,
+        copy: {
+            male: _t('common.male'), female: _t('common.female'), years: _t('common.years'), notAvailable: _t('common.notAvailable'),
+            transferSaved: _t('externalTransfers.transferSaved'), forwardDone: _t('externalTransfers.forwardDone'),
+            transferError: _t('externalTransfers.transferError'), uploadSuccess: _t('externalTransfers.uploadSuccess'),
+            uploadError: _t('externalTransfers.uploadError'), patientNameRequired: _t('externalTransfers.patientNameRequired'),
+            confirmDeleteTransfer: _t('externalTransfers.confirmDeleteTransfer'), priceHint: _t('externalTransfers.priceHint'),
+            priceMissing: _t('externalTransfers.priceMissing'), currency: _t('externalTransfers.currency'),
+            receive: _t('externalTransfers.receive'), received: _t('externalTransfers.received'), onTheWay: _t('externalTransfers.onTheWay'),
+            completed: _t('externalTransfers.statusCompleted'), enterResults: _t('externalTransfers.enterResults'),
+            uploadFile: _t('externalTransfers.uploadFile'), viewResult: __('labOrderDetails.viewResult', currentLang),
+            receiveDone: _t('externalTransfers.receiveDone'), resultDone: _t('externalTransfers.resultDone'),
+            notFound: _t('externalTransfers.notFound'), noLabs: _t('externalTransfers.noTransfers'),
+            noLabIncoming: _t('labOrders.noLabIncoming'), noLabInLab: _t('labOrders.noLabInLab'),
+            fromLab: _t('labOrders.fromLabLabel'), sampleReceived: _t('labOrders.notifications.sampleReceived')
+        }
+    }).replace(/</g, '\\u003c') %></script>
     <script src="/js/lab-orders.js"></script>
+    <script src="/js/lab-orders-hub.js"></script>
 </body>
 </html>

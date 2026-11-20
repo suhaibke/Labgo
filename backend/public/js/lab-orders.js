@@ -288,10 +288,11 @@
         const urgency = order.urgency || 'routine';
         const createdAt = new Date(order.createdAt);
 
-        const initials = String(patientName).split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+        const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        const initials = esc(String(patientName).split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase());
         const urgent = urgency === 'urgent' || urgency === 'stat';
         const testTags = tests.map(test => `
-            <span class="la-tag"><svg class="ic"><use href="#i-test-tube"/></svg>${test.testName}</span>
+            <span class="la-tag"><svg class="ic"><use href="#i-test-tube"/></svg>${esc(test.testName)}</span>
         `).join('');
 
         // stopPropagation keeps the button from also opening the order
@@ -311,8 +312,8 @@
                 <div class="la-order-top">
                     <span class="la-avatar">${initials || '?'}</span>
                     <span class="main">
-                        <span class="name">${patientName}</span>
-                        <span class="meta">${gender} · ${age}${qrCode ? ' · ' + qrCode : ''}</span>
+                        <span class="name">${esc(patientName)}</span>
+                        <span class="meta">${gender} · ${age}${qrCode ? ' · ' + esc(qrCode) : ''}</span>
                     </span>
                     <span class="la-pill ${urgent ? 'red' : 'neutral'}">${urgency}</span>
                 </div>
@@ -710,7 +711,8 @@
         receiveSample,
         openUploadModal,
         completeOrder,
-        viewOrderDetails
+        viewOrderDetails,
+        reload: () => loadOrders()
     };
 
     // Initialize when DOM is ready

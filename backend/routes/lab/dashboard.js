@@ -597,36 +597,44 @@ router.get('/orders/:orderId', async (req, res) => {
     }
 });
 
-// Get lab orders management page
+// Orders & transfers: patient orders arriving and in the lab, samples from other
+// labs, and samples this lab sent out (one page, like the lab app).
 router.get('/orders', async (req, res) => {
     try {
         const lab = req.lab;
-
-        // Get language from cookie or default to Arabic
         const currentLang = req.cookies.lang || req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'ar';
         const direction = ['ar', 'ku'].includes(currentLang) ? 'rtl' : 'ltr';
         const font = ['ar'].includes(currentLang) ? 'Cairo, sans-serif' : 'Inter, sans-serif';
 
-        // Get order counts for stats
-        const incomingCount = await Order.countDocuments({ labId: lab._id, status: 'sample_collected' });
-        const inLabCount = await Order.countDocuments({ labId: lab._id, status: 'at_lab' });
-        const completedCount = await Order.countDocuments({ labId: lab._id, status: 'completed' });
+        const ExternalTransfer = require('../../models/ExternalTransfer');
+        const { transferPageData } = require('./external-transfers');
+        const [incomingCount, inLabCount, completedCount, b2bWaiting, b2bInLab, transferData] = await Promise.all([
+            Order.countDocuments({ labId: lab._id, status: 'sample_collected' }),
+            Order.countDocuments({ labId: lab._id, status: 'at_lab' }),
+            Order.countDocuments({ labId: lab._id, status: 'completed' }),
+            ExternalTransfer.countDocuments({ toLabId: lab._id, status: 'sent', receivedAt: null }),
+            ExternalTransfer.countDocuments({ toLabId: lab._id, status: 'sent', receivedAt: { $ne: null } }),
+            transferPageData(req),
+        ]);
+        const tab = ['incoming', 'inlab', 'sent'].includes(req.query.tab) ? req.query.tab : (transferData.selectedOrderId ? 'sent' : 'incoming');
 
         res.render('dashboard/lab-orders', {
             lab,
             user: req.user,
-            title: __('labOrders.title', currentLang) + ' - ' + lab.name,
+            title: translateHelper('labOrders.hubTitle', currentLang) + ' - ' + lab.name,
             currentLang,
             direction,
             font,
             activeSection: 'orders',
+            tab,
             stats: {
-                incoming: incomingCount,
-                inLab: inLabCount,
-                completed: completedCount
-            }
+                incoming: incomingCount + b2bWaiting,
+                inLab: inLabCount + b2bInLab,
+                sent: transferData.transferStats.awaiting,
+                completed: completedCount + transferData.transferStats.completed,
+            },
+            ...transferData,
         });
-
     } catch (error) {
         console.error('Orders page error:', error);
         res.status(500).render('error', {

@@ -79,12 +79,26 @@ workflows:
         # The LabGo server the app talks to (https://...). "demo" = demo mode
         # with sample data, handy for trying the screens before the server is ready.
         LAB_API_BASE: demo
+        # "true" once push is set up: Push Notifications enabled on the App ID
+        # com.labgollc.labgolab in the Apple Developer portal, and
+        # ios/Runner/GoogleService-Info.plist added. Until then the app is
+        # signed without the push entitlement (signing fails otherwise).
+        LAB_PUSH: "false"
       flutter: stable
       xcode: latest
       cocoapods: default
     scripts:
       - name: Get Flutter packages
         script: flutter pub get
+      - name: Push notifications entitlement (only when set up)
+        script: |
+          if [ "$LAB_PUSH" = "true" ]; then
+            # Link Runner.entitlements (aps-environment) to the app's build settings.
+            perl -0pi -e 's/(\t+)(PRODUCT_BUNDLE_IDENTIFIER = com\.labgollc\.labgolab;(\r?\n))/$1CODE_SIGN_ENTITLEMENTS = Runner\/Runner.entitlements;$3$1$2/g' ios/Runner.xcodeproj/project.pbxproj
+            grep -c "CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements" ios/Runner.xcodeproj/project.pbxproj
+          else
+            echo "Push off (LAB_PUSH is not true): building without the push entitlement."
+          fi
       - name: Set up code signing settings on Xcode project
         script: xcode-project use-profiles
       - name: Flutter build ipa for distribution

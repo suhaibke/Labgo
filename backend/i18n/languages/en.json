@@ -579,6 +579,31 @@
     "viewResult": "View Result"
   },
   "labOrders": {
+    "stepSent": "Sent",
+    "stepReceived": "Received",
+    "stepResult": "Result",
+    "hubTitle": "Orders & transfers",
+    "hubSubtitle": "Patient orders, samples from other labs and what you sent them — in one place.",
+    "tabIncoming": "Incoming",
+    "tabInLab": "In the lab",
+    "tabSent": "Sent",
+    "kpiIncoming": "Incoming",
+    "kpiInLab": "In the lab",
+    "kpiSent": "Sent, awaiting result",
+    "kpiCompleted": "Completed",
+    "patientOrders": "Patient orders",
+    "labSamples": "Samples from other labs",
+    "scanTitle": "Receive a sample",
+    "scanHint": "Scan or type the order QR or the sample tracking number",
+    "noLabIncoming": "No samples on the way to you",
+    "noLabInLab": "No samples received from other labs",
+    "filterAll": "All",
+    "filterAwaiting": "Awaiting result",
+    "filterCompleted": "Completed",
+    "sentTo": "To",
+    "fromLabLabel": "From",
+    "expected": "Expected",
+    "tracking": "Tracking no.",
     "receiveSample": "Receive Sample",
     "sendToAnotherLab": "Send to Another Lab",
     "sentToAnotherLab": "Sent to Another Lab",
@@ -1100,6 +1125,10 @@
     "amount": "Amount"
   },
   "landing": {
+    "partners": {
+      "title": "Partner labs on LabGo",
+      "labsOnLabgo": "partner labs work with LabGo"
+    },
     "meta": {
       "title": "LabGo - Healthcare at Your Doorstep",
       "description": "LabGo - Your trusted healthcare companion. Book lab tests, request home nurse visits, and get results delivered seamlessly."
@@ -2021,6 +2050,8 @@
     "support": "Support",
     "supplies": "Supplies order",
     "workspace": "Lab workspace",
+    "collapseMenu": "Collapse menu",
+    "expandMenu": "Expand menu",
     "theme": "Theme",
     "notifications": "Notifications",
     "language": "Language",

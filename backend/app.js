@@ -632,8 +632,26 @@ app.get('/shop/track-order', (req, res) => {
 });
 
 // Root route - Public landing page
-app.get('/', (req, res) => {
-  res.render('landing');
+app.get('/', async (req, res) => {
+  // The hero's partner-lab row and slider: real active labs only (public info).
+  let partnerLabs = [];
+  let labCount = 0;
+  try {
+    const Lab = require('./models/Lab');
+    [partnerLabs, labCount] = await Promise.all([
+      Lab.find({ status: 'Active' }).sort({ isFeatured: -1, createdAt: 1 }).limit(16).select('name city logo').lean(),
+      Lab.countDocuments({ status: 'Active' }),
+    ]);
+    const { getPublicUrl } = require('./services/r2Service');
+    partnerLabs = partnerLabs.map((l) => ({
+      name: l.name,
+      city: l.city || '',
+      logo: l.logo ? (() => { try { return getPublicUrl(l.logo) || ''; } catch (_) { return ''; } })() : '',
+    }));
+  } catch (e) {
+    console.error('Landing partner labs:', e.message);
+  }
+  res.render('landing', { partnerLabs, labCount });
 });
 
 // Lets iOS open https://labgo-iq.com/p/:id in the app when it's installed.

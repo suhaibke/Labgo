@@ -366,20 +366,42 @@ html.la .la-main { max-width: var(--content-max); margin: 0 auto; padding: 8px 2
 html.la .lab-navbar { display: none !important; }
 html.la .lab-wrapper { padding-top: 0 !important; margin-top: 0 !important; }
 
-/* tablet: the side bar folds to a rail of round icons */
-@media (max-width: 1180px) and (min-width: 901px) {
-  :root { --side-w: 92px; }
-  html.la .la-brand { padding: 14px 0 8px; justify-content: center; }
-  html.la .la-brand > span:not(.la-brand-logo) { display: none; }
-  html.la .la-nav { padding: 4px 8px 10px; align-items: center; }
-  html.la .la-nav-group { display: none; }
-  html.la .la-nav-item { width: 48px; height: 48px; padding: 0; justify-content: center; }
-  html.la .la-nav-item > span:not(.la-nav-ic), html.la .la-nav-item .la-nav-badge { display: none; }
-  html.la .la-nav-item .la-nav-ic { width: 40px; height: 40px; }
-  html.la .la-user { justify-content: center; padding: 5px; }
-  html.la .la-user .la-user-txt, html.la .la-user > .ic { display: none; }
-  html.la .la-main { padding: 8px 20px 56px; }
+/* side bar head: brand + fold button */
+html.la .la-side-head { display: flex; align-items: center; gap: 4px; padding-inline-end: 10px; flex-shrink: 0; }
+html.la .la-side-head .la-brand { flex: 1; min-width: 0; }
+html.la .la-brand > span:not(.la-brand-logo) { min-width: 0; }
+html.la .la-side-toggle {
+  width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0;
+  color: var(--muted); background: transparent; border: 1px solid var(--card-border);
+  transition: background-color .2s var(--ease-ui), color .15s ease, transform .25s var(--ease-ui);
 }
+html.la .la-side-toggle:hover { background: var(--chip-bg); color: var(--ink); }
+html.la .la-side-toggle .ic { width: 16px; height: 16px; stroke-width: 2; }
+html.la .la-nav-item { height: 42px; }
+
+/* folding animates the bar and the page together (only when the user clicks) */
+html.la.side-anim body { transition: padding .3s var(--ease-ui); }
+html.la.side-anim .la-side { transition: width .3s var(--ease-ui); }
+
+/* folded rail (tablet by default, or chosen): one column of evenly spaced round icons */
+html.la.side-rail { --side-w: 96px; }
+html.la.side-rail .la-side-head { flex-direction: column; gap: 8px; padding: 14px 0 6px; }
+html.la.side-rail .la-brand { padding: 0; justify-content: center; flex: none; }
+html.la.side-rail .la-brand > span:not(.la-brand-logo) { display: none; }
+html.la.side-rail .la-side-toggle { transform: scaleX(-1); } /* points outwards: open */
+html.la.side-rail .la-nav { padding: 6px 0 10px; align-items: center; gap: 6px; }
+html.la.side-rail .la-nav-group { display: block; height: 1px; width: 32px; margin: 6px auto; padding: 0; font-size: 0; background: var(--line); flex-shrink: 0; }
+html.la.side-rail .la-nav-group:first-child { display: none; }
+html.la.side-rail .la-nav-item { width: 52px; height: 52px; padding: 0; justify-content: center; margin: 0 auto; }
+html.la.side-rail .la-nav-item.active { background: transparent; box-shadow: none; }
+html.la.side-rail .la-nav-item > span:not(.la-nav-ic), html.la.side-rail .la-nav-item .la-nav-badge { display: none; }
+html.la.side-rail .la-nav-item .la-nav-ic { width: 44px; height: 44px; }
+html.la.side-rail .la-nav-item .ic { width: 20px; height: 20px; }
+html.la.side-rail .la-nav-sep { width: 32px; margin: 6px auto; }
+html.la.side-rail .la-side-foot { padding: 8px 0 12px; display: flex; justify-content: center; }
+html.la.side-rail .la-user { justify-content: center; padding: 4px; width: auto; border-radius: 50%; }
+html.la.side-rail .la-user .la-user-txt, html.la.side-rail .la-user > .ic { display: none; }
+@media (max-width: 1180px) { html.la .la-main { padding: 8px 20px 56px; } }
 
 /* phone: the app's floating bottom bar */
 html.la .la-bottom { display: none; }
@@ -979,3 +1001,4 @@ html.la .la-swatch:active { transform: scale(.9); }
 html.la .la-swatch.on { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px currentColor; }
 html.la .la-swatch .ic { width: 20px; height: 20px; display: none; color: #fff; }
 html.la .la-swatch.on .ic { display: block; }
+html.la .la-brand b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* long lab names stay on one line */

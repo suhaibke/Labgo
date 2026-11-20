@@ -9,7 +9,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@1,400;1,700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/landing.css">
+    <link rel="stylesheet" href="/css/landing-hero.css">
+    <meta name="color-scheme" content="light dark">
+    <script>
+      // Theme before first paint: saved choice, else the device setting.
+      (function () {
+        var t = null;
+        try { t = localStorage.getItem('labgo-theme'); } catch (e) {}
+        if (t !== 'light' && t !== 'dark') t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
     <style>
         body { font-family: <%= font %>; }
         /* Force phone numbers to always be LTR */
@@ -93,65 +105,129 @@ const icons = {
 %>
 
 <body>
-    <%- include('partials/language-switcher') %>
+<%
+// Partner labs come from the route; render without them too (tests, errors).
+var partnerLabs = typeof partnerLabs !== 'undefined' && Array.isArray(partnerLabs) ? partnerLabs : [];
+var labCount = typeof labCount !== 'undefined' ? Number(labCount) || 0 : 0;
+var homeLabel = currentLang === 'en' ? 'Home' : currentLang === 'ku' ? 'سەرەکی' : currentLang === 'tr' ? 'Ana sayfa' : 'الرئيسية';
+var themeLabel = currentLang === 'en' ? 'Dark mode' : currentLang === 'ku' ? 'دۆخی شەو' : currentLang === 'tr' ? 'Karanlık mod' : 'الوضع الليلي';
+%>
 
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="/" class="nav-logo">
-                <img src="/images/logo.png" alt="LabGo" class="logo-image">
+    <!-- Header (hero-01): logo · pill navigation · CTA -->
+    <header class="h1-header" id="h1Header">
+        <div class="h1-header-inner">
+            <a href="/" class="h1-logo" aria-label="LabGo">
+                <img src="/images/logo.png" alt="LabGo" class="h1-logo-img">
             </a>
-            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
-                <span class="hamburger-line"></span>
-                <span class="hamburger-line"></span>
-                <span class="hamburger-line"></span>
-            </button>
-            <div class="nav-links">
-                <a href="#features" class="nav-link"><%= __('landing.navigation.features') %></a>
-                <a href="#services" class="nav-link"><%= __('landing.navigation.services') %></a>
-                <a href="/shop" class="nav-link"><%= __('landing.navigation.shop') %></a>
-                <a href="#download" class="nav-link"><%= __('landing.navigation.download') %></a>
-                <a href="/auth/login" class="nav-btn"><%= __('landing.navigation.adminLogin') %></a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <div class="hero-badge">
-                <span class="badge-icon"><%- icons.sparkles %></span>
-                <span><%= __('landing.hero.badge') %></span>
-            </div>
-            <h1 class="hero-title">
-                <%= __('landing.hero.title') %>
-                <span class="gradient-text"><%= __('landing.hero.titleHighlight') %></span>
-            </h1>
-            <p class="hero-description">
-                <%= __('landing.hero.description') %>
-            </p>
-            <div class="hero-buttons">
-                <a href="#download" class="btn btn-primary">
-                    <span><%= __('landing.hero.downloadApp') %></span>
-                    <%- icons.arrowRight %>
+            <nav class="h1-nav" aria-label="LabGo">
+                <ul>
+                    <li><a href="/" class="is-active" aria-current="page"><%= homeLabel %></a></li>
+                    <li><a href="#features"><%= __('landing.navigation.features') %></a></li>
+                    <li><a href="#services"><%= __('landing.navigation.services') %></a></li>
+                    <li><a href="/shop"><%= __('landing.navigation.shop') %></a></li>
+                    <li><a href="#download"><%= __('landing.navigation.download') %></a></li>
+                </ul>
+            </nav>
+            <div class="h1-actions">
+                <% if (typeof supportedLanguages !== 'undefined') { %>
+                <div class="h1-lang" id="h1Lang">
+                    <button type="button" class="h1-icon-btn h1-lang-btn" id="h1LangBtn" aria-haspopup="true" aria-expanded="false" aria-controls="h1LangMenu" aria-label="Language">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        <span><%= String(currentLang).toUpperCase() %></span>
+                    </button>
+                    <div class="h1-lang-menu" id="h1LangMenu" role="menu" hidden>
+                        <% supportedLanguages.forEach(function (lang) { %>
+                        <a role="menuitem" href="?lang=<%= lang.code %>" class="<%= lang.code === currentLang ? 'is-active' : '' %>" dir="<%= lang.dir || 'ltr' %>" lang="<%= lang.code %>"><%= lang.name %></a>
+                        <% }) %>
+                    </div>
+                </div>
+                <% } %>
+                <button type="button" class="h1-icon-btn" id="h1Theme" aria-label="<%= themeLabel %>" aria-pressed="false">
+                    <svg class="i-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                    <svg class="i-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                </button>
+                <a href="/auth/login" class="h1-cta h1-cta-sm">
+                    <span class="h1-cta-label"><%= __('landing.navigation.adminLogin') %></span>
+                    <span class="h1-cta-dot" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span>
                 </a>
-                <a href="#features" class="btn btn-secondary"><%= __('landing.hero.learnMore') %></a>
+                <button type="button" class="h1-icon-btn h1-menu-btn" id="h1Menu" aria-label="Menu" aria-expanded="false" aria-controls="h1Sheet">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
             </div>
         </div>
-        <div class="hero-visual">
-            <img src="/images/phone.png" alt="LabGo Mobile App Interface" class="phone-mockup-image">
-            <div class="floating-cards">
-                <div class="floating-card card-1">
-                    <span class="card-icon-small"><%- icons.checkCircle %></span>
-                    <span><%= __('landing.readyForResult') %></span>
-                </div>
-                <div class="floating-card card-2">
-                    <span class="card-icon-small"><%- icons.mapPin %></span>
-                    <span><%= __('landing.nurseEnRoute') %></span>
+    </header>
+
+    <!-- Mobile menu sheet -->
+    <div class="h1-sheet-overlay" id="h1Overlay" hidden></div>
+    <aside class="h1-sheet" id="h1Sheet" aria-hidden="true" aria-label="Menu">
+        <div class="h1-sheet-head">
+            <img src="/images/logo.png" alt="LabGo" class="h1-logo-img">
+            <button type="button" class="h1-icon-btn" id="h1Close" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <nav class="h1-sheet-nav">
+            <a href="/" class="is-active"><%= homeLabel %></a>
+            <a href="#features"><%= __('landing.navigation.features') %></a>
+            <a href="#services"><%= __('landing.navigation.services') %></a>
+            <a href="/shop"><%= __('landing.navigation.shop') %></a>
+            <a href="#download"><%= __('landing.navigation.download') %></a>
+        </nav>
+        <a href="/auth/login" class="h1-cta">
+            <span class="h1-cta-label"><%= __('landing.navigation.adminLogin') %></span>
+            <span class="h1-cta-dot" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span>
+        </a>
+    </aside>
+
+    <main class="h1-main">
+        <!-- Hero (hero-01) -->
+        <section class="h1-hero">
+            <div class="h1-hero-inner">
+                <h1 class="h1-title">
+                    <% String(__('landing.hero.title')).trim().split(/\s+/).forEach(function (w, i) { %><span class="h1-word" style="--i:<%= i %>"><%= w %></span> <% }) %>
+                    <span class="h1-serif"><% String(__('landing.hero.titleHighlight')).trim().split(/\s+/).forEach(function (w, i) { %><span class="h1-word" style="--i:<%= i + 3 %>"><%= w %></span> <% }) %></span>
+                </h1>
+                <p class="h1-desc"><%= __('landing.hero.description') %></p>
+                <div class="h1-row">
+                    <a href="#download" class="h1-cta h1-cta-lg">
+                        <span class="h1-cta-label"><%= __('landing.hero.downloadApp') %></span>
+                        <span class="h1-cta-dot" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span>
+                    </a>
+                    <% if (labCount > 0) { %>
+                    <div class="h1-trust">
+                        <ul class="h1-avatars" aria-hidden="true">
+                            <% partnerLabs.slice(0, 4).forEach(function (l, i) { %>
+                            <li class="h1-av tone-<%= i % 4 %>"><% if (l.logo) { %><img src="<%= l.logo %>" alt="" loading="lazy"><% } else { %><%= (l.name || '?').trim().charAt(0).toUpperCase() %><% } %></li>
+                            <% }) %>
+                        </ul>
+                        <p class="h1-trust-text"><strong><%= labCount %></strong> <%= __('landing.partners.labsOnLabgo') %></p>
+                    </div>
+                    <% } %>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <% if (partnerLabs.length) { %>
+        <!-- Partner labs (the brand slider of hero-01) -->
+        <section class="h1-brands" aria-label="<%= __('landing.partners.title') %>">
+            <div class="h1-brands-head">
+                <span class="h1-line h1-line-start" aria-hidden="true"></span>
+                <p><%= __('landing.partners.title') %></p>
+                <span class="h1-line h1-line-end" aria-hidden="true"></span>
+            </div>
+            <div class="h1-marquee">
+                <% var rounds = partnerLabs.length < 8 ? 4 : 2; for (var r = 0; r < rounds; r++) { %>
+                <div class="h1-marquee-row"<% if (r) { %> aria-hidden="true"<% } %>>
+                    <% partnerLabs.forEach(function (l, i) { %>
+                    <div class="h1-brand">
+                        <span class="h1-brand-mark tone-<%= i % 4 %>"><% if (l.logo) { %><img src="<%= l.logo %>" alt="" loading="lazy"><% } else { %><%= (l.name || '?').trim().charAt(0).toUpperCase() %><% } %></span>
+                        <span class="h1-brand-name"><%= l.name %></span>
+                    </div>
+                    <% }) %>
+                </div>
+                <% } %>
+            </div>
+        </section>
+        <% } %>
+    </main>
 
     <!-- Features Section -->
     <section id="features" class="features">
@@ -491,6 +567,65 @@ const icons = {
             }
         });
     }
+    </script>
+    <script>
+    // hero-01 header: dark mode toggle, mobile sheet, shadow once scrolled.
+    (function () {
+      var root = document.documentElement;
+      var btn = document.getElementById('h1Theme');
+      function sync() { if (btn) btn.setAttribute('aria-pressed', root.getAttribute('data-theme') === 'dark' ? 'true' : 'false'); }
+      sync();
+      if (btn) btn.addEventListener('click', function () {
+        var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem('labgo-theme', next); } catch (e) {}
+        sync();
+      });
+      // Follow the device while the visitor has not chosen.
+      try {
+        matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+          var saved = null; try { saved = localStorage.getItem('labgo-theme'); } catch (err) {}
+          if (!saved) { root.setAttribute('data-theme', e.matches ? 'dark' : 'light'); sync(); }
+        });
+      } catch (e) {}
+
+      var sheet = document.getElementById('h1Sheet'), overlay = document.getElementById('h1Overlay');
+      var menu = document.getElementById('h1Menu'), close = document.getElementById('h1Close');
+      function setOpen(open) {
+        if (!sheet) return;
+        sheet.classList.toggle('open', open);
+        sheet.setAttribute('aria-hidden', open ? 'false' : 'true');
+        overlay.hidden = !open;
+        requestAnimationFrame(function () { overlay.classList.toggle('open', open); });
+        menu.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.style.overflow = open ? 'hidden' : '';
+        if (open) close.focus(); else menu.focus();
+      }
+      if (menu) menu.addEventListener('click', function () { setOpen(true); });
+      if (close) close.addEventListener('click', function () { setOpen(false); });
+      if (overlay) overlay.addEventListener('click', function () { setOpen(false); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && sheet && sheet.classList.contains('open')) setOpen(false); });
+      if (sheet) sheet.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { setOpen(false); }); });
+
+      // Language picker in the header.
+      var langBtn = document.getElementById('h1LangBtn'), langMenu = document.getElementById('h1LangMenu');
+      function setLang(open) {
+        if (!langMenu) return;
+        langMenu.hidden = !open;
+        langBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) { var cur = langMenu.querySelector('.is-active') || langMenu.querySelector('a'); if (cur) cur.focus(); }
+      }
+      if (langBtn) {
+        langBtn.addEventListener('click', function (e) { e.stopPropagation(); setLang(langMenu.hidden); });
+        document.addEventListener('click', function (e) { if (!langMenu.hidden && !langMenu.contains(e.target)) setLang(false); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !langMenu.hidden) { setLang(false); langBtn.focus(); } });
+      }
+
+      var header = document.getElementById('h1Header');
+      function onScroll() { if (header) header.classList.toggle('scrolled', window.scrollY > 8); }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    })();
     </script>
 </body>
 

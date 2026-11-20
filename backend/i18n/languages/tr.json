@@ -765,6 +765,31 @@
     "required": "Gerekli"
   },
   "labOrders": {
+    "stepSent": "Gönderildi",
+    "stepReceived": "Teslim alındı",
+    "stepResult": "Sonuç",
+    "hubTitle": "Siparişler ve transferler",
+    "hubSubtitle": "Hasta siparişleri, diğer laboratuvarlardan gelen numuneler ve gönderdikleriniz — tek yerde.",
+    "tabIncoming": "Gelen",
+    "tabInLab": "Laboratuvarda",
+    "tabSent": "Gönderilen",
+    "kpiIncoming": "Gelen",
+    "kpiInLab": "Laboratuvarda",
+    "kpiSent": "Gönderildi, sonuç bekleniyor",
+    "kpiCompleted": "Tamamlandı",
+    "patientOrders": "Hasta siparişleri",
+    "labSamples": "Diğer laboratuvarlardan numuneler",
+    "scanTitle": "Numune teslim al",
+    "scanHint": "Sipariş QR kodunu veya numune takip numarasını okutun ya da yazın",
+    "noLabIncoming": "Size gelen numune yok",
+    "noLabInLab": "Diğer laboratuvarlardan alınan numune yok",
+    "filterAll": "Tümü",
+    "filterAwaiting": "Sonuç bekleniyor",
+    "filterCompleted": "Tamamlandı",
+    "sentTo": "Alıcı",
+    "fromLabLabel": "Gönderen",
+    "expected": "Beklenen",
+    "tracking": "Takip no.",
     "title": "Laboratuvar Siparişleri",
     "subtitle": "Gelen numuneleri ve test sonuçlarını yönetin",
     "incomingSamples": "Gelen Numuneler",
@@ -1222,6 +1247,10 @@
   },
   "actions": "İşlemler",
   "landing": {
+    "partners": {
+      "title": "LabGo'daki partner laboratuvarlar",
+      "labsOnLabgo": "partner laboratuvar LabGo ile çalışıyor"
+    },
     "meta": {
       "title": "LabGo - Kapınızda Sağlık Hizmetleri",
       "description": "LabGo - Güvenilir sağlık ortağınız. Laboratuvar testleri rezerve edin, evde hemşire ziyaretleri isteyin ve sonuçları sorunsuz alın."
@@ -1751,6 +1780,8 @@
     "support": "Destek",
     "supplies": "Malzeme siparişi",
     "workspace": "Laboratuvar alanı",
+    "collapseMenu": "Menüyü daralt",
+    "expandMenu": "Menüyü genişlet",
     "theme": "Tema",
     "notifications": "Bildirimler",
     "language": "Dil",
