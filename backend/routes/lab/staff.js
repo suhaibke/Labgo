@@ -176,12 +176,17 @@ router.delete('/api/staff/:id', async (req, res) => {
         const user = await loadStaff(req, res);
         if (!user) return;
         if (String(user._id) === String(req.user._id)) return fail(res, 400, 'You cannot remove yourself', 'self');
-        user.labStaff.active = false;
-        user.labStaff.labId = null;
-        user.status = 'blocked';
-        user.blockReason = 'Removed from lab staff';
-        user.password = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10);
-        await user.save();
+        // Updated directly: once unlinked from the lab, a phone-only staff account
+        // would fail the "email required for lab accounts" rule on a full save.
+        await User.updateOne({ _id: user._id }, {
+            $set: {
+                'labStaff.active': false,
+                'labStaff.labId': null,
+                status: 'blocked',
+                blockReason: 'Removed from lab staff',
+                password: await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10),
+            },
+        });
         res.json({ success: true });
     } catch (error) {
         console.error('Remove staff error:', error);

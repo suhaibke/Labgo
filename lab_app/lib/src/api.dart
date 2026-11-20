@@ -122,6 +122,9 @@ class LabApi {
     return Map<String, dynamic>.from((json['data'] as Map)['referral'] as Map);
   }
 
+  /// Deletes a transfer this lab made.
+  Future<void> deleteTransfer(String id) => _send('DELETE', '/lab/api/app/transfers/$id');
+
   /// Attaches the result file (photo / PDF) of a sent sample.
   Future<void> uploadTransferResult(String id, List<int> bytes, String filename) =>
       uploadImage('/lab/api/external-transfers/$id/result', 'resultFile', bytes, filename);
@@ -206,6 +209,8 @@ class LabApi {
   Future<List<dynamic>> supportTickets() async => ((await _data('GET', '/lab/api/support'))['items'] as List?) ?? const [];
   /// Store listings plus the banner slides the admin set for the labs' store.
   Future<Map<String, dynamic>> market() => _data('GET', '/lab/api/market');
+  /// The store for a guest: approved listings only, no account needed.
+  Future<Map<String, dynamic>> publicMarket() => _data('GET', '/api/public/market');
   Future<Map<String, dynamic>> addListing(Map<String, String> fields, List<List<int>> images) => sendForm('/lab/api/market', fields, images);
   Future<Map<String, dynamic>> bid(String id, int amount) => _data('POST', '/lab/api/market/$id/bid', {'amount': amount});
 

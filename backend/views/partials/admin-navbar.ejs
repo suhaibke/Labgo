@@ -466,13 +466,19 @@
         <span>الدعم والبلاغات</span>
         <span id="supportBadge" class="hub-badge" style="display:none"></span>
       </a>
+      <a href="/admin/maintenance"
+        class="nav-item <%= typeof page !== 'undefined' && page === 'maintenance' ? 'active' : '' %>">
+        <i class="fas fa-screwdriver-wrench"></i>
+        <span>طلبات الصيانة</span>
+        <span id="maintenanceBadge" class="hub-badge" style="display:none"></span>
+      </a>
       <style>.hub-badge{margin-inline-start:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#FF5A00;color:#fff;font-size:11px;font-weight:700;line-height:20px;text-align:center}</style>
       <script>
         (function () {
           var t = localStorage.getItem('token') || (document.cookie.split('; ').find(function (r) { return r.indexOf('token=') === 0; }) || '').split('=')[1];
           fetch('/api/admin/hub/counts', { headers: { Authorization: 'Bearer ' + t } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
             if (!d || !d.success) return;
-            [['marketBadge', d.data.market], ['supportBadge', d.data.support]].forEach(function (x) { var b = document.getElementById(x[0]); if (x[1]) { b.textContent = x[1]; b.style.display = 'inline-block'; } });
+            [['marketBadge', d.data.market], ['supportBadge', d.data.support], ['maintenanceBadge', d.data.maintenance]].forEach(function (x) { var b = document.getElementById(x[0]); if (x[1]) { b.textContent = x[1]; b.style.display = 'inline-block'; } });
           }).catch(function () {});
         })();
       </script>

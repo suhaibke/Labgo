@@ -31,7 +31,26 @@ class ResultsScreen extends StatelessWidget {
             style: ts(context, 13, color: pal.muted),
           ),
           const SizedBox(height: 12),
-          const _ResultsSearch(),
+          Row(
+            children: [
+              const Expanded(child: _ResultsSearch()),
+              const SizedBox(width: 8),
+              // Date filter: a small icon; tinted while a date is chosen.
+              Tap(
+                onTap: app.toggleResultsDate,
+                child: Container(
+                  width: 45,
+                  height: 45,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: app.resultsDateKey != 'all' ? pal.accent : pal.searchBg,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: LIcon('Calendar', size: 18, color: app.resultsDateKey != 'all' ? Colors.white : pal.muted),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -50,6 +69,10 @@ class ResultsScreen extends StatelessWidget {
               ],
             ],
           ),
+          if (app.resultsDateOpen) ...[
+            const SizedBox(height: 8),
+            const _DateFilter(),
+          ],
           const SizedBox(height: 12),
           for (final r in app.receivedFiltered) ...[
             Tap(
@@ -141,6 +164,60 @@ class ResultsScreen extends StatelessWidget {
                 style: ts(context, 13, color: pal.muted),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Date filter chips: all, today, yesterday, last 7 days, this month, a chosen day.
+class _DateFilter extends StatelessWidget {
+  const _DateFilter();
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final pal = app.palette;
+    final key = app.resultsDateKey;
+    final d = app.resultsDay;
+    final chips = [
+      ('all', app.tr('كل التواريخ', 'هەموو بەروارەکان', 'All dates')),
+      ('today', app.tr('اليوم', 'ئەمڕۆ', 'Today')),
+      ('yesterday', app.tr('أمس', 'دوێنێ', 'Yesterday')),
+      ('week', app.tr('آخر 7 أيام', '7 ڕۆژی ڕابردوو', 'Last 7 days')),
+      ('month', app.tr('هذا الشهر', 'ئەم مانگە', 'This month')),
+    ];
+    Future<void> pickDay() async {
+      final now = DateTime.now();
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: d ?? now,
+        firstDate: DateTime(now.year - 5),
+        lastDate: now,
+        builder: (ctx, child) => Theme(
+          data: Theme.of(ctx).copyWith(colorScheme: Theme.of(ctx).colorScheme.copyWith(primary: pal.accent)),
+          child: child!,
+        ),
+      );
+      if (picked != null) app.setResultsDate('day', day: picked);
+    }
+
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          for (final c in chips) ...[
+            FilterChipPill(label: c.$2, selected: key == c.$1, scale: .9, onTap: () => app.setResultsDate(c.$1)),
+            const SizedBox(width: 6),
+          ],
+          FilterChipPill(
+            label: key == 'day' && d != null ? '${d.day}/${d.month}/${d.year}' : app.tr('تاريخ محدد', 'بەرواری دیاریکراو', 'Pick a date'),
+            icon: 'Calendar',
+            selected: key == 'day',
+            scale: .9,
+            onTap: pickDay,
+          ),
         ],
       ),
     );
@@ -632,7 +709,7 @@ class _ResultEntryState extends State<_ResultEntry> {
   late final TextEditingController _c = TextEditingController(
     text: context.app.draft[widget.row.test] ?? '',
   );
-  late final (String, String) _meta = context.app.draftMeta[widget.row.test] ?? context.app.sentDefaults(widget.row.test);
+  late final (String, String) _meta = context.app.sentMeta(widget.row.test);
   late final TextEditingController _unit = TextEditingController(text: _meta.$1);
   late final TextEditingController _range = TextEditingController(text: _meta.$2);
 

@@ -336,6 +336,8 @@ class Referral {
   final List<SentResult> results;
   final String resultFile;
   final DateTime? sentAt;
+  /// The receiving lab's unit and normal range per test (when it is on LabGo).
+  final Map<String, (String, String)> refs;
   bool get done => status == 'Completed';
   const Referral({
     required this.id,
@@ -354,6 +356,7 @@ class Referral {
     this.results = const [],
     this.resultFile = '',
     this.sentAt,
+    this.refs = const {},
   });
 }
 

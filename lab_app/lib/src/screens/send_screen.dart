@@ -17,7 +17,9 @@ class _SendScreenState extends State<SendScreen> {
   late final TextEditingController _test;
   late final TextEditingController _lab;
   late final TextEditingController _barcode;
-  late final TextEditingController _age = TextEditingController(text: AppScope.read(context).refAge);
+  late final TextEditingController _age = TextEditingController(
+    text: AppScope.read(context).refAge,
+  );
   final _price = TextEditingController();
   final _phone = TextEditingController();
 
@@ -158,7 +160,11 @@ class _SendScreenState extends State<SendScreen> {
                     LIcon('ScanLine', size: 17, color: pal.ink),
                     const SizedBox(width: 8),
                     Text(
-                      app.tr('مسح بالكاميرا', 'سکان بە کامێرا', 'Scan with camera'),
+                      app.tr(
+                        'مسح بالكاميرا',
+                        'سکان بە کامێرا',
+                        'Scan with camera',
+                      ),
                       style: ts(context, 16, weight: w700),
                     ),
                   ],
@@ -248,10 +254,19 @@ class _SendScreenState extends State<SendScreen> {
                   Text(
                     r.state == 'completed'
                         ? app.tr('عرض النتيجة', 'ئەنجام', 'View result')
-                        : app.tr('إدخال النتيجة', 'ئەنجام بنووسە', 'Enter result'),
+                        : app.tr(
+                            'إدخال النتيجة',
+                            'ئەنجام بنووسە',
+                            'Enter result',
+                          ),
                     style: ts(context, 12, weight: w700, color: pal.accent),
                   ),
-                  LIcon('ChevronLeft', size: 16, color: pal.accent, flipX: !app.rtl),
+                  LIcon(
+                    'ChevronLeft',
+                    size: 16,
+                    color: pal.accent,
+                    flipX: !app.rtl,
+                  ),
                 ],
               ),
             ),
@@ -298,7 +313,10 @@ class _SendScreenState extends State<SendScreen> {
             Text(w('chooseNameHint'), style: ts(context, 12, color: pal.muted)),
             const SizedBox(height: 8),
             FloatingDropdown(
-              open: app.refPatientOpen && app.refPatient.trim().isNotEmpty && app.refPatientMatches.isNotEmpty,
+              open:
+                  app.refPatientOpen &&
+                  app.refPatient.trim().isNotEmpty &&
+                  app.refPatientMatches.isNotEmpty,
               items: [
                 for (final p in app.refPatientMatches)
                   DropdownRow(
@@ -327,7 +345,11 @@ class _SendScreenState extends State<SendScreen> {
               SearchBarBox(
                 icon: 'Phone',
                 controller: _phone,
-                hint: app.tr('رقم هاتف المريض (يُسجَّل كمريض جديد)', 'ژمارەی مۆبایلی نەخۆش', 'Patient phone (registered as a new patient)'),
+                hint: app.tr(
+                  'رقم هاتف المريض (يُسجَّل كمريض جديد)',
+                  'ژمارەی مۆبایلی نەخۆش',
+                  'Patient phone (registered as a new patient)',
+                ),
                 onChanged: (v) => app.updateSend(() => app.refPhone = v),
               ),
             ],
@@ -335,7 +357,10 @@ class _SendScreenState extends State<SendScreen> {
             // Gender and age (filled in from a saved patient; typed for a new name).
             Row(
               children: [
-                Text(w('age'), style: ts(context, 12, weight: w700, color: pal.muted)),
+                Text(
+                  w('age'),
+                  style: ts(context, 12, weight: w700, color: pal.muted),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: SizedBox(
@@ -346,14 +371,22 @@ class _SendScreenState extends State<SendScreen> {
                       vPad: 10,
                       ltr: true,
                       keyboard: TextInputType.number,
-                      onChanged: (v) => app.updateSend(() => app.refAge = v.replaceAll(RegExp(r'[^0-9]'), '')),
+                      onChanged: (v) => app.updateSend(
+                        () => app.refAge = v.replaceAll(RegExp(r'[^0-9]'), ''),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 6),
-                Text(app.tr('سنة', 'ساڵ', 'yrs'), style: ts(context, 12, weight: w700, color: pal.muted)),
+                Text(
+                  app.tr('سنة', 'ساڵ', 'yrs'),
+                  style: ts(context, 12, weight: w700, color: pal.muted),
+                ),
                 const SizedBox(width: 10),
-                for (final g in const [('Male', 'Mars', Color(0xFF5B7A99)), ('Female', 'Venus', Color(0xFFB0708A))]) ...[
+                for (final g in const [
+                  ('Male', 'Mars', Color(0xFF5B7A99)),
+                  ('Female', 'Venus', Color(0xFFB0708A)),
+                ]) ...[
                   GestureDetector(
                     onTap: () => app.updateSend(() => app.refGender = g.$1),
                     child: Container(
@@ -365,7 +398,12 @@ class _SendScreenState extends State<SendScreen> {
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(color: pal.cardBorder),
                       ),
-                      child: LIcon(g.$2, size: 15, strokeWidth: 2.2, color: app.refGender == g.$1 ? Colors.white : g.$3),
+                      child: LIcon(
+                        g.$2,
+                        size: 15,
+                        strokeWidth: 2.2,
+                        color: app.refGender == g.$1 ? Colors.white : g.$3,
+                      ),
                     ),
                   ),
                   if (g.$1 == 'Male') const SizedBox(width: 6),
@@ -377,7 +415,11 @@ class _SendScreenState extends State<SendScreen> {
             if (app.refOrderTests.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                app.tr('فحوصات المريض المسجلة — اضغط للإضافة', 'پشکنینە تۆمارکراوەکانی نەخۆش', "The patient's registered tests — tap to add"),
+                app.tr(
+                  'فحوصات المريض المسجلة — اضغط للإضافة',
+                  'پشکنینە تۆمارکراوەکانی نەخۆش',
+                  "The patient's registered tests — tap to add",
+                ),
                 style: ts(context, 12, color: pal.muted),
               ),
               const SizedBox(height: 6),
@@ -386,13 +428,21 @@ class _SendScreenState extends State<SendScreen> {
                 runSpacing: 6,
                 children: [
                   for (final t in app.refOrderTests)
-                    FilterChipPill(label: t, icon: 'Plus', selected: false, onTap: () => app.addRefTest(t)),
+                    FilterChipPill(
+                      label: t,
+                      icon: 'Plus',
+                      selected: false,
+                      onTap: () => app.addRefTest(t),
+                    ),
                 ],
               ),
             ],
             const SizedBox(height: 8),
             FloatingDropdown(
-              open: app.refTestOpen && app.refTestSearch.trim().isNotEmpty && app.refTestMatches.isNotEmpty,
+              open:
+                  app.refTestOpen &&
+                  app.refTestSearch.trim().isNotEmpty &&
+                  app.refTestMatches.isNotEmpty,
               items: [
                 for (final t in app.refTestMatches)
                   DropdownRow(
@@ -420,7 +470,12 @@ class _SendScreenState extends State<SendScreen> {
                 children: [
                   for (final t in app.refTests)
                     Container(
-                      padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 6, 6),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        12,
+                        6,
+                        6,
+                        6,
+                      ),
                       decoration: BoxDecoration(
                         color: pal.accent,
                         borderRadius: BorderRadius.circular(999),
@@ -430,7 +485,12 @@ class _SendScreenState extends State<SendScreen> {
                         children: [
                           Text(
                             t,
-                            style: ts(context, 12, weight: w700, color: Colors.white),
+                            style: ts(
+                              context,
+                              12,
+                              weight: w700,
+                              color: Colors.white,
+                            ),
                           ),
                           const SizedBox(width: 4),
                           Tap(
@@ -443,7 +503,11 @@ class _SendScreenState extends State<SendScreen> {
                                 color: Colors.white.withValues(alpha: .25),
                                 shape: BoxShape.circle,
                               ),
-                              child: const LIcon('X', size: 12, color: Colors.white),
+                              child: const LIcon(
+                                'X',
+                                size: 12,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ],
@@ -558,22 +622,30 @@ class _SendScreenState extends State<SendScreen> {
                 style: ts(context, 13, weight: w700, color: pal.muted2),
               ),
               const SizedBox(height: 6),
-              Builder(builder: (context) {
-                if (_price.text != app.refPrice) {
-                  _price.value = TextEditingValue(
-                    text: app.refPrice,
-                    selection: TextSelection.collapsed(offset: app.refPrice.length),
+              Builder(
+                builder: (context) {
+                  if (_price.text != app.refPrice) {
+                    _price.value = TextEditingValue(
+                      text: app.refPrice,
+                      selection: TextSelection.collapsed(
+                        offset: app.refPrice.length,
+                      ),
+                    );
+                  }
+                  return SearchBarBox(
+                    icon: 'Pencil',
+                    controller: _price,
+                    hint: app.refLabObj?.id.isNotEmpty == true
+                        ? app.tr('اكتب السعر', 'نرخ بنووسە', 'Type the price')
+                        : app.tr(
+                            'السعر المتفق عليه مع المختبر',
+                            'نرخی ڕێککەوتوو',
+                            'Price agreed with the lab',
+                          ),
+                    onChanged: app.setRefPrice,
                   );
-                }
-                return SearchBarBox(
-                  icon: 'Pencil',
-                  controller: _price,
-                  hint: app.refLabObj?.id.isNotEmpty == true
-                      ? app.tr('اكتب السعر', 'نرخ بنووسە', 'Type the price')
-                      : app.tr('السعر المتفق عليه مع المختبر', 'نرخی ڕێککەوتوو', 'Price agreed with the lab'),
-                  onChanged: app.setRefPrice,
-                );
-              }),
+                },
+              ),
             ],
             const SizedBox(height: 16),
             Tap(
@@ -605,117 +677,203 @@ class _SendScreenState extends State<SendScreen> {
       if (app.referrals.isNotEmpty) ...[
         const SizedBox(height: 8),
         SearchBarBox(
-          hint: app.tr('ابحث بالاسم أو الفحص أو المختبر أو رقم التتبع…', 'بگەڕێ…', 'Search name, test, lab or tracking no.…'),
+          hint: app.tr(
+            'ابحث بالاسم أو الفحص أو المختبر أو رقم التتبع…',
+            'بگەڕێ…',
+            'Search name, test, lab or tracking no.…',
+          ),
           onChanged: app.setTrackSearch,
         ),
       ],
       for (final r in app.trackedReferrals) ...[
         const SizedBox(height: 8),
-        Tap(
-          onTap: () => app.showLabel(r),
-          child: CardBox(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+        // Swipe to delete (asks first).
+        Dismissible(
+          key: ValueKey('ref-${r.id}'),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: AlignmentDirectional.centerEnd,
+            padding: const EdgeInsetsDirectional.only(end: 24),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE5484D),
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${r.patient} • ${r.test}',
-                        style: ts(context, 16, weight: w700),
+                const LIcon('Trash2', size: 20, color: Colors.white),
+                const SizedBox(width: 6),
+                Text(
+                  app.tr('حذف', 'سڕینەوە', 'Delete'),
+                  style: ts(context, 14, weight: w700, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+          confirmDismiss: (_) async {
+            final ok = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: pal.card,
+                title: Text(
+                  app.tr(
+                    'حذف الإرسال ${r.tracking}؟',
+                    'ناردن بسڕدرێتەوە؟',
+                    'Delete transfer ${r.tracking}?',
+                  ),
+                  style: ts(ctx, 17, weight: w700),
+                ),
+                content: Text(
+                  app.tr(
+                    '${r.patient} • ${r.test}\nسيُحذف من التتبع ولا يمكن التراجع. يبقى طلب المريض كما هو.',
+                    '${r.patient} • ${r.test}',
+                    "${r.patient} • ${r.test}\nIt leaves tracking and cannot be undone. The patient's order stays.",
+                  ),
+                  style: ts(ctx, 13, color: pal.muted, height: 1.5),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: Text(
+                      app.w('cancel'),
+                      style: ts(ctx, 14, weight: w700, color: pal.muted),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: Text(
+                      app.tr('حذف', 'سڕینەوە', 'Delete'),
+                      style: ts(
+                        ctx,
+                        14,
+                        weight: w700,
+                        color: const Color(0xFFE5484D),
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: pal.softAccent,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        r.status,
-                        style: ts(
-                          context,
-                          11,
-                          weight: w700,
-                          color: pal.accent,
-                          height: 1.45,
+                  ),
+                ],
+              ),
+            );
+            if (ok != true) return false;
+            return app.deleteReferral(r);
+          },
+          child: Tap(
+            onTap: () => app.showLabel(r),
+            child: CardBox(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${r.patient} • ${r.test}',
+                          style: ts(context, 16, weight: w700),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${r.lab} • ${w('eta')}: ${r.eta}',
-                  style: ts(context, 12, color: pal.muted),
-                ),
-                Text(
-                  '${w('trackingId')}: ${r.tracking}',
-                  style: ts(context, 12, color: pal.muted),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    for (var i = 0; i < 4; i++) ...[
                       Container(
-                        width: 12,
-                        height: 12,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: i <= r.step ? pal.accent : pal.track,
-                          shape: BoxShape.circle,
+                          color: pal.softAccent,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          r.status,
+                          style: ts(
+                            context,
+                            11,
+                            weight: w700,
+                            color: pal.accent,
+                            height: 1.45,
+                          ),
                         ),
                       ),
-                      if (i < 3) ...[
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Container(
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: i < r.step ? pal.accent : pal.track,
-                              borderRadius: BorderRadius.circular(999),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${r.lab} • ${w('eta')}: ${r.eta}',
+                    style: ts(context, 12, color: pal.muted),
+                  ),
+                  Text(
+                    '${w('trackingId')}: ${r.tracking}',
+                    style: ts(context, 12, color: pal.muted),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      for (var i = 0; i < 4; i++) ...[
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: i <= r.step ? pal.accent : pal.track,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        if (i < 3) ...[
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Container(
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: i < r.step ? pal.accent : pal.track,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${w('timeline')} • ${d('labelTitle')} →',
+                          style: ts(context, 11, color: pal.muted),
+                        ),
+                      ),
+                      Tap(
+                        // A sample from a patient's order: the order's own result entry.
+                        onTap: () => app.openSentInResults(r),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: pal.chipBg,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: pal.line),
+                          ),
+                          child: Text(
+                            r.done
+                                ? app.tr('عرض النتيجة', 'ئەنجام', 'View result')
+                                : app.tr(
+                                    'إدخال النتيجة',
+                                    'ئەنجام بنووسە',
+                                    'Enter result',
+                                  ),
+                            style: ts(
+                              context,
+                              12,
+                              weight: w700,
+                              color: pal.accent,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 4),
-                      ],
+                      ),
                     ],
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${w('timeline')} • ${d('labelTitle')} →',
-                        style: ts(context, 11, color: pal.muted),
-                      ),
-                    ),
-                    Tap(
-                      // A sample from a patient's order: the order's own result entry.
-                      onTap: () {
-                        final p = app.patients.where((x) => x.id == r.orderId).firstOrNull;
-                        if (p != null) {
-                          app.openPatient(p);
-                        } else {
-                          app.openSentResult(r);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(999), border: Border.all(color: pal.line)),
-                        child: Text(
-                          r.done ? app.tr('عرض النتيجة', 'ئەنجام', 'View result') : app.tr('إدخال النتيجة', 'ئەنجام بنووسە', 'Enter result'),
-                          style: ts(context, 12, weight: w700, color: pal.accent),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

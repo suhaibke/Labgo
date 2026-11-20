@@ -242,6 +242,8 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = context.app;
     if (app.wastePage) return const _WastePage();
+    if (app.maintenancePage) return const _MaintenancePage();
+    if (app.settingsPage != null) return _SectionPage(id: app.settingsPage!);
     final pal = app.palette;
     final w = app.w, d = app.d;
 
@@ -426,22 +428,7 @@ class SettingsScreen extends StatelessWidget {
           rowButton(
             icon: 'Wrench',
             label: app.tr('طلب صيانة', 'داوای چاککردنەوە', 'Maintenance request'),
-            open: app.openSection == 'maintenance',
-            onTap: () => app.toggleSection('maintenance'),
-          ),
-          if (app.openSection == 'maintenance') const _Maintenance(),
-          const SizedBox(height: 12),
-          rowButton(
-            icon: 'ShoppingBag',
-            label:
-                '${app.tr('طلباتي', 'داواکارییەکانم', 'My Orders')}${app.productOrders.isNotEmpty ? ' (${app.productOrders.length})' : ''}',
-            onTap: () => app.toast(
-              app.tr(
-                'المتجر يأتي في الدفعة القادمة',
-                'فرۆشگا لە بەشی داهاتوودا دێت',
-                'The store arrives in the next batch',
-              ),
-            ),
+            onTap: () => app.updateSettings(() => app.maintenancePage = true),
           ),
           for (final s in sections) ...[
             const SizedBox(height: 12),
@@ -449,7 +436,9 @@ class SettingsScreen extends StatelessWidget {
               icon: s.$3,
               label: s.$2,
               open: app.openSection == s.$1,
-              onTap: () => app.toggleSection(s.$1),
+              onTap: AppState.pageSections.contains(s.$1)
+                  ? () => app.openSettingsPage(s.$1)
+                  : () => app.toggleSection(s.$1),
             ),
             if (app.openSection == s.$1) body(s.$1)!,
           ],
@@ -2224,7 +2213,7 @@ class _ManageTestsState extends State<_ManageTests> {
     );
 
     final items = <Widget>[];
-    for (final test in List.of(kCatalog)) {
+    for (final test in List.of(kCatalog).where((t) => app.settingsMatch([t.name, t.category]))) {
       final isOpen = open == test.name;
       void up(CatalogTest t) => app.replaceTest(t);
       items.add(
@@ -3133,7 +3122,7 @@ class _PackagesState extends State<_Packages> {
             ),
           ], gap: 8),
         ),
-      for (final p in List.of(kPackages))
+      for (final p in List.of(kPackages).where((p) => app.settingsMatch([p.name, p.category, ...p.tests])))
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -4134,6 +4123,95 @@ class _SupportState extends State<_Support> {
   }
 }
 
+
+/// A settings section opened as its own page: back, title, search (tests and
+/// packages) and the section itself.
+class _SectionPage extends StatelessWidget {
+  final String id;
+  const _SectionPage({required this.id});
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final (title, sub, body, searchHint) = switch (id) {
+      'usersRoles' => (
+          app.t('title'),
+          app.tr('أضف موظفي المختبر، وحدد دور كل واحد وما يمكنه رؤيته وتعديله.', 'کارمەندان زیاد بکە و ڕۆڵیان دیاری بکە.',
+              'Add your lab staff and choose what each role can see and change.'),
+          const _UsersRoles() as Widget,
+          null,
+        ),
+      'tests' => (
+          app.w('manageTests'),
+          app.tr('الأسعار والوحدات والمعدلات الطبيعية لكل فحص.', 'نرخ و یەکە و ئاستی ئاسایی', 'Prices, units and normal ranges of each test.'),
+          const _ManageTests() as Widget,
+          app.tr('ابحث عن فحص بالاسم أو الفئة…', 'بگەڕێ بۆ پشکنین…', 'Search a test by name or category…'),
+        ),
+      'packages' => (
+          app.d('packagesManage'),
+          app.tr('باقات الفحوصات وعروضها وأسعارها.', 'پاکێج و ئۆفەرەکان', 'Test packages, offers and prices.'),
+          const _Packages() as Widget,
+          app.tr('ابحث عن باقة بالاسم أو الفحص…', 'بگەڕێ بۆ پاکێج…', 'Search a package by name or test…'),
+        ),
+      'reports' => (
+          app.w('manageReports'),
+          app.tr('قوالب التقارير وطريقة طباعتها.', 'قاڵبی ڕاپۆرتەکان', 'Report templates and how they print.'),
+          const _Reports() as Widget,
+          null,
+        ),
+      _ => (
+          app.d('labData'),
+          app.tr('الاسم والشعار والعنوان وأصحاب الإجازة كما تظهر في التقارير.', 'زانیاری تاقیگە', 'Name, logo, address and licence holders as shown on reports.'),
+          const LabDataCard() as Widget,
+          null,
+        ),
+    };
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 4, 16, 112 + MediaQuery.paddingOf(context).bottom),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: BackLink(label: app.w('back'), onTap: () => app.openSettingsPage(null)),
+          ),
+          Text(title, style: ts(context, 28, weight: w700)),
+          Text(sub, style: ts(context, 13, color: app.palette.muted)),
+          if (searchHint != null) ...[
+            const SizedBox(height: 12),
+            SearchBarBox(hint: searchHint, onChanged: app.setSettingsSearch),
+          ],
+          const SizedBox(height: 4),
+          body,
+        ],
+      ),
+    );
+  }
+}
+
+/// Settings → Maintenance request, as its own page (like Waste management).
+class _MaintenancePage extends StatelessWidget {
+  const _MaintenancePage();
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 4, 16, 112 + MediaQuery.paddingOf(context).bottom),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: BackLink(label: app.w('back'), onTap: () => app.updateSettings(() => app.maintenancePage = false)),
+          ),
+          Text(app.tr('طلب صيانة', 'داوای چاککردنەوە', 'Maintenance request'), style: ts(context, 28, weight: w700)),
+          const _Maintenance(),
+        ],
+      ),
+    );
+  }
+}
 
 /// Maintenance requests for the building and utilities (not lab devices),
 /// with photos of the problem.

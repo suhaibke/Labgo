@@ -61,6 +61,12 @@ router.patch('/:id/collected', async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).json({ success: false });
         const item = await LabWaste.findByIdAndUpdate(req.params.id, { $set: { status: 'collected', collectedAt: new Date(), adminSeenAt: new Date() } }, { new: true });
         if (!item) return res.status(404).json({ success: false });
+        // The lab hears that its waste was picked up.
+        await require('../../services/labNotify').notifyLab(item.labId, {
+            title: `تم نقل النفايات${item.requestNo ? ` #${item.requestNo}` : ''}`,
+            body: `استلمت إدارة LabGo نفايات المختبر (${item.weightKg} كغم) وأُغلق الطلب.`,
+            data: { type: 'waste_collected', wasteId: String(item._id) },
+        });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });

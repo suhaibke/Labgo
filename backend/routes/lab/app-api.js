@@ -383,10 +383,52 @@ router.get('/api/app/transfers', async (req, res) => {
     try {
         const list = await ExternalTransfer.find({ labId: req.lab._id }).sort({ sentAt: -1 }).limit(100).lean();
         const labs = [...new Set(list.map((t) => t.externalLab?.name).filter(Boolean))];
-        res.json({ success: true, data: { referrals: list.map(toReferral), labs } });
+        // The receiving lab's unit and normal range for each sent test (prefilled, editable).
+        const targetIds = [...new Set(list.map((t) => t.toLabId && String(t.toLabId)).filter(Boolean))];
+        const targets = new Map((await Lab.find({ _id: { $in: targetIds } }).select('tests').lean()).map((l) => [String(l._id), l]));
+        const { pickRange } = require('../../helpers/result-ranges');
+        const referrals = list.map((t) => {
+            const r = toReferral(t);
+            const lab = t.toLabId && targets.get(String(t.toLabId));
+            if (lab) {
+                r.refs = {};
+                for (const name of r.tests) {
+                    const lt = labTransfers.matchTest(lab, name);
+                    if (!lt) continue;
+                    const range = pickRange(lt.ranges, { gender: t.patientGender, age: t.patientAge });
+                    const text = lt.normalText || (range && range.min != null && range.max != null ? `${range.min} - ${range.max}` : '');
+                    if (lt.unit || text) r.refs[name] = { unit: lt.unit || '', range: text };
+                }
+            }
+            return r;
+        });
+        res.json({ success: true, data: { referrals, labs } });
     } catch (error) {
         console.error('App transfers error:', error);
         res.status(500).json({ success: false, message: 'Error loading transfers' });
+    }
+});
+
+// Delete a transfer this lab made (swipe in the tracking list). The patient's
+// order stays; a receiving lab on LabGo is told the sample was withdrawn.
+router.delete('/api/app/transfers/:id', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).json({ success: false, message: 'Not found' });
+        const t = await ExternalTransfer.findOne({ _id: req.params.id, labId: req.lab._id });
+        if (!t) return res.status(404).json({ success: false, message: 'Not found' });
+        await ExternalTransfer.deleteOne({ _id: t._id });
+        await require('../../models/Notification').deleteMany({ 'data.transferId': String(t._id) }).catch(() => {});
+        if (t.toLabId) {
+            await require('../../services/labNotify').notifyLab(t.toLabId, {
+                title: 'تم سحب عينة مرسلة',
+                body: `${req.lab.name} ألغى إرسال العينة ${t.trackingCode || t.sampleCode} (${t.patientName})`,
+                data: { type: 'transfer_withdrawn', sampleCode: t.trackingCode || t.sampleCode },
+            });
+        }
+        res.json({ success: true, data: { id: String(t._id) } });
+    } catch (error) {
+        console.error('Delete transfer error:', error);
+        res.status(500).json({ success: false, message: 'Error deleting the transfer' });
     }
 });
 

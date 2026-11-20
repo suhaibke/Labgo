@@ -107,7 +107,8 @@ List<ResultRow> resultRows(Patient p) {
           if (x.name == name) c = x;
         }
         // This order's own unit / range (a test sent to another lab) wins.
-        final own = p.resultMeta[t];
+        final ownRaw = p.resultMeta[t];
+        final own = ownRaw == null || (ownRaw.$1.trim().isEmpty && ownRaw.$2.trim().isEmpty) ? null : ownRaw;
         final ownRange = own == null ? null : RegExp(r'^\s*(-?\d+(?:\.\d+)?)\s*[-–—~]\s*(-?\d+(?:\.\d+)?)\s*$').firstMatch(own.$2);
         final row = own != null
             ? (ownRange == null ? null : RangeRow('0', '150', 'Y', 'Both', ownRange.group(1)!, ownRange.group(2)!))

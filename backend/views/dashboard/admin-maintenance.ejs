@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="<%= currentLang %>" dir="<%= direction %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>طلبات الصيانة - LabGo Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-nurses.css">
+    <style>
+        body { font-family: <%= font %>; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+        .card { background: #fff; border-radius: 16px; padding: 14px; border: 1px solid #eef0f3; }
+        .card.urgent { border-color: #C81E1E; box-shadow: 0 0 0 1px #C81E1E inset; }
+        .imgs { display: flex; gap: 6px; overflow-x: auto; margin: 8px 0; }
+        .imgs img { width: 96px; height: 96px; object-fit: cover; border-radius: 10px; cursor: zoom-in; }
+        .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #f1f2f4; }
+        .pill.open { background: #FFF0E6; color: #B93C00; }
+        .pill.in_progress { background: #EAF2FF; color: #1d4ed8; }
+        .pill.done { background: #E6F7ED; color: #0E7A3E; }
+        .pill.cancelled { background: #f1f2f4; color: #6b7280; }
+        .tag { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+        .urgent-tag { color: #C81E1E; font-size: 12px; font-weight: 700; }
+        .muted { color: #5b6170; font-size: 12px; }
+        .row { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+        .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+        .actions button { border: 0; border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 700; cursor: pointer; background: #f1f2f4; }
+        .actions button.ok { background: #0E7A3E; color: #fff; }
+        .actions button.go { background: #1d4ed8; color: #fff; }
+        .filters { display: flex; gap: 8px; margin: 0 0 14px; flex-wrap: wrap; }
+        .filters button { border: 1px solid #e5e7eb; background: #fff; border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 700; cursor: pointer; }
+        .filters button.on { background: #111; color: #fff; border-color: #111; }
+        p.msg { white-space: pre-wrap; margin: 6px 0; }
+        textarea { width: 100%; border: 1px solid #e5e7eb; border-radius: 12px; padding: 8px; font: inherit; }
+        .ltr { direction: ltr; unicode-bidi: isolate; }
+        .labno { font-family: ui-monospace, monospace; font-size: 11px; background: #f1f2f4; border-radius: 6px; padding: 1px 6px; }
+    </style>
+</head>
+<body>
+    <%- include('../partials/admin-navbar') %>
+    <main class="admin-dashboard">
+        <div class="nurse-management-container">
+            <div class="page-header">
+                <div class="header-left">
+                    <h1>طلبات الصيانة</h1>
+                    <p class="header-subtitle">طلبات المختبرات لصيانة المبنى والخدمات (كهرباء، سبلت، ماء…). تغيير الحالة أو الرد يصل للمختبر كإشعار.</p>
+                </div>
+                <div class="header-actions"><button class="modern-btn refresh-btn" onclick="load()"><i class="fas fa-sync-alt"></i><span>تحديث</span></button></div>
+            </div>
+            <div class="filters" id="filters">
+                <button data-s="" class="on">الكل</button>
+                <button data-s="open">جديد</button>
+                <button data-s="in_progress">قيد التنفيذ</button>
+                <button data-s="done">تم الإصلاح</button>
+                <button data-s="cancelled">ملغى</button>
+            </div>
+            <div class="cards" id="list"></div>
+        </div>
+    </main>
+    <script>
+        function token() { return localStorage.getItem('token') || (document.cookie.split('; ').find(r => r.startsWith('token=')) || '').split('=')[1]; }
+        const headers = () => ({ Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' });
+        const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';');
+        const day = (d) => d ? new Date(d).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+        const imgs = (list) => (list && list.length) ? '<div class="imgs">' + list.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt="صورة المشكلة"></a>`).join('') + '</div>' : '';
+        let filter = '';
+        document.querySelectorAll('#filters button').forEach((b) => b.addEventListener('click', () => {
+            document.querySelectorAll('#filters button').forEach((x) => x.classList.toggle('on', x === b));
+            filter = b.dataset.s; load();
+        }));
+
+        const CAT = {
+            electricity: ['fa-bolt', 'كهرباء'], ac: ['fa-snowflake', 'سبلت / تكييف'], plumbing: ['fa-droplet', 'ماء وصحيات'],
+            building: ['fa-building', 'بناء وأبواب'], furniture: ['fa-couch', 'أثاث'], internet: ['fa-wifi', 'إنترنت وكاميرات'],
+            cleaning: ['fa-broom', 'تنظيف'], other: ['fa-screwdriver-wrench', 'أخرى'],
+        };
+        const STATUS = { open: 'جديد', in_progress: 'قيد التنفيذ', done: 'تم الإصلاح', cancelled: 'ملغى' };
+        async function load() {
+            const res = await fetch('/api/admin/hub/maintenance' + (filter ? `?status=${filter}` : ''), { headers: headers() });
+            const data = await res.json();
+            const list = document.getElementById('list');
+            if (!data.success) { list.innerHTML = 'تعذر التحميل'; return; }
+            list.innerHTML = data.data.items.map((m) => {
+                const c = CAT[m.category] || CAT.other;
+                const lab = m.labId || {};
+                const live = m.status === 'open' || m.status === 'in_progress';
+                return `
+                <div class="card ${m.priority === 'urgent' && live ? 'urgent' : ''}">
+                    <div class="row"><span class="tag"><i class="fas ${c[0]}"></i> #${esc(m.requestNo)} · ${c[1]}</span><span class="pill ${m.status}">${STATUS[m.status] || m.status}</span></div>
+                    ${m.priority === 'urgent' ? '<div class="urgent-tag"><i class="fas fa-triangle-exclamation"></i> عاجل</div>' : ''}
+                    <div class="muted">${esc(lab.name || '—')} ${lab.labNo ? `<span class="labno ltr">L${esc(lab.labNo)}</span>` : ''} · ${esc(lab.city || '')} · <span class="ltr">${esc(lab.phone || '')}</span></div>
+                    <div class="muted">${esc(m.userId ? m.userId.name : '')} · <span class="ltr">${esc(m.userId ? m.userId.phone : '')}</span> · ${day(m.createdAt)}</div>
+                    ${m.location ? `<div><i class="fas fa-location-dot"></i> ${esc(m.location)}</div>` : ''}
+                    <p class="msg">${esc(m.description)}</p>
+                    ${imgs(m.images)}
+                    ${m.adminReply ? `<div class="muted">ردّك: ${esc(m.adminReply)}</div>` : ''}
+                    ${live ? `
+                    <textarea id="r-${m._id}" rows="2" placeholder="اكتب رداً يصل للمختبر (مثلاً: الفني يصل غداً 10 صباحاً)..."></textarea>
+                    <div class="actions">
+                        <button class="go" onclick="update('${m._id}','in_progress', true)"><i class="fas fa-truck"></i> إرسال فني</button>
+                        <button class="ok" onclick="update('${m._id}','done', true)"><i class="fas fa-check"></i> تم الإصلاح</button>
+                        <button onclick="update('${m._id}','', true)"><i class="fas fa-reply"></i> رد فقط</button>
+                        <button onclick="update('${m._id}','cancelled', false)">إلغاء</button>
+                    </div>` : ''}
+                </div>`;
+            }).join('') || '<p class="muted">لا توجد طلبات صيانة</p>';
+        }
+        async function update(id, status, withReply) {
+            const box = document.getElementById('r-' + id);
+            const reply = withReply && box ? box.value.trim() : '';
+            if (!status && !reply) { box && box.focus(); return; }
+            const body = {};
+            if (status) body.status = status;
+            if (reply) body.reply = reply;
+            await fetch(`/api/admin/hub/maintenance/${id}`, { method: 'PATCH', headers: headers(), body: JSON.stringify(body) });
+            load();
+        }
+        load();
+    </script>
+</body>
+</html>

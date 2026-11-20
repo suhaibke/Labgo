@@ -223,6 +223,7 @@ app.use(require('./routes/report-verify'));
 // Public result upload / label pages opened from the QR code on shipping labels
 app.use(require('./routes/transfer-upload'));
 app.use(require('./routes/receipt-result'));
+app.use(require('./routes/public-market'));
 app.use(require('./routes/market-share'));
 
 // Lab management routes (will be mounted after page routes)
@@ -351,7 +352,7 @@ app.get('/admin/banners', requireAdmin, (req, res) => {
 });
 
 // Marketplace review and support tickets
-for (const [path, view, page] of [['/admin/market', 'admin-market', 'market'], ['/admin/support', 'admin-support', 'support']]) {
+for (const [path, view, page] of [['/admin/market', 'admin-market', 'market'], ['/admin/support', 'admin-support', 'support'], ['/admin/maintenance', 'admin-maintenance', 'maintenance']]) {
   app.get(path, requireAdmin, (req, res) => {
     const currentLang = req.cookies?.lang || 'ar';
     res.render('dashboard/' + view, { page, user: req.user, currentLang, direction: ['ar', 'ku'].includes(currentLang) ? 'rtl' : 'ltr', font: currentLang === 'ar' ? 'Cairo, sans-serif' : 'Inter, sans-serif' });

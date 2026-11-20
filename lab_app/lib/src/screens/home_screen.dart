@@ -48,10 +48,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Tap(
-                    onTap: () {
-                      app.guest = false;
-                      app.logout();
-                    },
+                    onTap: app.leaveGuest,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,

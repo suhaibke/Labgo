@@ -737,6 +737,43 @@ Future<Uint8List> buildStatementPdf(AppState app, int period) async {
     return period == 0 ? hm : '${d.day}/${d.month} $hm';
   }
 
+  // The period split into rows: the 7 days of the week, every day of the
+  // month, or the 12 months of the year (the daily statement lists orders).
+  final dayNames = ar
+      ? (app.lang == 'ku'
+          ? ['دووشەممە', 'سێشەممە', 'چوارشەممە', 'پێنجشەممە', 'هەینی', 'شەممە', 'یەکشەممە']
+          : ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'])
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  final monthNames = ar
+      ? ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول']
+      : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  final buckets = <(String, DateTime, DateTime)>[
+    if (period == 1)
+      for (var i = 0; i < 7; i++)
+        () {
+          final d = from.add(Duration(days: i));
+          return ('${dayNames[d.weekday - 1]} ${d.day}/${d.month}', d, d.add(const Duration(days: 1)));
+        }(),
+    if (period == 2)
+      for (var i = 1; i <= DateTime(from.year, from.month + 1, 0).day; i++)
+        () {
+          final d = DateTime(from.year, from.month, i);
+          return ('${dayNames[d.weekday - 1]} ${d.day}/${d.month}', d, d.add(const Duration(days: 1)));
+        }(),
+    if (period == 3)
+      for (var m = 1; m <= 12; m++) (monthNames[m - 1], DateTime(from.year, m), DateTime(from.year, m + 1)),
+  ];
+  List<Patient> inBucket(DateTime a, DateTime b) =>
+      list.where((p) => !(p.createdAt ?? now).isBefore(a) && (p.createdAt ?? now).isBefore(b)).toList();
+  // Who still owes: patients, and companies / clinics (B2B) added up.
+  final debtors = list.where((p) => p.due > 0).toList();
+  final companyDebt = <String, (int, int)>{};
+  for (final p in debtors.where((p) => p.mode == 'B2B' && (p.company ?? '').trim().isNotEmpty)) {
+    final k = p.company!.trim();
+    final old = companyDebt[k] ?? (0, 0);
+    companyDebt[k] = (old.$1 + 1, old.$2 + p.due);
+  }
+
   final gross = list.fold<int>(0, (a, p) => a + p.gross);
   final discount = list.fold<int>(0, (a, p) => a + p.discount);
   final net = list.fold<int>(0, (a, p) => a + p.price);
@@ -807,6 +844,57 @@ Future<Uint8List> buildStatementPdf(AppState app, int period) async {
         ],
       ),
       pw.SizedBox(height: 14),
+      if (period > 0) ...[
+        t(period == 3 ? tr3('تفاصيل الأشهر', 'وردەکاری مانگەکان', 'By month') : tr3('تفاصيل الأيام', 'وردەکاری ڕۆژەکان', 'By day'), size: 11, bold: true),
+        pw.SizedBox(height: 6),
+        pw.Table(
+          border: pw.TableBorder.all(color: _line, width: .6),
+          columnWidths: widths([2.4, 1, 1.6, 1.4, 1.6, 1.6, 1.6]),
+          children: [
+            pw.TableRow(decoration: const pw.BoxDecoration(color: _soft), repeat: true, children: dir([
+              c(period == 3 ? tr3('الشهر', 'مانگ', 'Month') : tr3('اليوم', 'ڕۆژ', 'Day'), bold: true, color: _muted, size: 7.5),
+              c(tr3('الطلبات', 'داواکاری', 'Orders'), bold: true, color: _muted, size: 7.5),
+              c(tr3('المبلغ', 'بڕ', 'Amount'), bold: true, color: _muted, size: 7.5),
+              c(tr3('الخصم', 'داشکاندن', 'Discount'), bold: true, color: _muted, size: 7.5),
+              c(tr3('الصافي', 'خاوێن', 'Net'), bold: true, color: _muted, size: 7.5),
+              c(tr3('المستلم', 'وەرگیراو', 'Collected'), bold: true, color: _muted, size: 7.5),
+              c(tr3('الديون', 'قەرز', 'Owed'), bold: true, color: _muted, size: 7.5),
+            ])),
+            for (final b in buckets)
+              () {
+                final rows = inBucket(b.$2, b.$3);
+                final g = rows.fold<int>(0, (a, p) => a + p.gross), dsc = rows.fold<int>(0, (a, p) => a + p.discount);
+                final n = rows.fold<int>(0, (a, p) => a + p.price), pd = rows.fold<int>(0, (a, p) => a + p.collected);
+                final du = rows.fold<int>(0, (a, p) => a + p.due);
+                final future = b.$2.isAfter(now);
+                final quiet = rows.isEmpty;
+                PdfColor tone(PdfColor x) => quiet ? _muted : x;
+                return pw.TableRow(
+                  decoration: future ? const pw.BoxDecoration(color: PdfColor.fromInt(0xFFFAFAFA)) : null,
+                  children: dir([
+                    c(b.$1, bold: !quiet, color: tone(_ink)),
+                    c(quiet ? '—' : '${rows.length}', color: tone(_ink)),
+                    c(quiet ? '—' : _money(g), color: tone(_ink)),
+                    c(dsc > 0 ? '-${_money(dsc)}' : '—', color: dsc > 0 ? const PdfColor.fromInt(0xFFDC2626) : _muted),
+                    c(quiet ? '—' : _money(n), bold: !quiet, color: tone(_ink)),
+                    c(quiet ? '—' : _money(pd), color: tone(const PdfColor.fromInt(0xFF16A34A))),
+                    c(du > 0 ? _money(du) : '—', bold: du > 0, color: du > 0 ? const PdfColor.fromInt(0xFFD97706) : _muted),
+                  ]),
+                );
+              }(),
+            pw.TableRow(decoration: const pw.BoxDecoration(color: _soft), children: dir([
+              c(tr3('المجموع', 'کۆ', 'Total'), bold: true),
+              c('${list.length}', bold: true),
+              c(_money(gross), bold: true),
+              c(discount > 0 ? '-${_money(discount)}' : '—', bold: true, color: discount > 0 ? const PdfColor.fromInt(0xFFDC2626) : _muted),
+              c(_money(net), bold: true, color: accent),
+              c(_money(paid), bold: true, color: const PdfColor.fromInt(0xFF16A34A)),
+              c(unpaid > 0 ? _money(unpaid) : '—', bold: true, color: unpaid > 0 ? const PdfColor.fromInt(0xFFD97706) : _muted),
+            ])),
+          ],
+        ),
+      ],
+      if (period == 0) ...[
       t(tr3('تفاصيل الطلبات', 'وردەکاری داواکارییەکان', 'Orders'), size: 11, bold: true),
       pw.SizedBox(height: 6),
       if (list.isEmpty)
@@ -858,6 +946,76 @@ Future<Uint8List> buildStatementPdf(AppState app, int period) async {
             ])),
           ],
         ),
+      ],
+      // Who still owes, under the table: companies / clinics, then patients.
+      pw.SizedBox(height: 16),
+      t(tr3('الديون المستحقة', 'قەرزە ماوەکان', 'Amounts owed'), size: 11, bold: true),
+      pw.SizedBox(height: 6),
+      if (debtors.isEmpty)
+        pw.Padding(padding: const pw.EdgeInsets.symmetric(vertical: 8), child: t(tr3('لا توجد ديون في هذه الفترة', 'هیچ قەرزێک نییە', 'Nothing owed in this period'), size: 9.5, color: _muted))
+      else ...[
+        if (companyDebt.isNotEmpty) ...[
+          t(tr3('الجهات (شركات / عيادات)', 'لایەنەکان', 'Companies / clinics'), size: 9, bold: true, color: _muted),
+          pw.SizedBox(height: 4),
+          pw.Table(
+            border: pw.TableBorder.all(color: _line, width: .6),
+            columnWidths: widths([4, 1.4, 2]),
+            children: [
+              pw.TableRow(decoration: const pw.BoxDecoration(color: _soft), children: dir([
+                c(tr3('الجهة', 'لایەن', 'Company / clinic'), bold: true, color: _muted, size: 7.5),
+                c(tr3('الطلبات', 'داواکاری', 'Orders'), bold: true, color: _muted, size: 7.5),
+                c(tr3('المستحق', 'قەرز', 'Owed'), bold: true, color: _muted, size: 7.5),
+              ])),
+              for (final e in (companyDebt.entries.toList()..sort((a, b) => b.value.$2.compareTo(a.value.$2))))
+                pw.TableRow(children: dir([
+                  c(e.key, bold: true),
+                  c('${e.value.$1}'),
+                  c('${_money(e.value.$2)} $cur', bold: true, color: const PdfColor.fromInt(0xFFD97706)),
+                ])),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+        ],
+        t(tr3('المرضى', 'نەخۆشەکان', 'Patients'), size: 9, bold: true, color: _muted),
+        pw.SizedBox(height: 4),
+        pw.Table(
+          border: pw.TableBorder.all(color: _line, width: .6),
+          columnWidths: widths([0.6, 2.6, 1.5, 1.3, 1.5, 1.5, 1.5, 1.6]),
+          children: [
+            pw.TableRow(decoration: const pw.BoxDecoration(color: _soft), repeat: true, children: dir([
+              c('#', bold: true, color: _muted, size: 7.5),
+              c(tr3('المريض', 'نەخۆش', 'Patient'), bold: true, color: _muted, size: 7.5),
+              c(tr3('رقم المريض', 'ژمارەی نەخۆش', 'Patient ID'), bold: true, color: _muted, size: 7.5),
+              c(tr3('الوصل', 'پسوڵە', 'Receipt'), bold: true, color: _muted, size: 7.5),
+              c(tr3('التاريخ', 'بەروار', 'Date'), bold: true, color: _muted, size: 7.5),
+              c(tr3('الصافي', 'خاوێن', 'Net'), bold: true, color: _muted, size: 7.5),
+              c(tr3('المدفوع', 'دراو', 'Paid'), bold: true, color: _muted, size: 7.5),
+              c(tr3('المتبقي', 'ماوە', 'Owed'), bold: true, color: _muted, size: 7.5),
+            ])),
+            for (var i = 0; i < debtors.length; i++)
+              pw.TableRow(children: dir([
+                c('${i + 1}', color: _muted),
+                c([debtors[i].name, if (debtors[i].phone.isNotEmpty) debtors[i].phone, if ((debtors[i].company ?? '').isNotEmpty) debtors[i].company!].join('\n'), bold: true),
+                c(debtors[i].permanent.isEmpty ? '—' : debtors[i].permanent),
+                c(debtors[i].code),
+                c(debtors[i].createdAt == null ? '—' : day(debtors[i].createdAt!)),
+                c(_money(debtors[i].price)),
+                c(debtors[i].collected > 0 ? _money(debtors[i].collected) : '—', color: _muted),
+                c(_money(debtors[i].due), bold: true, color: const PdfColor.fromInt(0xFFD97706)),
+              ])),
+            pw.TableRow(decoration: const pw.BoxDecoration(color: _soft), children: dir([
+              c(''),
+              c('${debtors.length} ${tr3('مريض', 'نەخۆش', 'patients')}', bold: true),
+              c(''),
+              c(''),
+              c(''),
+              c(''),
+              c(tr3('المجموع', 'کۆ', 'Total'), bold: true),
+              c('${_money(unpaid)} $cur', bold: true, color: const PdfColor.fromInt(0xFFD97706)),
+            ])),
+          ],
+        ),
+      ],
       pw.SizedBox(height: 6),
       t('${tr3('المبالغ بالدينار العراقي', 'بڕەکان بە دیناری عێراقی', 'Amounts in Iraqi dinar')} ($cur)', size: 7.5, color: _muted),
     ],

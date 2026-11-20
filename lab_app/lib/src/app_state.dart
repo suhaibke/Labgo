@@ -646,6 +646,7 @@ class AppState extends ChangeNotifier {
       if (type.startsWith('market_') || type.startsWith('auction_')) return 'store';
       if (type == 'support_reply') return 'support';
       if (type == 'maintenance_update') return 'maintenance';
+      if (type.startsWith('waste')) return 'waste';
       // A result of a sample sent out: the patient's order, or the tracking list.
       if (type == 'transfer_result') {
         final orderId = (n['data'] as Map?)?['orderId'];
@@ -663,6 +664,8 @@ class AppState extends ChangeNotifier {
     notificationsOpen = false;
     selectedPatient = null;
     wastePage = false;
+    maintenancePage = false;
+    settingsPage = null;
     switch (target) {
       case 'receive':
         tab = 'send';
@@ -683,7 +686,7 @@ class AppState extends ChangeNotifier {
         loadSupport();
       case 'maintenance':
         tab = 'profile';
-        openSection = 'maintenance';
+        maintenancePage = true;
         loadMaintenance();
       case final t when t.startsWith('patient:'):
         final id = t.substring(8);
@@ -926,15 +929,60 @@ class AppState extends ChangeNotifier {
   }
 
   void enterApp({bool asGuest = false}) {
-    if (asGuest) guest = true;
+    guest = asGuest;
+    if (asGuest) _clearForGuest();
     auth = 'app';
     tab = 'home';
     notifyListeners();
-    _scheduleDemoNotification();
+    if (!asGuest) _scheduleDemoNotification();
+  }
+
+  /// A guest sees no lab's data: empty lists and a neutral header.
+  void _clearForGuest() {
+    patients = [];
+    referrals = [];
+    receivedSamples = [];
+    incomingAll = [];
+    wasteTransfers = [];
+    users = [];
+    productOrders = [];
+    supplyOrders = [];
+    maintenanceRequests = [];
+    supportTickets = [];
+    storeOrders = [];
+    storeIncoming = [];
+    serverNotifs = [];
+    selectedPatient = null;
+    labDisplayName = 'LabGo';
+    labName = 'LabGo';
+    doctorName = tr('ضيف', 'میوان', 'Guest');
+    profileInitial = 'G';
+    labPhone = '';
+    labAddress = '';
+    labEmail = '';
+    labLogo = null;
+    userPhoto = null;
+  }
+
+  /// Guest actions that need a lab account: say so and offer sign-in.
+  bool needsAccount() {
+    if (!guest) return false;
+    toast(tr('سجّل الدخول بحساب مختبر للمتابعة', 'بچۆ ژوورەوە بە هەژماری تاقیگە', 'Sign in with a lab account to continue'));
+    return true;
+  }
+
+  /// "Sign in" from guest mode: back to the login screen, guest view cleared.
+  void leaveGuest() {
+    guest = false;
+    storeOpen = false;
+    auth = 'login';
+    tab = 'home';
+    notifyListeners();
   }
 
   void logout() {
     if (LabApi.enabled) LabApi.instance.logout();
+    guest = false;
     auth = 'login';
     tab = 'home';
     notifyListeners();
@@ -970,7 +1018,7 @@ class AppState extends ChangeNotifier {
   Future<void> loadMarket() async {
     if (!LabApi.enabled) return;
     try {
-      final data = await LabApi.instance.market();
+      final data = guest || !LabApi.instance.signedIn ? await LabApi.instance.publicMarket() : await LabApi.instance.market();
       marketItems = [for (final j in (data['items'] as List? ?? const [])) MarketItem.fromJson(Map<String, dynamic>.from(j as Map))];
       final slides = [for (final b in (data['banners'] as List? ?? const [])) Map<String, dynamic>.from(b as Map)].where((b) => '${b['imageUrl'] ?? ''}'.isNotEmpty).toList();
       storeBanners = [for (final b in slides) '${b['imageUrl']}'];
@@ -982,6 +1030,7 @@ class AppState extends ChangeNotifier {
 
   /// A new listing waits for the LabGo admin before other labs see it.
   Future<bool> addListing(MarketItem draft, List<Uint8List> images) async {
+    if (needsAccount()) return false;
     try {
       if (LabApi.enabled) {
         final created = await LabApi.instance.addListing(draft.toFields(), images);
@@ -998,6 +1047,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<MarketItem?> placeBid(MarketItem item, int amount) async {
+    if (needsAccount()) return null;
     if (!LabApi.enabled) {
       toast(tr('المزايدة تعمل عند الاتصال بالسيرفر', 'مزایدە بە سێرڤەر کار دەکات', 'Bidding works when connected to the server'));
       return null;
@@ -1027,6 +1077,7 @@ class AppState extends ChangeNotifier {
   /// Buys a product (or asks to buy a lab for sale). The order goes to the
   /// selling lab, which is notified and moves it through the steps.
   Future<bool> placeStoreOrder(MarketItem item, {int quantity = 1, String address = '', required String phone, String note = ''}) async {
+    if (needsAccount()) return false;
     try {
       if (LabApi.enabled) {
         final saved = await LabApi.instance.orderListing(item.id, {'quantity': quantity, 'address': address, 'phone': phone, 'note': note});
@@ -1100,6 +1151,8 @@ class AppState extends ChangeNotifier {
     storeOpen = false;
     selectedPatient = null;
     wastePage = false;
+    maintenancePage = false;
+    settingsPage = null;
     tab = id;
     notifyListeners();
     // Pick up changes made on the web dashboard.
@@ -1284,7 +1337,50 @@ class AppState extends ChangeNotifier {
   Patient? selectedPatient;
   Map<String, String> draft = {};
 
+  /// Date filter for Results: 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'day' (resultsDay).
+  String resultsDateKey = 'all';
+  DateTime? resultsDay;
+  /// The date chips show only after tapping the calendar icon.
+  bool resultsDateOpen = false;
+
+  void toggleResultsDate() {
+    resultsDateOpen = !resultsDateOpen;
+    notifyListeners();
+  }
+
+  void setResultsDate(String key, {DateTime? day}) {
+    resultsDateKey = key;
+    resultsDay = day;
+    notifyListeners();
+  }
+
+  /// [start, end) of the chosen date filter, or null for all dates.
+  (DateTime, DateTime)? get resultsDateRange {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    switch (resultsDateKey) {
+      case 'today':
+        return (today, today.add(const Duration(days: 1)));
+      case 'yesterday':
+        return (today.subtract(const Duration(days: 1)), today);
+      case 'week':
+        return (today.subtract(const Duration(days: 6)), today.add(const Duration(days: 1)));
+      case 'month':
+        return (DateTime(now.year, now.month), DateTime(now.year, now.month + 1));
+      case 'day':
+        final d = resultsDay ?? today;
+        final start = DateTime(d.year, d.month, d.day);
+        return (start, start.add(const Duration(days: 1)));
+    }
+    return null;
+  }
+
   List<Patient> get resultsList => patients.where((e) {
+    final range = resultsDateRange;
+    if (range != null) {
+      final at = e.createdAt ?? DateTime.now(); // demo patients count as today's
+      if (at.isBefore(range.$1) || !at.isBefore(range.$2)) return false;
+    }
     if (resultsFilter == 'Ready' && e.status == 'Pending') return false;
     if (resultsFilter == 'Pending' && e.status != 'Pending') return false;
     if (resultsSearch.isNotEmpty) {
@@ -1375,6 +1471,13 @@ class AppState extends ChangeNotifier {
       resultFiles[p.id] = (name, bytes);
       notifyListeners();
       if (LabApi.enabled) {
+        if (p.id.startsWith('sent:')) {
+          await LabApi.instance.uploadTransferResult(p.id.substring(5), bytes, name);
+          await _loadTransfers();
+          toast(tr('تم إرفاق ملف النتيجة ✓', 'فایلی ئەنجام هاوپێچکرا ✓', 'Result file attached ✓'));
+          openCropper(p.id);
+          return;
+        }
         final url = await LabApi.instance.uploadResultFile(p.id, bytes, name);
         if (url == null) throw StateError('no url');
         _uploadedUrls[p.id] = url;
@@ -1643,18 +1746,131 @@ class AppState extends ChangeNotifier {
   (String, String) sentDefaults(String test) {
     final p = selectedPatient;
     if (p == null) return ('', '');
+    var unit = '', range = '';
     for (final r in resultRows(p.copyWith(resultMeta: const {}))) {
-      if (r.test == test) return (r.units, r.range.contains('—') ? '' : r.range);
+      if (r.test == test) {
+        unit = r.units;
+        range = r.range.contains('—') ? '' : r.range;
+      }
     }
-    return ('', '');
+    final ref = sentTest(p, test)?.refs[test];
+    return (unit.isNotEmpty ? unit : ref?.$1 ?? '', range.isNotEmpty ? range : ref?.$2 ?? '');
+  }
+
+  /// Before saving: each sent test keeps the unit / range shown in its fields
+  /// (prefilled from a catalog) even when they were not edited.
+  void _fillSentMeta(Patient p) {
+    for (final t in p.tests) {
+      if (sentTest(p, t) == null || draftMeta.containsKey(t)) continue;
+      final m = sentMeta(t);
+      if (m.$1.isNotEmpty || m.$2.isNotEmpty) draftMeta = {...draftMeta, t: m};
+    }
+  }
+
+  /// This order's own unit / range for a sent test, empty parts filled from the defaults.
+  (String, String) sentMeta(String test) {
+    final own = draftMeta[test] ?? selectedPatient?.resultMeta[test];
+    final d = sentDefaults(test);
+    return ((own?.$1 ?? '').isNotEmpty ? own!.$1 : d.$1, (own?.$2 ?? '').isNotEmpty ? own!.$2 : d.$2);
   }
 
   /// Where a test of a patient's order was sent, if it was.
   Referral? sentTest(Patient p, String test) {
     for (final r in referrals) {
+      if (p.id == 'sent:${r.id}') return r;
       if (r.orderId == p.id && (r.tests.contains(test) || r.test.split(', ').contains(test))) return r;
     }
     return null;
+  }
+
+  /// "Enter result" on a sent sample: straight to result entry in Results —
+  /// the patient's order, a patient with the same name, or the sample itself.
+  void openSentInResults(Referral r) {
+    final tests = r.tests.isNotEmpty ? r.tests : r.test.split(RegExp('[,،]')).map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+    Patient? p = patients.where((x) => x.id == r.orderId).firstOrNull;
+    p ??= patients
+        .where((x) => x.status != 'Completed' && x.name.trim().toLowerCase() == r.patient.trim().toLowerCase() && x.tests.any(tests.contains))
+        .firstOrNull;
+    p ??= Patient(
+      id: 'sent:${r.id}',
+      name: r.patient,
+      age: r.age.isEmpty ? '—' : '${r.age}Y',
+      gender: r.gender == 'Female' ? 'Female' : 'Male',
+      phone: '',
+      tests: tests,
+      sample: 'Blood',
+      urgency: 'Normal',
+      notes: '',
+      status: r.done ? 'Completed' : 'Pending',
+      time: r.lab,
+      price: 0,
+      doctor: '',
+      mode: 'B2B',
+      company: r.lab,
+      results: {for (final v in r.results) v.test: v.value},
+      resultMeta: {for (final v in r.results) v.test: (v.unit, v.range)},
+      permanent: r.tracking,
+      createdAt: r.sentAt,
+    );
+    openPatient(p);
+  }
+
+  /// Saves (and with [approve], completes) a sent sample that has no order.
+  Future<bool> _saveSentPatient(Patient sp, {required bool approve}) async {
+    final r = referrals.where((x) => sp.id == 'sent:${x.id}').firstOrNull;
+    if (r == null) return false;
+    final rows = [
+      for (final t in sp.tests)
+        {
+          'test': t,
+          'value': draft[t] ?? sp.results[t] ?? '',
+          'unit': (draftMeta[t] ?? sp.resultMeta[t])?.$1 ?? '',
+          'range': (draftMeta[t] ?? sp.resultMeta[t])?.$2 ?? '',
+        },
+    ];
+    final filled = rows.where((x) => x['value']!.trim().isNotEmpty).toList();
+    if (filled.isEmpty && !resultFiles.containsKey(sp.id)) {
+      toast(tr('اكتب نتيجة واحدة على الأقل أو أرفق ملفاً', 'لانیکەم یەک ئەنجام بنووسە', 'Type at least one result or attach a file'));
+      return false;
+    }
+    if (approve && filled.length < rows.length && !resultFiles.containsKey(sp.id)) {
+      toast(tr('أكمل نتائج كل التحاليل أولاً', 'سەرەتا هەموو ئەنجامەکان پڕ بکەرەوە', 'Fill in every result first'));
+      return false;
+    }
+    try {
+      if (LabApi.enabled && filled.isNotEmpty) {
+        await LabApi.instance.saveTransferResults(r.id, [
+          for (final x in filled) {'testName': x['test']!, 'value': x['value']!, 'unit': x['unit']!, 'range': x['range']!},
+        ]);
+      }
+      if (LabApi.enabled) await _loadTransfers();
+      final updated = sp.copyWith(
+        results: {for (final x in filled) x['test']!: x['value']!},
+        resultMeta: {for (final x in rows) x['test']!: (x['unit']!, x['range']!)},
+        status: approve || filled.length == rows.length ? 'Completed' : sp.status,
+      );
+      selectedPatient = updated;
+      resultsLocked = true;
+      if (!LabApi.enabled) {
+        referrals = [
+          for (final x in referrals)
+            x.id == r.id
+                ? Referral(
+                    id: x.id, patient: x.patient, test: x.test, lab: x.lab, status: 'Completed', eta: x.eta, tracking: x.tracking, step: 3,
+                    gender: x.gender, age: x.age, orderId: x.orderId, onLabGo: x.onLabGo, tests: x.tests, sentAt: x.sentAt,
+                    results: [for (final v in filled) SentResult(v['test']!, v['value']!, v['unit']!, v['range']!, '')],
+                  )
+                : x,
+        ];
+      }
+      toast(tr('تم حفظ نتيجة العينة المرسلة ✓', 'ئەنجامی نموونەی نێردراو پاشەکەوت کرا ✓', 'Result of the sent sample saved ✓'));
+      notifyListeners();
+      if (approve) openPrint(updated, const {});
+      return true;
+    } catch (e) {
+      toast(e is ApiError ? e.message : tr('تعذر الحفظ، تحقق من الاتصال', 'پاشەکەوت نەکرا', 'Could not save, check the connection'));
+      return false;
+    }
   }
 
   void setDraft(String test, String value) {
@@ -1665,6 +1881,11 @@ class AppState extends ChangeNotifier {
   void saveResults() {
     final sp = selectedPatient;
     if (sp == null) return;
+    _fillSentMeta(sp);
+    if (sp.id.startsWith('sent:')) {
+      _saveSentPatient(sp, approve: false);
+      return;
+    }
     if (LabApi.enabled) {
       // Only what changed here, so values entered on the web meanwhile stay.
       final metaChanged = {
@@ -1861,6 +2082,15 @@ class AppState extends ChangeNotifier {
   Future<void> approveResultsFromDetail() async {
     final p = selectedPatient;
     if (p == null || approving) return;
+    _fillSentMeta(p);
+    if (p.id.startsWith('sent:')) {
+      approving = true;
+      notifyListeners();
+      await _saveSentPatient(p, approve: true);
+      approving = false;
+      notifyListeners();
+      return;
+    }
     final values = <String, String>{...p.results, ...draft};
     if (!resultFiles.containsKey(p.id) && p.tests.any((t) => (values[t] ?? '').trim().isEmpty)) {
       toast(tr('أكمل نتائج كل التحاليل أولاً', 'سەرەتا هەموو ئەنجامەکان پڕ بکەرەوە', 'Fill in every result first'));
@@ -2541,6 +2771,10 @@ class AppState extends ChangeNotifier {
         ],
         resultFile: '${r['resultFile'] ?? ''}',
         sentAt: DateTime.tryParse('${r['sentAt'] ?? ''}'),
+        refs: {
+          for (final e in ((r['refs'] ?? {}) as Map).entries)
+            '${e.key}': ('${(e.value as Map)['unit'] ?? ''}', '${(e.value as Map)['range'] ?? ''}'),
+        },
       );
 
   // ---- tracking: search, and results of sent samples -------------------------
@@ -2576,6 +2810,20 @@ class AppState extends ChangeNotifier {
       if (r.orderId == orderId) return r;
     }
     return null;
+  }
+
+  /// Swipe on a tracking card: deletes the transfer (the patient's order stays).
+  Future<bool> deleteReferral(Referral r) async {
+    try {
+      if (LabApi.enabled && !r.id.startsWith('seed')) await LabApi.instance.deleteTransfer(r.id);
+      referrals = referrals.where((x) => x.id != r.id).toList();
+      toast(tr('تم حذف الإرسال ${r.tracking}', 'ناردن سڕایەوە', 'Transfer ${r.tracking} deleted'));
+      notifyListeners();
+      return true;
+    } catch (e) {
+      toast(e is ApiError ? e.message : tr('تعذر الحذف، تحقق من الاتصال', 'نەسڕایەوە', 'Could not delete, check the connection'));
+      return false;
+    }
   }
 
   /// The results sheet of a sent sample.
@@ -2806,6 +3054,29 @@ class AppState extends ChangeNotifier {
   // settings (design: lr, k0, t0, e0, bl, gi, pz, zm, Fr)
   String? openSection;
   bool wastePage = false;
+  /// Settings → Maintenance request opens as its own page.
+  bool maintenancePage = false;
+  /// Settings sections that open as their own page: usersRoles, tests, packages, labData.
+  String? settingsPage;
+  static const pageSections = {'usersRoles', 'tests', 'packages', 'labData', 'reports'};
+  /// Search on the Tests and Packages pages.
+  String settingsSearch = '';
+
+  void openSettingsPage(String? id) {
+    settingsPage = id;
+    settingsSearch = '';
+    notifyListeners();
+  }
+
+  void setSettingsSearch(String v) {
+    settingsSearch = v;
+    notifyListeners();
+  }
+
+  bool settingsMatch(Iterable<String> fields) {
+    final q = settingsSearch.trim().toLowerCase();
+    return q.isEmpty || fields.any((f) => f.toLowerCase().contains(q));
+  }
   bool notificationsOn = true;
   bool profileEditOpen = false;
   List<ManagedUser> users = List.of(kUsersSeed);

@@ -30,7 +30,7 @@ const RULES = [
     [/^\/api\/app\/lab$/, ['settings']],
     [/^\/api\/app\/orders\/[^/]+\/pay$/, ['patients', 'finance']],
     [/^\/api\/app\/orders\/[^/]+(\/patient)?$/, ['patients']],
-    [/^\/api\/app\/transfers(\/[^/]+\/results)?$/, ['patients', 'results']],
+    [/^\/api\/app\/transfers(\/[^/]+(\/results)?)?$/, ['patients', 'results']],
     [/^\/(api\/)?results\/?$/, ['results']],
     [/^\/profile\/?$/, 'any'],
     [/^\/api\/user\/profile$/, 'any'],
