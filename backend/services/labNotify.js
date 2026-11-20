@@ -19,12 +19,27 @@ async function labUserIds(labId) {
  * @param n      { title, body, data } — data.type e.g. 'transfer_sent'
  * Never throws: a notification failure must not break the action itself.
  */
+// Push never blocks or breaks the action that triggered it.
+function pushAll(userIds, title, body, data) {
+    let fcm;
+    try {
+        fcm = require('./fcmService');
+    } catch (error) {
+        return; // no Firebase key on this server (local dev)
+    }
+    for (const id of userIds) {
+        fcm.pushToUser(id, title, body, data).catch((error) => console.warn('Lab push failed:', error.message));
+    }
+}
+
 async function notifyLab(labId, { title, body, data = {} }) {
     try {
         if (!labId) return 0;
         const ids = await labUserIds(labId);
         if (!ids.length) return 0;
         await Notification.insertMany(ids.map((userId) => ({ userId, title, body, data: { audience: 'lab', ...data } })));
+        // Also as a push to the phones of the lab's people (when the lab app registered them).
+        pushAll(ids, title, body, { audience: 'lab', ...data });
         return ids.length;
     } catch (error) {
         console.error('Lab notification error:', error);

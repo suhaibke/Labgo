@@ -434,7 +434,7 @@ class _EntranceState extends State<Entrance>
   }
 }
 
-/// Back link (`flex items-center gap-1 text-[13px] font-bold text-[var(--muted)] py-1`).
+/// Back button: an arrow inside a circle, the same as the store's.
 class BackLink extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -443,26 +443,18 @@ class BackLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pal = context.pal;
-    return Tap(
-      onTap: onTap,
-      scale: .95,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LIcon(
-              'ArrowLeft',
-              size: 15,
-              color: pal.muted,
-              flipX: context.app.rtl,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: ts(context, 13, weight: w700, color: pal.muted),
-            ),
-          ],
+    return Semantics(
+      button: true,
+      label: label,
+      child: Tap(
+        onTap: onTap,
+        scale: .9,
+        child: Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: pal.chipBg, shape: BoxShape.circle, border: Border.all(color: pal.cardBorder)),
+          child: LIcon('ArrowLeft', size: 17, color: pal.ink, flipX: context.app.rtl),
         ),
       ),
     );

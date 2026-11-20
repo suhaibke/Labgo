@@ -178,32 +178,7 @@ class PrintScreen extends StatelessWidget {
           children: [
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: Tap(
-                onTap: app.closePrint,
-                scale: .95,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 4,
-                    horizontal: 4,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      LIcon(
-                        'ArrowLeft',
-                        size: 15,
-                        color: pal.muted,
-                        flipX: app.rtl,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        backLabel,
-                        style: ts(context, 13, weight: w700, color: pal.muted),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              child: BackLink(label: backLabel, onTap: app.closePrint),
             ),
             Center(
               child: ConstrainedBox(

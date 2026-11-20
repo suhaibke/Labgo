@@ -161,6 +161,10 @@ class LabApi {
 
   Future<void> updateProfileName(String name) => _send('PUT', '/api/auth/update-profile', {'name': name});
 
+  /// This phone's push token, so the server can notify it.
+  Future<void> registerPushToken(String token, String platform) =>
+      _send('POST', '/api/notifications/register-token', {'fcmToken': token, 'platform': platform});
+
   /// Deletes a transfer this lab made.
   Future<void> deleteTransfer(String id) => _send('DELETE', '/lab/api/app/transfers/$id');
 

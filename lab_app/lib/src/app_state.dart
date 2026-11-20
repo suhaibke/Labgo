@@ -16,6 +16,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'api.dart';
 import 'catalog_data.dart';
 import 'models.dart';
+import 'push.dart';
 import 'report_pdf.dart';
 import 'results_logic.dart';
 import 'screens/store_screen.dart';
@@ -124,6 +125,7 @@ class AppState extends ChangeNotifier {
       auth = 'app';
       tab = 'home';
       notifyListeners();
+      LabPush.start(this);
     } catch (_) {
       await LabApi.instance.logout();
     }
@@ -142,6 +144,7 @@ class AppState extends ChangeNotifier {
       await LabApi.instance.login(id, password);
       await _loadFromServer();
       enterApp();
+      LabPush.start(this);
     } catch (e) {
       if (e is ApiError && e.code == 'labPending') {
         await LabApi.instance.logout();
@@ -546,7 +549,13 @@ class AppState extends ChangeNotifier {
       toast(tr('استلم العينة أولاً', 'سەرەتا نموونەکە وەربگرە', 'Receive the sample first'));
       return;
     }
-    openPatient(Patient(
+    openPatient(incomingPatient(r));
+  }
+
+  /// A received B2B sample as a Results row: values, printing and sending back
+  /// work on it directly, with no new registration.
+  Patient incomingPatient(ReceivedSample r) {
+    return (Patient(
       id: 'tr:${r.id}',
       name: r.patient,
       age: r.age.isEmpty ? '—' : r.age,
@@ -1151,6 +1160,7 @@ class AppState extends ChangeNotifier {
   }
 
   void logout() {
+    LabPush.stop();
     if (LabApi.enabled) LabApi.instance.logout();
     guest = false;
     auth = 'login';
@@ -1547,7 +1557,22 @@ class AppState extends ChangeNotifier {
     return null;
   }
 
-  List<Patient> get resultsList => patients.where((e) {
+  /// Results: the lab's own patients plus the B2B samples it received.
+  List<Patient> get _resultsSource {
+    final received = [for (final r in receivedSamples) if (r.state != 'on_the_way') incomingPatient(r)];
+    if (received.isEmpty) return patients;
+    // Newest first; ties keep their order (List.sort is not stable).
+    final all = [...patients, ...received];
+    final now = DateTime.now();
+    final idx = {for (var i = 0; i < all.length; i++) all[i]: i};
+    all.sort((a, b) {
+      final c = (b.createdAt ?? now).compareTo(a.createdAt ?? now);
+      return c != 0 ? c : idx[a]!.compareTo(idx[b]!);
+    });
+    return all;
+  }
+
+  List<Patient> get resultsList => _resultsSource.where((e) {
     final range = resultsDateRange;
     if (range != null) {
       final at = e.createdAt ?? DateTime.now(); // demo patients count as today's
@@ -3241,7 +3266,7 @@ class AppState extends ChangeNotifier {
   bool maintenancePage = false;
   /// Settings sections that open as their own page: usersRoles, tests, packages, labData.
   String? settingsPage;
-  static const pageSections = {'usersRoles', 'tests', 'packages', 'labData', 'reports'};
+  static const pageSections = {'usersRoles', 'financial', 'tests', 'packages', 'labData', 'reports'};
   /// Search on the Tests and Packages pages.
   String settingsSearch = '';
 

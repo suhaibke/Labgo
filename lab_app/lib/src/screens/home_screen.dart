@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../app_state.dart';
+import '../insights.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../ui.dart';
@@ -605,13 +607,15 @@ class _StatsCardState extends State<_StatsCard>
           ],
         );
       case 1:
-        const bars = [32, 38, 29, 41, 45, 39, 48, 52, 47, 68, 55, 58];
+        final mBars = app.monthlyBars;
+        final mPeak = app.peakIndex(mBars);
+        final mMax = mBars.fold<int>(1, (a, b) => b.count > a ? b.count : a);
         body = Column(
           children: [
             _headerRow(
               context,
               _title(context, d('monthlyReports')),
-              _faint(context, d('totalReports')),
+              _faint(context, app.tr('آخر 12 شهراً', '١٢ مانگ', 'Last 12 months')),
             ),
             const SizedBox(height: 10),
             SizedBox(
@@ -621,9 +625,9 @@ class _StatsCardState extends State<_StatsCard>
                   Expanded(
                     child: _bigStat(
                       context,
-                      d('bestMonth'),
-                      '512',
-                      d('monthlyReports'),
+                      app.tr('هذا الشهر', 'ئەم مانگە', 'This month'),
+                      '${mBars.last.count}',
+                      app.tr('مريض', 'نەخۆش', 'patients'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -633,13 +637,13 @@ class _StatsCardState extends State<_StatsCard>
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          for (var i = 0; i < bars.length; i++) ...[
+                          for (var i = 0; i < mBars.length; i++) ...[
                             if (i > 0) const SizedBox(width: 4),
                             Expanded(
                               child: Container(
-                                height: bars[i] / 68 * 84,
+                                height: 4 + mBars[i].count / mMax * 80,
                                 decoration: BoxDecoration(
-                                  color: i == 9 ? pal.accent : pal.track,
+                                  color: i == mPeak ? pal.accent : pal.track,
                                   borderRadius: const BorderRadius.vertical(
                                     top: Radius.circular(6),
                                   ),
@@ -656,10 +660,9 @@ class _StatsCardState extends State<_StatsCard>
             ),
             const SizedBox(height: 10),
             _pills(context, [
-              d('bestMonth'),
-              d('totalReports'),
-              d('growthText'),
-            ], 1),
+              app.bestMonthLabel,
+              app.totalYearLabel,
+            ], 0),
           ],
         );
       case 2:
@@ -676,7 +679,7 @@ class _StatsCardState extends State<_StatsCard>
                   border: Border.all(color: pal.line),
                 ),
                 child: Text(
-                  d('growthText'),
+                  app.tr('مقارنة بالشهر الماضي', 'بەراورد', 'vs last month'),
                   style: ts(
                     context,
                     11,
@@ -696,8 +699,8 @@ class _StatsCardState extends State<_StatsCard>
                     child: _bigStat(
                       context,
                       d('growthByMonth'),
-                      '+18%',
-                      d('bestMonth'),
+                      app.monthGrowth == null ? '—' : '${app.monthGrowth! >= 0 ? '+' : ''}${app.monthGrowth}%',
+                      app.tr('${mBarsCount(app)} مريض هذا الشهر', '${mBarsCount(app)} نەخۆش', '${mBarsCount(app)} patients this month'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -714,6 +717,7 @@ class _StatsCardState extends State<_StatsCard>
                             color: pal.accent,
                             card: pal.card,
                             t: t,
+                            values: [for (final b in app.monthlyBars.sublist(6)) b.count.toDouble()],
                           ),
                         ),
                       ),
@@ -724,21 +728,17 @@ class _StatsCardState extends State<_StatsCard>
             ),
             const SizedBox(height: 10),
             _pills(context, [
-              d('growthText'),
-              d('bestMonth'),
-              d('totalReports'),
-            ], 1),
+              app.growthLabel,
+              app.bestMonthLabel,
+            ], 0),
           ],
         );
       default:
         final peak = app.peak;
-        final peakValue = peak == 'Day'
-            ? d('peakDay')
-            : peak == 'Week'
-            ? d('peakWeek')
-            : peak == 'Month'
-            ? d('peakMonth')
-            : d('peakYear');
+        final peakValue = app.peakLabel(peak);
+        final pBars = app.peakBars(peak);
+        final pPeak = app.peakIndex(pBars);
+        final pMax = pBars.fold<int>(1, (a, b) => b.count > a ? b.count : a);
         final periodLabel = peak == 'Day'
             ? d('day')
             : peak == 'Week'
@@ -746,7 +746,6 @@ class _StatsCardState extends State<_StatsCard>
             : peak == 'Month'
             ? d('month')
             : d('year');
-        const heights = [30, 55, 95, 70, 40];
         body = Column(
           children: [
             _headerRow(
@@ -764,7 +763,7 @@ class _StatsCardState extends State<_StatsCard>
                       context,
                       d('peakPeriod'),
                       peakValue,
-                      d('growthText'),
+                      app.peakSub(peak),
                       size: 22,
                       gap: true,
                     ),
@@ -777,13 +776,13 @@ class _StatsCardState extends State<_StatsCard>
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          for (var i = 0; i < heights.length; i++) ...[
-                            if (i > 0) const SizedBox(width: 8),
-                            Opacity(
-                              opacity: i == 2 ? 1 : .45,
+                          for (var i = 0; i < pBars.length; i++) ...[
+                            if (i > 0) SizedBox(width: pBars.length > 8 ? 3 : 6),
+                            Expanded(
+                              child: Opacity(
+                              opacity: i == pPeak ? 1 : .45,
                               child: Container(
-                                width: 32,
-                                height: 84 * heights[i] / 100,
+                                height: 4 + 80 * pBars[i].count / pMax,
                                 decoration: BoxDecoration(
                                   color: pal.accent,
                                   borderRadius: const BorderRadius.vertical(
@@ -791,6 +790,7 @@ class _StatsCardState extends State<_StatsCard>
                                   ),
                                 ),
                               ),
+                            ),
                             ),
                           ],
                         ],
@@ -905,30 +905,30 @@ class _Donut extends CustomPainter {
 class _GrowthLine extends CustomPainter {
   final Color color, card;
   final double t;
-  _GrowthLine({required this.color, required this.card, required this.t});
+  final List<double> values;
+  _GrowthLine({required this.color, required this.card, required this.t, this.values = const []});
 
-  static const _pts = [
-    Offset(0, 100),
-    Offset(40, 92),
-    Offset(80, 84),
-    Offset(120, 78),
-    Offset(160, 62),
-    Offset(200, 58),
-    Offset(240, 44),
-    Offset(280, 30),
-    Offset(320, 18),
-  ];
+  /// The months' counts as points on the 320x118 design canvas.
+  List<Offset> get _pts {
+    final v = values.length < 2 ? const [0.0, 0.0] : values;
+    final max = v.fold<double>(0, (a, b) => b > a ? b : a);
+    return [
+      for (var i = 0; i < v.length; i++)
+        Offset(320 * i / (v.length - 1), max == 0 ? 100 : 100 - 82 * v[i] / max),
+    ];
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
+    final pts = _pts;
     // preserveAspectRatio="none": scale user space non-uniformly, strokes included.
     canvas.save();
     canvas.scale(size.width / 320, size.height / 118);
     canvas.clipRect(
       const Rect.fromLTWH(0, 0, 320, 118),
     ); // svg overflow: hidden
-    final path = Path()..moveTo(_pts[0].dx, _pts[0].dy);
-    for (final p in _pts.skip(1)) {
+    final path = Path()..moveTo(pts[0].dx, pts[0].dy);
+    for (final p in pts.skip(1)) {
       path.lineTo(p.dx, p.dy);
     }
     final metric = path.computeMetrics().first;
@@ -943,9 +943,9 @@ class _GrowthLine extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
     );
-    canvas.drawCircle(const Offset(320, 18), 5, Paint()..color = color);
+    canvas.drawCircle(pts.last, 5, Paint()..color = color);
     canvas.drawCircle(
-      const Offset(320, 18),
+      pts.last,
       5,
       Paint()
         ..color = card
@@ -957,5 +957,7 @@ class _GrowthLine extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GrowthLine old) =>
-      old.t != t || old.color != color;
+      old.t != t || old.color != color || old.values.join(',') != values.join(',');
 }
+
+int mBarsCount(AppState app) => app.monthlyBars.last.count;

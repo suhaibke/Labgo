@@ -2474,11 +2474,11 @@ class _ManageTestsState extends State<_ManageTests> {
       return width == null ? f : SizedBox(width: width, child: f);
     }
 
-    items.add(
+    items.insert(0, 
       Container(
-        padding: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: pal.line)),
+          border: Border(bottom: BorderSide(color: pal.line)),
         ),
         child: _col([
           Text(w('addTest'), style: ts(context, 13, weight: w700)),
@@ -4190,6 +4190,12 @@ class _SectionPage extends StatelessWidget {
           app.tr('باقات الفحوصات وعروضها وأسعارها.', 'پاکێج و ئۆفەرەکان', 'Test packages, offers and prices.'),
           const _Packages() as Widget,
           app.tr('ابحث عن باقة بالاسم أو الفحص…', 'بگەڕێ بۆ پاکێج…', 'Search a package by name or test…'),
+        ),
+      'financial' => (
+          app.w('financial'),
+          app.tr('الأرباح والديون والمصروفات والإيجار، مع كشف الحساب.', 'دارایی تاقیگە', 'Profit, debts, expenses and rent, with statements.'),
+          const _Financial() as Widget,
+          null,
         ),
       'reports' => (
           app.w('manageReports'),

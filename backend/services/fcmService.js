@@ -57,7 +57,14 @@ async function sendToUser(userId, title, body, data = {}) {
   } catch (dbError) {
     console.error('FCM: Failed to save notification history:', dbError);
   }
+  return pushToUser(userId, title, body, data);
+}
 
+/**
+ * Push only (no history row): for callers that keep their own notification
+ * rows, such as lab notifications.
+ */
+async function pushToUser(userId, title, body, data = {}) {
   try {
     const user = await User.findById(userId);
     if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
@@ -102,5 +109,6 @@ async function sendToUser(userId, title, body, data = {}) {
 
 module.exports = {
   sendToTopic,
-  sendToUser
+  sendToUser,
+  pushToUser
 };

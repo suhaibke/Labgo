@@ -4,12 +4,14 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 
 import '../api.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../ui.dart';
+import 'settings_screen.dart' show showTermsPage;
 
 /// Login / Register / OTP / Forgot / Reset — the design's pre-app flow.
 class AuthBody extends StatelessWidget {
@@ -751,15 +753,79 @@ class _RegisterState extends State<_Register> {
   /// Picked documents: (file name, bytes).
   (String, Uint8List)? _certFile, _idFrontFile, _idBackFile;
 
+  /// Asks where the document comes from (camera, photos or files), then picks it.
   Future<(String, Uint8List)?> _pick() async {
+    final app = context.app;
+    final pal = context.pal;
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: pal.card,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final o in [
+                ('camera', 'Camera', app.tr('الكاميرا', 'کامێرا', 'Camera')),
+                ('gallery', 'Image', app.tr('صورة من الاستوديو', 'وێنە لە گەلەری', 'Photo library')),
+                ('files', 'FileText', app.tr('ملف (PDF أو صورة)', 'فایل', 'File (PDF or image)')),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Tap(
+                    onTap: () => Navigator.pop(ctx, o.$1),
+                    child: Container(
+                      height: 52,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(color: pal.chipBg, borderRadius: BorderRadius.circular(16)),
+                      child: Row(children: [
+                        LIcon(o.$2, size: 18, color: pal.ink),
+                        const SizedBox(width: 10),
+                        Text(o.$3, style: ts(ctx, 14, weight: w700)),
+                      ]),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (source == null) return null;
     try {
-      final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png']);
-      if (picked.isEmpty) return null;
-      final f = picked.first;
-      return (f.name, await f.readAsBytes());
+      if (source == 'files') {
+        final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png']);
+        if (picked.isEmpty) return null;
+        final f = picked.first;
+        return (f.name, await f.readAsBytes());
+      }
+      final f = await ImagePicker().pickImage(
+        source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
+        maxWidth: 2200, maxHeight: 2200, imageQuality: 85,
+      );
+      if (f == null) return null;
+      final name = f.name.isEmpty || !f.name.contains('.') ? 'document.jpg' : f.name;
+      return (name, await f.readAsBytes());
     } catch (_) {
+      if (mounted) {
+        setState(() => _error = source == 'camera'
+            ? app.tr('تعذر فتح الكاميرا. اسمح للتطبيق من الإعدادات.', 'کامێرا ناکرێتەوە.', 'Cannot open the camera. Allow access in Settings.')
+            : app.tr('تعذر فتح الملف', 'فایل ناکرێتەوە', 'Cannot open the file'));
+      }
       return null;
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    void clear() {
+      if (_error.isNotEmpty && mounted) setState(() => _error = '');
+    }
+    _pass.addListener(clear);
+    _confirm.addListener(clear);
   }
 
   @override
@@ -875,13 +941,6 @@ class _RegisterState extends State<_Register> {
     );
   }
 
-  Widget _docInput(TextEditingController c, String hint) => AuthInput(
-    controller: c,
-    hint: hint,
-    vPad: 12,
-    fontSize: 14,
-    onChanged: (_) => setState(() {}),
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -970,10 +1029,17 @@ class _RegisterState extends State<_Register> {
                   child: _Checkbox(_terms),
                 ),
                 const SizedBox(width: 8),
+                // Tapping the words opens the terms; the box ticks them.
                 Expanded(
-                  child: Text(
-                    app.p('terms'),
-                    style: ts(context, 13, weight: w600),
+                  child: GestureDetector(
+                    onTap: () => showTermsPage(context),
+                    child: Text(
+                      app.p('terms'),
+                      style: ts(context, 13, weight: w600, color: context.pal.accent).copyWith(
+                        decoration: TextDecoration.underline,
+                        decorationColor: context.pal.accent,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1064,14 +1130,6 @@ class _RegisterState extends State<_Register> {
               file: _certFile,
               onPicked: (f) => setState(() => _certFile = f),
             ),
-            _docInput(
-              _cert,
-              t(
-                'رقم شهادة فتح المختبر',
-                'ژمارەی بڕوانامە',
-                'Certificate number',
-              ),
-            ),
 
           ]),
           docCard([
@@ -1150,7 +1208,6 @@ class _RegisterState extends State<_Register> {
                       'email': _email.text.trim(),
                       'password': _pass.text,
                       'city': _city.text.trim(),
-                      if (_cert.text.trim().isNotEmpty) 'licenseNumber': _cert.text.trim(),
                     }, [
                       ('labOpeningLicense', _certFile!.$1, _certFile!.$2),
                       ('ownerUnifiedCard', _idFrontFile!.$1, _idFrontFile!.$2),
