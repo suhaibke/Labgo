@@ -597,26 +597,18 @@ router.get('/orders/:orderId', async (req, res) => {
     }
 });
 
-// Orders & transfers: patient orders arriving and in the lab, samples from other
-// labs, and samples this lab sent out (one page, like the lab app).
+// Send & receive (like the lab app's page): send samples to other labs and
+// track them; receive LabGo service orders and samples other labs sent here.
 router.get('/orders', async (req, res) => {
     try {
         const lab = req.lab;
         const currentLang = req.cookies.lang || req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'ar';
         const direction = ['ar', 'ku'].includes(currentLang) ? 'rtl' : 'ltr';
         const font = ['ar'].includes(currentLang) ? 'Cairo, sans-serif' : 'Inter, sans-serif';
-
-        const ExternalTransfer = require('../../models/ExternalTransfer');
-        const { transferPageData } = require('./external-transfers');
-        const [incomingCount, inLabCount, completedCount, b2bWaiting, b2bInLab, transferData] = await Promise.all([
-            Order.countDocuments({ labId: lab._id, status: 'sample_collected' }),
-            Order.countDocuments({ labId: lab._id, status: 'at_lab' }),
-            Order.countDocuments({ labId: lab._id, status: 'completed' }),
-            ExternalTransfer.countDocuments({ toLabId: lab._id, status: 'sent', receivedAt: null }),
-            ExternalTransfer.countDocuments({ toLabId: lab._id, status: 'sent', receivedAt: { $ne: null } }),
-            transferPageData(req),
-        ]);
-        const tab = ['incoming', 'inlab', 'sent'].includes(req.query.tab) ? req.query.tab : (transferData.selectedOrderId ? 'sent' : 'incoming');
+        const tab = req.query.tab === 'incoming' || req.query.tab === 'inlab' || req.query.tab === 'receive' ? 'receive' : 'send';
+        // The lab's own tests, for the test search in the send form.
+        const catalog = [...new Set((lab.tests || []).filter((t) => t.isActive !== false).map((t) => t.name).filter(Boolean))]
+            .sort((x, y) => x.localeCompare(y));
 
         res.render('dashboard/lab-orders', {
             lab,
@@ -627,13 +619,8 @@ router.get('/orders', async (req, res) => {
             font,
             activeSection: 'orders',
             tab,
-            stats: {
-                incoming: incomingCount + b2bWaiting,
-                inLab: inLabCount + b2bInLab,
-                sent: transferData.transferStats.awaiting,
-                completed: completedCount + transferData.transferStats.completed,
-            },
-            ...transferData,
+            catalog,
+            preselectOrderId: typeof req.query.orderId === 'string' ? req.query.orderId : '',
         });
     } catch (error) {
         console.error('Orders page error:', error);

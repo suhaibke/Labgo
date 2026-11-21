@@ -178,6 +178,19 @@ router.get('/orders/:orderId/receipt', async (req, res) => {
     }
 });
 
+// Tube label (50 × 25 mm), printed from the add patient page.
+router.get('/orders/:orderId/tube-label', async (req, res) => {
+    try {
+        if (!/^[a-f0-9]{24}$/i.test(req.params.orderId)) return res.status(404).send('Not found');
+        const order = await Order.findOne({ _id: req.params.orderId, labId: req.lab._id }).populate('patientId', patientFields).lean();
+        if (!order) return res.status(404).send('Not found');
+        res.type('html').send(receiptPrint.tubeLabelHtml({ order, lab: req.lab, copies: req.query.copies, autoPrint: req.query.print !== '0' }));
+    } catch (error) {
+        console.error('Tube label error:', error);
+        res.status(500).send('Error');
+    }
+});
+
 // ---------- results worklist (every order waiting for, or holding, results) ----------
 async function worklist(labId) {
     const orders = await Order.find({ labId, status: { $in: EDITABLE } })

@@ -216,4 +216,15 @@ async function lookupPatient(lab, query) {
     return { name: user.name, phone: user.phone || '', patientNo: user.patientNo ?? null, gender: user.gender || null, birthDate: user.birthDate || null };
 }
 
-module.exports = { createWalkInOrder, lookupPatient, birthDateFromAge, resolvePatient, packageLines, WalkInError };
+// Patients this lab has seen whose name contains the text, for the name field's suggestions.
+async function searchPatients(lab, query) {
+    const text = String(query || '').trim().slice(0, 60);
+    if (text.length < 2) return [];
+    const ids = await Order.distinct('patientId', { labId: lab._id });
+    const re = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const users = await User.find({ role: 'patient', name: re, $or: [{ _id: { $in: ids } }, { createdByLabId: lab._id }] })
+        .select('name phone gender birthDate patientNo').sort({ updatedAt: -1 }).limit(8).lean();
+    return users.map((u) => ({ name: u.name, phone: u.phone || '', patientNo: u.patientNo ?? null, gender: u.gender || null, birthDate: u.birthDate || null }));
+}
+
+module.exports = { createWalkInOrder, lookupPatient, searchPatients, birthDateFromAge, resolvePatient, packageLines, WalkInError };

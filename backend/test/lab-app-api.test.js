@@ -65,6 +65,8 @@ test('a transfer becomes an app referral', () => {
     assert.deepEqual(r, {
         id: 'x', patient: 'Sara', gender: 'female', age: 31, test: 'Vitamin D', lab: 'Al-Noor', status: 'Sent', eta: '15/11/2026', tracking: 'EXT-1', step: 1,
         orderId: null, onLabGo: false, sentAt: null, tests: ['Vitamin D'], results: [], resultFile: '', resultSource: '',
+        // for the web dashboard's tracking cards
+        receivedAt: null, forwardedAt: null, price: null, sampleCode: '', labPhone: '',
     });
     // the short tracking code wins over the reference number
     assert.equal(toReferral({ _id: 'z', trackingCode: 'T7K4M9X', referenceNumber: 'EXT-1' }).tracking, 'T7K4M9X');

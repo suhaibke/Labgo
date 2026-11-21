@@ -169,74 +169,38 @@ test('creation endpoint links to a real order when orderId is given', async t =>
     assert.equal(created.patientName, 'Patient One');
 });
 
-test('orders & transfers page renders both order-linked and manual transfers', async () => {
+test('send & receive page renders the app-style form, tracking and receive lists', async () => {
     const dictionary = require('../i18n/languages/en.json');
     const translate = key => readKey(dictionary, key) || key;
-    const linkedTransfer = {
-        _id: 'transfer-1',
-        orderId: 'order-1',
-        sampleCode: 'LG-1234',
-        patientName: 'Patient One',
-        patientGender: 'female',
-        patientAge: 29,
-        tests: [{ testName: 'CBC' }],
-        externalLab: { name: 'Reference Lab', phone: '123' },
-        status: 'sent',
-        sentAt: new Date('2026-08-01T00:00:00.000Z'),
-    };
-    const manualTransfer = {
-        _id: 'transfer-2',
-        orderId: null,
-        sampleCode: 'EXT-ABC-123',
-        patientName: 'Walk-in Patient',
-        patientGender: 'male',
-        patientAge: null,
-        testsDescription: 'Thyroid panel',
-        externalLab: { name: 'Second Lab' },
-        status: 'completed',
-        sentAt: new Date('2026-08-02T00:00:00.000Z'),
-    };
-    const eligibleOrder = {
-        _id: 'order-2',
-        qrCode: 'LG-5678',
-        tests: [{ testName: 'CBC' }],
-        patientInfo: { name: 'Patient Two', gender: 'male', age: 40 },
-    };
-
     const html = await ejs.renderFile(
         path.join(__dirname, '../views/dashboard/lab-orders.ejs'),
         {
             __: translate,
             lab: { name: 'Main Lab' },
             user: { name: 'Owner', email: 'owner@example.com' },
-            title: 'External Transfers',
+            title: 'Send & receive',
             currentLang: 'en',
             direction: 'ltr',
             font: 'Inter, sans-serif',
             activeSection: 'orders',
-            tab: 'sent',
-            stats: { incoming: 0, inLab: 0, sent: 1, completed: 1 },
-            transferStats: { total: 2, awaiting: 1, completed: 1 },
-            transfers: [linkedTransfer, manualTransfer],
-            eligibleOrders: [eligibleOrder],
-            selectedOrderId: '',
-            transferDataJson: JSON.stringify([linkedTransfer, manualTransfer]).replace(/</g, '\\u003c'),
-            eligibleOrdersJson: JSON.stringify([eligibleOrder]).replace(/</g, '\\u003c'),
+            tab: 'send',
+            catalog: ['CBC', 'Lipid Profile'],
+            preselectOrderId: '',
         },
         { filename: path.join(__dirname, '../views/dashboard/lab-orders.ejs') }
     );
 
-    assert.match(html, /Patient One/);
-    assert.match(html, /LG-1234/);
-    assert.match(html, /Walk-in Patient/);
-    assert.match(html, /EXT-ABC-123/);
-    assert.match(html, /Thyroid panel/);
-    assert.match(html, /data-action="upload-result"/);
-    assert.match(html, /data-action="delete-transfer"/);
-    assert.match(html, /id="newTransferForm"/);
-    assert.match(html, /id="manualModeSection"/);
-    // one page: patient-order columns, lab samples and the shared scan box
-    assert.match(html, /id="incomingOrdersList"/);
-    assert.match(html, /id="labIncomingList"/);
-    assert.match(html, /id="hubScanForm"/);
+    // send: the four steps of the app's form, then tracking with its search
+    assert.match(html, /id="sendForm"/);
+    for (const id of ['patientInput', 'phoneInput', 'ageInput', 'testInput', 'labInput', 'priceInput', 'sendBtn']) {
+        assert.match(html, new RegExp(`id="${id}"`));
+    }
+    assert.match(html, /id="trackSearch"/);
+    assert.match(html, /id="trackList"/);
+    // receive: barcode box, received list with search and filters
+    assert.match(html, /id="scanForm"/);
+    assert.match(html, /id="recvSearch"/);
+    assert.match(html, /data-f="on_the_way"/);
+    // the lab's own tests reach the test search
+    assert.match(html, /"catalog":\["CBC","Lipid Profile"\]/);
 });

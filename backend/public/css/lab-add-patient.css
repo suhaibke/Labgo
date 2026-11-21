@@ -1,91 +1,287 @@
-/* Add patient (lab reception) — same look as the app's Add screen */
+/* Add patient (lab reception) — on top of lab-app.css tokens.
+   Calm, exact, hands-on: quiet surfaces, the accent on the total and the save action only. */
 
 html.la .ap-page [hidden], html.la .ap-page[hidden] { display: none !important; }
-html.la .ap-page { max-width: 1180px; margin: 0 auto; padding-bottom: 48px; }
-html.la .ap-head { margin: 4px 0 14px; }
-html.la .ap-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+html.la .ap-page {
+    --ap-hair: color-mix(in srgb, var(--ink) 9%, transparent);
+    --ap-raised: var(--chip-bg);
+    --ap-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    max-width: 1180px; margin: 0 auto; padding-bottom: 48px;
+    font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', 'Segoe UI', sans-serif;
+}
+html.la .ap-page .ic { width: 16px; height: 16px; stroke-width: 1.5; }
+html.la .ap-page :is(h1, h2, b, span, button, input, small, label) { letter-spacing: 0; }
+html.la .ap-head { margin: 4px 0 16px; }
+html.la .ap-page .la-h1 { font-weight: 500; line-height: 1.35; }
+html.la .ap-head .la-sub { font-size: 14px; line-height: 1.6; }
+
+html.la .ap-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
 html.la .ap-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 html.la .ap-side { position: sticky; top: calc(var(--top-h) + 12px); }
-html.la .ap-title { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-html.la .ap-title .ic { width: 20px; height: 20px; color: var(--accent); }
+html.la .ap-card { padding: 20px; border-radius: 20px; border: 1px solid var(--ap-hair); box-shadow: none; }
+html.la .ap-title { margin: 0 0 16px; font-size: 16px; font-weight: 500; }
+html.la .ap-page .la-label { font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 8px; }
+html.la .ap-req { color: var(--red); font-weight: 500; }
+html.la .ap-page .la-input { height: 44px; border-radius: 12px; font-size: 15px; font-weight: 400; }
+html.la .ap-page .la-textarea { border-radius: 12px; font-size: 15px; }
 
-html.la .ap-field { display: block; margin-bottom: 14px; min-width: 0; }
-html.la .ap-field:last-child { margin-bottom: 0; }
-html.la .ap-req { color: var(--red); }
-html.la .ap-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* rows: name + age + gender, then phone + doctor */
+html.la .ap-row { display: grid; gap: 12px; margin-bottom: 16px; }
+html.la .ap-row-name { grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; }
+html.la .ap-row-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+html.la .ap-field { display: block; min-width: 0; }
+html.la .ap-card > .ap-field + .ap-field, html.la .ap-card > .ap-row + .ap-field { margin-top: 0; }
 html.la .ap-input-wrap { position: relative; display: block; }
-html.la .ap-input-wrap .ic { position: absolute; inset-inline-start: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--muted); }
-html.la .ap-input-wrap .la-input { padding-inline-start: 42px; font-size: 17px; font-weight: 700; letter-spacing: .3px; }
-html.la .ap-found { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--green-text); }
-html.la .ap-found .ic { width: 14px; height: 14px; }
-html.la .ap-age { display: flex; gap: 8px; align-items: center; }
-html.la .ap-age .la-input { width: 76px; flex-shrink: 0; text-align: center; font-weight: 700; }
-html.la .ap-age .la-seg { flex: 1; }
-html.la .ap-age .la-seg button, html.la #apGender button { padding: 9px 6px; }
-html.la .ap-wrap { flex-wrap: wrap; overflow: visible; }
-html.la .ap-urgency button.on[data-v="urgent"] { background: var(--red); }
-
-/* tests picker */
-html.la .ap-count { min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; background: var(--segmented); display: grid; place-items: center; font-size: 13px; font-weight: 700; }
-html.la .ap-count.on { background: var(--accent); color: #fff; }
-html.la .ap-search { margin-bottom: 12px; }
-html.la .ap-packages { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
-html.la .ap-tests { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 248px; overflow-y: auto; padding: 3px; }
-html.la .ap-item {
-  display: flex; align-items: center; gap: 10px; text-align: start; width: 100%; padding: 10px 12px; border-radius: var(--r-lg);
-  background: var(--chip-bg); border: 2px solid transparent; transition: border-color .15s ease, background .15s ease; cursor: pointer; color: var(--ink);
-}
-html.la .ap-item:hover { border-color: var(--line); }
-html.la .ap-item.on { border-color: var(--accent); background: var(--soft-accent); }
-html.la .ap-item .ap-tick { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); flex-shrink: 0; display: grid; place-items: center; }
-html.la .ap-item.on .ap-tick { background: var(--accent); border-color: var(--accent); color: #fff; }
-html.la .ap-item .ap-tick .ic { width: 13px; height: 13px; display: none; stroke-width: 3; }
-html.la .ap-item.on .ap-tick .ic { display: block; }
-html.la .ap-item-text { flex: 1; min-width: 0; }
-html.la .ap-item-text b { display: block; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-html.la .ap-item-text small { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-html.la .ap-price { font-size: 12px; font-weight: 700; color: var(--accent); white-space: nowrap; }
-html.la .ap-item.pkg { background: var(--accent); }
-html.la .ap-pkg-tag { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .4px; }
-html.la .ap-empty { grid-column: 1 / -1; text-align: center; color: var(--muted); font-size: 13px; padding: 18px; }
-
-/* payment */
-html.la .ap-selected { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-html.la .ap-selected:empty { display: none; }
-html.la .ap-sel { display: inline-flex; align-items: center; gap: 4px; padding-block: 5px; padding-inline: 10px 6px; border-radius: var(--r-sm); background: var(--chip-bg); font-size: 12px; font-weight: 700; }
-html.la .ap-sel button { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
-html.la .ap-sel button:hover { background: var(--segmented); color: var(--red); }
-html.la .ap-sel button .ic { width: 12px; height: 12px; }
-html.la .ap-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: 14px; }
-html.la .ap-line + .ap-line { border-top: 1px solid var(--line); }
-html.la .ap-line b { font-variant-numeric: tabular-nums; }
-html.la .ap-discount { width: 130px; padding: 8px 12px; text-align: center; }
-html.la .ap-total { font-size: 18px; font-weight: 700; }
-html.la .ap-total b { color: var(--accent); font-size: 22px; }
-html.la .ap-submit { margin-top: 12px; height: 54px; font-size: 16px; }
-html.la .ap-submit:disabled { opacity: .5; }
-html.la .ap-error { margin: 10px 0 0; color: var(--red); font-size: 13px; font-weight: 700; text-align: center; }
-
-/* done */
-html.la .ap-done { max-width: 520px; margin: 24px auto; text-align: center; padding: 32px 24px; }
-html.la .ap-done-icon { width: 72px; height: 72px; margin: 0 auto 12px; border-radius: 50%; background: var(--soft-green); color: var(--green); display: grid; place-items: center; }
-html.la .ap-done-icon .ic { width: 38px; height: 38px; }
-html.la .ap-done-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
-html.la .ap-done-actions .la-btn { height: 50px; justify-content: center; }
-
-@media (max-width: 980px) {
-  html.la .ap-grid { grid-template-columns: 1fr; }
-  html.la .ap-side { position: static; }
-}
-@media (max-width: 560px) {
-  html.la .ap-row2 { grid-template-columns: 1fr; }
-  html.la .ap-tests { grid-template-columns: 1fr; max-height: none; }
-}
-@media (max-height: 1000px) { html.la .ap-side { position: static; } }
-
-html.la .ap-hint { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); }
+html.la .ap-input-wrap .ic { position: absolute; inset-inline-start: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+html.la .ap-input-wrap .la-input { padding-inline-start: 40px; }
+html.la #apPhone { font-variant-numeric: tabular-nums; text-align: end; }
+html.la .ap-hint { display: block; margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+html.la .ap-found { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 13px; font-weight: 500; color: var(--green-text); }
 html.la .ap-found:not([hidden]) + .ap-hint, html.la .ap-hint:has(+ .ap-found:not([hidden])) { display: none; }
-html.la .ap-done-no { margin: 14px auto 10px; padding: 14px 18px; border-radius: var(--r-lg); background: var(--chip-bg); display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
-html.la .ap-done-no span { font-size: 12px; font-weight: 700; color: var(--muted); }
-html.la .ap-done-no b { font-size: 34px; font-weight: 700; letter-spacing: 1px; color: var(--accent); font-variant-numeric: tabular-nums; }
-html.la .ap-done-no small { font-size: 12px; color: var(--muted); max-width: 300px; }
+
+/* small age and gender controls beside the name */
+html.la .ap-age { display: flex; gap: 8px; align-items: center; }
+html.la .ap-age .la-input { width: 64px; flex-shrink: 0; text-align: center; font-variant-numeric: tabular-nums; padding: 0 8px; }
+html.la .ap-mini-seg { display: inline-flex; gap: 2px; padding: 4px; height: 44px; border-radius: 12px; background: var(--ap-raised); box-sizing: border-box; }
+html.la .ap-mini-seg button {
+    min-width: 40px; padding: 0 10px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--muted);
+    transition: background-color .14s var(--ap-ease), color .14s var(--ap-ease);
+}
+html.la .ap-mini-seg button:hover { color: var(--ink); }
+html.la .ap-mini-seg button.on { background: var(--card); color: var(--ink); box-shadow: 0 0 0 1px var(--ap-hair); }
+html.la .ap-urgency button.on[data-v="urgent"] { color: var(--red); }
+
+/* tests: one search, results only while typing */
+html.la .ap-tests-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+html.la .ap-tests-head .la-label { margin: 0; }
+html.la .ap-count { min-width: 24px; height: 24px; padding: 0 8px; border-radius: 12px; background: var(--ap-raised); display: grid; place-items: center; font-size: 13px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+html.la .ap-count.on { background: var(--ink); color: var(--app-bg); }
+html.la .ap-combo, html.la .ap-name { position: relative; }
+html.la .ap-name-hits { max-height: 288px; }
+html.la .ap-search { height: 48px; border-radius: 12px; background: var(--ap-raised); }
+html.la .ap-search input { font-size: 15px; }
+html.la .ap-kbd { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; line-height: 20px; padding: 0 6px; border-radius: 4px; border: 1px solid var(--ap-hair); color: var(--muted); flex-shrink: 0; }
+html.la .ap-results {
+    position: absolute; inset-inline: 0; top: calc(100% + 4px); z-index: 30; max-height: 360px; overflow-y: auto; padding: 4px;
+    background: var(--card); border: 1px solid var(--ap-hair); border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+    animation: apMenu .18s var(--ap-ease) both;
+}
+html.la .ap-res {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px; border-radius: 8px; text-align: start; color: var(--ink);
+    transition: background-color .14s var(--ap-ease);
+}
+html.la .ap-res:hover, html.la .ap-res.active { background: var(--ap-raised); }
+html.la .ap-res-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+html.la .ap-res-text b { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.la .ap-res-text small { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.la .ap-res-price { display: flex; flex-direction: column; align-items: flex-end; font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+html.la .ap-res-b2b { font-size: 12px; font-weight: 400; color: var(--muted); }
+html.la .ap-res-tick { color: var(--accent); flex-shrink: 0; }
+html.la .ap-res.on .ap-res-text b { color: var(--muted); }
+html.la .ap-res-empty { padding: 16px; text-align: center; font-size: 14px; color: var(--muted); }
+html.la .ap-pkg-tag { font-size: 12px; font-weight: 500; color: var(--muted); margin-inline-end: 6px; padding: 0 6px; border: 1px solid var(--ap-hair); border-radius: 4px; }
+
+/* chosen tests under the search */
+html.la .ap-selected { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+html.la .ap-selected:empty { display: none; }
+html.la .ap-sel {
+    display: inline-flex; align-items: center; gap: 8px; height: 36px; padding-inline: 12px 4px; border-radius: 10px;
+    background: var(--ap-raised); border: 1px solid var(--ap-hair); font-size: 14px; font-weight: 500;
+}
+html.la .ap-sel.pkg { border-color: color-mix(in srgb, var(--ink) 22%, transparent); }
+html.la .ap-sel-price { font-size: 13px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+html.la .ap-sel button { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: var(--muted); transition: background-color .14s var(--ap-ease), color .14s var(--ap-ease); }
+html.la .ap-sel button:hover { background: var(--card); color: var(--red); }
+html.la .ap-empty-hint { margin-top: 12px; }
+
+html.la .ap-wrap { flex-wrap: wrap; overflow: visible; }
+/* the sample: one compact card */
+html.la .ap-sample-card { padding: 16px 20px; }
+html.la .ap-sample-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+html.la .ap-sample-title { font-size: 15px; font-weight: 500; margin-inline-end: 4px; }
+html.la .ap-sample-seg { flex-wrap: wrap; height: auto; min-height: 44px; }
+html.la .ap-sample-seg button { height: 36px; }
+html.la .ap-urgency { margin-inline-start: auto; }
+html.la .ap-page .la-chip { font-size: 14px; font-weight: 500; }
+
+/* ---------- side: B2B, the price, print on save ---------- */
+html.la .ap-pay { display: flex; flex-direction: column; gap: 16px; }
+html.la .ap-b2b-row { display: flex; align-items: center; gap: 12px; }
+html.la .ap-b2b-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+html.la .ap-b2b-text b { font-size: 15px; font-weight: 500; }
+html.la .ap-b2b-text small { font-size: 13px; line-height: 1.5; color: var(--muted); }
+html.la .ap-b2b {
+    height: 32px; padding: 0 14px; border-radius: 16px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px; font-weight: 500;
+    background: var(--ap-raised); color: var(--muted); border: 1px solid var(--ap-hair);
+    transition: background-color .14s var(--ap-ease), color .14s var(--ap-ease), border-color .14s var(--ap-ease);
+}
+html.la .ap-b2b:hover { color: var(--ink); }
+html.la .ap-b2b.on { background: var(--ink); color: var(--app-bg); border-color: var(--ink); }
+html.la .ap-company { margin-top: -4px; }
+
+html.la .ap-price-box { padding: 16px; border-radius: 16px; background: var(--ap-raised); }
+html.la .ap-price-label { display: block; font-size: 13px; color: var(--muted); }
+html.la .ap-total { display: block; margin-top: 4px; font-size: 32px; font-weight: 500; line-height: 1.2; color: var(--ink); font-variant-numeric: tabular-nums; text-align: start; }
+html.la .ap-lines { margin-top: 12px; padding-top: 4px; border-top: 1px solid var(--ap-hair); }
+html.la .ap-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0 0; font-size: 14px; color: var(--muted); }
+html.la .ap-line b { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+html.la .ap-discount { width: 120px !important; height: 36px !important; padding: 0 12px; text-align: center; background: var(--card) !important; font-variant-numeric: tabular-nums; }
+
+html.la .ap-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; }
+html.la .ap-toggle-text { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); }
+html.la .ap-toggle-text .ic { color: var(--muted); }
+html.la .ap-toggle-row + .ap-toggle-row { margin-top: -4px; }
+
+html.la .ap-submit { height: 48px; font-size: 16px; font-weight: 500; }
+html.la .ap-submit:disabled { opacity: .5; }
+html.la .ap-error { margin: 0; color: var(--red); font-size: 13px; font-weight: 500; text-align: center; }
+
+/* ---------- after saving: print buttons in the panel ---------- */
+html.la .ap-before { display: flex; flex-direction: column; gap: 12px; }
+html.la .ap-toggle-row + .ap-toggle-row { margin-top: 0; }
+html.la .ap-after { display: flex; flex-direction: column; gap: 12px; animation: apMenu .22s var(--ap-ease) both; }
+html.la .ap-after-meta { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 13px; color: var(--muted); }
+html.la .ap-after-meta > span:first-child { color: var(--ink); font-size: 14px; font-weight: 500; }
+html.la .ap-after-meta b { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 500; color: var(--ink); }
+html.la .ap-after-print { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+html.la .ap-after-print .la-btn { height: 44px; width: 100%; justify-content: center; font-size: 14px; font-weight: 500; }
+html.la .ap-label-group { display: flex; flex-direction: column; gap: 4px; }
+html.la .ap-copies { display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 28px; font-size: 13px; color: var(--muted); }
+html.la .ap-copies button { width: 28px; height: 28px; border-radius: 8px; color: var(--ink); background: var(--ap-raised); font-size: 15px; line-height: 1; }
+html.la .ap-copies button:hover { background: color-mix(in srgb, var(--ink) 12%, var(--ap-raised)); }
+html.la .ap-copies b { min-width: 24px; text-align: center; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 500; color: var(--ink); }
+html.la .ap-after-links { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+html.la .ap-after-links .la-btn { height: 36px; }
+html.la .ap-link { font-size: 13px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+html.la .ap-link:hover { color: var(--ink); }
+/* the form stays visible but locked once saved */
+html.la .ap-saved > .ap-col:first-child { opacity: .55; pointer-events: none; }
+/* printing happens in this frame: no new page */
+html.la .ap-print-frame { position: fixed; width: 1px; height: 1px; inset-inline-start: -9999px; top: 0; border: 0; opacity: 0; }
+
+@keyframes apMenu { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { html.la .ap-results { animation: none; } }
+
+@media (max-width: 1100px) {
+    html.la .ap-grid { grid-template-columns: minmax(0, 1fr); }
+    html.la .ap-side { position: static; }
+}
+@media (max-width: 640px) {
+    html.la .ap-row-name { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    html.la .ap-row-name .ap-name { grid-column: 1 / -1; }
+    html.la .ap-row-2 { grid-template-columns: minmax(0, 1fr); }
+    html.la .ap-kbd { display: none; }
+}
+@media (max-height: 760px) { html.la .ap-side { position: static; } }
+
+/* ---------- the receipt printer (price panel) ----------
+   After a ReceiptPrinter component: a machine whose screen shows the total, and
+   paper that is the live receipt. Saving runs processing → printing → complete. */
+html.la .ap-printer { position: relative; display: flex; flex-direction: column; align-items: center; }
+html.la .ap-machine {
+    position: relative; z-index: 1; width: 100%; box-sizing: border-box;
+    padding: 12px 12px 32px; border-radius: 20px;
+    background: color-mix(in srgb, var(--ink) 5%, var(--card));
+    border: 1px solid var(--ap-hair);
+    box-shadow: 0 18px 32px -20px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .06), inset 0 -1px 0 rgba(0, 0, 0, .22);
+}
+html.la .ap-printer-head { display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 4px; margin-bottom: 8px; }
+html.la .ap-status { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; color: var(--muted); }
+html.la .ap-status-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.la .ap-status-ic { position: relative; width: 18px; height: 18px; display: grid; place-items: center; flex-shrink: 0; }
+html.la .ap-status-ic > * { grid-area: 1 / 1; transition: opacity .16s var(--ap-ease), transform .16s var(--ap-ease); }
+html.la .ap-spin, html.la .ap-ok { width: 18px; height: 18px; opacity: 0; transform: scale(.94); }
+html.la .ap-ok { color: var(--green); }
+html.la .ap-idle-dot { width: 8px; height: 8px; border-radius: 4px; background: var(--green); }
+html.la .ap-printer:is([data-stage="processing"], [data-stage="printing"]) .ap-spin { opacity: 1; transform: none; animation: apSpin .9s linear infinite; }
+html.la .ap-printer[data-stage="complete"] .ap-ok { opacity: 1; transform: none; }
+html.la .ap-printer:not([data-stage="idle"]) .ap-idle-dot { opacity: 0; transform: scale(.6); }
+html.la .ap-printer:not([data-stage="idle"]) .ap-status { color: var(--ink); }
+html.la .ap-printer-count { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* the screen: a dark display in both themes */
+html.la .ap-screen {
+    position: relative; padding: 12px 16px 14px; border-radius: 8px;
+    background: #0e0f10; color: #ececec; border: 1px solid #000;
+    box-shadow: inset 0 0 20px 2px rgba(0, 0, 0, .55);
+}
+html.la .ap-screen .ap-price-label { color: #8b8b90; font-size: 12px; }
+html.la .ap-screen .ap-total { color: #f2f2f2; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 28px; font-weight: 500; margin-top: 2px; }
+html.la .ap-machine .ap-lines { margin-top: 8px; padding: 0 4px; border-top: 0; }
+html.la .ap-machine .ap-line { padding-top: 8px; }
+html.la .ap-machine .ap-discount { background: var(--card) !important; }
+/* the paper slot */
+html.la .ap-slot {
+    position: absolute; inset-inline: 24px; bottom: 12px; height: 8px; border-radius: 4px; z-index: 3;
+    background: #060607; box-shadow: inset 0 2px 3px rgba(0, 0, 0, .8);
+}
+
+/* the paper coming out of the slot */
+html.la .ap-output { position: relative; z-index: 2; width: calc(100% - 40px); margin-top: -16px; padding-bottom: 16px; overflow: hidden; }
+html.la .ap-output::before { content: ""; position: absolute; inset-inline: 0; top: 0; height: 6px; z-index: 2; background: rgba(0, 0, 0, .45); filter: blur(4px); }
+html.la .ap-feed { filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .22)); transform: translateY(0); }
+html.la .ap-printer[data-stage="processing"] .ap-feed { transform: translateY(calc(-100% - 8px)); transition: transform .45s cubic-bezier(0.77, 0, 0.175, 1); }
+html.la .ap-printer[data-stage="printing"] .ap-feed { animation: apFeed 1.75s linear both; }
+html.la .ap-paper {
+    position: relative; padding: 20px 16px 24px; min-height: 120px;
+    background: #fbfaf6; color: #1b1b1b;
+    font-family: "IBM Plex Mono", "IBM Plex Sans Arabic", ui-monospace, monospace; font-size: 12px; line-height: 1.6;
+}
+html.la .ap-r-head { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; margin-bottom: 12px; }
+html.la .ap-r-head b { font-family: "IBM Plex Sans Arabic", sans-serif; font-size: 14px; font-weight: 500; }
+html.la .ap-r-head span { font-size: 11px; color: #6b6b6b; }
+html.la .ap-r-who { display: flex; justify-content: space-between; gap: 8px; font-family: "IBM Plex Sans Arabic", sans-serif; font-size: 13px; }
+html.la .ap-r-who span:last-child { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6b6b6b; }
+html.la .ap-r-rule { margin: 10px 0; border-top: 1px dashed #b9b6ae; }
+html.la .ap-r-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+html.la .ap-r-lines li { display: flex; justify-content: space-between; gap: 8px; }
+html.la .ap-r-lines li span:first-child { font-family: "IBM Plex Sans Arabic", "IBM Plex Mono", sans-serif; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.la .ap-r-lines li span:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
+html.la .ap-r-lines .ap-r-empty { justify-content: center; color: #8a8a8a; font-family: "IBM Plex Sans Arabic", sans-serif; }
+html.la .ap-r-row { display: flex; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+html.la .ap-r-row span:first-child { font-family: "IBM Plex Sans Arabic", sans-serif; }
+html.la .ap-r-total { margin-top: 4px; font-size: 14px; font-weight: 500; }
+html.la .ap-r-foot { margin: 12px 0 0; text-align: center; font-family: "IBM Plex Sans Arabic", sans-serif; font-size: 11px; color: #6b6b6b; }
+
+@keyframes apSpin { to { transform: rotate(360deg); } }
+/* the paper feeds out one line at a time */
+@keyframes apFeed {
+    0% { transform: translateY(calc(-100% + 2px)); }
+    7.5% { transform: translateY(-91%); } 10.5% { transform: translateY(-91%); }
+    18% { transform: translateY(-81%); } 21% { transform: translateY(-81%); }
+    28.5% { transform: translateY(-70%); } 31.5% { transform: translateY(-70%); }
+    39% { transform: translateY(-58%); } 42% { transform: translateY(-58%); }
+    49.5% { transform: translateY(-45%); } 52.5% { transform: translateY(-45%); }
+    60% { transform: translateY(-32%); } 63% { transform: translateY(-32%); }
+    70.5% { transform: translateY(-20%); } 73.5% { transform: translateY(-20%); }
+    81% { transform: translateY(-10%); } 84% { transform: translateY(-10%); }
+    91.5% { transform: translateY(-3%); } 94.5% { transform: translateY(-3%); }
+    100% { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    html.la .ap-printer .ap-feed { animation: none !important; transition: none !important; transform: none !important; }
+    html.la .ap-printer .ap-spin { animation: none !important; }
+}
+
+/* ---------- compact: the whole page fits one screen ---------- */
+html.la .ap-page { padding-bottom: 16px; }
+html.la .ap-head { margin: 0 0 12px; }
+html.la .ap-pay { gap: 12px; }
+html.la .ap-machine { padding: 8px 10px 24px; border-radius: 16px; }
+html.la .ap-printer-head { height: 24px; margin-bottom: 4px; }
+html.la .ap-screen { padding: 8px 12px 10px; }
+html.la .ap-screen .ap-total { font-size: 22px; margin-top: 0; }
+html.la .ap-machine .ap-lines { margin-top: 4px; }
+html.la .ap-machine .ap-line { padding-top: 6px; font-size: 13px; }
+html.la .ap-discount { height: 32px !important; }
+html.la .ap-slot { bottom: 8px; }
+/* no paper until save: it feeds out while printing and stays after */
+html.la .ap-printer:is([data-stage="idle"], [data-stage="processing"]) .ap-output { display: none; }
+html.la .ap-paper { padding: 14px 14px 18px; min-height: 0; font-size: 11.5px; line-height: 1.5; }
+html.la .ap-r-head { margin-bottom: 8px; }
+html.la .ap-r-rule { margin: 6px 0; }
+html.la .ap-r-foot { margin-top: 8px; }
+html.la .ap-r-lines { max-height: 120px; overflow: hidden; }
+html.la .ap-r-foot { display: none; }
+html.la .ap-paper { padding: 12px 14px 14px; }
+html.la .ap-after { gap: 8px; }

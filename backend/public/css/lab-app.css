@@ -268,7 +268,7 @@ html.la .la-nav-item:hover .la-nav-ic { background: var(--chip-bg); }
 html.la .la-nav-item:active { transform: scale(.98); }
 /* active: the app's white circle behind the icon, on a white pill */
 html.la .la-nav-item.active { color: var(--active-icon); background: var(--chip-bg); box-shadow: 0 4px 14px rgba(0, 0, 0, .10); }
-html.la .la-nav-item.active .la-nav-ic { background: var(--accent); color: #fff; box-shadow: 0 4px 10px var(--accent-glow); }
+html.la .la-nav-item.active .la-nav-ic { background: var(--accent); color: #fff; box-shadow: none; } /* no coloured glow */
 html.la .la-nav-item.active::before { content: none; }
 html.la .la-nav-item .la-nav-badge {
   margin-inline-start: auto; margin-inline-end: 8px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; font-size: 11px; font-weight: 700;

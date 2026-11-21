@@ -1,7 +1,7 @@
 // Lab reception: register a patient who is at the lab and create their order.
 const express = require('express');
 const Package = require('../../models/Package');
-const { createWalkInOrder, lookupPatient, WalkInError } = require('../../services/walkInOrderService');
+const { createWalkInOrder, lookupPatient, searchPatients, WalkInError } = require('../../services/walkInOrderService');
 
 const router = express.Router();
 
@@ -22,7 +22,7 @@ router.get('/patients/new', async (req, res) => {
         const packages = await Package.find({ labId: lab._id, isActive: true }).sort({ isMostRequested: -1, createdAt: -1 }).lean();
         const tests = (lab.tests || [])
             .filter((t) => t.isActive !== false)
-            .map((t) => ({ _id: String(t._id), name: t.name, nameAr: t.nameAr || '', code: t.code, price: t.price || 0, category: t.category || 'General' }));
+            .map((t) => ({ _id: String(t._id), name: t.name, nameAr: t.nameAr || '', code: t.code, price: t.price || 0, priceB2B: t.priceB2B > 0 ? t.priceB2B : 0, category: t.category || 'General' }));
         const testIds = new Set(tests.map((t) => t._id));
         const pkgs = packages.map((p) => ({
             _id: String(p._id), name: p.name, nameAr: p.nameAr || '', price: p.price || 0,
@@ -50,6 +50,15 @@ router.get('/api/patients/lookup', async (req, res) => {
     } catch (error) {
         console.error('Patient lookup error:', error);
         res.status(500).json({ success: false, message: 'Lookup failed' });
+    }
+});
+
+router.get('/api/patients/search', async (req, res) => {
+    try {
+        res.json({ success: true, data: await searchPatients(req.lab, req.query.q) });
+    } catch (error) {
+        console.error('Patient search error:', error);
+        res.status(500).json({ success: false, message: 'Search failed' });
     }
 });
 

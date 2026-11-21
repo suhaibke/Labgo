@@ -1,489 +1,552 @@
-/* Orders & transfers page (lab web dashboard).
+/* Send & receive (lab web dashboard) — the lab app's page, on the web.
  *
- * The patient-order columns are drawn by lab-orders.js. This file adds:
- * tabs, one scan box for both kinds of samples, samples from other labs,
- * the sent-transfer list and its actions, and the "new transfer" form.
- * Same server APIs as before; nothing here changes how data is stored. */
+ * Send: one form in four steps (patient → tests → receiving lab → send) and the
+ * tracking list with its search. Receive: a barcode box and the received
+ * samples — LabGo service orders and samples other labs sent here — with search.
+ * It uses the same server APIs as the lab app, so both stay in step. */
 (function () {
     'use strict';
 
-    const data = JSON.parse(document.getElementById('hubData').textContent || '{}');
-    const copy = data.copy || {};
-    const eligibleOrders = data.eligibleOrders || [];
+    const D = JSON.parse(document.getElementById('srData').textContent || '{}');
+    const t = D.t || {};
     const $ = (id) => document.getElementById(id);
-    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const money = (n) => Number(n || 0).toLocaleString('en-US');
-    const lang = document.documentElement.lang || 'ar';
-    const dateText = (d) => (d ? new Date(d).toLocaleDateString(lang === 'ar' ? 'ar-IQ' : lang) : '');
+    const digits = (s) => String(s || '').replace(/[^0-9]/g, '');
+    const norm = (s) => String(s || '').toLowerCase().trim();
+    // Day/month/year in Western digits, without the hidden direction marks of an Arabic date string.
+    const day = (d) => {
+        if (!d) return '';
+        const x = new Date(d);
+        return Number.isNaN(x.getTime()) ? '' : `${x.getDate()}/${x.getMonth() + 1}/${x.getFullYear()}`;
+    };
+    const code = (c) => (c ? `<span class="sr-code">${esc(c)}</span>` : '');
 
-    // ---------- toast (same look as the orders board) ----------
+    async function api(url, opts) {
+        const res = await fetch(url, Object.assign({ headers: { Accept: 'application/json' } }, opts || {}));
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok || body.success === false) {
+            const err = new Error(body.message || t.error);
+            err.status = res.status;
+            err.code = body.code;
+            throw err;
+        }
+        return body.data !== undefined ? body.data : body;
+    }
+    const postJson = (url, data) => api(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) });
+
     function toast(message, type) {
         const box = $('toastContainer');
         if (!box || !message) return;
-        const t = document.createElement('div');
-        t.className = `la-toast ${type || 'info'}`;
-        t.innerHTML = '<span class="dot"></span><span class="toast-message"></span>';
-        t.querySelector('.toast-message').textContent = message;
-        box.appendChild(t);
-        setTimeout(() => { t.classList.add('removing'); setTimeout(() => t.remove(), 300); }, 4200);
+        const el = document.createElement('div');
+        el.className = `la-toast ${type || 'info'}`;
+        el.innerHTML = '<span class="dot"></span><span class="toast-message"></span>';
+        el.querySelector('.toast-message').textContent = message;
+        box.appendChild(el);
+        setTimeout(() => { el.classList.add('removing'); setTimeout(() => el.remove(), 300); }, 4000);
     }
 
-    // ---------- tabs ----------
-    const tabs = [...document.querySelectorAll('#hubTabs [data-tab]')];
-    const panes = [...document.querySelectorAll('.hub-pane')];
-    function showTab(name, focus) {
+    // ------------------------------------------------------------------ tabs
+    const tabs = [...document.querySelectorAll('#srTabs [data-tab]')];
+    function showTab(name) {
         tabs.forEach((b) => { const on = b.dataset.tab === name; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
-        panes.forEach((p) => { p.hidden = p.dataset.pane !== name; });
-        const url = new URL(window.location.href);
+        document.querySelectorAll('.sr-pane').forEach((p) => { p.hidden = p.dataset.pane !== name; });
+        const url = new URL(location.href);
         url.searchParams.set('tab', name);
         url.searchParams.delete('orderId');
         history.replaceState(null, '', url);
-        if (focus && name === 'incoming') $('hubScanInput').focus();
+        if (name === 'receive') { $('scanInput').focus(); loadReceived(); }
     }
-    tabs.forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab, true)));
-    document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.go, true)));
+    tabs.forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
 
-    // ---------- counters ----------
-    // Patient-order counts come from lab-orders.js (column badges); lab samples from here.
-    const lab = { incoming: 0, inLab: 0 };
-    function num(id) { return Number(($(id) && $(id).textContent) || 0) || 0; }
-    function setCount(id, n) {
-        const el = $(id);
-        if (!el) return;
-        el.textContent = n;
-        if (el.classList.contains('hub-count')) el.hidden = !n;
+    // ------------------------------------------------------- dropdown helper
+    // A search field with a floating list under it (like the app's FloatingDropdown).
+    function combo(input, list, render) {
+        let items = [];
+        let active = -1;
+        function close() { list.hidden = true; active = -1; }
+        function paint() {
+            list.innerHTML = items.map((it, i) => `<button type="button" role="option" class="sr-opt${i === active ? ' on' : ''}${it.accent ? ' accent' : ''}" data-i="${i}">${it.html}</button>`).join('');
+            list.hidden = !items.length;
+        }
+        async function update() {
+            items = await render(input.value);
+            active = -1;
+            paint();
+        }
+        input.addEventListener('input', update);
+        input.addEventListener('focus', update);
+        input.addEventListener('keydown', (e) => {
+            if (list.hidden) return;
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+                paint();
+            } else if (e.key === 'Enter') {
+                const pick = items[active >= 0 ? active : 0];
+                if (pick) { e.preventDefault(); pick.pick(); close(); }
+            } else if (e.key === 'Escape') close();
+        });
+        list.addEventListener('mousedown', (e) => e.preventDefault()); // keep focus while choosing
+        list.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-i]');
+            if (!b) return;
+            items[Number(b.dataset.i)].pick();
+            close();
+        });
+        input.addEventListener('blur', () => setTimeout(close, 120));
+        return { close, update };
     }
-    function refreshCounters() {
-        const incoming = num('incomingColumnCount') + lab.incoming;
-        const inLab = num('inLabColumnCount') + lab.inLab;
-        setCount('kpiIncoming', incoming);
-        setCount('kpiInLab', inLab);
-        setCount('tabCountIncoming', incoming);
-        setCount('tabCountInLab', inLab);
+
+    // ================================================================ SEND
+    const form = {
+        orderId: null, // an open order of a registered patient
+        gender: '',
+        tests: [], // picked test names
+        registered: [], // the picked patient's tests
+        lab: null, // { id, name, city } or { name } for a lab not on LabGo
+        priceEdited: false,
+    };
+    let patients = [];
+    async function loadPatients() {
+        try { patients = (await api('/lab/api/app/patients')).patients || []; } catch (e) { patients = []; }
     }
-    ['incomingColumnCount', 'inLabColumnCount'].forEach((id) => {
-        if ($(id)) new MutationObserver(refreshCounters).observe($(id), { childList: true, characterData: true, subtree: true });
+
+    // 1. patient
+    const patientInput = $('patientInput');
+    function setGender(g) {
+        form.gender = g;
+        document.querySelectorAll('.sr-gender [data-gender]').forEach((b) => b.classList.toggle('on', b.dataset.gender === g));
+    }
+    document.querySelectorAll('.sr-gender [data-gender]').forEach((b) => b.addEventListener('click', () => setGender(form.gender === b.dataset.gender ? '' : b.dataset.gender)));
+    $('ageInput').addEventListener('input', (e) => { e.target.value = digits(e.target.value).slice(0, 3); });
+
+    function syncPhoneRow() {
+        $('phoneRow').hidden = Boolean(form.orderId) || !patientInput.value.trim();
+    }
+    function pickPatient(p) {
+        patientInput.value = p.name;
+        form.orderId = p.status === 'Completed' ? null : p.id;
+        $('phoneInput').value = form.orderId ? '' : (p.phone || '');
+        $('ageInput').value = digits(p.age);
+        setGender(p.gender === 'Female' ? 'female' : p.gender === 'Male' ? 'male' : '');
+        form.registered = form.orderId ? (p.tests || []) : [];
+        renderRegistered();
+        syncPhoneRow();
+        refreshQuote();
+    }
+    combo(patientInput, $('patientList'), (q) => {
+        const s = norm(q);
+        if (!s) return [];
+        return patients
+            .filter((p) => norm(p.name).includes(s) || norm(p.phone).includes(s) || norm(p.permanent).includes(s))
+            .slice(0, 8)
+            .map((p) => ({
+                html: `<b>${esc(p.name)}</b><small>${esc([p.permanent, p.phone, (p.tests || []).slice(0, 3).join('، ')].filter(Boolean).join(' · '))}</small>`,
+                pick: () => pickPatient(p),
+            }));
+    });
+    patientInput.addEventListener('input', () => {
+        // Typing again after a pick: a new name (the earlier order no longer applies).
+        form.orderId = null;
+        form.registered = [];
+        renderRegistered();
+        syncPhoneRow();
     });
 
-    // ---------- samples other LabGo labs sent here ----------
-    function labCard(t) {
-        const demo = [t.gender ? copy[t.gender] : '', t.age !== null && t.age !== undefined ? `${t.age} ${copy.years}` : ''].filter(Boolean).join(' · ');
-        const base = `/lab/api/transfers/incoming/${t.id}`;
-        const tags = (t.tests || []).slice(0, 6).map((n) => `<span class="la-tag"><svg class="ic"><use href="#i-test-tube"/></svg>${esc(n)}</span>`).join('');
-        let pill = '';
-        let actions = '';
-        if (t.status === 'on_the_way') {
-            pill = `<span class="la-pill amber">${esc(copy.onTheWay)}</span>`;
-            actions = `<button type="button" class="la-btn md press-95" data-receive="${esc(t.code)}"><svg class="ic"><use href="#i-check"/></svg>${esc(copy.receive)}</button>`;
-        } else if (t.status === 'received') {
-            pill = `<span class="la-pill blue">${esc(copy.received)}</span>`;
-            actions = `<a class="la-btn md press-95" href="/lab/transfers/incoming/${esc(t.id)}/results"><svg class="ic"><use href="#i-file-text"/></svg>${esc(copy.enterResults)}</a>`
-                + `<button type="button" class="la-btn md soft press-95" data-upload="${esc(t.id)}" title="${esc(copy.uploadFile)}"><svg class="ic"><use href="#i-upload"/></svg>PDF</button>`;
-        } else {
-            pill = `<span class="la-pill green">${esc(copy.completed)}</span>`;
-            actions = `<a class="la-btn md soft press-95" href="${esc(t.fileUrl || base + '/report.pdf')}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-file-down"/></svg>${esc(copy.viewResult)}</a>`;
-        }
-        return `<div class="la-tile la-order hub-lab-card pop-in">
-            <div class="la-order-top">
-                <span class="la-avatar">${esc((t.patient || '?').trim().charAt(0).toUpperCase())}</span>
-                <span class="main"><span class="name">${esc(t.patient)}</span><span class="meta">${esc(demo || copy.notAvailable)} · ${esc(t.code)}</span></span>
-                ${pill}
-            </div>
-            <div class="hub-from"><svg class="ic"><use href="#i-building-2"/></svg>${esc(copy.fromLab)} <b>${esc(t.fromLab)}</b>${typeof t.price === 'number' ? `<span class="hub-price">${money(t.price)} ${esc(copy.currency)}</span>` : ''}</div>
-            ${tags ? `<div class="la-tags">${tags}</div>` : ''}
-            <div class="la-order-foot">
-                <div class="la-meta-row"><span><svg class="ic"><use href="#i-clock"/></svg>${esc(dateText(t.sentAt))}</span></div>
-                <div class="hub-actions">${actions}</div>
-            </div>
-        </div>`;
+    // 2. tests
+    function renderRegistered() {
+        const free = form.registered.filter((n) => !form.tests.includes(n));
+        $('registeredBox').hidden = !free.length;
+        $('registeredTests').innerHTML = free.map((n) => `<button type="button" class="sr-chip" data-add="${esc(n)}"><svg class="ic"><use href="#i-plus"/></svg>${esc(n)}</button>`).join('');
     }
-    function emptyBox(icon, text) {
-        return `<div class="la-empty-box"><svg class="ic"><use href="#i-${icon}"/></svg><p>${esc(text)}</p></div>`;
+    function renderPicked() {
+        $('pickedTests').innerHTML = form.tests.map((n) => `<span class="sr-chip on">${esc(n)}<button type="button" data-remove="${esc(n)}" aria-label="×"><svg class="ic"><use href="#i-x"/></svg></button></span>`).join('');
+        renderRegistered();
     }
-    async function loadLabSamples() {
-        try {
-            const res = await fetch('/lab/api/transfers/incoming', { headers: { Accept: 'application/json' } });
-            const body = await res.json();
-            if (!body.success) throw new Error();
-            const items = body.data.items || [];
-            const onWay = items.filter((t) => t.status === 'on_the_way');
-            const inLab = items.filter((t) => t.status !== 'on_the_way')
-                .sort((a, b) => (a.status === 'completed') - (b.status === 'completed')); // open work first
-            $('labIncomingList').innerHTML = onWay.length ? onWay.map(labCard).join('') : emptyBox('inbox', copy.noLabIncoming);
-            $('labInLabList').innerHTML = inLab.length ? inLab.map(labCard).join('') : emptyBox('flask-conical', copy.noLabInLab);
-            lab.incoming = onWay.length;
-            lab.inLab = inLab.filter((t) => t.status === 'received').length;
-            setCount('labIncomingCount', onWay.length);
-            setCount('labInLabCount', inLab.length);
-            refreshCounters();
-        } catch (e) {
-            ['labIncomingList', 'labInLabList'].forEach((id) => { if ($(id).querySelector('.la-spinner')) $(id).innerHTML = emptyBox('triangle-alert', copy.transferError); });
+    function addTest(name) {
+        const n = String(name || '').trim();
+        if (!n || form.tests.some((x) => norm(x) === norm(n))) return;
+        form.tests.push(n);
+        renderPicked();
+        refreshQuote();
+    }
+    $('registeredTests').addEventListener('click', (e) => { const b = e.target.closest('[data-add]'); if (b) addTest(b.dataset.add); });
+    $('pickedTests').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-remove]');
+        if (!b) return;
+        form.tests = form.tests.filter((x) => x !== b.dataset.remove);
+        renderPicked();
+        refreshQuote();
+    });
+    const testInput = $('testInput');
+    combo(testInput, $('testList'), (q) => {
+        const s = norm(q);
+        if (!s) return [];
+        const hits = (D.catalog || []).filter((n) => norm(n).includes(s) && !form.tests.includes(n)).slice(0, 8)
+            .map((n) => ({ html: `<b>${esc(n)}</b>`, pick: () => { addTest(n); testInput.value = ''; } }));
+        // A test this lab does not have can still be sent by name.
+        if (!(D.catalog || []).some((n) => norm(n) === s)) {
+            hits.push({ html: `<b>${esc(t.addTest)}: ${esc(q.trim())}</b>`, accent: true, pick: () => { addTest(q); testInput.value = ''; } });
         }
+        return hits;
+    });
+
+    // 3. lab + price
+    const labInput = $('labInput');
+    let labTimer = null;
+    combo(labInput, $('labList'), (q) => new Promise((resolve) => {
+        clearTimeout(labTimer);
+        labTimer = setTimeout(async () => {
+            let labs = [];
+            try { labs = (await api(`/lab/api/labs/directory?q=${encodeURIComponent(q.trim())}`)).labs || []; } catch (e) { /* offline */ }
+            const items = labs.slice(0, 8).map((l) => ({
+                html: `<b>${esc(l.name)}</b><small>${esc([l.city, l.phone].filter(Boolean).join(' · '))}</small>`,
+                pick: () => chooseLab({ id: l.id, name: l.name, city: l.city || '', phone: l.phone || '' }),
+            }));
+            const typed = q.trim();
+            if (typed && !labs.some((l) => norm(l.name) === norm(typed))) {
+                items.push({ html: `<b>${esc(t.useLab)}: ${esc(typed)}</b><small>${esc(t.notOnLabgo)}</small>`, accent: true, pick: () => chooseLab({ name: typed }) });
+            }
+            resolve(items);
+        }, q.trim() ? 220 : 0);
+    }));
+    function chooseLab(l) {
+        form.lab = l;
+        labInput.value = '';
+        form.priceEdited = false;
+        $('priceInput').value = '';
+        renderLab();
+        refreshQuote();
+    }
+    function renderLab() {
+        const l = form.lab;
+        $('labChosen').innerHTML = l ? `<div class="sr-lab">
+                <span class="sr-lab-ic"><svg class="ic"><use href="#i-building-2"/></svg></span>
+                <span class="sr-lab-main"><b>${esc(l.name)}</b><small>${esc(l.id ? [l.city, l.phone].filter(Boolean).join(' · ') : t.notOnLabgo)}</small></span>
+                ${l.id ? '<span class="sr-labgo">LabGo</span>' : ''}
+                <button type="button" class="la-icon-btn press-90" id="labRemove" aria-label="×"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>` : '';
+        $('priceBox').hidden = !l;
+        $('priceHint').textContent = l && !l.id ? t.priceTyped : '';
+        const rm = $('labRemove');
+        if (rm) rm.addEventListener('click', () => { form.lab = null; renderLab(); labInput.focus(); });
+    }
+    $('priceInput').addEventListener('input', (e) => {
+        form.priceEdited = true;
+        const d = digits(e.target.value);
+        e.target.value = d ? money(d) : '';
+    });
+    let quoteTimer = null;
+    function refreshQuote() {
+        clearTimeout(quoteTimer);
+        quoteTimer = setTimeout(async () => {
+            const l = form.lab;
+            if (!l || !l.id || form.priceEdited) return;
+            $('priceHint').classList.remove('warn');
+            if (!form.tests.length) { $('priceInput').value = ''; $('priceHint').textContent = t.priceAuto; return; }
+            try {
+                const q = await api(`/lab/api/labs/${encodeURIComponent(l.id)}/quote?tests=${encodeURIComponent(form.tests.join(','))}`);
+                $('priceInput').value = q.lines.length ? money(q.total) : '';
+                $('priceHint').textContent = q.missing.length ? `${t.priceMissing}: ${q.missing.join('، ')}` : t.priceAuto;
+                $('priceHint').classList.toggle('warn', q.missing.length > 0);
+            } catch (e) { /* the price can still be typed */ }
+        }, 250);
     }
 
-    async function receiveLabSample(code) {
-        const res = await fetch('/lab/api/transfers/incoming/receive', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }),
-        });
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok || !body.success) {
-            const err = new Error(res.status === 404 ? copy.notFound : (body.message || copy.transferError));
-            err.notFound = res.status === 404;
-            throw err;
-        }
-        return body;
+    // 4. send
+    function resetForm() {
+        Object.assign(form, { orderId: null, gender: '', tests: [], registered: [], lab: null, priceEdited: false });
+        ['patientInput', 'phoneInput', 'ageInput', 'testInput', 'labInput', 'priceInput'].forEach((id) => { $(id).value = ''; });
+        setGender('');
+        renderPicked();
+        renderLab();
+        syncPhoneRow();
     }
-
-    // ---------- one scan box: a patient order QR or another lab's tracking number ----------
-    const looksLikeTracking = (code) => /^T[A-Z0-9]{6}$/i.test(code);
-    async function receivePatientOrder(qrCode) {
-        const res = await fetch('/lab/api/orders/scan-qr', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ qrCode }),
-        });
-        const body = await res.json().catch(() => ({}));
-        return { ok: res.ok && body.success, message: body.message, status: res.status };
-    }
-    $('hubScanForm').addEventListener('submit', async (e) => {
+    $('sendForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const input = $('hubScanInput');
-        const btn = $('hubScanBtn');
-        const code = input.value.trim();
-        if (!code) { input.focus(); return; }
+        const name = patientInput.value.trim();
+        const phone = $('phoneInput').value.trim();
+        if (!name) { toast(t.needName, 'error'); patientInput.focus(); return; }
+        if (!form.orderId && !digits(phone)) { toast(t.needPhone, 'error'); syncPhoneRow(); $('phoneInput').focus(); return; }
+        if (!form.tests.length) { toast(t.needTests, 'error'); testInput.focus(); return; }
+        if (!form.lab) { toast(t.needLab, 'error'); labInput.focus(); return; }
+        const body = {
+            patientName: name,
+            patientPhone: phone,
+            patientGender: form.gender,
+            patientAge: $('ageInput').value,
+            testNames: form.tests,
+            labName: form.lab.name,
+        };
+        if (form.orderId) body.orderId = form.orderId;
+        if (form.lab.id) body.toLabId = form.lab.id;
+        if (form.priceEdited && digits($('priceInput').value)) body.price = Number(digits($('priceInput').value));
+        if (!form.lab.id && digits($('priceInput').value)) body.price = Number(digits($('priceInput').value));
+        const btn = $('sendBtn');
         btn.disabled = true;
         try {
-            if (looksLikeTracking(code)) {
-                await receiveLabSample(code);
-                toast(copy.receiveDone, 'success');
-                showTab('inlab');
-            } else {
-                const r = await receivePatientOrder(code);
-                if (r.ok) {
-                    toast(copy.sampleReceived, 'success');
-                    if (window.labOrders && window.labOrders.reload) window.labOrders.reload();
-                } else {
-                    // Not a patient order here: maybe a sample code from another lab.
-                    try {
-                        await receiveLabSample(code);
-                        toast(copy.receiveDone, 'success');
-                        showTab('inlab');
-                    } catch (err) {
-                        // Neither a patient order nor a sample sent here: one clear, translated message.
-                        toast(err.notFound ? copy.notFound : err.message, 'error');
-                        btn.disabled = false;
-                        input.select();
-                        return;
-                    }
-                }
-            }
-            input.value = '';
-            loadLabSamples();
+            await postJson('/lab/api/app/transfers', body);
+            toast(t.sent, 'success');
+            resetForm();
+            loadPatients();
+            loadTracking();
         } catch (err) {
-            toast(err.message || copy.transferError, 'error');
-            input.select();
+            toast(err.code === 'alreadySent' ? t.alreadySent : err.code === 'phone' ? t.needPhone : (err.message || t.error), 'error');
         }
         btn.disabled = false;
     });
 
-    // receive / upload from the lab-sample cards
-    const incomingFile = $('incomingFile');
-    let uploadFor = null;
-    document.addEventListener('click', async (e) => {
-        const r = e.target.closest('[data-receive]');
-        if (r) {
-            e.stopPropagation();
-            r.disabled = true;
-            try { await receiveLabSample(r.dataset.receive); toast(copy.receiveDone, 'success'); loadLabSamples(); }
-            catch (err) { toast(err.message, 'error'); r.disabled = false; }
-            return;
-        }
-        const u = e.target.closest('[data-upload]');
-        if (u) { e.stopPropagation(); uploadFor = u.dataset.upload; incomingFile.value = ''; incomingFile.click(); }
-    });
-    incomingFile.addEventListener('change', async () => {
-        const file = incomingFile.files[0];
-        if (!file || !uploadFor) return;
-        if (file.size > 5 * 1024 * 1024) { toast(copy.uploadError, 'error'); return; }
-        const body = new FormData();
-        body.append('resultFile', file);
-        try {
-            const res = await fetch(`/lab/api/transfers/incoming/${encodeURIComponent(uploadFor)}/upload-result?finish=1`, { method: 'POST', body });
-            const d = await res.json();
-            if (!res.ok || !d.success) throw new Error(d.message || copy.uploadError);
-            toast(copy.resultDone, 'success');
-            loadLabSamples();
-        } catch (err) { toast(err.message || copy.uploadError, 'error'); }
-    });
-
-    // ---------- sent list: search + filter chips ----------
-    let filter = 'all';
-    function applyFilters() {
-        const q = $('transferSearch').value.trim().toLowerCase();
-        const rows = [...document.querySelectorAll('[data-transfer-row]')];
-        let shown = 0;
-        rows.forEach((row) => {
-            const show = (!q || row.dataset.search.includes(q)) && (filter === 'all' || row.dataset.status === filter);
-            row.hidden = !show;
-            if (show) shown += 1;
-        });
-        $('emptySearch').classList.toggle('hidden', shown !== 0 || rows.length === 0);
+    // ------------------------------------------------------------ tracking
+    let referrals = [];
+    function steps(r) {
+        const done = r.status === 'Completed';
+        const received = done || Boolean(r.receivedAt);
+        const s = (cls, label) => `<li class="${cls}"><span></span>${esc(label)}</li>`;
+        const now = done ? 2 : received ? 1 : 0; // the stage the sample is at now
+        const cls = (i, reached, skip) => (i === now ? 'done now' : reached ? 'done' : skip ? 'skip' : '');
+        return `<ol class="sr-steps">${s(cls(0, true), t.stepSent)}${s(cls(1, received, !r.onLabGo), t.stepReceived)}${s(cls(2, done), t.stepResult)}</ol>`;
     }
-    $('transferSearch').addEventListener('input', applyFilters);
-    document.querySelectorAll('#sentFilters [data-filter]').forEach((chip) => chip.addEventListener('click', () => {
-        filter = chip.dataset.filter;
-        document.querySelectorAll('#sentFilters [data-filter]').forEach((c) => c.classList.toggle('on', c === chip));
-        applyFilters();
-    }));
-
-    // ---------- modals ----------
-    const newTransferModal = $('newTransferModal');
-    const resultModal = $('resultModal');
-    let lastFocus = null;
-    function setModal(modal, open) {
-        if (open) lastFocus = document.activeElement;
-        modal.classList.toggle('active', open);
-        document.body.style.overflow = open ? 'hidden' : '';
-        if (open) setTimeout(() => { const f = modal.querySelector('select, input:not([type=hidden]), button'); if (f) f.focus(); }, 60);
-        else if (lastFocus) lastFocus.focus();
-    }
-    document.querySelectorAll('[data-close-modal]').forEach((b) => b.addEventListener('click', () => setModal(newTransferModal, false)));
-    document.querySelectorAll('[data-close-result]').forEach((b) => b.addEventListener('click', () => setModal(resultModal, false)));
-    document.addEventListener('keydown', (e) => {
-        if (e.key !== 'Escape') return;
-        if (newTransferModal.classList.contains('active')) setModal(newTransferModal, false);
-        if (resultModal.classList.contains('active')) setModal(resultModal, false);
-    });
-
-    // ---------- new transfer ----------
-    let transferMode = 'order';
-    const sampleSelect = $('sampleOrderId');
-    function setTransferMode(mode) {
-        transferMode = mode;
-        document.querySelectorAll('#transferModeTabs [data-mode]').forEach((b) => b.classList.toggle('on', b.dataset.mode === mode));
-        $('orderModeSection').hidden = mode !== 'order';
-        $('manualModeSection').hidden = mode !== 'manual';
-        if (mode === 'manual') { $('patientInfoCard').hidden = true; $('testSelectPanel').hidden = true; } else updateAutoFill();
-        scheduleQuote();
-    }
-    document.querySelectorAll('#transferModeTabs [data-mode]').forEach((b) => b.addEventListener('click', () => setTransferMode(b.dataset.mode)));
-
-    function updateAutoFill() {
-        const order = eligibleOrders.find((o) => String(o._id) === sampleSelect.value);
-        $('patientInfoCard').hidden = !order;
-        $('testSelectPanel').hidden = !order;
-        if (!order) return;
-        const info = order.patientInfo || {};
-        const loc = order.location || {};
-        $('autoPatientInitial').textContent = (info.name || '?').trim().charAt(0).toUpperCase();
-        $('autoPatientName').textContent = info.name || copy.notAvailable;
-        $('autoPatientGender').textContent = info.gender && copy[info.gender] ? copy[info.gender] : copy.notAvailable;
-        $('autoPatientAge').textContent = info.age !== null && info.age !== undefined ? `${info.age} ${copy.years}` : copy.notAvailable;
-        $('autoPatientPhone').textContent = info.phone || copy.notAvailable;
-        $('autoPatientAddress').textContent = [loc.address, loc.landmark].filter(Boolean).join(' - ');
-        $('autoSampleCode').textContent = order.qrCode || '—';
-        $('testSelectList').innerHTML = (order.tests || []).map((t) => `
-            <label class="hub-test-item"><input type="checkbox" name="testIds" value="${esc(t.testId)}" checked><span>${esc(t.testName)}</span></label>`).join('');
-    }
-    sampleSelect.addEventListener('change', () => { updateAutoFill(); scheduleQuote(); });
-
-    $('openTransferModal').addEventListener('click', () => {
-        setModal(newTransferModal, true);
-        setTransferMode(eligibleOrders.length ? 'order' : 'manual');
-    });
-
-    $('newTransferForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = $('saveTransferButton');
-        const values = Object.fromEntries(new FormData(e.currentTarget).entries());
-        delete values.orderId;
-        delete values.testIds;
-        if (!priceEdited || !values.price) delete values.price;
-        if (!values.toLabId) delete values.toLabId;
-        if (transferMode === 'order') {
-            if (!sampleSelect.value) { toast(copy.transferError, 'error'); sampleSelect.focus(); return; }
-            values.orderId = sampleSelect.value;
-            values.testIds = [...document.querySelectorAll('#testSelectList input:checked')].map((el) => el.value);
+    function trackCard(r) {
+        const done = r.status === 'Completed';
+        const label = `/lab/external-transfers/${encodeURIComponent(r.id)}/label?lang=${D.labelLang}`;
+        let main = '';
+        if (!done) {
+            main = `<button type="button" class="la-btn sm press-95" data-act="upload" data-id="${esc(r.id)}"><svg class="ic"><use href="#i-upload"/></svg>${esc(t.uploadResult)}</button>`;
         } else {
-            const patientName = $('manualPatientName').value.trim();
-            if (!patientName) { toast(copy.patientNameRequired, 'error'); $('manualPatientName').focus(); return; }
-            values.patientName = patientName;
-            values.patientPhone = $('manualPatientPhone').value.trim();
-            values.patientGender = $('manualPatientGender').value;
-            values.patientAge = $('manualPatientAge').value;
-            values.sampleCode = $('manualSampleCode').value.trim();
-            values.testsDescription = $('manualTestsDescription').value.trim();
-        }
-        btn.disabled = true;
-        try {
-            const res = await fetch('/lab/api/external-transfers', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values),
-            });
-            const d = await res.json();
-            if (!res.ok || !d.success) throw new Error(d.message || copy.transferError);
-            toast(copy.transferSaved, 'success');
-            setTimeout(() => window.location.assign('/lab/orders?tab=sent'), 600);
-        } catch (err) {
-            toast(err.message || copy.transferError, 'error');
-            btn.disabled = false;
-        }
-    });
-
-    // registered (LabGo) receiving lab + price from its B2B prices
-    const labSearch = $('labSearch');
-    const labResults = $('labResults');
-    const toLabId = $('toLabId');
-    const priceInput = $('transferPrice');
-    const priceHint = $('priceHint');
-    let priceEdited = false;
-    let labTimer = null;
-    let quoteTimer = null;
-    function chosenTestNames() {
-        if (transferMode === 'order') return [...document.querySelectorAll('#testSelectList input:checked')].map((el) => el.nextElementSibling.textContent.trim());
-        return $('manualTestsDescription').value.split(/[,،\n]/).map((x) => x.trim()).filter(Boolean);
-    }
-    async function refreshQuote() {
-        priceHint.classList.remove('hub-warn');
-        priceHint.textContent = copy.priceHint;
-        if (!toLabId.value || priceEdited) return;
-        const names = chosenTestNames();
-        if (!names.length) { priceInput.value = ''; return; }
-        try {
-            const res = await fetch(`/lab/api/labs/${encodeURIComponent(toLabId.value)}/quote?tests=${encodeURIComponent(names.join(','))}`);
-            const d = await res.json();
-            if (!d.success) return;
-            priceInput.value = d.data.lines.length ? money(d.data.total) : '';
-            if (d.data.missing.length) {
-                priceHint.classList.add('hub-warn');
-                priceHint.textContent = `${copy.priceMissing}: ${d.data.missing.join(', ')} — ${copy.priceHint}`;
+            if (r.resultFile) main += `<a class="la-btn sm soft press-95" href="${esc(r.resultFile)}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-file-down"/></svg>${esc(t.viewResult)}</a>`;
+            if (r.orderId && !r.forwardedAt && (r.resultSource === 'external_link' || r.resultSource === 'receiving_lab')) {
+                main += `<button type="button" class="la-btn sm press-95" data-act="forward" data-id="${esc(r.id)}"><svg class="ic flip-rtl"><use href="#i-send"/></svg>${esc(t.toPatient)}</button>`;
+            } else if (r.forwardedAt) {
+                main += `<span class="sr-done-note"><svg class="ic"><use href="#i-check"/></svg>${esc(t.sentToPatient)}</span>`;
             }
-        } catch (err) { /* the lab can still type the price */ }
-    }
-    function scheduleQuote() { clearTimeout(quoteTimer); quoteTimer = setTimeout(refreshQuote, 300); }
-    function chooseLab(l) {
-        toLabId.value = l ? l.id : '';
-        $('labChosen').hidden = !l;
-        labSearch.closest('.la-search').hidden = Boolean(l);
-        labResults.hidden = true;
-        if (l) {
-            $('labChosenName').textContent = l.name + (l.city ? ` · ${l.city}` : '');
-            $('externalLabName').value = l.name;
-            if (l.phone) $('externalLabPhone').value = l.phone;
-            if (l.address) $('externalLabAddress').value = l.address;
-            priceEdited = false;
-            refreshQuote();
-        } else {
-            labSearch.value = '';
-            labSearch.focus();
         }
+        return `<article class="la-card sr-card" data-id="${esc(r.id)}">
+            <div class="sr-card-top">
+                <b class="sr-card-name"><bdi>${esc(r.patient)}</bdi> · <bdi>${esc(r.test)}</bdi></b>
+                <span class="sr-status ${done ? 'done' : 'wait'}">${esc(done ? t.statusDone : t.statusSent)}</span>
+            </div>
+            <p class="sr-card-meta"><bdi>${esc(r.lab)}</bdi>${r.onLabGo ? '<span class="sr-labgo">LabGo</span>' : ''}${r.eta && r.eta !== '—' ? `<span>${esc(t.eta)} <span class="num">${esc(r.eta)}</span></span>` : ''}</p>
+            <p class="sr-card-meta">${code(r.tracking)}${typeof r.price === 'number' ? `<span class="num">${money(r.price)} ${esc(t.currency)}</span>` : ''}<span class="num">${esc(day(r.sentAt))}</span></p>
+            ${steps(r)}
+            <div class="sr-card-foot">
+                <div class="sr-icons">
+                    <a class="la-icon-btn press-90" href="${label}" target="_blank" rel="noopener" title="${esc(t.printLabel)}" aria-label="${esc(t.printLabel)}"><svg class="ic"><use href="#i-printer"/></svg></a>
+                    <button type="button" class="la-icon-btn press-90" data-act="pdf" data-id="${esc(r.id)}" data-code="${esc(r.tracking)}" title="${esc(t.labelPdf)}" aria-label="${esc(t.labelPdf)}"><svg class="ic"><use href="#i-file-down"/></svg></button>
+                    <button type="button" class="la-icon-btn press-90 sr-danger" data-act="delete" data-id="${esc(r.id)}" title="${esc(t.del)}" aria-label="${esc(t.del)}"><svg class="ic"><use href="#i-trash-2"/></svg></button>
+                </div>
+                <div class="sr-main-actions">${main}</div>
+            </div>
+        </article>`;
     }
-    async function searchLabs() {
-        try {
-            const res = await fetch(`/lab/api/labs/directory?q=${encodeURIComponent(labSearch.value.trim())}`);
-            const d = await res.json();
-            const labs = (d.data && d.data.labs) || [];
-            labResults.innerHTML = labs.length
-                ? labs.map((l, i) => `<button type="button" data-i="${i}"><b>${esc(l.name)}</b><small>${esc([l.city, l.phone].filter(Boolean).join(' · '))}</small></button>`).join('')
-                : `<p>${esc(copy.noLabs)}</p>`;
-            labResults.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => chooseLab(labs[Number(b.dataset.i)])));
-            labResults.hidden = false;
-        } catch (err) { labResults.hidden = true; }
+    function renderTracking() {
+        const q = norm($('trackSearch').value);
+        const list = referrals.filter((r) => !q || norm([r.patient, r.test, r.lab, r.tracking, r.sampleCode].join(' ')).includes(q));
+        $('trackCount').textContent = referrals.length;
+        $('trackList').innerHTML = list.length ? list.map(trackCard).join('')
+            : `<div class="la-empty-box"><svg class="ic"><use href="#i-${referrals.length ? 'search' : 'send'}"/></svg><p>${esc(referrals.length ? t.noMatch : t.noTracking)}</p></div>`;
     }
-    labSearch.addEventListener('input', () => { clearTimeout(labTimer); labTimer = setTimeout(searchLabs, 250); });
-    labSearch.addEventListener('focus', searchLabs);
-    document.addEventListener('click', (e) => { if (!e.target.closest('.lab-picker')) labResults.hidden = true; });
-    $('labClear').addEventListener('click', () => chooseLab(null));
-    priceInput.addEventListener('input', () => {
-        priceEdited = true;
-        const digits = priceInput.value.replace(/[^0-9]/g, '');
-        priceInput.value = digits ? money(digits) : '';
-    });
-    $('testSelectList').addEventListener('change', scheduleQuote);
-    $('manualTestsDescription').addEventListener('input', scheduleQuote);
+    async function loadTracking() {
+        try { referrals = (await api('/lab/api/app/transfers')).referrals || []; } catch (e) { /* keep the last list */ }
+        renderTracking();
+    }
+    $('trackSearch').addEventListener('input', renderTracking);
 
-    // ---------- sent-card actions ----------
-    let resultTransferId = null;
-    const labelLang = data.labelLang || 'en';
-    $('sentList').addEventListener('click', async (e) => {
-        const btn = e.target.closest('[data-action]');
-        if (!btn) return;
-        const id = btn.dataset.transferId;
-        const action = btn.dataset.action;
-        if (action === 'upload-result') {
-            resultTransferId = id;
-            $('resultUploadForm').reset();
-            $('selectedResultFile').textContent = 'PDF, JPG, PNG, HEIC, WEBP';
-            setModal(resultModal, true);
-        } else if (action === 'print-label') {
-            window.open(`/lab/external-transfers/${encodeURIComponent(id)}/label?lang=${labelLang}`, '_blank');
-        } else if (action === 'download-label') {
-            btn.disabled = true;
+    // result file picker shared by every card
+    const fileInput = $('resultFile');
+    let uploadTarget = null; // { kind: 'sent' | 'order' | 'lab', id }
+    function pickFile(target) { uploadTarget = target; fileInput.value = ''; fileInput.click(); }
+    fileInput.addEventListener('change', async () => {
+        const file = fileInput.files[0];
+        const target = uploadTarget;
+        if (!file || !target) return;
+        if (file.size > 5 * 1024 * 1024) { toast(t.fileTooBig, 'error'); return; }
+        const fd = new FormData();
+        fd.append('resultFile', file);
+        try {
+            if (target.kind === 'sent') {
+                await api(`/lab/api/external-transfers/${encodeURIComponent(target.id)}/result`, { method: 'POST', body: fd });
+                loadTracking();
+            } else if (target.kind === 'order') {
+                const up = await api(`/lab/api/orders/${encodeURIComponent(target.id)}/upload-result`, { method: 'POST', body: fd });
+                await postJson(`/lab/api/orders/${encodeURIComponent(target.id)}/complete`, { reportUrl: up.fileUrl });
+                loadReceived();
+            } else {
+                await api(`/lab/api/transfers/incoming/${encodeURIComponent(target.id)}/upload-result?finish=1`, { method: 'POST', body: fd });
+                loadReceived();
+            }
+            toast(t.uploaded, 'success');
+        } catch (err) { toast(err.message || t.error, 'error'); }
+    });
+
+    $('trackList').addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-act]');
+        if (!b) return;
+        const id = b.dataset.id;
+        if (b.dataset.act === 'upload') pickFile({ kind: 'sent', id });
+        else if (b.dataset.act === 'pdf') {
+            b.disabled = true;
             try {
-                const res = await fetch(`/lab/api/external-transfers/${encodeURIComponent(id)}/label.pdf?lang=${labelLang}`);
-                if (!res.ok) throw new Error(String(res.status));
+                const res = await fetch(`/lab/api/external-transfers/${encodeURIComponent(id)}/label.pdf?lang=${D.labelLang}`);
+                if (!res.ok) throw new Error();
                 const url = URL.createObjectURL(await res.blob());
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `label-${btn.dataset.code || 'sample'}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
+                const a = Object.assign(document.createElement('a'), { href: url, download: `label-${b.dataset.code || 'sample'}.pdf` });
+                document.body.appendChild(a); a.click(); a.remove();
                 setTimeout(() => URL.revokeObjectURL(url), 5000);
             } catch (err) {
-                // No PDF engine on this server: open the printable label instead.
-                window.open(`/lab/external-transfers/${encodeURIComponent(id)}/label?lang=${labelLang}`, '_blank');
+                window.open(`/lab/external-transfers/${encodeURIComponent(id)}/label?lang=${D.labelLang}`, '_blank'); // no PDF engine: printable page
             }
-            btn.disabled = false;
-        } else if (action === 'forward-result') {
-            btn.disabled = true;
+            b.disabled = false;
+        } else if (b.dataset.act === 'forward') {
+            b.disabled = true;
+            try { await api(`/lab/api/external-transfers/${encodeURIComponent(id)}/forward`, { method: 'POST' }); toast(t.forwarded, 'success'); loadTracking(); }
+            catch (err) { b.disabled = false; toast(err.message || t.error, 'error'); }
+        } else if (b.dataset.act === 'delete') {
+            if (!window.confirm(t.confirmDel)) return;
+            b.disabled = true;
             try {
-                const res = await fetch(`/lab/api/external-transfers/${encodeURIComponent(id)}/forward`, { method: 'POST' });
-                const d = await res.json();
-                if (!d.success) throw new Error(d.message);
-                toast(copy.forwardDone, 'success');
-                setTimeout(() => window.location.reload(), 800);
-            } catch (err) { btn.disabled = false; toast(err.message || copy.transferError, 'error'); }
-        } else if (action === 'delete-transfer') {
-            if (!window.confirm(copy.confirmDeleteTransfer)) return;
-            btn.disabled = true;
-            try {
-                const res = await fetch(`/lab/api/external-transfers/${encodeURIComponent(id)}`, { method: 'DELETE' });
-                const d = await res.json();
-                if (!res.ok || !d.success) throw new Error(d.message || copy.transferError);
-                const card = btn.closest('[data-transfer-row]');
-                card.classList.add('hub-leaving');
-                setTimeout(() => { card.remove(); applyFilters(); if (!document.querySelector('[data-transfer-row]')) $('emptyTransfers').classList.remove('hidden'); }, 220);
-            } catch (err) { btn.disabled = false; toast(err.message || copy.transferError, 'error'); }
+                await api(`/lab/api/app/transfers/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                referrals = referrals.filter((r) => r.id !== id);
+                const card = b.closest('.sr-card');
+                card.classList.add('leaving');
+                setTimeout(renderTracking, 200);
+                toast(t.deleted, 'success');
+            } catch (err) { b.disabled = false; toast(err.message || t.error, 'error'); }
         }
     });
 
-    $('returnedResultFile').addEventListener('change', (e) => {
-        const f = e.target.files[0];
-        $('selectedResultFile').textContent = f ? f.name : 'PDF, JPG, PNG, HEIC, WEBP';
-    });
-    $('resultUploadForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const file = $('returnedResultFile').files[0];
-        if (!file || !resultTransferId) { $('returnedResultFile').click(); return; }
-        if (file.size > 5 * 1024 * 1024) { toast(copy.uploadError, 'error'); return; }
-        const btn = $('uploadResultButton');
-        btn.disabled = true;
+    // ============================================================= RECEIVE
+    // One list: LabGo service orders (patients via the LabGo app) and samples other labs sent.
+    let received = [];
+    let recvFilter = 'all';
+    function fromOrder(o) {
+        const p = o.patientInfo || {};
+        return {
+            kind: 'order', id: String(o._id), code: o.qrCode || '', patient: p.name || '',
+            demo: [p.gender ? t[p.gender] : '', Number.isInteger(p.age) ? `${p.age} ${t.years}` : ''].filter(Boolean).join(' · '),
+            tests: (o.tests || []).map((x) => (typeof x === 'string' ? x : x.testName)).filter(Boolean),
+            source: t.fromLabgo, status: o.status === 'sample_collected' ? 'on_the_way' : o.status === 'completed' ? 'completed' : 'received',
+            at: o.updatedAt || o.createdAt, fileUrl: '',
+        };
+    }
+    function fromLab(s) {
+        return {
+            kind: 'lab', id: s.id, code: s.code, patient: s.patient,
+            demo: [s.gender ? t[s.gender] : '', s.age !== null && s.age !== undefined ? `${s.age} ${t.years}` : ''].filter(Boolean).join(' · '),
+            tests: s.tests || [], source: `${t.fromLab} ${s.fromLab}`, status: s.status,
+            at: s.receivedAt || s.sentAt, fileUrl: s.fileUrl || `/lab/api/transfers/incoming/${s.id}/report.pdf`, price: s.price,
+        };
+    }
+    function recvCard(r) {
+        const pill = { on_the_way: ['wait', t.onWay], received: ['in', t.inLab], completed: ['done', t.done] }[r.status] || ['', ''];
+        let actions = '';
+        if (r.status === 'on_the_way') {
+            actions = `<button type="button" class="la-btn sm press-95" data-recv="${esc(r.kind)}" data-code="${esc(r.code)}"><svg class="ic"><use href="#i-check"/></svg>${esc(t.receiveBtn)}</button>`;
+        } else if (r.status === 'received') {
+            const href = r.kind === 'order' ? `/lab/orders/${encodeURIComponent(r.id)}/results` : `/lab/transfers/incoming/${encodeURIComponent(r.id)}/results`;
+            actions = `<a class="la-btn sm press-95" href="${href}"><svg class="ic"><use href="#i-file-text"/></svg>${esc(t.enterResult)}</a>`
+                + `<button type="button" class="la-btn sm soft press-95" data-file="${esc(r.kind)}" data-id="${esc(r.id)}"><svg class="ic"><use href="#i-upload"/></svg>PDF</button>`;
+        } else if (r.fileUrl) {
+            actions = `<a class="la-btn sm soft press-95" href="${esc(r.fileUrl)}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-file-down"/></svg>${esc(t.viewResult)}</a>`;
+        }
+        return `<article class="la-card sr-card">
+            <div class="sr-card-top">
+                <span class="la-avatar">${esc((r.patient || '?').trim().charAt(0).toUpperCase())}</span>
+                <span class="sr-card-who"><b class="sr-card-name"><bdi>${esc(r.patient)}</bdi></b><small>${esc(r.demo || '')}</small></span>
+                <span class="sr-status ${pill[0]}">${esc(pill[1])}</span>
+            </div>
+            <p class="sr-source ${r.kind}">${code(r.code)}<svg class="ic"><use href="#i-${r.kind === 'order' ? 'smartphone' : 'building-2'}"/></svg><bdi>${esc(r.source)}</bdi>${typeof r.price === 'number' ? `<span class="sr-price">${money(r.price)} ${esc(t.currency)}</span>` : ''}</p>
+            ${r.tests.length ? `<div class="la-tags">${r.tests.slice(0, 6).map((n) => `<span class="la-tag"><svg class="ic"><use href="#i-test-tube"/></svg>${esc(n)}</span>`).join('')}</div>` : ''}
+            <div class="sr-card-foot">
+                <span class="sr-card-meta"><svg class="ic"><use href="#i-clock"/></svg><span class="num">${esc(day(r.at))}</span></span>
+                <div class="sr-main-actions">${actions}</div>
+            </div>
+        </article>`;
+    }
+    function renderReceived() {
+        const q = norm($('recvSearch').value);
+        const list = received.filter((r) => (recvFilter === 'all' || r.status === recvFilter)
+            && (!q || norm([r.patient, r.code, r.source, r.tests.join(' ')].join(' ')).includes(q)));
+        $('recvCount').textContent = received.length;
+        const waiting = received.filter((r) => r.status === 'on_the_way').length;
+        $('receiveBadge').hidden = !waiting;
+        $('receiveBadge').textContent = waiting;
+        $('recvList').innerHTML = list.length ? list.map(recvCard).join('')
+            : `<div class="la-empty-box"><svg class="ic"><use href="#i-${received.length ? 'search' : 'inbox'}"/></svg><p>${esc(received.length ? t.noMatch : t.noReceived)}</p></div>`;
+    }
+    async function loadReceived() {
+        const [orders, labs] = await Promise.all([
+            api('/lab/api/orders?status=active&limit=100').then((d) => d.orders || []).catch(() => null),
+            api('/lab/api/transfers/incoming').then((d) => d.items || []).catch(() => null),
+        ]);
+        if (orders === null && labs === null) { renderReceived(); return; }
+        const order = { on_the_way: 0, received: 1, completed: 2 }; // what needs doing first
+        received = [
+            ...(orders || []).filter((o) => o.orderType !== 'walk_in').map(fromOrder),
+            ...(labs || []).map(fromLab),
+        ].sort((a, b) => (order[a.status] - order[b.status]) || (new Date(b.at) - new Date(a.at)));
+        renderReceived();
+    }
+    $('recvSearch').addEventListener('input', renderReceived);
+    document.querySelectorAll('#recvFilters [data-f]').forEach((c) => c.addEventListener('click', () => {
+        recvFilter = c.dataset.f;
+        document.querySelectorAll('#recvFilters [data-f]').forEach((x) => x.classList.toggle('on', x === c));
+        renderReceived();
+    }));
+
+    // receiving: a LabGo order's QR, or another lab's tracking / sample code
+    async function receiveCode(code, kindHint) {
+        const tracking = /^T[A-Z0-9]{6}$/i.test(code);
+        if (kindHint !== 'order' && (tracking || kindHint === 'lab')) {
+            await postJson('/lab/api/transfers/incoming/receive', { code });
+            return;
+        }
         try {
-            const body = new FormData();
-            body.append('resultFile', file);
-            const res = await fetch(`/lab/api/external-transfers/${encodeURIComponent(resultTransferId)}/result`, { method: 'POST', body });
-            const d = await res.json();
-            if (!res.ok || !d.success) throw new Error(d.message || copy.uploadError);
-            toast(copy.uploadSuccess, 'success');
-            setTimeout(() => window.location.reload(), 800);
-        } catch (err) { toast(err.message || copy.uploadError, 'error'); btn.disabled = false; }
+            await postJson('/lab/api/orders/scan-qr', { qrCode: code });
+        } catch (err) {
+            if (kindHint === 'order') throw err;
+            try { await postJson('/lab/api/transfers/incoming/receive', { code }); } // maybe a sample code from another lab
+            catch (e2) { throw Object.assign(new Error(t.notFound), { notFound: true }); }
+        }
+    }
+    $('scanForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const input = $('scanInput');
+        const code = input.value.trim();
+        if (!code) { input.focus(); return; }
+        $('scanBtn').disabled = true;
+        try {
+            await receiveCode(code);
+            toast(t.received, 'success');
+            input.value = '';
+            loadReceived();
+        } catch (err) {
+            toast(err.notFound || err.status === 404 ? t.notFound : (err.message || t.error), 'error');
+            input.select();
+        }
+        $('scanBtn').disabled = false;
+    });
+    $('recvList').addEventListener('click', async (e) => {
+        const r = e.target.closest('[data-recv]');
+        if (r) {
+            r.disabled = true;
+            try { await receiveCode(r.dataset.code, r.dataset.recv); toast(t.received, 'success'); loadReceived(); }
+            catch (err) { r.disabled = false; toast(err.message || t.error, 'error'); }
+            return;
+        }
+        const f = e.target.closest('[data-file]');
+        if (f) pickFile({ kind: f.dataset.file, id: f.dataset.id });
     });
 
-    // ---------- start ----------
-    updateAutoFill();
-    loadLabSamples();
-    refreshCounters();
-    if (data.selectedOrderId) {
-        showTab('sent');
-        setModal(newTransferModal, true);
-        setTransferMode('order');
-    }
+    // ---------------------------------------------------------------- start
+    (async function start() {
+        loadTracking();
+        loadReceived(); // also fills the badge on the Receive tab
+        await loadPatients();
+        // "Send to lab" from an order page: that patient is picked already.
+        if (D.preselectOrderId) {
+            const p = patients.find((x) => x.id === D.preselectOrderId);
+            if (p) { pickPatient(p); (p.tests || []).forEach(addTest); }
+        }
+    })();
 })();

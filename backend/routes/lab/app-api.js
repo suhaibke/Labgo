@@ -380,6 +380,12 @@ function toReferral(t) {
         })),
         resultFile: t.resultFileUrl || '',
         resultSource: t.resultSource || '',
+        // Used by the web dashboard's tracking cards (the app ignores them).
+        receivedAt: t.receivedAt || null,
+        forwardedAt: t.forwardedAt || null,
+        price: typeof t.price === 'number' ? t.price : null,
+        sampleCode: t.sampleCode || '',
+        labPhone: t.externalLab?.phone || '',
     };
 }
 

@@ -91,4 +91,45 @@ ${autoPrint ? '<script>window.addEventListener("load",function(){setTimeout(func
 </body></html>`;
 }
 
-module.exports = { receiptHtml, ageOf };
+// Tube label for a 50 × 25 mm thermal label printer, the same layout as the
+// lab app's: name and order number, age • gender • date, a Code 128 barcode
+// and the tests. One page per copy.
+function tubeLabelHtml({ order, lab, copies = 1, autoPrint = true }) {
+    const code = receipt.receiptCode(order) || String(order._id).slice(-8).toUpperCase();
+    const person = order.beneficiary?.isForOtherPerson ? order.beneficiary : (order.patientId || {});
+    const gender = person.gender === 'male' ? 'M' : person.gender === 'female' ? 'F' : '';
+    const when = new Date(order.createdAt || Date.now());
+    const two = (v) => String(v).padStart(2, '0');
+    const date = `${two(when.getDate())}/${two(when.getMonth() + 1)}/${when.getFullYear() % 100} ${two(when.getHours())}:${two(when.getMinutes())}`;
+    const tests = [...new Set((order.tests || []).map((x) => x.testName).filter(Boolean))].join(' • ');
+    const urgent = order.urgency === 'urgent' || order.urgency === 'emergency';
+    const bar = bwipjs.toSVG({ bcid: 'code128', text: code, height: 10, scale: 2, includetext: false, paddingwidth: 0, paddingheight: 0 });
+    const n = Math.min(10, Math.max(1, Number(copies) || 1));
+    const page = `<section class="lbl">
+<div class="r"><b class="nm">${esc(person.name || '')}</b><b dir="ltr">${esc(code)}</b></div>
+<div class="r s"><span dir="ltr">${esc([ageOf(person.birthDate), gender, date].filter(Boolean).join(' • '))}</span>${urgent ? '<i>URGENT</i>' : ''}</div>
+<div class="bar">${bar}</div>
+<div class="t">${esc(tests)}</div>
+</section>`;
+    return `<!doctype html><html dir="auto"><head><meta charset="utf-8"><title>${esc(code)}</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+@page { size: 50mm 25mm; margin: 0; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Inter", "IBM Plex Sans Arabic", sans-serif; color: #000; }
+.lbl { width: 50mm; height: 25mm; padding: 1.5mm; display: flex; flex-direction: column; overflow: hidden; page-break-after: always; break-after: page; }
+.lbl:last-child { page-break-after: auto; break-after: auto; }
+.r { display: flex; justify-content: space-between; align-items: center; gap: 2px; font-size: 7.5pt; line-height: 1.15; }
+.r .nm { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.r.s { font-size: 5.5pt; }
+.r i { font-style: normal; font-weight: 600; background: #000; color: #fff; padding: 0 2px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.bar { margin: .6mm 0; text-align: center; } .bar svg { width: 44mm; height: 10mm; }
+.t { font-size: 5.5pt; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+@media screen { body { padding: 16px; background: #eee; } .lbl { background: #fff; margin-bottom: 8px; } }
+</style></head><body>
+${Array.from({ length: n }, () => page).join('\n')}
+${autoPrint ? '<script>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)})</script>' : ''}
+</body></html>`;
+}
+
+module.exports = { receiptHtml, tubeLabelHtml, ageOf };
